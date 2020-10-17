@@ -1,7 +1,7 @@
+import { Binary, Collection, Long, MongoClient } from 'mongodb';
 import AnchoredOperationModel from './models/AnchoredOperationModel';
 import IOperationStore from './interfaces/IOperationStore';
 import OperationType from './enums/OperationType';
-import { Binary, Collection, Long, MongoClient } from 'mongodb';
 
 /**
  * Sidetree operation stored in MongoDb.
@@ -68,7 +68,7 @@ export default class MongoDbOperationStore implements IOperationStore {
    * Implement OperationStore.put
    */
   public async put (operations: AnchoredOperationModel[]): Promise<void> {
-    let batch = this.collection!.initializeUnorderedBulkOp();
+    const batch = this.collection!.initializeUnorderedBulkOp();
 
     for (const operation of operations) {
       const mongoOperation = MongoDbOperationStore.convertToMongoOperation(operation);
@@ -106,19 +106,21 @@ export default class MongoDbOperationStore implements IOperationStore {
   }
 
   public async deleteUpdatesEarlierThan (didUniqueSuffix: string, transactionNumber: number, operationIndex: number): Promise<void> {
-    await this.collection!.deleteMany({ $or: [
-      {
-        didSuffix: didUniqueSuffix,
-        txnNumber: { $lt: Long.fromNumber(transactionNumber) },
-        type: OperationType.Update
-      },
-      {
-        didSuffix: didUniqueSuffix,
-        txnNumber: Long.fromNumber(transactionNumber),
-        opIndex: { $lt: operationIndex },
-        type: OperationType.Update
-      }
-    ]});
+    await this.collection!.deleteMany({
+      $or: [
+        {
+          didSuffix: didUniqueSuffix,
+          txnNumber: { $lt: Long.fromNumber(transactionNumber) },
+          type: OperationType.Update
+        },
+        {
+          didSuffix: didUniqueSuffix,
+          txnNumber: Long.fromNumber(transactionNumber),
+          opIndex: { $lt: operationIndex },
+          type: OperationType.Update
+        }
+      ]
+    });
   }
 
   /**

@@ -40,7 +40,7 @@ describe('Multihash', async () => {
     });
 
     it('should return false if encountered an unexpected error.', async () => {
-      const multihashHashSpy = spyOn(Multihash as any, 'verify').and.throwError('Simulated error message.');
+      const multihashHashSpy = spyOn(Multihash as any, 'verifyEncodedMultihashForContent').and.throwError('Simulated error message.');
       const result = Multihash.isValidHash('revealValue', 'commitmentHash');
 
       expect(multihashHashSpy).toHaveBeenCalled();
@@ -80,9 +80,26 @@ describe('Multihash', async () => {
       // Simulate an error thrown.
       spyOn(Encoder, 'decodeAsBuffer').and.throwError('any error');
 
-      const validHash = (Multihash as any).verify(Buffer.from('anyValue'), 'unusedMultihashValue');
+      const validHash = (Multihash as any).verifyEncodedMultihashForContent(Buffer.from('anyValue'), 'unusedMultihashValue');
 
       expect(validHash).toBeFalsy();
+    });
+
+    it('should return false if given encoded multihash is not using the canonical encoding.', async () => {
+      const anyContent = Buffer.from('any content');
+
+      // Canonical encoded multihash of 'any content' is 'EiDDidVHVekuMIYV3HI5nfp8KP6s3_W44Pd-MO5b-XK5iQ'
+      const defaultContentEncodedMultihash = 'EiDDidVHVekuMIYV3HI5nfp8KP6s3_W44Pd-MO5b-XK5iQ';
+      const modifiedContentEncodedMultihash = 'EiDDidVHVekuMIYV3HI5nfp8KP6s3_W44Pd-MO5b-XK5iR';
+
+      // Two multihash strings decodes into the same buffer.
+      expect(Encoder.decodeAsBuffer(defaultContentEncodedMultihash)).toEqual(Encoder.decodeAsBuffer(modifiedContentEncodedMultihash));
+
+      const validHashCheckResult = (Multihash as any).verifyEncodedMultihashForContent(anyContent, defaultContentEncodedMultihash);
+      const invalidHashCheckResult = (Multihash as any).verifyEncodedMultihashForContent(anyContent, modifiedContentEncodedMultihash);
+
+      expect(validHashCheckResult).toBeTruthy();
+      expect(invalidHashCheckResult).toBeFalsy();
     });
   });
 

@@ -11,9 +11,7 @@ describe('SpendingMonitor', () => {
   const bitcoinFeeSpendingCutoffPeriodInBlocks = 100;
   const bitcoinFeeSpendingCutoffInSatoshis = BitcoinClient.convertBtcToSatoshis(3); // 3 * BitcoinProcessor['satoshiPerBitcoin'];
   const mockTxns: TransactionModel[] = [
-    // tslint:disable-next-line: max-line-length
     { transactionNumber: 12345, transactionTime: 10, transactionTimeHash: 'hash1', anchorString: 'anchor_string1', transactionFeePaid: 100, normalizedTransactionFee: 90, writer: 'writer1' },
-    // tslint:disable-next-line: max-line-length
     { transactionNumber: 67890, transactionTime: 11, transactionTimeHash: 'hash2', anchorString: 'anchor_string2', transactionFeePaid: 110, normalizedTransactionFee: 95, writer: 'writer2' }
   ];
 
@@ -24,7 +22,7 @@ describe('SpendingMonitor', () => {
   describe('constructor', () => {
     it('should throw if the cutoff period is not in the correct range.', async (done) => {
       try {
-        // tslint:disable-next-line: no-unused-expression
+        // eslint-disable-next-line no-new
         new SpendingMonitor(0, bitcoinFeeSpendingCutoffInSatoshis, new MockTransactionStore());
         fail('Expected exception not thrown');
       } catch (e) {
@@ -35,7 +33,7 @@ describe('SpendingMonitor', () => {
 
     it('should throw if the cutoff amount is not in the correct range.', async (done) => {
       try {
-        // tslint:disable-next-line: no-unused-expression
+        // eslint-disable-next-line no-new
         new SpendingMonitor(1, 0, new MockTransactionStore());
         fail('Expected exception not thrown');
       } catch (e) {

@@ -1,7 +1,7 @@
-import IBitcoinWallet from './interfaces/IBitcoinWallet';
-import ErrorCode from './ErrorCode';
-import SidetreeError from '../common/SidetreeError';
 import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
+import ErrorCode from './ErrorCode';
+import IBitcoinWallet from './interfaces/IBitcoinWallet';
+import SidetreeError from '../common/SidetreeError';
 
 /**
  * Represents a bitcoin wallet.
@@ -58,9 +58,9 @@ export default class BitcoinWallet implements IBitcoinWallet {
 
     // Create a script and add it to the input.
     const inputScript = Script.empty()
-                              .add(signature.toTxFormat())
-                              .add(this.walletPublicKeyAsBuffer)
-                              .add(inputRedeemScript.toBuffer());
+      .add(signature.toTxFormat())
+      .add(this.walletPublicKeyAsBuffer)
+      .add(inputRedeemScript.toBuffer());
 
     (lockTransaction.inputs[0] as any).setScript(inputScript);
 

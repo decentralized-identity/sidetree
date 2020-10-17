@@ -44,7 +44,7 @@ export default class RequestHandler implements IRequestHandler {
       if (operationRequest.type === OperationType.Create ||
           operationRequest.type === OperationType.Recover ||
           operationRequest.type === OperationType.Update) {
-        Delta.validateEncodedDeltaSize(operationRequest.delta);
+        Delta.validateDeltaSize(operationRequest.delta);
       }
 
       operationModel = await Operation.parse(request);
@@ -146,7 +146,7 @@ export default class RequestHandler implements IRequestHandler {
    * @param shortOrLongFormDid Can either be:
    *   1. A short-form DID. e.g. 'did:<methodName>:abc' or
    *   2. A long-form DID. e.g. 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
-   *                            'did:<methodName>:<unique-portion>:<create-operation-suffix-data>.<create-operation-delta>'
+   *                            'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
    */
   public async handleResolveRequest (shortOrLongFormDid: string): Promise<ResponseModel> {
     try {
@@ -167,6 +167,7 @@ export default class RequestHandler implements IRequestHandler {
       }
 
       if (didState === undefined) {
+        console.info(`DID not found for DID '${shortOrLongFormDid}'...`);
         return {
           status: ResponseStatus.NotFound,
           body: { code: ErrorCode.DidNotFound, message: 'DID Not Found' }
@@ -183,6 +184,7 @@ export default class RequestHandler implements IRequestHandler {
       const didDeactivated = didState.nextRecoveryCommitmentHash === undefined;
       const status = didDeactivated ? ResponseStatus.Deactivated : ResponseStatus.Succeeded;
 
+      console.info(`DID Document found for DID '${shortOrLongFormDid}'...`);
       return {
         status,
         body: document
@@ -190,6 +192,7 @@ export default class RequestHandler implements IRequestHandler {
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
+        console.info(`Bad request. Code: ${error.code}. Message: ${error.message}`);
         return {
           status: ResponseStatus.BadRequest,
           body: { code: error.code, message: error.message }
@@ -210,6 +213,8 @@ export default class RequestHandler implements IRequestHandler {
    * @returns [DID state, published]
    */
   private async resolveLongFormDid (did: Did): Promise<[DidState | undefined, boolean]> {
+    console.info(`Handling long-form DID resolution of DID '${did}'...`);
+
     // Attempt to resolve the DID by using operations found from the network first.
     let didState = await this.resolver.resolve(did.uniqueSuffix);
 

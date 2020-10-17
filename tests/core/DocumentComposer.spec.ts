@@ -11,7 +11,7 @@ describe('DocumentComposer', async () => {
 
   describe('transformToExternalDocument', () => {
     it('should output the expected resolution result given key(s) across all purpose types.', async () => {
-      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All purposes will be included by default.
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Auth]);
       const document = {
         public_keys: [anySigningPublicKey, authPublicKey]
@@ -34,7 +34,7 @@ describe('DocumentComposer', async () => {
       });
       expect(result.didDocument).toEqual({
         id: 'did:method:suffix',
-        '@context': [ 'https://www.w3.org/ns/did/v1', { '@base': 'did:method:suffix' } ],
+        '@context': ['https://www.w3.org/ns/did/v1', { '@base': 'did:method:suffix' }],
         service: undefined,
         publicKey: [{
           id: '#anySigningKey',
@@ -57,7 +57,7 @@ describe('DocumentComposer', async () => {
     });
 
     it('should output method metadata with the given `published` value.', async () => {
-      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All purposes will be included by default.
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Auth]);
       const document = {
         public_keys: [anySigningPublicKey, authPublicKey]
@@ -108,7 +108,8 @@ describe('DocumentComposer', async () => {
         service_endpoints: [{
           id: 'someId',
           type: 'someType',
-          endpoint: 'someEndpoint'}]
+          endpoint: 'someEndpoint'
+        }]
       };
 
       const result = DocumentComposer['addServiceEndpoints'](document, patch);
@@ -291,29 +292,43 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointNotString if endpoint is not a string', () => {
+    it('should allow an non-array object as endpoint.', () => {
       const patch = {
         action: 'add-service-endpoint',
         service_endpoints: [{
           id: 'someId',
           type: 'someType',
-          endpoint: undefined
+          endpoint: { anyObject: '123' }
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotString);
+
+      // Expecting this call to succeed without errors.
+      DocumentComposer['validateAddServiceEndpointsPatch'](patch);
+    });
+
+    it('should throw error if endpoint is an array.', () => {
+      const patch = {
+        action: 'add-service-endpoint',
+        service_endpoints: [{
+          id: 'someId',
+          type: 'someType',
+          endpoint: []
+        }]
+      };
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointValueCannotBeAnArray);
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointTooLong if endpoint is too long', () => {
+    it('should throw error if endpoint has an invalid type.', () => {
       const patch = {
         action: 'add-service-endpoint',
         service_endpoints: [{
           id: 'someId',
           type: 'someType',
-          endpoint: 'https://www.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678900.long'
+          endpoint: 123 // Invalid endpoint type.
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointTooLong);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointMustBeStringOrNonArrayObject);
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
@@ -608,8 +623,8 @@ describe('DocumentComposer', async () => {
       };
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-       async () => { DocumentComposer['validateDocument'](document); },
-       ErrorCode.DocumentComposerUnknownPropertyInDocument
+        async () => { DocumentComposer['validateDocument'](document); },
+        ErrorCode.DocumentComposerUnknownPropertyInDocument
       );
     });
   });

@@ -1,6 +1,6 @@
+import { Collection, Cursor, Db, Long, MongoClient } from 'mongodb';
 import ITransactionStore from '../core/interfaces/ITransactionStore';
 import TransactionModel from './models/TransactionModel';
-import { Collection, Cursor, Db, Long, MongoClient } from 'mongodb';
 
 /**
  * Implementation of ITransactionStore that stores the transaction data in a MongoDB database.
@@ -153,7 +153,7 @@ export default class MongoDbTransactionStore implements ITransactionStore {
    * @param transactionTimeHash the transaction time hash which the transactions should be removed for
    */
   public async removeTransactionByTransactionTimeHash (transactionTimeHash: string) {
-    await this.transactionCollection!.deleteMany({ transactionTimeHash: { $eq:  transactionTimeHash } });
+    await this.transactionCollection!.deleteMany({ transactionTimeHash: { $eq: transactionTimeHash } });
   }
 
   /**
@@ -176,10 +176,12 @@ export default class MongoDbTransactionStore implements ITransactionStore {
       // if begin === end, query for 1 transaction time
       cursor = this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(inclusiveBeginTransactionTime) } });
     } else {
-      cursor = this.transactionCollection!.find({ $and: [
-        { transactionTime: { $gte: Long.fromNumber(inclusiveBeginTransactionTime) } },
-        { transactionTime: { $lt: Long.fromNumber(exclusiveEndTransactionTime) } }
-      ] });
+      cursor = this.transactionCollection!.find({
+        $and: [
+          { transactionTime: { $gte: Long.fromNumber(inclusiveBeginTransactionTime) } },
+          { transactionTime: { $lt: Long.fromNumber(exclusiveEndTransactionTime) } }
+        ]
+      });
     }
 
     const transactions: TransactionModel[] = await cursor.sort({ transactionNumber: 1 }).toArray();

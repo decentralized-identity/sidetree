@@ -1,13 +1,13 @@
+import AnchorFile from './AnchorFile';
 import AnchoredData from './models/AnchoredData';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
-import AnchorFile from './AnchorFile';
 import ChunkFile from './ChunkFile';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import FeeManager from './FeeManager';
-import ICas from '../../interfaces/ICas';
 import IBatchWriter from '../../interfaces/IBatchWriter';
 import IBlockchain from '../../interfaces/IBlockchain';
+import ICas from '../../interfaces/ICas';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import LogColor from '../../../common/LogColor';
@@ -93,7 +93,7 @@ export default class BatchWriter implements IBatchWriter {
     const maxNumberOfOpsAllowedByLock = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLock, this.versionMetadataFetcher);
 
     if (maxNumberOfOpsAllowedByLock > maxNumberOfOpsAllowedByProtocol) {
-      // tslint:disable-next-line: max-line-length
+      // eslint-disable-next-line max-len
       console.info(`Maximum number of operations allowed by value time lock: ${maxNumberOfOpsAllowedByLock}; Maximum number of operations allowed by protocol: ${maxNumberOfOpsAllowedByProtocol}`);
     }
 

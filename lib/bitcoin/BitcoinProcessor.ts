@@ -1,5 +1,6 @@
-import BitcoinBlockModel from './models/BitcoinBlockModel';
+import * as timeSpan from 'time-span';
 import BitcoinBlockDataIterator from './BitcoinBlockDataIterator';
+import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
 import BitcoinServiceStateModel from './models/BitcoinServiceStateModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
@@ -18,8 +19,8 @@ import RequestError from './RequestError';
 import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
-import SidetreeError from '../common/SidetreeError';
 import SharedErrorCode from '../common/SharedErrorCode';
+import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionParser from './SidetreeTransactionParser';
 import SpendingMonitor from './SpendingMonitor';
 import TransactionFeeModel from '../common/models/TransactionFeeModel';
@@ -28,8 +29,6 @@ import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import VersionManager from './VersionManager';
 import VersionModel from '../common/models/VersionModel';
-
-import timeSpan = require('time-span');
 
 /**
  * Object representing a blockchain time and hash
@@ -131,7 +130,8 @@ export default class BitcoinProcessor {
         config.bitcoinWalletOrImportString,
         config.requestTimeoutInMilliseconds || 300,
         config.requestMaxRetries || 3,
-        config.sidetreeTransactionFeeMarkupPercentage || 0);
+        config.sidetreeTransactionFeeMarkupPercentage || 0,
+        config.defaultTransactionFeeInSatoshisPerKB);
 
     this.sidetreeTransactionParser = new SidetreeTransactionParser(this.bitcoinClient, this.sidetreePrefix);
 
@@ -145,17 +145,18 @@ export default class BitcoinProcessor {
     this.mongoDbLockTransactionStore = new MongoDbLockTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     const valueTimeLockTransactionFeesInBtc = config.valueTimeLockTransactionFeesAmountInBitcoins === 0 ? 0
-                                              : config.valueTimeLockTransactionFeesAmountInBitcoins || 0.25;
+      : config.valueTimeLockTransactionFeesAmountInBitcoins || 0.25;
 
-    this.lockMonitor =
-      new LockMonitor(
-        this.bitcoinClient,
-        this.mongoDbLockTransactionStore,
-        this.lockResolver,
-        config.valueTimeLockPollPeriodInSeconds || 10 * 60,
-        BitcoinClient.convertBtcToSatoshis(config.valueTimeLockAmountInBitcoins), // Desired lock amount in satoshis
-        BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amount in satoshis
-        ProtocolParameters.maximumValueTimeLockDurationInBlocks);                 // Desired lock duration in blocks
+    this.lockMonitor = new LockMonitor(
+      this.bitcoinClient,
+      this.mongoDbLockTransactionStore,
+      this.lockResolver,
+      config.valueTimeLockPollPeriodInSeconds,
+      config.valueTimeLockUpdateEnabled,
+      BitcoinClient.convertBtcToSatoshis(config.valueTimeLockAmountInBitcoins), // Desired lock amount in satoshis
+      BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amount in satoshis
+      ProtocolParameters.maximumValueTimeLockDurationInBlocks                   // Desired lock duration in blocks
+    );
   }
 
   /**
@@ -193,7 +194,8 @@ export default class BitcoinProcessor {
     // NOTE: important to this initialization after we have processed all the blocks
     // this is because that the lock monitor needs the normalized fee calculator to
     // have all the data.
-    await this.lockMonitor.initialize();
+    await this.lockMonitor.startPeriodicProcessing();
+
     void this.periodicPoll();
   }
 
@@ -272,7 +274,7 @@ export default class BitcoinProcessor {
     startingBlockHeight: number,
     heightOfEarliestKnownValidBlock: number) {
 
-    for (let block of blocks) {
+    for (const block of blocks) {
       if (block.height >= startingBlockHeight && block.height <= heightOfEarliestKnownValidBlock) {
         notYetValidatedBlocks.set(
           block.hash,
@@ -281,8 +283,9 @@ export default class BitcoinProcessor {
             hash: block.hash,
             totalFee: BitcoinProcessor.getBitcoinBlockTotalFee(block),
             transactionCount: block.transactions.length,
-            previousHash: block.previousHash }
-          );
+            previousHash: block.previousHash
+          }
+        );
         await this.processSidetreeTransactionsInBlock(block);
       }
     }
@@ -330,7 +333,7 @@ export default class BitcoinProcessor {
     // get the total fee including block reward
     const coinbaseTransaction = block.transactions[0];
     let totalOutputSatoshi = 0;
-    for (let output of coinbaseTransaction.outputs) {
+    for (const output of coinbaseTransaction.outputs) {
       totalOutputSatoshi += output.satoshis;
     }
 
@@ -370,8 +373,8 @@ export default class BitcoinProcessor {
       } catch (e) {
         const inputs = { blockHeight: block.height, blockHash: block.hash, transactionIndex: transactionIndex };
         console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
-                      JSON.stringify(inputs),
-                      JSON.stringify(e, Object.getOwnPropertyNames(e)));
+          JSON.stringify(inputs),
+          JSON.stringify(e, Object.getOwnPropertyNames(e)));
 
         throw e;
       }
@@ -426,7 +429,7 @@ export default class BitcoinProcessor {
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
     // deep copy last processed block
     const currentLastProcessedBlock = Object.assign({}, this.lastProcessedBlock!);
-    let [transactions, numOfBlocksAcquired] = await this.getTransactionsSince(since, currentLastProcessedBlock.height);
+    const [transactions, numOfBlocksAcquired] = await this.getTransactionsSince(since, currentLastProcessedBlock.height);
 
     // make sure the last processed block hasn't changed since before getting transactions
     // if changed, then a block reorg happened.
@@ -455,7 +458,8 @@ export default class BitcoinProcessor {
         return block;
       }
     }
-    return;
+
+    return undefined;
   }
 
   /**
@@ -472,7 +476,8 @@ export default class BitcoinProcessor {
         return transaction;
       }
     }
-    return;
+
+    return undefined;
   }
 
   /**
@@ -490,7 +495,6 @@ export default class BitcoinProcessor {
 
     if (!feeWithinSpendingLimits) {
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.SpendingCapPerPeriodReached);
-
     }
 
     // Write a warning if the balance is running low
@@ -560,11 +564,11 @@ export default class BitcoinProcessor {
   /**
    * Gets the lock information which is currently held by this node. It throws an RequestError if none exist.
    */
-  public getActiveValueTimeLockForThisNode (): ValueTimeLockModel {
+  public async getActiveValueTimeLockForThisNode (): Promise<ValueTimeLockModel> {
     let currentLock: ValueTimeLockModel | undefined;
 
     try {
-      currentLock = this.lockMonitor.getCurrentValueTimeLock();
+      currentLock = await this.lockMonitor.getCurrentValueTimeLock();
     } catch (e) {
 
       if (e instanceof SidetreeError && e.code === ErrorCode.LockMonitorCurrentValueTimeLockInPendingState) {

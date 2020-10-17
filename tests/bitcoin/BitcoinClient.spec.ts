@@ -1,13 +1,13 @@
 import * as httpStatus from 'http-status';
 import * as nodeFetchPackage from 'node-fetch';
-import BitcoinDataGenerator from './BitcoinDataGenerator';
+import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
+import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinLockTransactionModel from '../../lib/bitcoin/models/BitcoinLockTransactionModel';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import BitcoinWallet from '../../lib/bitcoin/BitcoinWallet';
 import IBitcoinWallet from '../../lib/bitcoin/interfaces/IBitcoinWallet';
 import ReadableStream from '../../lib/common/ReadableStream';
-import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 
 describe('BitcoinClient', async () => {
 
@@ -79,6 +79,12 @@ describe('BitcoinClient', async () => {
       const actual = new BitcoinClient('uri:mock', 'u', 'p', bitcoinWalletImportString, 10, 10, 10);
       expect(actual['bitcoinWallet']).toEqual(expectedWallet);
     });
+
+    it('should use the estimated fee set by the estimatedFeeSatoshiPerKB parameter', () => {
+      const expectedEstimatedFee = 42;
+      const actual = new BitcoinClient('uri:mock', 'u', 'p', ctorWallet, 10, 10, 10, expectedEstimatedFee);
+      expect(actual['estimatedFeeSatoshiPerKB']).toEqual(expectedEstimatedFee);
+    });
   });
 
   describe('createSidetreeTransaction', () => {
@@ -103,7 +109,8 @@ describe('BitcoinClient', async () => {
       expect(result).toEqual({
         transactionId: mockSignedTxn.id,
         transactionFee: mockTxn.getFee(),
-        serializedTransactionObject: mockSerializedTxn});
+        serializedTransactionObject: mockSerializedTxn
+      });
     });
   });
 
@@ -468,14 +475,14 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('getCurrentEstimatedFeeInSatoshisPerKb', () => {
+  describe('getCurrentEstimatedFeeInSatoshisPerKB', () => {
     it('should call the correct rpc and return the fee', async () => {
       const mockFeeInBitcoins = 155;
       const spy = mockRpcCall('estimatesmartfee', [1], { feerate: mockFeeInBitcoins });
 
       const expectedFeeInSatoshis = mockFeeInBitcoins * 100000000;
 
-      const actual = await bitcoinClient['getCurrentEstimatedFeeInSatoshisPerKb']();
+      const actual = await bitcoinClient['getCurrentEstimatedFeeInSatoshisPerKB']();
       expect(actual).toEqual(expectedFeeInSatoshis);
       expect(spy).toHaveBeenCalled();
     });
@@ -484,7 +491,7 @@ describe('BitcoinClient', async () => {
       const spy = mockRpcCall('estimatesmartfee', [1], { });
 
       try {
-        await bitcoinClient['getCurrentEstimatedFeeInSatoshisPerKb']();
+        await bitcoinClient['getCurrentEstimatedFeeInSatoshisPerKB']();
         fail('should have thrown');
       } catch (error) {
         expect(spy).toHaveBeenCalled();
@@ -496,12 +503,53 @@ describe('BitcoinClient', async () => {
       const spy = mockRpcCall('estimatesmartfee', [1], { feerate: 1, errors: ['some error'] });
 
       try {
-        await bitcoinClient['getCurrentEstimatedFeeInSatoshisPerKb']();
+        await bitcoinClient['getCurrentEstimatedFeeInSatoshisPerKB']();
         fail('should have thrown');
       } catch (error) {
         expect(spy).toHaveBeenCalled();
       }
       done();
+    });
+  });
+
+  describe('updateEstimatedFeeInSatoshisPerKB', () => {
+    it('should always call the correct rpc and return the updated fee', async () => {
+      const mockFeeInBitcoins = 156;
+      const expectedFeeInSatoshis = mockFeeInBitcoins * 100000000;
+      const spy = spyOn(bitcoinClient as any, 'getCurrentEstimatedFeeInSatoshisPerKB').and.returnValue(expectedFeeInSatoshis);
+
+      const actual = await bitcoinClient['updateEstimatedFeeInSatoshisPerKB']();
+      expect(actual).toEqual(expectedFeeInSatoshis);
+      expect(bitcoinClient['estimatedFeeSatoshiPerKB']).toEqual(expectedFeeInSatoshis);
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('should always call the correct rpc and return the stored fee on error', async () => {
+      const mockFeeInBitcoins = 157;
+      const spy = spyOn(bitcoinClient as any, 'getCurrentEstimatedFeeInSatoshisPerKB');
+      spy.and.throwError('test');
+
+      const expectedFeeInSatoshis = mockFeeInBitcoins * 100000000;
+      bitcoinClient['estimatedFeeSatoshiPerKB'] = expectedFeeInSatoshis;
+
+      const actual = await bitcoinClient['updateEstimatedFeeInSatoshisPerKB']();
+      expect(actual).toEqual(expectedFeeInSatoshis);
+      expect(bitcoinClient['estimatedFeeSatoshiPerKB']).toEqual(expectedFeeInSatoshis);
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('should rethrow RPC error when no fee was stored', async (done) => {
+      const spy = spyOn(bitcoinClient as any, 'getCurrentEstimatedFeeInSatoshisPerKB');
+      spy.and.throwError('test');
+
+      try {
+        await bitcoinClient['updateEstimatedFeeInSatoshisPerKB']();
+        fail('should have thrown');
+      } catch {
+        expect(spy).toHaveBeenCalled();
+      } finally {
+        done();
+      }
     });
   });
 
@@ -729,7 +777,7 @@ describe('BitcoinClient', async () => {
   describe('calculateTransactionFee', () => {
     it('should calculate the fee correctly', async () => {
       const estimatedFee = 1528;
-      spyOn(bitcoinClient as any, 'getCurrentEstimatedFeeInSatoshisPerKb').and.returnValue(estimatedFee);
+      spyOn(bitcoinClient as any, 'getCurrentEstimatedFeeInSatoshisPerKB').and.returnValue(estimatedFee);
 
       const mockTransaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 10000);
 
@@ -738,6 +786,38 @@ describe('BitcoinClient', async () => {
       const actualFee = await bitcoinClient['calculateTransactionFee'](mockTransaction);
 
       expect(expectedFee).toEqual(actualFee);
+    });
+
+    it('should throw if no stored estimate and the fee estimate throws', async (done) => {
+      const spy = spyOn(bitcoinClient as any, 'getCurrentEstimatedFeeInSatoshisPerKB');
+      spy.and.throwError('test');
+
+      const mockTransaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 10000);
+
+      try {
+        await bitcoinClient['calculateTransactionFee'](mockTransaction);
+        fail('should have thrown');
+      } catch {
+        expect(spy).toHaveBeenCalled();
+      } finally {
+        done();
+      }
+    });
+
+    it('should use stored estimate, if estimate fails', async () => {
+      const estimatedFee = 1529;
+      bitcoinClient['estimatedFeeSatoshiPerKB'] = estimatedFee;
+      const spy = spyOn(bitcoinClient as any, 'getCurrentEstimatedFeeInSatoshisPerKB');
+      spy.and.throwError('test');
+
+      const mockTransaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 10000);
+
+      const expectedFee = 108;
+
+      const actualFee = await bitcoinClient['calculateTransactionFee'](mockTransaction);
+
+      expect(expectedFee).toEqual(actualFee);
+      expect(spy).toHaveBeenCalled();
     });
   });
 
@@ -791,7 +871,6 @@ describe('BitcoinClient', async () => {
       const createScriptSpy = spyOn(BitcoinClient as any, 'createFreezeScript').and.returnValue(mockRedeemScript);
       const utilFuncSpy = spyOn(bitcoinClient as any, 'createSpendTransactionFromFrozenTransaction').and.returnValue(mockFreezeTxn2);
 
-      // tslint:disable-next-line: max-line-length
       const [actualTxn, redeemScript] = await bitcoinClient['createSpendToFreezeTransaction'](mockFreezeTxn1, mockFreezeUntilPreviousBlock, mockFreezeUntilBlock);
       expect(actualTxn).toEqual(mockFreezeTxn2);
       expect(redeemScript).toEqual(mockRedeemScript);
@@ -1023,7 +1102,7 @@ describe('BitcoinClient', async () => {
 
     it('should throw if the request failed', async (done) => {
       const request: any = {
-        'test': 'some random string'
+        test: 'some random string'
       };
       const result = 'some result';
       const statusCode = 7890;
@@ -1058,7 +1137,7 @@ describe('BitcoinClient', async () => {
 
     it('should throw if the RPC call failed', async (done) => {
       const request: any = {
-        'test': 'some request value'
+        test: 'some request value'
       };
       const result = 'some result';
 

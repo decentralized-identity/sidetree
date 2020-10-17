@@ -27,7 +27,7 @@ export default class DocumentComposer {
     const authentication: any[] = [];
     const publicKeys: any[] = [];
     if (Array.isArray(document.public_keys)) {
-      for (let publicKey of document.public_keys) {
+      for (const publicKey of document.public_keys) {
         const id = '#' + publicKey.id;
         const didDocumentPublicKey = {
           id: id,
@@ -54,7 +54,7 @@ export default class DocumentComposer {
     let serviceEndpoints;
     if (Array.isArray(document.service_endpoints)) {
       serviceEndpoints = [];
-      for (let serviceEndpoint of document.service_endpoints) {
+      for (const serviceEndpoint of document.service_endpoints) {
         const didDocumentServiceEndpoint = {
           id: '#' + serviceEndpoint.id,
           type: serviceEndpoint.type,
@@ -113,7 +113,7 @@ export default class DocumentComposer {
     }
 
     const allowedProperties = new Set(['public_keys', 'service_endpoints']);
-    for (let property in document) {
+    for (const property in document) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.DocumentComposerUnknownPropertyInDocument, `Unexpected property ${property} in document.`);
       }
@@ -140,7 +140,7 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerUpdateOperationDocumentPatchesNotArray);
     }
 
-    for (let patch of patches) {
+    for (const patch of patches) {
       DocumentComposer.validatePatch(patch);
     }
   }
@@ -183,7 +183,7 @@ export default class DocumentComposer {
     }
 
     const publicKeyIdSet: Set<string> = new Set();
-    for (let publicKey of publicKeys) {
+    for (const publicKey of publicKeys) {
       const publicKeyProperties = Object.keys(publicKey);
       // the expected fields are id, purpose, type and jwk
       if (publicKeyProperties.length !== 4) {
@@ -210,12 +210,12 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeMissingOrUnknown);
       }
 
-      if (publicKey.purpose.length > 3) {
+      if (publicKey.purpose.length > 2) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeExceedsMaxLength);
       }
 
       const validPurposes = new Set(Object.values(PublicKeyPurpose));
-      // Purpose must be one of the valid ones in KeyPurpose
+      // Purpose must be one of the valid ones in PublicKeyPurpose
       for (const purpose of publicKey.purpose) {
         if (!validPurposes.has(purpose)) {
           throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidPurpose);
@@ -234,7 +234,7 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdsNotArray);
     }
 
-    for (let publicKeyId of patch.public_keys) {
+    for (const publicKeyId of patch.public_keys) {
       if (typeof publicKeyId !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
       }
@@ -284,7 +284,7 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
     }
 
-    for (let serviceEndpoint of serviceEndpoints) {
+    for (const serviceEndpoint of serviceEndpoints) {
       const serviceEndpointProperties = Object.keys(serviceEndpoint);
       if (serviceEndpointProperties.length !== 3) { // type, id, and endpoint
         throw new SidetreeError(ErrorCode.DocumentComposerServiceEndpointMissingOrUnknownProperty);
@@ -295,22 +295,28 @@ export default class DocumentComposer {
       if (typeof serviceEndpoint.type !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeNotString);
       }
+
       if (serviceEndpoint.type.length > 30) {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeTooLong);
       }
-      if (typeof serviceEndpoint.endpoint !== 'string') {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotString);
-      }
-      if (serviceEndpoint.endpoint.length > 100) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointTooLong);
-      }
 
-      try {
-        // just want to validate url, no need to assign to variable, it will throw if not valid
-        // tslint:disable-next-line
-        new URL(serviceEndpoint.endpoint);
-      } catch {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl);
+      // `endpoint` validation.
+      const endpoint = serviceEndpoint.endpoint;
+      if (typeof endpoint === 'string') {
+        try {
+          // just want to validate url, no need to assign to variable, it will throw if not valid
+          // tslint:disable-next-line
+          new URL(serviceEndpoint.endpoint);
+        } catch {
+          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl);
+        }
+      } else if (typeof endpoint === 'object') {
+        // Allow `object` type only if it is not an array.
+        if (Array.isArray(endpoint)) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointValueCannotBeAnArray);
+        }
+      } else {
+        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointMustBeStringOrNonArrayObject);
       }
     }
   }
@@ -319,7 +325,7 @@ export default class DocumentComposer {
     if (typeof id !== 'string') {
       throw new SidetreeError(ErrorCode.DocumentComposerIdNotString, `ID not string: ${JSON.stringify(id)} is of type '${typeof id}'`);
     }
-    if (id.length > 20) {
+    if (id.length > 50) {
       throw new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
     }
 
@@ -336,7 +342,7 @@ export default class DocumentComposer {
   public static applyPatches (document: any, patches: any[]): any {
     // Loop through and apply all patches.
     let resultantDocument = document;
-    for (let patch of patches) {
+    for (const patch of patches) {
       resultantDocument = DocumentComposer.applyPatchToDidDocument(resultantDocument, patch);
     }
 
@@ -367,7 +373,7 @@ export default class DocumentComposer {
     const publicKeyMap = new Map((document.public_keys || []).map(publicKey => [publicKey.id, publicKey]));
 
     // Loop through all given public keys and add them if they don't exist already.
-    for (let publicKey of patch.public_keys) {
+    for (const publicKey of patch.public_keys) {
       // NOTE: If a key ID already exists, we will just replace the existing key.
       // Not throwing error will minimize the need (thus risk) of reusing exposed update reveal value.
       publicKeyMap.set(publicKey.id, publicKey);
@@ -385,7 +391,7 @@ export default class DocumentComposer {
     const publicKeyMap = new Map((document.public_keys || []).map(publicKey => [publicKey.id, publicKey]));
 
     // Loop through all given public key IDs and delete them from the existing public key only if it is not a recovery key.
-    for (let publicKey of patch.public_keys) {
+    for (const publicKey of patch.public_keys) {
       const existingKey = publicKeyMap.get(publicKey);
 
       if (existingKey !== undefined) {

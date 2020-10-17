@@ -1,8 +1,8 @@
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
+import { Block } from 'bitcore-lib';
 import ErrorCode from './ErrorCode';
 import SidetreeError from '../common/SidetreeError';
-import { Block } from 'bitcore-lib';
 
 /**
  * Parser for raw bitcoin block data
@@ -19,6 +19,7 @@ export default class BitcoinRawDataParser {
     regtest: Buffer.from('fabfb5da', 'hex'),
     skip: Buffer.from('00000000', 'hex') // this means to skip the rest of the file
   };
+
   private static magicBytesLength = 4;
   private static sizeBytesLength = 4;
 

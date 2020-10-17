@@ -1,12 +1,12 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
+import DidState from '../../lib/core/models/DidState';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
-import DidState from '../../lib/core/models/DidState';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
+import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
@@ -76,7 +76,7 @@ async function createUpdateSequence (
 
 function getFactorial (n: number): number {
   let factorial = 1;
-  for (let i = 2 ; i <= n ; ++i) {
+  for (let i = 2; i <= n; ++i) {
     factorial *= i;
   }
   return factorial;
@@ -89,11 +89,11 @@ function getFactorial (n: number): number {
 function getPermutation (size: number, index: number): Array<number> {
   const permutation: Array<number> = [];
 
-  for (let i = 0 ; i < size ; ++i) {
+  for (let i = 0; i < size; ++i) {
     permutation.push(i);
   }
 
-  for (let i = 0 ; i < size ; ++i) {
+  for (let i = 0; i < size; ++i) {
     const j = i + Math.floor(index / getFactorial(size - i - 1));
     index = index % getFactorial(size - i - 1);
 
@@ -226,7 +226,7 @@ describe('OperationProcessor', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
 
-    for (let i = numberOfUpdates ; i >= 0 ; --i) {
+    for (let i = numberOfUpdates; i >= 0; --i) {
       await operationStore.put([ops[i]]);
     }
     const didState = await resolver.resolve(didUniqueSuffix);
@@ -239,9 +239,9 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
 
     const numberOfOps = ops.length;
-    let numberOfPermutations = getFactorial(numberOfOps);
+    const numberOfPermutations = getFactorial(numberOfOps);
 
-    for (let i = 0 ; i < numberOfPermutations; ++i) {
+    for (let i = 0; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
       operationStore = new MockOperationStore();
       resolver = new Resolver(versionManager, operationStore);
@@ -305,7 +305,7 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
 
     // elide i = 0, the create operation
-    for (let i = 1 ; i < ops.length ; ++i) {
+    for (let i = 1; i < ops.length; ++i) {
       await operationStore.put([ops[i]]);
     }
 
@@ -381,12 +381,12 @@ describe('OperationProcessor', async () => {
     let namedAnchoredCreateOperationModel: AnchoredOperationModel;
     let didState: DidState | undefined;
     let nextRecoveryCommitmentHash: string;
-    let isValidHashSpy: jasmine.Spy;
+    let verifyEncodedMultihashForContentSpy: jasmine.Spy;
 
     // Create a DID before each test.
     beforeEach(async () => {
-      isValidHashSpy = spyOn(Multihash, 'isValidHash');
-      isValidHashSpy.and.callThrough();
+      verifyEncodedMultihashForContentSpy = spyOn(Multihash, 'verifyEncodedMultihashForContent');
+      verifyEncodedMultihashForContentSpy.and.callThrough();
       // MUST reset the DID state back to `undefined` for each test.
       didState = undefined;
 
@@ -425,8 +425,8 @@ describe('OperationProcessor', async () => {
       const anyDid = OperationGenerator.generateRandomHash();
       const [, anyRecoveryPrivateKey] = await OperationGenerator.generateKeyPair('anyRecoveryKey');
       const deactivateOperationData = await OperationGenerator.createDeactivateOperation(anyDid, anyRecoveryPrivateKey);
-      const anchoredDeactivateOperation
-        = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperationData.deactivateOperation, 1, 1, 1);
+      const anchoredDeactivateOperation =
+        OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperationData.deactivateOperation, 1, 1, 1);
 
       const newDidState = await operationProcessor.apply(anchoredDeactivateOperation, undefined);
 
@@ -464,7 +464,7 @@ describe('OperationProcessor', async () => {
       });
 
       it('should apply the create operation with { } as document if encoded data and suffix data do not match', async () => {
-        isValidHashSpy.and.returnValue(false);
+        verifyEncodedMultihashForContentSpy.and.returnValue(false);
         const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
         const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
@@ -608,7 +608,7 @@ describe('OperationProcessor', async () => {
         );
         const recoverOperation = await RecoverOperation.parse(Buffer.from(JSON.stringify(recoverOperationRequest)));
         const anchoredRecoverOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
-        isValidHashSpy.and.returnValue(false);
+        verifyEncodedMultihashForContentSpy.and.returnValue(false);
         const newDidState = await operationProcessor.apply(anchoredRecoverOperationModel, didState);
         expect(newDidState!.lastOperationTransactionNumber).toEqual(2);
         expect(newDidState!.document).toEqual({ });

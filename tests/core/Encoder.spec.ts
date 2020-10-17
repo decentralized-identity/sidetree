@@ -18,7 +18,7 @@ describe('Encoder', async () => {
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         async () => Encoder.decodeAsBuffer(input),
         ErrorCode.EncoderValidateBase64UrlStringInputNotBase64UrlString
-        );
+      );
       done();
     });
   });

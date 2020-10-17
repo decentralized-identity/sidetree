@@ -44,7 +44,7 @@ export default class MapFile {
     }
 
     const allowedProperties = new Set(['chunks', 'operations']);
-    for (let property in mapFileModel) {
+    for (const property in mapFileModel) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.MapFileHasUnknownProperty);
       }

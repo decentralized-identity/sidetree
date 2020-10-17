@@ -1,9 +1,9 @@
 import Encoder from '../Encoder';
 import ErrorCode from '../ErrorCode';
+import { JWS } from 'jose';
 import JwkEs256k from '../../../models/JwkEs256k';
 import JwsModel from '../models/JwsModel';
 import SidetreeError from '../../../../common/SidetreeError';
-import { JWS } from 'jose';
 
 /**
  * Class containing reusable JWS operations.
@@ -37,7 +37,7 @@ export default class Jws {
     const decodedProtectedHeadJsonString = Encoder.decodeBase64UrlAsString(protectedHeader);
     const decodedProtectedHeader = JSON.parse(decodedProtectedHeadJsonString);
 
-    let expectedHeaderPropertyCount = 1; // By default we must have header property is `alg`.
+    const expectedHeaderPropertyCount = 1; // By default we must have header property is `alg`.
 
     const headerProperties = Object.keys(decodedProtectedHeader);
     if (headerProperties.length !== expectedHeaderPropertyCount) {

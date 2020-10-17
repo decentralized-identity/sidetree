@@ -1,7 +1,7 @@
+import { Collection, Cursor } from 'mongodb';
 import BlockMetadata from './models/BlockMetadata';
 import IBlockMetadataStore from './interfaces/IBlockMetadataStore';
 import MongoDbStore from '../common/MongoDbStore';
-import { Collection, Cursor } from 'mongodb';
 
 /**
  * Implementation of IBlockMetadataStore using MongoDB database.
@@ -50,10 +50,12 @@ export default class MongoDbBlockMetadataStore extends MongoDbStore implements I
     let dbCursor: Cursor<BlockMetadata>;
 
     // Add filter to query.
-    dbCursor = this.collection!.find({ $and: [
-      { height: { $gte: fromInclusiveHeight } },
-      { height: { $lt: toExclusiveHeight } }
-    ] });
+    dbCursor = this.collection!.find({
+      $and: [
+        { height: { $gte: fromInclusiveHeight } },
+        { height: { $lt: toExclusiveHeight } }
+      ]
+    });
 
     // Add sort to query.
     dbCursor = dbCursor.sort({ height: 1 });
@@ -106,7 +108,7 @@ export default class MongoDbBlockMetadataStore extends MongoDbStore implements I
     }
 
     const exponentiallySpacedBlocks = await this.collection!.find<BlockMetadata>(
-      { height : { $in : heightOfBlocksToReturn } },
+      { height: { $in: heightOfBlocksToReturn } },
       MongoDbBlockMetadataStore.optionToExcludeIdField
     ).toArray();
     exponentiallySpacedBlocks.sort((a, b) => b.height - a.height); // Sort in height descending order.

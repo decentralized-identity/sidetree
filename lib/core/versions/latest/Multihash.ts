@@ -50,6 +50,17 @@ export default class Multihash {
    * Canonicalize the given content, then double hashes the result using the latest supported hash algorithm, then encodes the multihash.
    * Mainly used for testing purposes.
    */
+  public static canonicalizeThenHashThenEncode (content: object) {
+    const canonicalizedStringBuffer = JsonCanonicalizer.canonicalizeAsBuffer(content);
+
+    const multihashEncodedString = Multihash.hashThenEncode(canonicalizedStringBuffer, ProtocolParameters.hashAlgorithmInMultihashCode);
+    return multihashEncodedString;
+  }
+
+  /**
+   * Canonicalize the given content, then double hashes the result using the latest supported hash algorithm, then encodes the multihash.
+   * Mainly used for testing purposes.
+   */
   public static canonicalizeThenDoubleHashThenEncode (content: object) {
     const contentBuffer = JsonCanonicalizer.canonicalizeAsBuffer(content);
 
@@ -133,7 +144,7 @@ export default class Multihash {
 
     try {
       const contentBuffer = Encoder.decodeAsBuffer(encodedContent);
-      return Multihash.verify(contentBuffer, encodedMultihash);
+      return Multihash.verifyEncodedMultihashForContent(contentBuffer, encodedMultihash);
     } catch (error) {
       console.log(error);
       return false;
@@ -182,7 +193,7 @@ export default class Multihash {
   /**
    * Verifies the multihash against the content `Buffer`.
    */
-  private static verify (content: Buffer, encodedMultihash: string): boolean {
+  public static verifyEncodedMultihashForContent (content: Buffer, encodedMultihash: string): boolean {
 
     try {
       const expectedMultihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);
@@ -190,7 +201,11 @@ export default class Multihash {
 
       const actualMultihashBuffer = Multihash.hash(content, hashAlgorithmCode);
 
-      return Buffer.compare(actualMultihashBuffer, expectedMultihashBuffer) === 0;
+      // Compare the strings instead of buffers, because encoding schemes such as base64URL can allow two distinct strings to decode into the same buffer.
+      // e.g. 'EiAJID5-y7rbEs7I3PPiMtwVf28LTkPFD4BWIZPCtb6AMg' and
+      //      'EiAJID5-y7rbEs7I3PPiMtwVf28LTkPFD4BWIZPCtb6AMv' would decode into the same buffer.
+      const actualMultihashString = Encoder.encode(actualMultihashBuffer);
+      return actualMultihashString === encodedMultihash;
     } catch (error) {
       console.log(error);
       return false;

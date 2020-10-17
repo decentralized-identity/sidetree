@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as suffixData from '../fixtures/uniqueSuffix/suffixData.json';
+
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
@@ -8,8 +11,114 @@ import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('CreateOperation', async () => {
+  describe('parseJcsObject', () => {
+    it('should leave delta as empty if it is not valid', () => {
+      const operationObject = {
+        type: 'create',
+        suffix_data: {
+          delta_hash: 'something',
+          recovery_commitment: 'something',
+          type: 'type'
+        },
+        delta: 'this is not a valid delta'
+      };
+
+      spyOn(CreateOperation as any, 'validateSuffixData').and.callFake(() => {
+        // do nothing
+      });
+
+      const result = CreateOperation.parseJcsObject(operationObject, Buffer.from('something'), false);
+      expect(result.delta).toBeUndefined();
+    });
+
+    it('should process as anchor file mode when anchorFileMode is true', () => {
+      const operationObject = {
+        suffix_data: {
+          delta_hash: 'something',
+          recovery_commitment: 'something',
+          type: 'type'
+        }
+      };
+
+      spyOn(CreateOperation as any, 'validateSuffixData').and.callFake(() => {
+        // do nothing
+      });
+
+      const result = CreateOperation.parseJcsObject(operationObject, Buffer.from('something'), true);
+      expect(result.delta).toBeUndefined();
+      expect(result.suffixData).toBeDefined();
+    });
+
+    it('should throw sidetree error if object contains more or less than 3 properties', () => {
+      const twoProperties = { one: 1, two: 2 };
+      const fourProperties = { one: 1, two: 2, three: 3, four: 4 };
+
+      try {
+        CreateOperation.parseJcsObject(twoProperties, Buffer.from(JSON.stringify(twoProperties)), false);
+        fail('expect to throw sidetree error but did not');
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
+      }
+
+      try {
+        CreateOperation.parseJcsObject(fourProperties, Buffer.from(JSON.stringify(fourProperties)), false);
+        fail('expect to throw sidetree error but did not');
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
+      }
+    });
+
+    it('should throw sidetree error if type is not create', () => {
+      const testObject = {
+        type: 'notCreate',
+        suffix_data: {
+          delta_hash: 'something',
+          recovery_commitment: 'something',
+          type: 'type'
+        },
+        delta: 'something'
+      };
+
+      spyOn(CreateOperation as any, 'validateSuffixData').and.callFake(() => {
+        // do nothing
+      });
+
+      try {
+        CreateOperation.parseJcsObject(testObject, Buffer.from(JSON.stringify(testObject)), false);
+        fail('expect to throw sidetree error but did not');
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationTypeIncorrect));
+      }
+    });
+
+    it('should throw sidetree error if has more or less than 1 property when in anchor file mode', () => {
+      const testObject = {
+        type: 'this should not exist',
+        suffix_data: {
+          delta_hash: 'something',
+          recovery_commitment: 'something',
+          type: 'type'
+        }
+      };
+      try {
+        CreateOperation.parseJcsObject(testObject, Buffer.from(JSON.stringify(testObject)), true);
+        fail('expect to throw sidetree error but did not');
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
+      }
+    });
+  });
+
+  describe('computeJcsDidUniqueSuffix', () => {
+    it('should return expected did unique suffix', () => {
+      const actual = Multihash.canonicalizeThenHashThenEncode(suffixData);
+      const expected = fs.readFileSync('tests/fixtures/uniqueSuffix/resultingSuffix.txt', 'utf8');
+      expect(actual).toEqual(expected);
+    });
+  });
+
   describe('computeDidUniqueSuffix()', async () => {
-    it('should pass test vector.', async (done) => {
+    it('should return expected did unique suffix', async (done) => {
       const suffixDataString = 'AStringActingAsTheSuffixData';
       const encodedSuffixDataString = Encoder.encode(suffixDataString);
       const didUniqueSuffix = (CreateOperation as any).computeDidUniqueSuffix(encodedSuffixDataString);
@@ -56,7 +165,19 @@ describe('CreateOperation', async () => {
     });
   });
 
+  describe('validateSuffixData', () => {
+    it('should throw if the input is not an object', () => {
+      const input = 'this is not an object, this is a string';
+      try {
+        CreateOperation['validateSuffixData'](input);
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationSuffixDataIsNotObject));
+      }
+    });
+  });
+
   describe('parseSuffixData()', async () => {
+    // TODO: SIP 2 #781 deprecates this. These tests can be siwtched over to validateSuffixData
     it('should function as expected with type', async () => {
       const suffixData = {
         delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),

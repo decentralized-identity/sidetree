@@ -1,8 +1,8 @@
-import base64url from 'base64url';
 import ErrorCode from '../../../lib/bitcoin/ErrorCode';
 import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifier from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
+import base64url from 'base64url';
 
 describe('LockIdentifierSerializer', () => {
 

@@ -1,12 +1,14 @@
 import * as crypto from 'crypto';
-import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
+import DataGenerator from './DataGenerator';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
-import JwkEs256k from '../../lib/core/models/JwkEs256k';
+import JsonCanonicalizer from '../../lib/core/versions/latest/util/JsonCanonicalizer';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import Jws from '../../lib/core/versions/latest/util/Jws';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
@@ -17,7 +19,6 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
-import DataGenerator from './DataGenerator';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -114,6 +115,63 @@ export default class OperationGenerator {
       updatePrivateKey: createOperationData.updatePrivateKey,
       signingPublicKey: createOperationData.signingPublicKey,
       signingPrivateKey: createOperationData.signingPrivateKey
+    };
+  }
+
+  /**
+   * generate a long form did
+   * @param recoveryPublicKey
+   * @param updatePublicKey
+   * @param otherPublicKeys
+   * @param serviceEndpoints
+   */
+  public static async generateLongFormDid (
+    otherPublicKeys?: PublicKeyModel[],
+    serviceEndpoints?: ServiceEndpointModel[],
+    network?: string) {
+
+    const document = {
+      public_keys: otherPublicKeys || [],
+      service_endpoints: serviceEndpoints || []
+    };
+
+    const patches = [{
+      action: 'replace',
+      document
+    }];
+
+    const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+    const [updatePublicKey] = await Jwk.generateEs256kKeyPair();
+
+    const delta = {
+      update_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
+      patches
+    };
+
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
+
+    const suffixData = {
+      delta_hash: deltaHash,
+      recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
+    };
+
+    const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
+
+    const shortFormDid = network ? `did:sidetree:${network}:${didUniqueSuffix}` : `did:sidetree:${didUniqueSuffix}`;
+
+    const initialState = {
+      suffix_data: suffixData,
+      delta: delta
+    };
+
+    const canonicalizedInitialStateBuffer = JsonCanonicalizer.canonicalizeAsBuffer(initialState);
+    const encodedCanonicalizedInitialStateString = Encoder.encode(canonicalizedInitialStateBuffer);
+
+    const longFormDid = `${shortFormDid}:${encodedCanonicalizedInitialStateString}`;
+    return {
+      longFormDid,
+      shortFormDid,
+      didUniqueSuffix
     };
   }
 
@@ -258,20 +316,17 @@ export default class OperationGenerator {
       patches
     };
 
-    const deltaBuffer = Buffer.from(JSON.stringify(delta));
-    const deltaHash = Encoder.encode(Multihash.hash(deltaBuffer));
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const suffixData = {
       delta_hash: deltaHash,
       recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
-    const suffixDataEncodedString = Encoder.encode(JSON.stringify(suffixData));
-    const deltaEncodedString = Encoder.encode(deltaBuffer);
     const operation = {
       type: OperationType.Create,
-      suffix_data: suffixDataEncodedString,
-      delta: deltaEncodedString
+      suffix_data: suffixData,
+      delta: delta
     };
 
     return operation;
@@ -330,9 +385,7 @@ export default class OperationGenerator {
       patches,
       update_commitment: nextUpdateCommitmentHash
     };
-    const deltaJsonString = JSON.stringify(delta);
-    const deltaHash = Encoder.encode(Multihash.hash(Buffer.from(deltaJsonString)));
-    const encodedDeltaString = Encoder.encode(deltaJsonString);
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const signedDataPayloadObject = {
       update_key: updatePublicKey,
@@ -343,7 +396,7 @@ export default class OperationGenerator {
     const updateOperationRequest = {
       type: OperationType.Update,
       did_suffix: didUniqueSuffix,
-      delta: encodedDeltaString,
+      delta: delta,
       signed_data: signedData
     };
 
@@ -390,8 +443,7 @@ export default class OperationGenerator {
       update_commitment: nextUpdateCommitmentHash
     };
 
-    const deltaBuffer = Buffer.from(JSON.stringify(delta));
-    const deltaHash = Encoder.encode(Multihash.hash(deltaBuffer));
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const signedDataPayloadObject = {
       delta_hash: deltaHash,
@@ -400,12 +452,11 @@ export default class OperationGenerator {
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
-    const deltaEncodedString = Encoder.encode(deltaBuffer);
     const operation = {
       type: OperationType.Recover,
       did_suffix: didUniqueSuffix,
       signed_data: signedData,
-      delta: deltaEncodedString
+      delta: delta
     };
 
     return operation;
@@ -562,9 +613,9 @@ export default class OperationGenerator {
     for (const id of ids) {
       serviceEndpoints.push(
         {
-          'id': id,
-          'type': 'someType',
-          'endpoint': 'https://www.url.com'
+          id: id,
+          type: 'someType',
+          endpoint: 'https://www.url.com'
         }
       );
     }

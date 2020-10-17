@@ -158,7 +158,7 @@ describe('SidetreeTransactionParser', () => {
     });
 
     it('should return undefined if no valid sidetree transaction exist', async (done) => {
-      const mockOutput: BitcoinOutputModel = { satoshis:  0, scriptAsmAsString: 'some random data' };
+      const mockOutput: BitcoinOutputModel = { satoshis: 0, scriptAsmAsString: 'some random data' };
 
       const actual = sidetreeTxnParser['getSidetreeDataFromOutputIfExist'](mockOutput, sidetreeTransactionPrefix);
       expect(actual).not.toBeDefined();

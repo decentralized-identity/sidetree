@@ -1,8 +1,8 @@
+import { Binary, Collection, Db, MongoClient } from 'mongodb';
 import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
-import SidetreeError from '../../../common/SidetreeError';
-import { Binary, Collection, MongoClient, Db } from 'mongodb';
 import QueuedOperationModel from './models/QueuedOperationModel';
+import SidetreeError from '../../../common/SidetreeError';
 
 /**
  * Sidetree operation stored in MongoDb.
@@ -70,7 +70,7 @@ export default class MongoDbOperationQueue implements IOperationQueue {
       return [];
     }
 
-    const queuedOperations = await this.collection!.find().sort({ _id : 1 }).limit(count).toArray();
+    const queuedOperations = await this.collection!.find().sort({ _id: 1 }).limit(count).toArray();
     const lastOperation = queuedOperations[queuedOperations.length - 1];
     await this.collection!.deleteMany({ _id: { $lte: lastOperation._id } });
 
@@ -83,7 +83,7 @@ export default class MongoDbOperationQueue implements IOperationQueue {
     }
 
     // NOTE: `_id` is the default index that is sorted based by create time.
-    const queuedOperations = await this.collection!.find().sort({ _id : 1 }).limit(count).toArray();
+    const queuedOperations = await this.collection!.find().sort({ _id: 1 }).limit(count).toArray();
 
     return queuedOperations.map((operation) => MongoDbOperationQueue.convertToQueuedOperationModel(operation));
   }

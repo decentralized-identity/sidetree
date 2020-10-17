@@ -1,9 +1,9 @@
 import BlockMetadata from '../../lib/bitcoin/models/BlockMetadata';
 import BlockMetadataGenerator from '../generators/BlockMetadataGenerator';
 import Config from '../../lib/core/models/Config';
+import { MongoClient } from 'mongodb';
 import MongoDb from '../common/MongoDb';
 import MongoDbBlockMetadataStore from '../../lib/bitcoin/MongoDbBlockMetadataStore';
-import { MongoClient } from 'mongodb';
 
 /**
  * Creates a MongoDbBlockMetadataStore and initializes it.
@@ -15,7 +15,7 @@ async function createBlockMetadataStore (storeUri: string, databaseName: string)
 }
 
 describe('MongoDbBlockMetadataStore', async () => {
-  const config: Config = require('../json/bitcoin-config-test.json');
+  const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
   let mongoServiceAvailable = false;

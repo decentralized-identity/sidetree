@@ -1,8 +1,8 @@
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
-import DocumentComposer from './DocumentComposer';
 import DidState from '../../models/DidState';
+import DocumentComposer from './DocumentComposer';
 import ErrorCode from './ErrorCode';
 import IOperationProcessor from '../../interfaces/IOperationProcessor';
 import JsonCanonicalizer from './util/JsonCanonicalizer';
@@ -113,11 +113,19 @@ export default class OperationProcessor implements IOperationProcessor {
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
-    // Ensure actual delta hash matches expected delta hash.
-    const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.suffixData.deltaHash);
+    // Verify the delta hash against the expected delta hash.
+    const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
+      update_commitment: operation.delta.updateCommitment,
+      patches: operation.delta.patches
+    }) : undefined;
+    if (deltaPayload === undefined) {
+      return newDidState;
+    };
+
+    const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.suffixData.deltaHash);
     if (!isMatchingDelta) {
       return newDidState;
-    }
+    };
 
     // Apply the given patches against an empty object.
     const delta = operation.delta;
@@ -163,10 +171,18 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the delta hash against the expected delta hash.
-    const isValidDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.deltaHash);
-    if (!isValidDelta) {
+    const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
+      update_commitment: operation.delta.updateCommitment,
+      patches: operation.delta.patches
+    }) : undefined;
+    if (deltaPayload === undefined) {
       return didState;
-    }
+    };
+
+    const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.deltaHash);
+    if (!isMatchingDelta) {
+      return didState;
+    };
 
     let resultingDocument;
     try {
@@ -221,11 +237,19 @@ export default class OperationProcessor implements IOperationProcessor {
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
-    // Verify the actual delta hash against the expected delta hash.
-    const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.deltaHash);
+    // Verify the delta hash against the expected delta hash.
+    const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
+      update_commitment: operation.delta.updateCommitment,
+      patches: operation.delta.patches
+    }) : undefined;
+    if (deltaPayload === undefined) {
+      return newDidState;
+    };
+
+    const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.deltaHash);
     if (!isMatchingDelta) {
       return newDidState;
-    }
+    };
 
     // Apply the given patches against an empty object.
     const delta = operation.delta;

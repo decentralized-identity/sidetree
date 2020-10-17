@@ -1,7 +1,7 @@
-import ICas from '../../lib/core/interfaces/ICas';
+import * as timeSpan from 'time-span';
 import DownloadManager from '../../lib/core/DownloadManager';
+import ICas from '../../lib/core/interfaces/ICas';
 import MockCas from '../mocks/MockCas';
-import timeSpan = require('time-span');
 
 describe('DownloadManager', async () => {
   const maxConcurrentDownloads = 3;
@@ -36,9 +36,9 @@ describe('DownloadManager', async () => {
 
     // Queue 4 downloads.
     const maxContentSizeInBytes = 20000000;
-    void downloadManager.download(content1, maxContentSizeInBytes);
-    void downloadManager.download(content2, maxContentSizeInBytes);
-    void downloadManager.download(content3, maxContentSizeInBytes);
+    downloadManager.download(content1, maxContentSizeInBytes);
+    downloadManager.download(content2, maxContentSizeInBytes);
+    downloadManager.download(content3, maxContentSizeInBytes);
     await downloadManager.download(content4, maxContentSizeInBytes);
 
     // Since there is only 3 concurrent download lanes,

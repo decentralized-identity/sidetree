@@ -1,7 +1,7 @@
+import * as fs from 'fs';
 import BitcoinFileReader from '../../lib/bitcoin/BitcoinFileReader';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import SidetreeError from '../../lib/common/SidetreeError';
-import * as fs from 'fs';
 
 describe('BitcoinFileReader', () => {
   let bitcoinFileReader: BitcoinFileReader;

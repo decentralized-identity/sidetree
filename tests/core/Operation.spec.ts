@@ -1,7 +1,7 @@
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import Operation from '../../lib/core/versions/latest/Operation';
 import Multihash from '../../lib/core/versions/latest/Multihash';
+import Operation from '../../lib/core/versions/latest/Operation';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('Operation', async () => {
@@ -15,6 +15,17 @@ describe('Operation', async () => {
 
       await expectAsync(Operation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing));
       done();
+    });
+  });
+
+  describe('validateDelta', () => {
+    it('should throw sidetree error if input is not an object', () => {
+      const input = 'this is not an object, this is a string';
+      try {
+        Operation.validateDelta(input);
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.DeltaIsNotObject));
+      }
     });
   });
 

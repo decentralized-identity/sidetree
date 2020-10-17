@@ -23,7 +23,7 @@ export default class ChunkFile {
     chunkFileBuffer: Buffer
   ): Promise<ChunkFileModel> {
 
-    let endTimer = timeSpan();
+    const endTimer = timeSpan();
     const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxChunkFileSizeInBytes * Compressor.estimatedDecompressionMultiplier;
     const decompressedChunkFileBuffer = await Compressor.decompress(chunkFileBuffer, maxAllowedDecompressedSizeInBytes);
     const chunkFileObject = await JsonAsync.parse(decompressedChunkFileBuffer);
@@ -31,7 +31,7 @@ export default class ChunkFile {
 
     // Ensure only properties specified by Sidetree protocol are given.
     const allowedProperties = new Set(['deltas']);
-    for (let property in chunkFileObject) {
+    for (const property in chunkFileObject) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.ChunkFileUnexpectedProperty, `Unexpected property ${property} in chunk file.`);
       }

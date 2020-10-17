@@ -1,7 +1,8 @@
-import * as crypto from 'crypto';
-
 import * as createFixture from '../fixtures/create/create.json';
+import * as crypto from 'crypto';
 import * as deactivateFixture from '../fixtures/deactivate/deactivate.json';
+import * as legacyLongFormResultingDocument from '../fixtures/legacyLongFormDid/resultingDocument.json';
+import * as longFormResultingDocument from '../fixtures/longFormDid/resultingDocument.json';
 import * as recoverFixture from '../fixtures/recover/recover.json';
 import * as updateFixture from '../fixtures/update/update.json';
 
@@ -9,12 +10,11 @@ import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel
 import BatchScheduler from '../../lib/core/BatchScheduler';
 import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
+import Compressor from '../../lib/core/versions/latest/util/Compressor';
+import Config from '../../lib/core/models/Config';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Did from '../../lib/core/versions/latest/Did';
 import DidState from '../../lib/core/models/DidState';
-import Compressor from '../../lib/core/versions/latest/util/Compressor';
-import Config from '../../lib/core/models/Config';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
@@ -38,12 +38,13 @@ import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 const util = require('util');
+const fs = require('fs');
 
 describe('RequestHandler', () => {
   // Suppress console logging during testing so we get a compact test summary in console.
-  console.info = () => { return; };
-  console.error = () => { return; };
-  console.debug = () => { return; };
+  console.info = () => { };
+  console.error = () => { };
+  console.debug = () => { };
 
   const config: Config = require('../json/config-test.json');
   const didMethodName = config.didMethodName;
@@ -136,6 +137,21 @@ describe('RequestHandler', () => {
     await batchScheduler.writeOperationBatch();
   });
 
+  it('should resolve LEGACY long form did from test vectors correctly', async () => {
+    // TODO: SIP2 #781 delete this test when legacy format is deprecated
+    const longFormFixture = fs.readFileSync('./tests/fixtures/longFormDid/longFormDid.txt', 'utf8');
+    const response = await requestHandler.handleResolveRequest(longFormFixture);
+    expect(response.status).toEqual(ResponseStatus.Succeeded);
+    expect(response.body).toEqual(legacyLongFormResultingDocument);
+  });
+
+  it('should resolve long form did from test vectors correctly', async () => {
+    const longFormFixture = fs.readFileSync('./tests/fixtures/longFormDid/longFormDid.txt', 'utf8');
+    const response = await requestHandler.handleResolveRequest(longFormFixture);
+    expect(response.status).toEqual(ResponseStatus.Succeeded);
+    expect(response.body).toEqual(longFormResultingDocument);
+  });
+
   it('should process create operation from test vectors correctly', async () => {
     const createOperationBuffer = Buffer.from(JSON.stringify(createFixture));
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);
@@ -185,7 +201,10 @@ describe('RequestHandler', () => {
     const createOperationRequest = createOperationData.operationRequest;
     const getRandomBytesAsync = util.promisify(crypto.randomBytes);
     const largeBuffer = await getRandomBytesAsync(4000);
-    createOperationRequest.delta = Encoder.encode(largeBuffer);
+    createOperationRequest.delta = {
+      update_commitment: largeBuffer.toString(),
+      patches: []
+    };
 
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);
@@ -223,7 +242,7 @@ describe('RequestHandler', () => {
     validateDidReferencesInDidDocument(response.body.didDocument, did);
   });
 
-  it('should return a resolved DID Document given a valid long-form DID.', async () => {
+  it('should return a resolved DID Document given a valid long-form DID with query param initial state format.', async () => {
     // Create a long-form DID string.
     const createOperationData = await OperationGenerator.generateCreateOperation();
     const didMethodName = 'sidetree';
@@ -232,6 +251,19 @@ describe('RequestHandler', () => {
     const encodedDelta = createOperationData.createOperation.encodedDelta;
     const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
     const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
+
+    const response = await requestHandler.handleResolveRequest(longFormDid);
+    const httpStatus = Response.toHttpStatus(response.status);
+
+    expect(httpStatus).toEqual(200);
+    expect(response.body).toBeDefined();
+
+    validateDidReferencesInDidDocument(response.body.didDocument, longFormDid);
+  });
+
+  it('should return a resolved DID Document given a valid long-form DID with JCS format.', async () => {
+    // Create a long-form DID string.
+    const longFormDid = (await OperationGenerator.generateLongFormDid()).longFormDid;
 
     const response = await requestHandler.handleResolveRequest(longFormDid);
     const httpStatus = Response.toHttpStatus(response.status);
@@ -255,7 +287,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body.code).toEqual(ErrorCode.DidInitialStateValueDoesNotContainTwoParts);
+    expect(response.body.code).toEqual(ErrorCode.EncoderValidateBase64UrlStringInputNotBase64UrlString);
   });
 
   it('should respond with HTTP 200 when DID deactivate operation request is successful.', async () => {
@@ -299,7 +331,7 @@ describe('RequestHandler', () => {
     });
 
     it('[Bug #817] should return status as `deactivated` if DID is deactivated.', async () => {
-      // Intentionally not 
+      // Intentionally not including `nextRecoveryCommitmentHash` and `nextUpdateCommitmentHash` to simulate deactivated state.
       const document = { unused: 'unused' };
       const mockedResolverReturnedDidState: DidState = {
         document,
@@ -404,14 +436,14 @@ function validateDidReferencesInDidDocument (didDocument: any, did: string) {
   expect(didDocument.id).toEqual(did);
 
   if (didDocument.publicKey) {
-    for (let publicKeyEntry of didDocument.publicKey) {
+    for (const publicKeyEntry of didDocument.publicKey) {
       expect(publicKeyEntry.controller).toEqual('');
       expect((publicKeyEntry.id as string).startsWith('#'));
     }
   }
 
   if (didDocument.service) {
-    for (let serviceEntry of didDocument.service) {
+    for (const serviceEntry of didDocument.service) {
       expect((serviceEntry.id as string).startsWith('#'));
     }
   }

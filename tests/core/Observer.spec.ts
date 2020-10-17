@@ -1,6 +1,6 @@
 import * as retry from 'async-retry';
-import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
+import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import Blockchain from '../../lib/core/Blockchain';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import DownloadManager from '../../lib/core/DownloadManager';
@@ -9,10 +9,10 @@ import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
-import Ipfs from '../../lib/ipfs/Ipfs';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
-import MockBlockchain from '../mocks/MockBlockchain';
+import Ipfs from '../../lib/ipfs/Ipfs';
 import MapFile from '../../lib/core/versions/latest/MapFile';
+import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import MockVersionManager from '../mocks/MockVersionManager';
@@ -20,9 +20,9 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import OperationGenerator from '../generators/OperationGenerator';
 import SidetreeError from '../../lib/common/SidetreeError';
-import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
+import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
@@ -74,31 +74,31 @@ describe('Observer', async () => {
   it('should record transactions processed with expected outcome.', async () => {
     // Prepare the mock response from blockchain service.
     const initialTransactionFetchResponseBody = {
-      'moreTransactions': false,
-      'transactions': [
+      moreTransactions: false,
+      transactions: [
         {
-          'transactionNumber': 1,
-          'transactionTime': 1000,
-          'transactionTimeHash': '1000',
-          'anchorString': '1stTransaction',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1,
-          'writer': 'writer1'
+          transactionNumber: 1,
+          transactionTime: 1000,
+          transactionTimeHash: '1000',
+          anchorString: '1stTransaction',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1,
+          writer: 'writer1'
         },
         {
-          'transactionNumber': 2,
-          'transactionTime': 1000,
-          'transactionTimeHash': '1000',
-          'anchorString': '2ndTransaction',
-          'transactionFeePaid': 2,
-          'normalizedTransactionFee': 2,
-          'writer': 'writer2'
+          transactionNumber: 2,
+          transactionTime: 1000,
+          transactionTimeHash: '1000',
+          anchorString: '2ndTransaction',
+          transactionFeePaid: 2,
+          normalizedTransactionFee: 2,
+          writer: 'writer2'
         }
       ]
     };
     const subsequentTransactionFetchResponseBody = {
-      'moreTransactions': false,
-      'transactions': []
+      moreTransactions: false,
+      transactions: []
     };
 
     const blockchainClient = new Blockchain(config.blockchainServiceUri);
@@ -241,7 +241,7 @@ describe('Observer', async () => {
     [FetchResultCode.NotAFile, 'is not a file'],
     [FetchResultCode.InvalidHash, 'is not a valid hash']
   ];
-  for (let tuple of invalidAnchorFileTestsInput) {
+  for (const tuple of invalidAnchorFileTestsInput) {
     const mockFetchReturnCode = tuple[0];
     const expectedConsoleLogSubstring = tuple[1];
 
@@ -294,73 +294,73 @@ describe('Observer', async () => {
   it('should detect and handle block reorganization correctly.', async () => {
     // Prepare the mock response from blockchain service.
     const initialTransactionFetchResponseBody = {
-      'moreTransactions': false,
-      'transactions': [
+      moreTransactions: false,
+      transactions: [
         {
-          'transactionNumber': 1,
-          'transactionTime': 1000,
-          'transactionTimeHash': '1000',
-          'anchorString': '1stTransaction',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1,
-          'writer': 'writer1'
+          transactionNumber: 1,
+          transactionTime: 1000,
+          transactionTimeHash: '1000',
+          anchorString: '1stTransaction',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1,
+          writer: 'writer1'
         },
         {
-          'transactionNumber': 2,
-          'transactionTime': 2000,
-          'transactionTimeHash': '2000',
-          'anchorString': '2ndTransaction',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1,
-          'writer': 'writer2'
+          transactionNumber: 2,
+          transactionTime: 2000,
+          transactionTimeHash: '2000',
+          anchorString: '2ndTransaction',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1,
+          writer: 'writer2'
         },
         {
-          'transactionNumber': 3,
-          'transactionTime': 3000,
-          'transactionTimeHash': '3000',
-          'anchorString': '3rdTransaction',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1,
-          'writer': 'writer3'
+          transactionNumber: 3,
+          transactionTime: 3000,
+          transactionTimeHash: '3000',
+          anchorString: '3rdTransaction',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1,
+          writer: 'writer3'
         }
       ]
     };
 
     const transactionFetchResponseBodyAfterBlockReorg = {
-      'moreTransactions': false,
-      'transactions': [
+      moreTransactions: false,
+      transactions: [
         {
-          'transactionNumber': 2,
-          'transactionTime': 2001,
-          'transactionTimeHash': '2001',
-          'anchorString': '2ndTransactionNew',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1,
-          'writer': 'writer1'
+          transactionNumber: 2,
+          transactionTime: 2001,
+          transactionTimeHash: '2001',
+          anchorString: '2ndTransactionNew',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1,
+          writer: 'writer1'
         },
         {
-          'transactionNumber': 3,
-          'transactionTime': 3001,
-          'transactionTimeHash': '3000',
-          'anchorString': '3rdTransactionNew',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1,
-          'writer': 'writer2'
+          transactionNumber: 3,
+          transactionTime: 3001,
+          transactionTimeHash: '3000',
+          anchorString: '3rdTransactionNew',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1,
+          writer: 'writer2'
         },
         {
-          'transactionNumber': 4,
-          'transactionTime': 4000,
-          'transactionTimeHash': '4000',
-          'anchorString': '4thTransaction',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1,
-          'writer': 'writer3'
+          transactionNumber: 4,
+          transactionTime: 4000,
+          transactionTimeHash: '4000',
+          anchorString: '4thTransaction',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1,
+          writer: 'writer3'
         }
       ]
     };
     const subsequentTransactionFetchResponseBody = {
-      'moreTransactions': false,
-      'transactions': []
+      moreTransactions: false,
+      transactions: []
     };
 
     const blockchainClient = new Blockchain(config.blockchainServiceUri);
@@ -436,13 +436,13 @@ describe('Observer', async () => {
   it('should not rollback if blockchain time in bitcoin service is behind core service.', async () => {
     const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 });
     const transaction = {
-      'transactionNumber': 1,
-      'transactionTime': 1000,
-      'transactionTimeHash': '1000',
-      'anchorString': anchoredData,
-      'transactionFeePaid': 1,
-      'normalizedTransactionFee': 1,
-      'writer': 'writer'
+      transactionNumber: 1,
+      transactionTime: 1000,
+      transactionTimeHash: '1000',
+      anchorString: anchoredData,
+      transactionFeePaid: 1,
+      normalizedTransactionFee: 1,
+      writer: 'writer'
     };
 
     // Prep the transaction store with some initial state.

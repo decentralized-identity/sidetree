@@ -112,10 +112,10 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
     }
 
     // Locate the index of the given transaction using binary search.
-    const compareTransactionAndTransactionNumber
-      = (transaction: TransactionModel, transactionNumber: number) => { return transaction.transactionNumber - transactionNumber; };
-    const bestKnownValidRecentProcessedTransactionIndex
-      = SortedArray.binarySearch(this.processedTransactions, transactionNumber, compareTransactionAndTransactionNumber);
+    const compareTransactionAndTransactionNumber =
+      (transaction: TransactionModel, transactionNumber: number) => { return transaction.transactionNumber - transactionNumber; };
+    const bestKnownValidRecentProcessedTransactionIndex =
+      SortedArray.binarySearch(this.processedTransactions, transactionNumber, compareTransactionAndTransactionNumber);
 
     // The following conditions should never be possible.
     if (bestKnownValidRecentProcessedTransactionIndex === undefined) {

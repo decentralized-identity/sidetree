@@ -10,12 +10,12 @@ import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
+import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import Resolver from '../../lib/core/Resolver';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import VersionManager from '../../lib/core/VersionManager';
 import VersionModel from '../../lib/common/models/VersionModel';
-import OperationGenerator from '../generators/OperationGenerator';
 
 describe('VersionManager', async () => {
 
@@ -121,12 +121,12 @@ describe('VersionManager', async () => {
       // Setting up loading of mock ITransactionSelector implementations.
       const mockTransactionSelector1 = class {
         /* tslint:disable-next-line */
-        selectQualifiedTransactions () { return [] }
+        selectQualifiedTransactions () { return []; }
       };
       const anyTransactionModel = OperationGenerator.generateTransactionModel();
       const mockTransactionSelector2 = class {
         /* tslint:disable-next-line */
-        selectQualifiedTransactions () { return [anyTransactionModel] }
+        selectQualifiedTransactions () { return [anyTransactionModel]; }
       };
       spyOn(versionManager as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
         if (className === 'TransactionSelector') {

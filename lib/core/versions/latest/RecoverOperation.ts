@@ -34,9 +34,6 @@ export default class RecoverOperation implements OperationModel {
   /** Signed data. */
   public readonly signedDataJws: Jws;
 
-  /** Encoded string of the delta. */
-  public readonly encodedDelta: string | undefined;
-
   /** Decoded signed data payload. */
   public readonly signedData: SignedDataModel;
 
@@ -51,7 +48,6 @@ export default class RecoverOperation implements OperationModel {
     didUniqueSuffix: string,
     signedDataJws: Jws,
     signedData: SignedDataModel,
-    encodedDelta: string | undefined,
     delta: DeltaModel | undefined
   ) {
     this.operationBuffer = operationBuffer;
@@ -59,7 +55,6 @@ export default class RecoverOperation implements OperationModel {
     this.didUniqueSuffix = didUniqueSuffix;
     this.signedDataJws = signedDataJws;
     this.signedData = signedData;
-    this.encodedDelta = encodedDelta;
     this.delta = delta;
   }
 
@@ -108,20 +103,22 @@ export default class RecoverOperation implements OperationModel {
     const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
     // If not in anchor file mode, we need to validate `type` and `delta` properties.
-    let encodedDelta = undefined;
     let delta = undefined;
     if (!anchorFileMode) {
       if (operationObject.type !== OperationType.Recover) {
         throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);
       }
 
-      encodedDelta = operationObject.delta;
       try {
-        delta = await Operation.parseDelta(operationObject.delta);
+        Operation.validateDelta(operationObject.delta);
+        delta = {
+          patches: operationObject.delta.patches,
+          updateCommitment: operationObject.delta.update_commitment
+        };
       } catch {
-        // For compatibility with data pruning, we have to assume that delta may be unavailable,
-        // thus an operation with invalid delta needs to be processed as an operation with unavailable delta,
-        // so here we let delta be `undefined`.
+        // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
+        // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
+        // so here we let `delta` be `undefined`.
       }
     }
 
@@ -130,7 +127,6 @@ export default class RecoverOperation implements OperationModel {
       operationObject.did_suffix,
       signedDataJws,
       signedData,
-      encodedDelta,
       delta
     );
   }

@@ -1,3 +1,5 @@
+import * as timeSpan from 'time-span';
+import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
 import IBlockchain from './interfaces/IBlockchain';
 import IOperationStore from './interfaces/IOperationStore';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
@@ -6,10 +8,8 @@ import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransaction
 import IVersionManager from './interfaces/IVersionManager';
 import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
-import timeSpan = require('time-span');
 import ThroughputLimiter from './ThroughputLimiter';
 import TransactionModel from '../common/models/TransactionModel';
-import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
 
 /**
  * Class that performs periodic processing of batches of Sidetree operations anchored to the blockchain.
@@ -180,8 +180,6 @@ export default class Observer {
       // Wait a little before checking again.
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-
-    return;
   }
 
   /**
@@ -276,8 +274,8 @@ export default class Observer {
     const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
 
     // Find a known valid Sidetree transaction that is prior to the block reorganization.
-    const bestKnownValidRecentTransaction
-      = await this.blockchain.getFirstValidTransaction(exponentiallySpacedTransactions);
+    const bestKnownValidRecentTransaction =
+      await this.blockchain.getFirstValidTransaction(exponentiallySpacedTransactions);
 
     const bestKnownValidRecentTransactionNumber = bestKnownValidRecentTransaction === undefined ? undefined : bestKnownValidRecentTransaction.transactionNumber;
     console.info(`Best known valid recent transaction: ${bestKnownValidRecentTransactionNumber}`);

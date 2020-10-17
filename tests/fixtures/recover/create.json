@@ -1,5 +1,40 @@
 {
   "type": "create",
-  "suffix_data": "eyJkZWx0YV9oYXNoIjoiRWlDTW5jb0xrODlIeWpUYzhRbUU0VVVoNFpzMlhiOGlGTWxBak51WFlDbjZCdyIsInJlY292ZXJ5X2NvbW1pdG1lbnQiOiJFaUF5VklubUZfbnpwYWVmeVdqNkJvTkdkWV85RlJOZWYtV0kzY3JySzZ2SXlBIn0",
-  "delta": "eyJ1cGRhdGVfY29tbWl0bWVudCI6IkVpQ2prREdERE9udVpxNEtpdzJpY3VkSU45NWJvRE1yR2RZeDRwejhiQnQyYnciLCJwYXRjaGVzIjpbeyJhY3Rpb24iOiJyZXBsYWNlIiwiZG9jdW1lbnQiOnsicHVibGljX2tleXMiOlt7ImlkIjoic2lnbmluZ0tleSIsInR5cGUiOiJFY2RzYVNlY3AyNTZrMVZlcmlmaWNhdGlvbktleTIwMTkiLCJqd2siOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4IjoiSk5PMVhsRGVRNDhxUHhrNkFNbjZFNjMzcWJYdTVXS19uX05rZjBvNWtXYyIsInkiOiJRd1BwQkp1NXRQWkhpMml5VzlZbXRtWWl0YzdiS29ObmNCazhSYWc2RVNRIn0sInB1cnBvc2UiOlsiYXV0aCIsImdlbmVyYWwiXX1dLCJzZXJ2aWNlX2VuZHBvaW50cyI6W3siaWQiOiJzZXJ2aWNlRW5kcG9pbnRJZDEyMyIsInR5cGUiOiJzb21lVHlwZSIsImVuZHBvaW50IjoiaHR0cHM6Ly93d3cudXJsLmNvbSJ9XX19XX0"
+  "suffix_data": {
+    "delta_hash": "EiDTzZm-O3bXgMyCXnU9xV139lhFbGEUESX1Dne4R5Y43g",
+    "recovery_commitment": "EiCvlhOvSfQIIAn0fwhEnZhgXCDQGPHEsnYqGqlS-NBaPA"
+  },
+  "delta": {
+    "update_commitment": "EiAC9isOHRi5cd2jiswsoYZ8oA_9TNTLP0kdvBoJquNg8Q",
+    "patches": [
+      {
+        "action": "replace",
+        "document": {
+          "public_keys": [
+            {
+              "id": "signingKey",
+              "type": "EcdsaSecp256k1VerificationKey2019",
+              "jwk": {
+                "kty": "EC",
+                "crv": "secp256k1",
+                "x": "Rjqcd5L1eE76aiBdH8y59jNset_kCkVmALdD8T-zOlU",
+                "y": "mCtG-bOiA1WGfL8WPqtgFXAyQrcpxbHzaUCOwJQ0LQU"
+              },
+              "purpose": [
+                "auth",
+                "general"
+              ]
+            }
+          ],
+          "service_endpoints": [
+            {
+              "id": "serviceEndpointId123",
+              "type": "someType",
+              "endpoint": "https://www.url.com"
+            }
+          ]
+        }
+      }
+    ]
+  }
 }

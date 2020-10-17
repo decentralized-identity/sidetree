@@ -1,16 +1,16 @@
 import * as httpStatus from 'http-status';
+import { Address, Block, Networks, PrivateKey, Script, Transaction, Unit, crypto } from 'bitcore-lib';
+import nodeFetch, { FetchError, RequestInit, Response } from 'node-fetch';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
-import BitcoinSidetreeTransactionModel from './models/BitcoinSidetreeTransactionModel';
 import BitcoinInputModel from './models/BitcoinInputModel';
+import BitcoinSidetreeTransactionModel from './models/BitcoinSidetreeTransactionModel';
 import BitcoinLockTransactionModel from './models/BitcoinLockTransactionModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import BitcoinWallet from './BitcoinWallet';
 import IBitcoinWallet from './interfaces/IBitcoinWallet';
-import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
-import ReadableStream from '../common/ReadableStream';
-import { Address, crypto, Networks, PrivateKey, Script, Transaction, Unit, Block } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
+import ReadableStream from '../common/ReadableStream';
 
 /**
  * Structure (internal to this class) to store the transaction information
@@ -42,7 +42,8 @@ export default class BitcoinClient {
     bitcoinWalletOrImportString: IBitcoinWallet | string,
     private requestTimeout: number,
     private requestMaxRetries: number,
-    private sidetreeTransactionFeeMarkupPercentage: number) {
+    private sidetreeTransactionFeeMarkupPercentage: number,
+    private estimatedFeeSatoshiPerKB?: number) {
 
     if (typeof bitcoinWalletOrImportString === 'string') {
       console.info('Creating bitcoin wallet using the import string passed in.');
@@ -118,7 +119,7 @@ export default class BitcoinClient {
    * @param bitcoinLockTransaction The transaction object.
    */
   public async broadcastLockTransaction (bitcoinLockTransaction: BitcoinLockTransactionModel): Promise<string> {
-    const transactionHash = this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
+    const transactionHash = await this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
     console.info(`Broadcasted lock transaction: ${transactionHash}`);
 
     return transactionHash;
@@ -336,14 +337,14 @@ export default class BitcoinClient {
   /**
    * Gets the transaction fee of a transaction in satoshis.
    * @param transactionId the id of the target transaction.
-   * @returns the transaction fee.
+   * @returns the transaction fee in satoshis.
    */
   public async getTransactionFeeInSatoshis (transactionId: string): Promise<number> {
 
     const transaction = await this.getRawTransaction(transactionId);
 
     let inputSatoshiSum = 0;
-    for (let i = 0 ; i < transaction.inputs.length ; i++) {
+    for (let i = 0; i < transaction.inputs.length; i++) {
 
       const currentInput = transaction.inputs[i];
       const transactionOutValue = await this.getTransactionOutValueInSatoshi(currentInput.previousTransactionId, currentInput.outputIndexInPreviousTransaction);
@@ -397,11 +398,11 @@ export default class BitcoinClient {
     return response.labels.length > 0 || response.iswatchonly;
   }
 
-  private async getCurrentEstimatedFeeInSatoshisPerKb (): Promise<number> {
+  private async getCurrentEstimatedFeeInSatoshisPerKB (): Promise<number> {
     const request = {
       method: 'estimatesmartfee',
       params: [
-        1 // Number of confirmation targtes
+        1 // Number of confirmation targets
       ]
     };
 
@@ -416,6 +417,21 @@ export default class BitcoinClient {
     const feerateInBtc = response.feerate;
 
     return BitcoinClient.convertBtcToSatoshis(feerateInBtc);
+  }
+
+  /** Get the current estimated fee from RPC and update stored estimate */
+  private async updateEstimatedFeeInSatoshisPerKB (): Promise<number> {
+    let estimatedFeeSatoshiPerKB;
+    try {
+      estimatedFeeSatoshiPerKB = await this.getCurrentEstimatedFeeInSatoshisPerKB();
+      this.estimatedFeeSatoshiPerKB = estimatedFeeSatoshiPerKB;
+    } catch (error) {
+      estimatedFeeSatoshiPerKB = this.estimatedFeeSatoshiPerKB;
+      if (!estimatedFeeSatoshiPerKB) {
+        throw error;
+      }
+    }
+    return estimatedFeeSatoshiPerKB;
   }
 
   /** Get the transaction out value in satoshi, for a specified output index */
@@ -526,19 +542,20 @@ export default class BitcoinClient {
    * be already set to get the estimate more accurate.
    *
    * @param transaction The transaction for which the fee is to be calculated.
+   * @returns the transaction fee in satoshis.
    */
   private async calculateTransactionFee (transaction: Transaction): Promise<number> {
-    // Get esimtated fee from RPC
-    const estimatedFeeInKb = await this.getCurrentEstimatedFeeInSatoshisPerKb();
+    // Get estimated fee from RPC
+    const estimatedFeePerKB = await this.updateEstimatedFeeInSatoshisPerKB();
 
     // Estimate the size of the transaction
     const estimatedSizeInBytes = (transaction.inputs.length * 150) + (transaction.outputs.length * 50);
-    const estimatedSizeInKb = estimatedSizeInBytes / 1000;
+    const estimatedSizeInKB = estimatedSizeInBytes / 1000;
 
-    const estimatedFee = estimatedSizeInKb * estimatedFeeInKb;
+    const estimatedFee = estimatedSizeInKB * estimatedFeePerKB;
 
     // Add a percentage to the fee (trying to be on the higher end of the estimate)
-    const estimatedFeeWithPercentage = estimatedFee + (estimatedFee * .4);
+    const estimatedFeeWithPercentage = estimatedFee * 1.4;
 
     // Make sure that there are no decimals in the fee as it is not supported
     return Math.ceil(estimatedFeeWithPercentage);
@@ -557,9 +574,9 @@ export default class BitcoinClient {
     const payToScriptAddress = new Address(payToScriptHashOutput);
 
     const freezeTransaction = new Transaction()
-                              .from(unspentCoins)
-                              .to(payToScriptAddress, freezeAmountInSatoshis)
-                              .change(walletAddress);
+      .from(unspentCoins)
+      .to(payToScriptAddress, freezeAmountInSatoshis)
+      .change(walletAddress);
 
     const transactionFee = await this.calculateTransactionFee(freezeTransaction);
 
@@ -573,8 +590,8 @@ export default class BitcoinClient {
     previousFreezeDurationInBlocks: number,
     newFreezeDurationInBlocks: number): Promise<[Transaction, Script]> {
 
-    // tslint:disable-next-line: max-line-length
-    console.info(`Creating a freeze transaction with freeze time in blocks: ${newFreezeDurationInBlocks} from previously frozen transaction with id: ${previousFreezeTransaction.id}`);
+    // eslint-disable-next-line max-len
+    console.info(`Creating a freeze transaction with freeze time of ${newFreezeDurationInBlocks} blocks, from previously frozen transaction with id: ${previousFreezeTransaction.id}`);
 
     const freezeScript = BitcoinClient.createFreezeScript(newFreezeDurationInBlocks, this.bitcoinWallet.getAddress());
     const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
@@ -594,8 +611,8 @@ export default class BitcoinClient {
     previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeDurationInBlocks: number): Promise<Transaction> {
 
-    // tslint:disable-next-line: max-line-length
-    console.info(`Creating a transaction to return (to the wallet) the preivously frozen amount from transaction with id: ${previousFreezeTransaction.id} which was frozen for block duration: ${previousFreezeDurationInBlocks}`);
+    // eslint-disable-next-line max-len
+    console.info(`Creating a transaction to return (to the wallet) the previously frozen amount from transaction with id: ${previousFreezeTransaction.id} which was frozen for block duration: ${previousFreezeDurationInBlocks}`);
 
     return this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
@@ -625,8 +642,8 @@ export default class BitcoinClient {
     // Now create a spend transaction using the frozen output. Create the transaction with all
     // inputs and outputs as they are needed to calculate the fee.
     const spendTransaction = new Transaction()
-                                   .from([frozenOutputAsInput])
-                                   .to(paytoAddress, previousFreezeAmountInSatoshis);
+      .from([frozenOutputAsInput])
+      .to(paytoAddress, previousFreezeAmountInSatoshis);
 
     // The check-sequence-verify lock requires transaction version 2
     (spendTransaction as any).version = 2;
@@ -644,7 +661,7 @@ export default class BitcoinClient {
     // and add another one with the correct amount.
     spendTransaction.outputs.shift();
     spendTransaction.to(paytoAddress, previousFreezeAmountInSatoshis - transactionFee)
-                    .fee(transactionFee);
+      .fee(transactionFee);
 
     return spendTransaction;
   }
@@ -674,10 +691,10 @@ export default class BitcoinClient {
     const publicKeyHashOut = Script.buildPublicKeyHashOut(walletAddress);
 
     const redeemScript = Script.empty()
-                         .add(lockBuffer)
-                         .add(178) // OP_CSV (https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki)
-                         .add(117) // OP_DROP
-                         .add(publicKeyHashOut);
+      .add(lockBuffer)
+      .add(178) // OP_CSV (https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki)
+      .add(117) // OP_DROP
+      .add(publicKeyHashOut);
 
     return redeemScript;
   }
@@ -748,11 +765,11 @@ export default class BitcoinClient {
 
   private async rpcCall (request: any, timeout: boolean): Promise<any> {
     // append some standard jrpc parameters
-    request['jsonrpc'] = '1.0';
-    request['id'] = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
+    request.jsonrpc = '1.0';
+    request.id = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
 
     const requestString = JSON.stringify(request);
-    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request['method']}`);
+    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request.method}`);
 
     const requestOptions: RequestInit = {
       body: requestString,

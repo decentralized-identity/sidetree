@@ -1,7 +1,9 @@
+import { Address, Networks, PrivateKey, Script, crypto } from 'bitcore-lib';
 import BitcoinClient from '../../../lib/bitcoin/BitcoinClient';
 import BitcoinOutputModel from '../../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinTransactionModel from '../../../lib/bitcoin/models/BitcoinTransactionModel';
 import ErrorCode from '../../../lib/bitcoin/ErrorCode';
+import { IBlockInfo } from '../../../lib/bitcoin/BitcoinProcessor';
 import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifierModel from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
@@ -9,18 +11,16 @@ import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 import VersionManager from '../../../lib/bitcoin/VersionManager';
 import VersionModel from '../../../lib/common/models/VersionModel';
-import { Address, crypto, Networks, PrivateKey, Script } from 'bitcore-lib';
-import { IBlockInfo } from '../../../lib/bitcoin/BitcoinProcessor';
 
 function createValidLockRedeemScript (lockDurationInBlocks: number, targetWalletAddress: Address): Script {
   const lockDurationInBlocksBuffer = Buffer.alloc(3);
   lockDurationInBlocksBuffer.writeIntLE(lockDurationInBlocks, 0, 3);
 
   return Script.empty()
-               .add(lockDurationInBlocksBuffer)
-               .add(178) // OP_CSV
-               .add(117) // OP_DROP
-               .add(Script.buildPublicKeyHashOut(targetWalletAddress));
+    .add(lockDurationInBlocksBuffer)
+    .add(178) // OP_CSV
+    .add(117) // OP_DROP
+    .add(Script.buildPublicKeyHashOut(targetWalletAddress));
 }
 
 function createLockScriptVerifyResult (isScriptValid: boolean, owner: string | undefined, lockDurationInBlocks: number | undefined): any {
@@ -47,7 +47,7 @@ describe('LockResolver', () => {
   let lockResolver: LockResolver;
 
   beforeEach(() => {
-    let bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
+    const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
 
     lockResolver = new LockResolver(versionManager, bitcoinClient, 200, 250);
   });
@@ -290,7 +290,7 @@ describe('LockResolver', () => {
     });
 
     it('should throw if script creation throws.', async () => {
-      spyOn(Buffer,'from').and.throwError('som error');
+      spyOn(Buffer, 'from').and.throwError('som error');
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => LockResolver['createScript']('some input'),
@@ -311,8 +311,8 @@ describe('LockResolver', () => {
       spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.throwError('not found custom error.');
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-      () => lockResolver['getTransaction']('input id'),
-      ErrorCode.LockResolverTransactionNotFound);
+        () => lockResolver['getTransaction']('input id'),
+        ErrorCode.LockResolverTransactionNotFound);
     });
   });
 

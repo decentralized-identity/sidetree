@@ -1,6 +1,6 @@
+import AnchorFile from './AnchorFile';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
-import AnchorFile from './AnchorFile';
 import ArrayMethods from './util/ArrayMethods';
 import ChunkFile from './ChunkFile';
 import ChunkFileModel from './models/ChunkFileModel';
@@ -101,8 +101,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
     // Verify required lock if one was needed.
     const valueTimeLock = anchorFile.model.writer_lock_id
-                          ? await this.blockchain.getValueTimeLock(anchorFile.model.writer_lock_id)
-                          : undefined;
+      ? await this.blockchain.getValueTimeLock(anchorFile.model.writer_lock_id)
+      : undefined;
     ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
       valueTimeLock,
       paidOperationCount,
@@ -211,10 +211,10 @@ export default class TransactionProcessor implements ITransactionProcessor {
     chunkFile: ChunkFileModel | undefined
   ): Promise<AnchoredOperationModel[]> {
 
-    let createOperations = anchorFile.createOperations;
-    let recoverOperations = anchorFile.recoverOperations;
-    let deactivateOperations = anchorFile.deactivateOperations;
-    let updateOperations = (mapFile && mapFile.updateOperations) ? mapFile.updateOperations : [];
+    const createOperations = anchorFile.createOperations;
+    const recoverOperations = anchorFile.recoverOperations;
+    const deactivateOperations = anchorFile.deactivateOperations;
+    const updateOperations = (mapFile && mapFile.updateOperations) ? mapFile.updateOperations : [];
 
     // Add the operations in the following order of types: create, recover, update, deactivate.
     const operations = [];
