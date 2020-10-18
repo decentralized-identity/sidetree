@@ -25,7 +25,7 @@ let HashingOutput = Base64URL( Multihash(DATA, 'sha2-256') );
 The following steps define the [commitment scheme](#commitment-scheme) for generating a [public key commitment](#public-key-commitment) from a public key.
 
 1. Encode the public key into the form of a valid [JWK](https://tools.ietf.org/html/rfc7517).
-2. Canonicalize the [JWK](https://tools.ietf.org/html/rfc7517) encoded public key using the [JSON Canonicalization Scheme](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17).
-3. Apply the defined [HASH_ALGORITHM](#hash-algorithm) to the canonicalized public key to produce the [public key commitment](#public-key-commitment).
+2. Canonicalize the [JWK](https://tools.ietf.org/html/rfc7517) encoded public key using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme).
+3. Use the implementation's [HASH_PROTOCOL](#hash-protocol) to the hash the canonicalized public key, then hash the resulting hash value again using the implementation's [HASH_PROTOCOL](#hash-protocol) to produce the [public key commitment](#public-key-commitment).
 
 Implementers ****MUST NOT**** re-use public keys across different commitment invocations.

@@ -17,7 +17,7 @@
     "multihashes": "0.4.14",
     "node-fetch": "2.6.1",
     "priorityqueue": "1.0.0",
-    "spec-up": "0.9.79",
+    "spec-up": "0.9.101",
     "time-span": "3.1.0",
     "yieldable-json": "1.1.0"
   },
@@ -64,8 +64,8 @@
     "version:release": "npm version --message \"chore(ref-imp): publish release [skip ci]\"",
     "lint": "eslint --ext ts lib/ tests/",
     "lint:fix": "eslint --ext ts lib/ tests/ --fix",
-    "spec": "node ./scripts/spec-render.js",
-    "spec:edit": "node ./scripts/spec-edit.js",
+    "spec": "node -e \"require('spec-up')({ nowatch: true })\"",
+    "spec:edit": "node -e \"require('spec-up')()\"",
     "version": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md"
   },
   "husky": {
