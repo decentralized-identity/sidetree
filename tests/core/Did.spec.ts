@@ -15,7 +15,7 @@ describe('DID', async () => {
         Did['constructCreateOperationFromEncodedJcs'](testInitialState);
         fail('expect to throw sidetree error but did not');
       } catch (e) {
-        expect(e).toEqual(new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'Long form initial state should be encoded jcs.'));
+        expect(e).toEqual(new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJson, 'Long form initial state should be encoded jcs.'));
       }
     });
 

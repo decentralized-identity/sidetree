@@ -66,7 +66,7 @@ export default class VegetaLoadGenerator {
         createOperationData.recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey,
-        OperationGenerator.generateServiceEndpoints(['newDummyEndpoint']),
+        OperationGenerator.generateServices(['newDummyEndpoint']),
         [newSigningPublicKey]
       );
 

@@ -1157,8 +1157,8 @@
                     <ul>
                         <li><code>add-public-keys</code></li>
                         <li><code>remove-public-keys</code></li>
-                        <li><code>add-service-endpoints</code></li>
-                        <li><code>remove-service-endpoints</code></li>
+                        <li><code>add-services</code></li>
+                        <li><code>remove-services</code></li>
                         <li><code>ietf-json-patch</code></li>
                     </ul>
                 </li>
@@ -1350,11 +1350,11 @@
                         Action</em> <strong><strong>MUST</strong></strong> be discarded, without any of it being used to
                     modify the DID’s state.</li>
             </ol>
-            <h4 id="add-service-endpoints"><a class="toc-anchor" href="#add-service-endpoints">§</a>
-                <code>add-service-endpoints</code></h4>
+            <h4 id="add-services"><a class="toc-anchor" href="#add-services">§</a>
+                <code>add-services</code></h4>
             <div id="example-11" class="notice example"><a class="notice-link" href="#example-11">EXAMPLE</a>
                 <pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
-  <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"add-service-endpoints"</span><span class="token punctuation">,</span>
+  <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"add-services"</span><span class="token punctuation">,</span>
   <span class="token property">"service_endpoints"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span>
       <span class="token property">"id"</span><span class="token operator">:</span> <span class="token string">"sds1"</span><span class="token punctuation">,</span>
@@ -1370,15 +1370,15 @@
 <span class="token punctuation">}</span>
 </code></pre>
             </div>
-            <p>The <code>add-service-endpoints</code> <em>Patch Action</em> describes the addition of <a
+            <p>The <code>add-services</code> <em>Patch Action</em> describes the addition of <a
                     href="https://w3c.github.io/did-core/#service-endpoints">Service Endpoints</a> to a DID’s state. For
-                any part of an <code>add-service-endpoints</code> <em>Patch Action</em> to be applied to the DID’s
+                any part of an <code>add-services</code> <em>Patch Action</em> to be applied to the DID’s
                 state, all specified conditions <strong><strong>MUST</strong></strong> be met for all properties and
                 values, else the patch <strong><strong>MUST</strong></strong> be discarded in its entirety. To construct
-                an <code>add-service-endpoints</code> patch, compose an object as follows:</p>
+                an <code>add-services</code> patch, compose an object as follows:</p>
             <ol>
                 <li>The object <strong><strong>MUST</strong></strong> include an <code>action</code> property, and its
-                    value <strong><strong>MUST</strong></strong> be <code>add-service-endpoints</code>.</li>
+                    value <strong><strong>MUST</strong></strong> be <code>add-services</code>.</li>
                 <li>The object <strong><strong>MUST</strong></strong> include a <code>service_endpoints</code> property,
                     and its value <strong><strong>MUST</strong></strong> be an array. If the value is not of the correct
                     type, the entire <em>Patch Action</em> <strong><strong>MUST</strong></strong> be discarded, without
@@ -1405,24 +1405,24 @@
                     </ol>
                 </li>
             </ol>
-            <h4 id="remove-service-endpoints"><a class="toc-anchor" href="#remove-service-endpoints">§</a>
-                <code>remove-service-endpoints</code></h4>
+            <h4 id="remove-services"><a class="toc-anchor" href="#remove-services">§</a>
+                <code>remove-services</code></h4>
             <div id="example-12" class="notice example"><a class="notice-link" href="#example-12">EXAMPLE</a>
                 <pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
-  <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"remove-service-endpoints"</span><span class="token punctuation">,</span>
+  <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"remove-services"</span><span class="token punctuation">,</span>
   <span class="token property">"ids"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"sds1"</span><span class="token punctuation">,</span> <span class="token string">"sds2"</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 </code></pre>
             </div>
-            <p>The <code>remove-service-endpoints</code> <em>Patch Action</em> describes the removal of cryptographic
-                keys associated with a given DID. For any part of an <code>remove-service-endpoints</code> <em>Patch
+            <p>The <code>remove-services</code> <em>Patch Action</em> describes the removal of cryptographic
+                keys associated with a given DID. For any part of an <code>remove-services</code> <em>Patch
                     Action</em> to be applied to the DID’s state, all specified conditions
                 <strong><strong>MUST</strong></strong> be met for all properties and values, else the patch
                 <strong><strong>MUST</strong></strong> be discarded in its entirety. To construct a
-                <code>remove-service-endpoints</code> <em>Patch Action</em>, compose an object as follows:</p>
+                <code>remove-services</code> <em>Patch Action</em>, compose an object as follows:</p>
             <ol>
                 <li>The object <strong><strong>MUST</strong></strong> include an <code>action</code> property, and its
-                    value <strong><strong>MUST</strong></strong> be <code>remove-service-endpoints</code>.</li>
+                    value <strong><strong>MUST</strong></strong> be <code>remove-services</code>.</li>
                 <li>The object <strong><strong>MUST</strong></strong> include a <code>ids</code> property, and its value
                     <strong><strong>MUST</strong></strong> be an array of Service Endpoint IDs that correspond with
                     Service Endpoints presently associated with the DID that are to be removed.</li>
@@ -1454,7 +1454,7 @@
             <p>The <code>replace</code> <em>Patch Action</em> acts as a total state reset that replaces a DID’s current
                 PKI metadata state with the state provided. The <code>replace</code> <em>Patch Action</em> enables the
                 declaration of public keys and service endpoints using the same schema formats as the
-                <code>add-public-keys</code> and <code>add-service-endpoints</code> <em>Patch Actions</em>. To construct
+                <code>add-public-keys</code> and <code>add-services</code> <em>Patch Actions</em>. To construct
                 a <code>replace</code> patch, compose an object as follows:</p>
             <ol>
                 <li>The object <strong><strong>MUST</strong></strong> include an <code>action</code> property, and its
@@ -1472,7 +1472,7 @@
                             property, and if present, its value <strong><strong>MUST</strong></strong> be an array of
                             service endpoint entries that follow the same schema and requirements as the service
                             endpoint entries from the <a
-                                href="#add-service-endpoints"><code>add-service-endpoints</code></a> <em>Patch
+                                href="#add-services"><code>add-services</code></a> <em>Patch
                                 Action</em>.</li>
                     </ul>
                 </li>
@@ -2552,8 +2552,8 @@ did:elem:EiD0x0JeWXQbVIpBpyeyF5FDdZN1U7enAfHnd13Qk_CYpQ
                                 <ul>
                                     <li><a href="#add-public-keys"><code>add-public-keys</code></a></li>
                                     <li><a href="#remove-public-keys"><code>remove-public-keys</code></a></li>
-                                    <li><a href="#add-service-endpoints"><code>add-service-endpoints</code></a></li>
-                                    <li><a href="#remove-service-endpoints"><code>remove-service-endpoints</code></a>
+                                    <li><a href="#add-services"><code>add-services</code></a></li>
+                                    <li><a href="#remove-services"><code>remove-services</code></a>
                                     </li>
                                     <li><a href="#replace"><code>replace</code></a></li>
                                     <li><a href="#ietf-json-patch"><code>ietf-json-patch</code></a></li>

@@ -130,7 +130,7 @@ describe('CreateOperation', async () => {
     it('should throw if create operation request has more than 3 properties.', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
-      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+      const services = OperationGenerator.generateServices(['serviceId123']);
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey.publicKeyJwk,
@@ -147,7 +147,7 @@ describe('CreateOperation', async () => {
     it('should throw if operation type is incorrect', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
-      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+      const services = OperationGenerator.generateServices(['serviceId123']);
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey.publicKeyJwk,

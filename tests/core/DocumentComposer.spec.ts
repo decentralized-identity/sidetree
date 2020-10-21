@@ -97,14 +97,14 @@ describe('DocumentComposer', async () => {
     });
   });
 
-  describe('addServiceEndpoints', () => {
-    it('should add expected service endpoints to document', () => {
+  describe('addServices', () => {
+    it('should add expected services to document', () => {
       const document: DocumentModel = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }]
       };
 
       const patch = {
-        action: 'add-service-endpoints',
+        action: 'add-services',
         services: [{
           id: 'someId',
           type: 'someType',
@@ -112,13 +112,13 @@ describe('DocumentComposer', async () => {
         }]
       };
 
-      const result = DocumentComposer['addServiceEndpoints'](document, patch);
+      const result = DocumentComposer['addServices'](document, patch);
 
       expect(result.services).toEqual([{ id: 'someId', type: 'someType', endpoint: 'someEndpoint' }]);
     });
   });
 
-  describe('removeServiceEndpoints', () => {
+  describe('removeServices', () => {
     it('should remove the expected elements from services', () => {
       const document: DocumentModel = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }],
@@ -131,11 +131,11 @@ describe('DocumentComposer', async () => {
       };
 
       const patch = {
-        action: 'remove-service-endpoints',
+        action: 'remove-services',
         ids: ['1', '3']
       };
 
-      const result = DocumentComposer['removeServiceEndpoints'](document, patch);
+      const result = DocumentComposer['removeServices'](document, patch);
 
       const expected = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }],
@@ -154,82 +154,82 @@ describe('DocumentComposer', async () => {
       };
 
       const patch = {
-        action: 'remove-service-endpoints',
+        action: 'remove-services',
         ids: ['1', '3']
       };
 
-      const result = DocumentComposer['removeServiceEndpoints'](document, patch);
+      const result = DocumentComposer['removeServices'](document, patch);
       expect(result).toEqual(document);
     });
   });
 
-  describe('validateRemoveServiceEndpointsPatch', () => {
+  describe('validateRemoveServicesPatch', () => {
     it('should detect missing error and throw', () => {
       const patch = {};
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
-      expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      expect(() => { DocumentComposer['validateRemoveServicesPatch'](patch); }).toThrow(expectedError);
     });
 
     it('should detect unknown error and throw', () => {
       const patch = {
         extra: 'unknown value',
-        action: 'remove-service-endpoints',
+        action: 'remove-services',
         ids: 'not an array'
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
-      expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      expect(() => { DocumentComposer['validateRemoveServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointIdsNotArray if ids is not an array', () => {
+    it('should throw DocumentComposerPatchServiceIdsNotArray if ids is not an array', () => {
       const patch = {
-        action: 'remove-service-endpoints',
+        action: 'remove-services',
         ids: 'not an array'
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdsNotArray);
-      expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdsNotArray);
+      expect(() => { DocumentComposer['validateRemoveServicesPatch'](patch); }).toThrow(expectedError);
     });
 
     it('should throw DocumentComposerIdTooLong if an id is not a string', () => {
       const patch = {
-        action: 'remove-service-endpoints',
+        action: 'remove-services',
         ids: [1234]
       };
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }, ErrorCode.DocumentComposerIdNotString
+        () => { DocumentComposer['validateRemoveServicesPatch'](patch); }, ErrorCode.DocumentComposerIdNotString
       );
     });
 
     it('should throw DocumentComposerIdTooLong if an id is too long', () => {
       const patch = {
-        action: 'remove-service-endpoints',
+        action: 'remove-services',
         ids: ['super long super long super long super long super long super long super long super long super long']
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
-      expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      expect(() => { DocumentComposer['validateRemoveServicesPatch'](patch); }).toThrow(expectedError);
     });
   });
 
-  describe('validateAddServiceEndpointsPatch', () => {
+  describe('validateAddServicesPatch', () => {
     it('should detect missing error and throw', () => {
       const patch = {};
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
-      expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
     it('should detect unknown error and throw', () => {
       const patch = {
         extra: 'unknown value',
-        action: 'add-service-endpoints',
+        action: 'add-services',
         services: 'not an array'
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
-      expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
     it('should throw DocumentComposerIdTooLong if id is too long', () => {
       const patch = {
-        action: 'add-service-endpoint',
+        action: 'add-services',
         services: [{
           id: 'super long super long super long super long super long super long super long super long super long',
           type: undefined,
@@ -237,12 +237,12 @@ describe('DocumentComposer', async () => {
         }]
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
-      expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerServiceEndpointMissingOrUnknownProperty if service endpoint has unknown property', () => {
+    it('should throw DocumentComposerServiceHasMissingOrUnknownProperty if service has unknown property', () => {
       const patch = {
-        action: 'add-service-endpoint',
+        action: 'add-services',
         services: [{
           extra: 'property',
           id: 'someId',
@@ -250,51 +250,51 @@ describe('DocumentComposer', async () => {
           endpoint: 'something'
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerServiceEndpointMissingOrUnknownProperty);
-      expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerServiceHasMissingOrUnknownProperty);
+      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerServiceEndpointMissingOrUnknownProperty if endpoint is missing', () => {
+    it('should throw DocumentComposerServiceHasMissingOrUnknownProperty if endpoint is missing', () => {
       const patch = {
-        action: 'add-service-endpoint',
+        action: 'add-services',
         services: [{
           id: 'someId',
           type: undefined
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerServiceEndpointMissingOrUnknownProperty);
-      expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerServiceHasMissingOrUnknownProperty);
+      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointTypeNotString if type is not a string', () => {
+    it('should throw DocumentComposerPatchServiceTypeNotString if type is not a string', () => {
       const patch = {
-        action: 'add-service-endpoint',
+        action: 'add-services',
         services: [{
           id: 'someId',
           type: undefined,
           endpoint: 'something'
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeNotString);
-      expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceTypeNotString);
+      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointTypeTooLong if type too long', () => {
+    it('should throw DocumentComposerPatchServiceTypeTooLong if type too long', () => {
       const patch = {
-        action: 'add-service-endpoint',
+        action: 'add-services',
         services: [{
           id: 'someId',
           type: '1234567890123456789012345678901234567890',
           endpoint: 'something'
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeTooLong);
-      expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceTypeTooLong);
+      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
     it('should allow an non-array object as endpoint.', () => {
       const patch = {
-        action: 'add-service-endpoint',
+        action: 'add-services',
         services: [{
           id: 'someId',
           type: 'someType',
@@ -303,25 +303,25 @@ describe('DocumentComposer', async () => {
       };
 
       // Expecting this call to succeed without errors.
-      DocumentComposer['validateAddServiceEndpointsPatch'](patch);
+      DocumentComposer['validateAddServicesPatch'](patch);
     });
 
     it('should throw error if endpoint is an array.', () => {
       const patch = {
-        action: 'add-service-endpoint',
+        action: 'add-services',
         services: [{
           id: 'someId',
           type: 'someType',
           endpoint: []
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointValueCannotBeAnArray);
-      expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointCannotBeAnArray);
+      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
     it('should throw error if endpoint has an invalid type.', () => {
       const patch = {
-        action: 'add-service-endpoint',
+        action: 'add-services',
         services: [{
           id: 'someId',
           type: 'someType',
@@ -329,20 +329,20 @@ describe('DocumentComposer', async () => {
         }]
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointMustBeStringOrNonArrayObject);
-      expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl if endpoint is not valid url', () => {
+    it('should throw DocumentComposerPatchServiceEndpointNotValidUrl if endpoint is not valid url', () => {
       const patch = {
-        action: 'add-service-endpoint',
+        action: 'add-services',
         services: [{
           id: 'someId',
           type: 'someType',
           endpoint: 'this is not a valid url'
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl);
-      expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointNotValidUrl);
+      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
   });
 
@@ -353,7 +353,7 @@ describe('DocumentComposer', async () => {
     });
 
     it('should throw DocumentComposerServiceNotArray if `services` is not an array', () => {
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServicesNotArray);
       const document = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
         services: 'this is not an array'
@@ -458,19 +458,19 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if `services` in an add-service-endpoints patch is not an array.', async () => {
+    it('should throw error if `services` in an add-services patch is not an array.', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[2] as any).services = 'incorrectType';
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServicesNotArray);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if any of the `services` entry in the add-service-endpoints patch is not a valid DID.', async () => {
+    it('should throw error if any of the `services` entry in the add-services patch is not a valid DID.', async () => {
       const patches = generatePatchesForPublicKeys() as any;
       patches[2].services[0] = 111;
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerServiceEndpointMissingOrUnknownProperty);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerServiceHasMissingOrUnknownProperty);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
   });
@@ -634,7 +634,7 @@ describe('DocumentComposer', async () => {
  * Generates a document patch containing an array of patches:
  * patches[0] is an add-public-keys
  * patches[1] is a remove-public-keys
- * patches[2] is an add-service-endpoints
+ * patches[2] is an add-services
  */
 function generatePatchesForPublicKeys () {
   return [
@@ -659,8 +659,8 @@ function generatePatchesForPublicKeys () {
       publicKeys: ['keyY']
     },
     {
-      action: 'add-service-endpoints',
-      services: OperationGenerator.generateServiceEndpoints(['EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8B'])
+      action: 'add-services',
+      services: OperationGenerator.generateServices(['EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8B'])
     }
   ];
 }

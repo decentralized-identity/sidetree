@@ -167,7 +167,7 @@ describe('Resolver', () => {
       // Generate key(s) and service(s) to be included in the DID Document.
       const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
-      const services = OperationGenerator.generateServiceEndpoints(['dummyHubUri1']);
+      const services = OperationGenerator.generateServices(['dummyHubUri1']);
 
       // Create the initial create operation and insert it to the operation store.
       const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
@@ -237,7 +237,7 @@ describe('Resolver', () => {
       // Create new keys used for new document for recovery request.
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey, newSigningPrivateKey] = await OperationGenerator.generateKeyPair('newSigningKey');
-      const newServices = OperationGenerator.generateServiceEndpoints(['newDummyHubUri1']);
+      const newServices = OperationGenerator.generateServices(['newDummyHubUri1']);
 
       // Create the recover operation and insert it to the operation store.
       const recoverOperationJson = await OperationGenerator.generateRecoverOperationRequest(

@@ -37,7 +37,7 @@ export default class TestVectorGenerator {
     const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('keyAfterRecover');
 
     const [documentKey] = await OperationGenerator.generateKeyPair('newDocumentKey');
-    const newServices = OperationGenerator.generateServiceEndpoints(['newId']);
+    const newServices = OperationGenerator.generateServices(['newId']);
 
     const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
       createOperationData.createOperation.didUniqueSuffix,

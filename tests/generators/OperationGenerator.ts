@@ -16,7 +16,7 @@ import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import VerificationRelationship from '../../lib/core/versions/latest/VerificationRelationship';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
-import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
+import ServiceModel from '../../lib/core/versions/latest/models/ServiceModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
@@ -127,7 +127,7 @@ export default class OperationGenerator {
    */
   public static async generateLongFormDid (
     otherPublicKeys?: PublicKeyModel[],
-    services?: ServiceEndpointModel[],
+    services?: ServiceModel[],
     network?: string) {
 
     const document = {
@@ -220,7 +220,7 @@ export default class OperationGenerator {
     const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [updatePublicKey, updatePrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+    const services = OperationGenerator.generateServices(['serviceId123']);
 
     const operationRequest = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
@@ -253,7 +253,7 @@ export default class OperationGenerator {
     const [newRecoveryPublicKey, newRecoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [newSigningPublicKey, newSigningPrivateKey] = await OperationGenerator.generateKeyPair(newSigningKeyId);
     const [publicKeyToBeInDocument] = await OperationGenerator.generateKeyPair('newKey');
-    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+    const services = OperationGenerator.generateServices(['serviceId123']);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [updateKey, updatePrivateKey] = await OperationGenerator.generateKeyPair('updateKey');
@@ -337,7 +337,7 @@ export default class OperationGenerator {
     recoveryPublicKey: JwkEs256k,
     updatePublicKey: JwkEs256k,
     otherPublicKeys: PublicKeyModel[],
-    services?: ServiceEndpointModel[]) {
+    services?: ServiceModel[]) {
     const document: DocumentModel = {
       publicKeys: otherPublicKeys,
       services
@@ -448,7 +448,7 @@ export default class OperationGenerator {
     recoveryPrivateKey: JwkEs256k,
     newRecoveryPublicKey: JwkEs256k,
     newSigningPublicKey: PublicKeyModel,
-    services?: ServiceEndpointModel[],
+    services?: ServiceModel[],
     publicKeys?: PublicKeyModel[]) {
     const document = {
       publicKeys: publicKeys,
@@ -529,7 +529,7 @@ export default class OperationGenerator {
   public static async generateCreateOperationBuffer (
     recoveryPublicKey: JwkEs256k,
     signingPublicKey: PublicKeyModel,
-    services?: ServiceEndpointModel[]
+    services?: ServiceModel[]
   ): Promise<Buffer> {
     const operation = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
@@ -585,8 +585,8 @@ export default class OperationGenerator {
 
     if (idOfServiceEndpointToAdd !== undefined) {
       const patch = {
-        action: 'add-service-endpoints',
-        services: OperationGenerator.generateServiceEndpoints([idOfServiceEndpointToAdd])
+        action: 'add-services',
+        services: OperationGenerator.generateServices([idOfServiceEndpointToAdd])
       };
 
       patches.push(patch);
@@ -594,7 +594,7 @@ export default class OperationGenerator {
 
     if (idsOfServiceEndpointToRemove.length > 0) {
       const patch = {
-        action: 'remove-service-endpoints',
+        action: 'remove-services',
         ids: idsOfServiceEndpointToRemove
       };
 
@@ -642,10 +642,10 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates an array of service with specified ids
+   * Generates an array of services with specified ids
    * @param ids the id field in endpoint.
    */
-  public static generateServiceEndpoints (ids: string[]): any[] {
+  public static generateServices (ids: string[]): any[] {
     const services = [];
     for (const id of ids) {
       services.push(

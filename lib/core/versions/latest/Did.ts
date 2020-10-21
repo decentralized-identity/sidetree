@@ -174,7 +174,7 @@ export default class Did {
     try {
       initialStateObject = JSON.parse(initialStateDecodedJcs);
     } catch {
-      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'Long form initial state should be encoded jcs.');
+      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJson, 'Long form initial state should be encoded jcs.');
     }
 
     Did.validateInitialState(initialStateEncodedJcs, initialStateObject);

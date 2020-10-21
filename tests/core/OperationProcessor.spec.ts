@@ -37,12 +37,12 @@ async function createUpdateSequence (
     const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk);
     const patches = [
       {
-        action: 'remove-service-endpoints',
-        ids: ['serviceEndpointId' + (i - 1)]
+        action: 'remove-services',
+        ids: ['serviceId' + (i - 1)]
       },
       {
-        action: 'add-service-endpoints',
-        services: OperationGenerator.generateServiceEndpoints(['serviceEndpointId' + i])
+        action: 'add-services',
+        services: OperationGenerator.generateServices(['serviceId' + i])
       }
     ];
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
@@ -107,7 +107,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDocumentAfterUpdates (document: DocumentModel | undefined, numberOfUpdates: number) {
   expect(document).toBeDefined();
-  expect(document!.services![0].id).toEqual('serviceEndpointId' + (numberOfUpdates - 1));
+  expect(document!.services![0].id).toEqual('serviceId' + (numberOfUpdates - 1));
 }
 
 describe('OperationProcessor', async () => {
@@ -134,7 +134,7 @@ describe('OperationProcessor', async () => {
     signingKeyId = 'signingKey';
     [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId0']);
+    const services = OperationGenerator.generateServices(['serviceId0']);
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
@@ -394,7 +394,7 @@ describe('OperationProcessor', async () => {
       [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
       nextRecoveryCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey);
-      const services = OperationGenerator.generateServiceEndpoints(['dummyHubUri']);
+      const services = OperationGenerator.generateServices(['dummyHubUri']);
 
       // Create the initial create operation.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(

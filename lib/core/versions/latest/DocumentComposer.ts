@@ -127,7 +127,7 @@ export default class DocumentComposer {
     // Verify 'services' property if it exists.
     if (document.hasOwnProperty('services')) {
       // Verify each entry in services array.
-      DocumentComposer.validateServiceEndpoints(document.services);
+      DocumentComposer.validateServices(document.services);
     }
   }
 
@@ -157,11 +157,11 @@ export default class DocumentComposer {
       case 'remove-public-keys':
         DocumentComposer.validateRemovePublicKeysPatch(patch);
         break;
-      case 'add-service-endpoints':
-        DocumentComposer.validateAddServiceEndpointsPatch(patch);
+      case 'add-services':
+        DocumentComposer.validateAddServicesPatch(patch);
         break;
-      case 'remove-service-endpoints':
-        DocumentComposer.validateRemoveServiceEndpointsPatch(patch);
+      case 'remove-services':
+        DocumentComposer.validateRemoveServicesPatch(patch);
         break;
       default:
         throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownAction);
@@ -244,16 +244,16 @@ export default class DocumentComposer {
   }
 
   /**
-   * validate update patch for removing service endpoints
+   * validate update patch for removing services
    */
-  private static validateRemoveServiceEndpointsPatch (patch: any) {
+  private static validateRemoveServicesPatch (patch: any) {
     const patchProperties = Object.keys(patch);
     if (patchProperties.length !== 2) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
     }
 
     if (!Array.isArray(patch.ids)) {
-      throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdsNotArray);
+      throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdsNotArray);
     }
 
     for (const id of patch.ids) {
@@ -262,44 +262,44 @@ export default class DocumentComposer {
   }
 
   /**
-   * Validates update patch for adding service endpoints.
+   * Validates update patch for adding services.
    */
-  private static validateAddServiceEndpointsPatch (patch: any) {
+  private static validateAddServicesPatch (patch: any) {
     const patchProperties = Object.keys(patch);
     if (patchProperties.length !== 2) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
     }
 
     if (!Array.isArray(patch.services)) {
-      throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
+      throw new SidetreeError(ErrorCode.DocumentComposerPatchServicesNotArray);
     }
 
-    DocumentComposer.validateServiceEndpoints(patch.services);
+    DocumentComposer.validateServices(patch.services);
   }
 
   /**
-   * Validates and parses services endpoints
-   * @param serviceEndpoints the service endpoints to validate and parse
+   * Validates and parses services.
+   * @param services The services to validate and parse.
    */
-  private static validateServiceEndpoints (services: any) {
+  private static validateServices (services: any) {
     if (!Array.isArray(services)) {
-      throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
+      throw new SidetreeError(ErrorCode.DocumentComposerPatchServicesNotArray);
     }
 
     for (const service of services) {
       const serviceProperties = Object.keys(service);
       if (serviceProperties.length !== 3) { // type, id, and endpoint
-        throw new SidetreeError(ErrorCode.DocumentComposerServiceEndpointMissingOrUnknownProperty);
+        throw new SidetreeError(ErrorCode.DocumentComposerServiceHasMissingOrUnknownProperty);
       }
 
       DocumentComposer.validateId(service.id);
 
       if (typeof service.type !== 'string') {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeNotString);
+        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceTypeNotString);
       }
 
       if (service.type.length > 30) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeTooLong);
+        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceTypeTooLong);
       }
 
       // `endpoint` validation.
@@ -310,12 +310,12 @@ export default class DocumentComposer {
           // tslint:disable-next-line
           new URL(service.endpoint);
         } catch {
-          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl);
+          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointNotValidUrl);
         }
       } else if (typeof endpoint === 'object') {
         // Allow `object` type only if it is not an array.
         if (Array.isArray(endpoint)) {
-          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointValueCannotBeAnArray);
+          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointCannotBeAnArray);
         }
       } else {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointMustBeStringOrNonArrayObject);
@@ -361,10 +361,10 @@ export default class DocumentComposer {
       return DocumentComposer.addPublicKeys(document, patch);
     } else if (patch.action === 'remove-public-keys') {
       return DocumentComposer.removePublicKeys(document, patch);
-    } else if (patch.action === 'add-service-endpoints') {
-      return DocumentComposer.addServiceEndpoints(document, patch);
-    } else if (patch.action === 'remove-service-endpoints') {
-      return DocumentComposer.removeServiceEndpoints(document, patch);
+    } else if (patch.action === 'add-services') {
+      return DocumentComposer.addServices(document, patch);
+    } else if (patch.action === 'remove-services') {
+      return DocumentComposer.removeServices(document, patch);
     }
   }
 
@@ -408,7 +408,7 @@ export default class DocumentComposer {
     return document;
   }
 
-  private static addServiceEndpoints (document: DocumentModel, patch: any): DocumentModel {
+  private static addServices (document: DocumentModel, patch: any): DocumentModel {
     const services = patch.services;
 
     if (document.services === undefined) {
@@ -434,7 +434,7 @@ export default class DocumentComposer {
     return document;
   }
 
-  private static removeServiceEndpoints (document: DocumentModel, patch: any): DocumentModel {
+  private static removeServices (document: DocumentModel, patch: any): DocumentModel {
     if (document.services === undefined) {
       return document;
     }

@@ -10,7 +10,7 @@
     ],
     "service": [
       {
-        "id": "#serviceEndpointId123",
+        "id": "#serviceId123",
         "type": "someType",
         "serviceEndpoint": "https://www.url.com"
       }

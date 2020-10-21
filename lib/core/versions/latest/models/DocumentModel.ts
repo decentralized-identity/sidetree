@@ -1,5 +1,5 @@
 import PublicKeyModel from './PublicKeyModel';
-import ServiceEndpointModel from './ServiceEndpointModel';
+import ServiceModel from './ServiceModel';
 
 /**
  * Defines INTERNAL data structure used by the `DocumentComposer` to store document state.'
@@ -7,5 +7,5 @@ import ServiceEndpointModel from './ServiceEndpointModel';
  */
 export default interface DocumentModel {
   publicKeys?: PublicKeyModel[];
-  services?: ServiceEndpointModel[];
+  services?: ServiceModel[];
 }

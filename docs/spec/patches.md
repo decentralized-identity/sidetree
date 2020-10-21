@@ -20,8 +20,8 @@ Sidetree defines a general format for patching DID State, called _Patch Actions_
 2. _Patch Action_ objects ****MUST**** include an `action` property, and its value ****SHOULD**** be one of the standard _Patch Action_ types listed in below, or, if the implementer chooses to create a custom _Patch Action_, a kebab-case string (dash-delimited lowercase words) with a leading dash, to indicate a custom _Patch Action_, for example: `-custom-action`.
     - `add-public-keys`
     - `remove-public-keys`
-    - `add-service-endpoints`
-    - `remove-service-endpoints`
+    - `add-services`
+    - `remove-services`
     - `ietf-json-patch`
 
 ### Standard Patch Actions
@@ -91,12 +91,12 @@ The `remove-public-keys` _Patch Action_ describes the removal of cryptographic k
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `remove-public-keys`.
 2. The object ****MUST**** include a `public_keys` property, and its value ****MUST**** be an array of key IDs that correspond with keys presently associated with the DID that are to be removed. If the value is not of the correct type or includes a string value that is not associated with a key in the document, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
 
-#### `add-service-endpoints`
+#### `add-services`
 
 ::: example
 ```json
 {
-  "action": "add-service-endpoints",
+  "action": "add-services",
   "service_endpoints": [
     {
       "id": "sds1",
@@ -113,9 +113,9 @@ The `remove-public-keys` _Patch Action_ describes the removal of cryptographic k
 ```
 :::
 
-The `add-service-endpoints` _Patch Action_ describes the addition of [Service Endpoints](https://w3c.github.io/did-core/#service-endpoints) to a DID's state. For any part of an `add-service-endpoints` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct an `add-service-endpoints` patch, compose an object as follows:
+The `add-services` _Patch Action_ describes the addition of [Service Endpoints](https://w3c.github.io/did-core/#service-endpoints) to a DID's state. For any part of an `add-services` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct an `add-services` patch, compose an object as follows:
 
-1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `add-service-endpoints`.
+1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `add-services`.
 2. The object ****MUST**** include a `service_endpoints` property, and its value ****MUST**** be an array. If the value is not of the correct type, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
 3. Each service being added ****MUST**** be represented by an entry in the `service_endpoints` array, and each entry must be an object composed as follows:
     1. The object ****MUST**** include an `id` property, and its value ****MUST**** be a string with a length of no more than fifty (50) ASCII encoded characters. If the value is not of the correct type or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
@@ -123,20 +123,20 @@ The `add-service-endpoints` _Patch Action_ describes the addition of [Service En
     3. The object ****MUST**** include a `endpoint` property, and its value ****MUST**** be a valid URI string (including a scheme segment: i.e. http://, git://) with a length of no more than one hundred (100) ASCII encoded characters. If the value is not a valid URI or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
 
 
-#### `remove-service-endpoints`
+#### `remove-services`
 
 ::: example
 ```json
 {
-  "action": "remove-service-endpoints",
+  "action": "remove-services",
   "ids": ["sds1", "sds2"]
 }
 ```
 :::
 
-The `remove-service-endpoints` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. For any part of an `remove-service-endpoints` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct a `remove-service-endpoints` _Patch Action_, compose an object as follows:
+The `remove-services` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. For any part of an `remove-services` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct a `remove-services` _Patch Action_, compose an object as follows:
 
-1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `remove-service-endpoints`.
+1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `remove-services`.
 2. The object ****MUST**** include a `ids` property, and its value ****MUST**** be an array of Service Endpoint IDs that correspond with Service Endpoints presently associated with the DID that are to be removed.
 
 #### `replace`
@@ -166,12 +166,12 @@ The `remove-service-endpoints` _Patch Action_ describes the removal of cryptogra
 ```
 :::
 
-The `replace` _Patch Action_ acts as a total state reset that replaces a DID's current PKI metadata state with the state provided. The `replace` _Patch Action_ enables the declaration of public keys and service endpoints using the same schema formats as the `add-public-keys` and `add-service-endpoints` _Patch Actions_. To construct a `replace` patch, compose an object as follows:
+The `replace` _Patch Action_ acts as a total state reset that replaces a DID's current PKI metadata state with the state provided. The `replace` _Patch Action_ enables the declaration of public keys and service endpoints using the same schema formats as the `add-public-keys` and `add-services` _Patch Actions_. To construct a `replace` patch, compose an object as follows:
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `replace`.
 2. The object ****MUST**** include a `document` property, and its value ****MUST**** be an object, which may contain the following properties:
     - The object ****MAY**** include a `public_keys` property, and if present, its value ****MUST**** be an array of public key entries that follow the same schema and requirements as the public key entries from the [`add-public-keys`](#add-public-keys) _Patch Action_
-    - The object ****MAY**** include a `service_endpoints` property, and if present, its value ****MUST**** be an array of service endpoint entries that follow the same schema and requirements as the service endpoint entries from the [`add-service-endpoints`](#add-service-endpoints) _Patch Action_.
+    - The object ****MAY**** include a `service_endpoints` property, and if present, its value ****MUST**** be an array of service endpoint entries that follow the same schema and requirements as the service endpoint entries from the [`add-services`](#add-services) _Patch Action_.
 
 #### `ietf-json-patch`
 
