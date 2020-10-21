@@ -2,7 +2,7 @@ import DocumentModel from './models/DocumentModel';
 import DidState from '../../models/DidState';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
-import VerificationRelationship from './VerificationRelationship';
+import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -22,8 +22,8 @@ export default class DocumentComposer {
 
     const document = didState.document as DocumentModel;
 
-    // Only populate `publicKey` if general verificationRelationship exists.
-    // Only populate `authentication` if auth verificationRelationship exists.
+    // Only populate `publicKey` if general purpose exists.
+    // Only populate `authentication` if authentication purpose exists.
     const authentication: any[] = [];
     const publicKeys: any[] = [];
     if (Array.isArray(document.publicKeys)) {
@@ -35,15 +35,15 @@ export default class DocumentComposer {
           type: publicKey.type,
           publicKeyJwk: publicKey.publicKeyJwk
         };
-        const purposeSet: Set<string> = new Set(publicKey.verificationRelationship);
+        const purposeSet: Set<string> = new Set(publicKey.purposes);
 
-        if (purposeSet.has(VerificationRelationship.VerificationMethod)) {
+        if (purposeSet.has(PublicKeyPurpose.VerificationMethod)) {
           publicKeys.push(didDocumentPublicKey);
-          if (purposeSet.has(VerificationRelationship.Authentication)) {
+          if (purposeSet.has(PublicKeyPurpose.Authentication)) {
             // add into authentication by reference if has auth and has general
             authentication.push(id);
           }
-        } else if (purposeSet.has(VerificationRelationship.Authentication)) {
+        } else if (purposeSet.has(PublicKeyPurpose.Authentication)) {
           // add into authentication by object if has auth but no general
           authentication.push(didDocumentPublicKey);
         }
@@ -185,7 +185,7 @@ export default class DocumentComposer {
     const publicKeyIdSet: Set<string> = new Set();
     for (const publicKey of publicKeys) {
       const publicKeyProperties = Object.keys(publicKey);
-      // the expected fields are id, verificationRelationship, type and publicKeyJwk
+      // the expected fields are id, purposes, type and publicKeyJwk
       if (publicKeyProperties.length !== 4) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       }
@@ -206,20 +206,20 @@ export default class DocumentComposer {
       }
       publicKeyIdSet.add(publicKey.id);
 
-      if (!Array.isArray(publicKey.verificationRelationship) || publicKey.verificationRelationship.length === 0) {
+      if (!Array.isArray(publicKey.purposes) || publicKey.purposes.length === 0) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeMissingOrUnknown);
       }
 
       // TODO: this test is not strong enough... what about repeated values?
       // suggest using json schema.
-      if (publicKey.verificationRelationship.length > Object.values(VerificationRelationship).length) {
+      if (publicKey.purposes.length > Object.values(PublicKeyPurpose).length) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeExceedsMaxLength);
       }
 
-      const validPurposes = new Set(Object.values(VerificationRelationship));
-      // Purpose must be one of the valid ones in VerificationRelationship
-      for (const verificationRelationship of publicKey.verificationRelationship) {
-        if (!validPurposes.has(verificationRelationship)) {
+      const validPurposes = new Set(Object.values(PublicKeyPurpose));
+      // Purpose must be one of the valid ones in PublicKeyPurpose
+      for (const purpose of publicKey.purposes) {
+        if (!validPurposes.has(purpose)) {
           throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidPurpose);
         }
       }

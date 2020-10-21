@@ -1,7 +1,7 @@
 /**
- * Sidetree public key verificationRelationship.
+ * DID Document public key purpose.
  */
-enum VerificationRelationship {
+enum PublicKeyPurpose {
   VerificationMethod = 'verificationMethod',
   Authentication = 'authentication',
   AssertionMethod = 'assertionMethod',
@@ -10,4 +10,4 @@ enum VerificationRelationship {
   KeyAgreement = 'keyAgreement'
 }
 
-export default VerificationRelationship;
+export default PublicKeyPurpose;

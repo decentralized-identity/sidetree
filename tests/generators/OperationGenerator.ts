@@ -14,7 +14,7 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
-import VerificationRelationship from '../../lib/core/versions/latest/VerificationRelationship';
+import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import ServiceModel from '../../lib/core/versions/latest/models/ServiceModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
@@ -74,17 +74,17 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates SECP256K1 key pair to be used in an operation. If verificationRelationship not supplied, all purposes will be included
+   * Generates SECP256K1 key pair to be used in an operation. If purposes not supplied, all purposes will be included
    * Mainly used for testing.
    * @returns [publicKey, privateKey]
    */
-  public static async generateKeyPair (id: string, verificationRelationship?: VerificationRelationship[]): Promise<[PublicKeyModel, JwkEs256k]> {
+  public static async generateKeyPair (id: string, purposes?: PublicKeyPurpose[]): Promise<[PublicKeyModel, JwkEs256k]> {
     const [publicKey, privateKey] = await Jwk.generateEs256kKeyPair();
     const publicKeyModel = {
       id,
       type: 'EcdsaSecp256k1VerificationKey2019',
       publicKeyJwk: publicKey,
-      verificationRelationship: verificationRelationship || Object.values(VerificationRelationship)
+      purposes: purposes || Object.values(PublicKeyPurpose)
     };
 
     return [publicKeyModel, privateKey];

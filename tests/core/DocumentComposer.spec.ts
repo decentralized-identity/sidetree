@@ -4,15 +4,15 @@ import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import OperationGenerator from '../generators/OperationGenerator';
-import VerificationRelationship from '../../lib/core/versions/latest/VerificationRelationship';
+import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('DocumentComposer', async () => {
 
   describe('transformToExternalDocument', () => {
-    it('should output the expected resolution result given key(s) across all verificationRelationship types.', async () => {
+    it('should output the expected resolution result given key(s) across all purpose types.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
-      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [VerificationRelationship.Authentication]);
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Authentication]);
       const document = {
         publicKeys: [anySigningPublicKey, authPublicKey]
       };
@@ -43,9 +43,9 @@ describe('DocumentComposer', async () => {
           publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.publicKeyJwk.x, y: anySigningPublicKey.publicKeyJwk.y }
         }],
         authentication: [
-          '#anySigningKey', // reference because it is a general verificationRelationship key
+          '#anySigningKey', // reference because it is a general purpose key
           {
-            id: '#authPublicKey', // object here because it is an auth verificationRelationship only key
+            id: '#authPublicKey', // object here because it is an authentication purpose only key
             controller: result.didDocument.id,
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: {
@@ -58,7 +58,7 @@ describe('DocumentComposer', async () => {
 
     it('should output method metadata with the given `published` value.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
-      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [VerificationRelationship.Authentication]);
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Authentication]);
       const document = {
         publicKeys: [anySigningPublicKey, authPublicKey]
       };
@@ -80,7 +80,7 @@ describe('DocumentComposer', async () => {
 
     it('should return status deactivated if next recovery commit hash is undefined', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
-      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [VerificationRelationship.Authentication]);
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Authentication]);
       const document = {
         publicKeys: [anySigningPublicKey, authPublicKey]
       };
@@ -100,7 +100,7 @@ describe('DocumentComposer', async () => {
   describe('addServices', () => {
     it('should add expected services to document', () => {
       const document: DocumentModel = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }]
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', purposes: [PublicKeyPurpose.VerificationMethod] }]
       };
 
       const patch = {
@@ -121,7 +121,7 @@ describe('DocumentComposer', async () => {
   describe('removeServices', () => {
     it('should remove the expected elements from services', () => {
       const document: DocumentModel = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', purposes: [PublicKeyPurpose.VerificationMethod] }],
         services: [
           { id: '1', type: 't', endpoint: 'se' },
           { id: '2', type: 't', endpoint: 'se' },
@@ -138,7 +138,7 @@ describe('DocumentComposer', async () => {
       const result = DocumentComposer['removeServices'](document, patch);
 
       const expected = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', purposes: [PublicKeyPurpose.VerificationMethod] }],
         services: [
           { id: '2', type: 't', endpoint: 'se' },
           { id: '4', type: 't', endpoint: 'se' }
@@ -150,7 +150,7 @@ describe('DocumentComposer', async () => {
 
     it('should leave document unchanged if it does not have `services` property', () => {
       const document: DocumentModel = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }]
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', purposes: [PublicKeyPurpose.VerificationMethod] }]
       };
 
       const patch = {
@@ -498,7 +498,7 @@ describe('DocumentComposer', async () => {
 
     it('should replace old key with the same ID with new values.', async () => {
       const document: DocumentModel = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', purposes: [PublicKeyPurpose.VerificationMethod] }],
         services: []
       };
       const patches = [
@@ -538,13 +538,13 @@ describe('DocumentComposer', async () => {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { a: 'unused a' },
-            verificationRelationship: ['verificationMethod']
+            purposes: ['verificationMethod']
           },
           {
             id: 'key1', // Intentional duplicated key ID.
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { b: 'unused b' },
-            verificationRelationship: ['verificationMethod']
+            purposes: ['verificationMethod']
           }
         ]
       };
@@ -553,14 +553,14 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document public key verificationRelationship is empty array.', async () => {
+    it('should throw if document public key purposes is empty array.', async () => {
       const document = {
         publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: {},
-            verificationRelationship: []
+            purposes: []
           }
         ]
       };
@@ -569,14 +569,14 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document publicKey verificationRelationship is not an array.', async () => {
+    it('should throw if document public key purposes is not an array.', async () => {
       const document = {
         publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: {},
-            verificationRelationship: undefined
+            purposes: undefined
           }
         ]
       };
@@ -585,14 +585,14 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document publicKey is bigger than expected length.', async () => {
+    it('should throw if document public key is bigger than expected length.', async () => {
       const document = {
         publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: {},
-            verificationRelationship: ['verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod']
+            purposes: ['verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod']
           }
         ]
       };
@@ -601,14 +601,14 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document publicKey contains invalid verificationRelationship.', async () => {
+    it('should throw if document public key contains invalid purpose.', async () => {
       const document = {
         publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: {},
-            verificationRelationship: ['verificationMethod', 'somethingInvalid']
+            purposes: ['verificationMethod', 'somethingInvalid']
           }
         ]
       };
@@ -650,7 +650,7 @@ function generatePatchesForPublicKeys () {
             x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
             y: 'v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY'
           },
-          verificationRelationship: ['verificationMethod']
+          purposes: ['verificationMethod']
         }
       ]
     },

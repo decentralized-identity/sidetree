@@ -1,11 +1,11 @@
 {
   "@context": "https://www.w3.org/ns/did-resolution/v1",
   "didDocument": {
-    "id": "did:sidetree:EiBetomH8qcutYUq2QiEjwo5Kg-79BW9IvKrAa0iuUKLFw",
+    "id": "did:sidetree:EiCZZVZuh5-YdnYB5v6zrSzYpd2Jz6f5oVtXDxlUGlnnUw",
     "@context": [
       "https://www.w3.org/ns/did/v1",
       {
-        "@base": "did:sidetree:EiBetomH8qcutYUq2QiEjwo5Kg-79BW9IvKrAa0iuUKLFw"
+        "@base": "did:sidetree:EiCZZVZuh5-YdnYB5v6zrSzYpd2Jz6f5oVtXDxlUGlnnUw"
       }
     ],
     "service": [
@@ -18,24 +18,24 @@
     "publicKey": [
       {
         "id": "#signingKey",
-        "controller": "did:sidetree:EiBetomH8qcutYUq2QiEjwo5Kg-79BW9IvKrAa0iuUKLFw",
+        "controller": "did:sidetree:EiCZZVZuh5-YdnYB5v6zrSzYpd2Jz6f5oVtXDxlUGlnnUw",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
           "crv": "secp256k1",
-          "x": "ZGUDCDaeyxE91b-6K6gKjEs3gvErSbuyEB1znPpvIME",
-          "y": "NCGxiVhdv9OC7vwCKkcWATGwrw34sXVgPsNmr8iljfA"
+          "x": "sq3vyLP7QraXnCxfi3gKaMHUFiaxbklJk7F_uPd1h6c",
+          "y": "-eXtzZdmBt7D54wl9rhb_Enzm2MYFnSK7tOwmzMJsnU"
         }
       },
       {
         "id": "#additional-key",
-        "controller": "did:sidetree:EiBetomH8qcutYUq2QiEjwo5Kg-79BW9IvKrAa0iuUKLFw",
+        "controller": "did:sidetree:EiCZZVZuh5-YdnYB5v6zrSzYpd2Jz6f5oVtXDxlUGlnnUw",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
           "crv": "secp256k1",
-          "x": "pdozskLDNn7vbocIIj8qWzlnXIzHa7GFUq5l_0151EU",
-          "y": "9If6FfzHjfu63tolo-hkAZ1phNyJbdFSrvLXxNA0URI"
+          "x": "1PiohSlIYSbbQ-r4-dW6cCfgTvkiJv8Mt2xggoJ2BM0",
+          "y": "a0mc8z6r7Z-ptuz50EW_GhtdkHyOWhROpkZeiIbulTA"
         }
       }
     ],
@@ -46,7 +46,7 @@
   },
   "methodMetadata": {
     "published": true,
-    "recoveryCommitment": "EiDm-j40tBNtMyoeMgrbLIwx7l75nYCVO4prCg1D_IXmPQ",
-    "updateCommitment": "EiA-r69Dtj5FSqKD5U6Dc2KP_ludprqUBqrBxForLYY0XQ"
+    "recoveryCommitment": "EiBocoP1IOwbzkaRu1iQ31wUhmUdQD98WKqHRpMiz9LXrg",
+    "updateCommitment": "EiCt2NytrjlUxay-9tUPkgSusbJ6ey61NePiY4SB9jvEXQ"
   }
 }
