@@ -24,7 +24,7 @@ describe('Test Vectors', () => {
       }
     };
     // here is where you would assert that
-    // no breaking changes have occured for create operations
+    // no breaking changes have occurred for create operations
     // if test vector generation was deterministic
   });
 
@@ -35,7 +35,7 @@ describe('Test Vectors', () => {
       createOperationData.updatePrivateKey
     );
     const fixtureData = { ...updateOperationData } as any;
-    // TODO: fix operation data structures so stuff like this is not requiried
+    // TODO: fix operation data structures so stuff like this is not required
     // to get consistent references to request objects.
     fixtureData.operationRequest = JSON.parse(fixtureData.updateOperation.operationBuffer.toString());
     delete fixtureData.updateOperation.operationBuffer;
@@ -45,7 +45,7 @@ describe('Test Vectors', () => {
       update: fixtureData
     };
     // here is where you would assert that
-    // no breaking changes have occured for update operations
+    // no breaking changes have occurred for update operations
     // if test vector generation was deterministic
   });
 
@@ -86,7 +86,7 @@ describe('Test Vectors', () => {
       deactivate: fixtureData
     };
     // here is where you would assert that
-    // no breaking changes have occured for deactivate operations
+    // no breaking changes have occurred for deactivate operations
     // if test vector generation was deterministic
   });
 

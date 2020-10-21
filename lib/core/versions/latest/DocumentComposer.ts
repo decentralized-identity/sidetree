@@ -26,8 +26,8 @@ export default class DocumentComposer {
     // Only populate `authentication` if auth verificationRelationship exists.
     const authentication: any[] = [];
     const publicKeys: any[] = [];
-    if (Array.isArray(document.publicKey)) {
-      for (const publicKey of document.publicKey) {
+    if (Array.isArray(document.publicKeys)) {
+      for (const publicKey of document.publicKeys) {
         const id = '#' + publicKey.id;
         const didDocumentPublicKey = {
           id: id,
@@ -112,16 +112,16 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerDocumentMissing);
     }
 
-    const allowedProperties = new Set(['publicKey', 'service']);
+    const allowedProperties = new Set(['publicKeys', 'service']);
     for (const property in document) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.DocumentComposerUnknownPropertyInDocument, `Unexpected property ${property} in document.`);
       }
     }
 
-    // Verify 'publicKey' property if it exists.
-    if (document.hasOwnProperty('publicKey')) {
-      DocumentComposer.validatePublicKeys(document.publicKey);
+    // Verify 'publicKeys' property if it exists.
+    if (document.hasOwnProperty('publicKeys')) {
+      DocumentComposer.validatePublicKeys(document.publicKeys);
     }
 
     // Verify 'service' property if it exists.
@@ -174,7 +174,7 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
     }
 
-    DocumentComposer.validatePublicKeys(patch.publicKey);
+    DocumentComposer.validatePublicKeys(patch.publicKeys);
   }
 
   private static validatePublicKeys (publicKeys: any) {
@@ -232,11 +232,11 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
     }
 
-    if (!Array.isArray(patch.publicKey)) {
+    if (!Array.isArray(patch.publicKeys)) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdsNotArray);
     }
 
-    for (const publicKeyId of patch.publicKey) {
+    for (const publicKeyId of patch.publicKeys) {
       if (typeof publicKeyId !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
       }
@@ -372,16 +372,16 @@ export default class DocumentComposer {
    * Adds public keys to document.
    */
   private static addPublicKeys (document: DocumentModel, patch: any): DocumentModel {
-    const publicKeyMap = new Map((document.publicKey || []).map(publicKey => [publicKey.id, publicKey]));
+    const publicKeyMap = new Map((document.publicKeys || []).map(publicKey => [publicKey.id, publicKey]));
 
     // Loop through all given public keys and add them if they don't exist already.
-    for (const publicKey of patch.publicKey) {
+    for (const publicKey of patch.publicKeys) {
       // NOTE: If a key ID already exists, we will just replace the existing key.
       // Not throwing error will minimize the need (thus risk) of reusing exposed update reveal value.
       publicKeyMap.set(publicKey.id, publicKey);
     }
 
-    document.publicKey = [...publicKeyMap.values()];
+    document.publicKeys = [...publicKeyMap.values()];
 
     return document;
   }
@@ -390,10 +390,10 @@ export default class DocumentComposer {
    * Removes public keys from document.
    */
   private static removePublicKeys (document: DocumentModel, patch: any): DocumentModel {
-    const publicKeyMap = new Map((document.publicKey || []).map(publicKey => [publicKey.id, publicKey]));
+    const publicKeyMap = new Map((document.publicKeys || []).map(publicKey => [publicKey.id, publicKey]));
 
     // Loop through all given public key IDs and delete them from the existing public key only if it is not a recovery key.
-    for (const publicKey of patch.publicKey) {
+    for (const publicKey of patch.publicKeys) {
       const existingKey = publicKeyMap.get(publicKey);
 
       if (existingKey !== undefined) {
@@ -403,7 +403,7 @@ export default class DocumentComposer {
       // Not throwing error will minimize the need (thus risk) of reusing exposed update reveal value.
     }
 
-    document.publicKey = [...publicKeyMap.values()];
+    document.publicKeys = [...publicKeyMap.values()];
 
     return document;
   }

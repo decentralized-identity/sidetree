@@ -19,7 +19,7 @@ export default class TestVectorGenerator {
     const patches = [
       {
         action: 'add-public-keys',
-        publicKey: [
+        publicKeys: [
           anyNewSigningKey
         ]
       }

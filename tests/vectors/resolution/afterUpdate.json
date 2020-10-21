@@ -1,11 +1,11 @@
 {
   "@context": "https://www.w3.org/ns/did-resolution/v1",
   "didDocument": {
-    "id": "did:sidetree:EiDGO8-FsxRI6Q-TB1p9XclZ1VAU1MD-_vTSrsvzXaioWQ",
+    "id": "did:sidetree:EiA9Io0y0_GAese4CtsaHXOrxaazuQZ7rNmBOnfgZ1rxdA",
     "@context": [
       "https://www.w3.org/ns/did/v1",
       {
-        "@base": "did:sidetree:EiDGO8-FsxRI6Q-TB1p9XclZ1VAU1MD-_vTSrsvzXaioWQ"
+        "@base": "did:sidetree:EiA9Io0y0_GAese4CtsaHXOrxaazuQZ7rNmBOnfgZ1rxdA"
       }
     ],
     "service": [
@@ -18,24 +18,24 @@
     "publicKey": [
       {
         "id": "#signingKey",
-        "controller": "did:sidetree:EiDGO8-FsxRI6Q-TB1p9XclZ1VAU1MD-_vTSrsvzXaioWQ",
+        "controller": "did:sidetree:EiA9Io0y0_GAese4CtsaHXOrxaazuQZ7rNmBOnfgZ1rxdA",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
           "crv": "secp256k1",
-          "x": "QSlmMFwSDg7Wz1OID0bgHbFUJuOhOiZjrXYIK875wCI",
-          "y": "Dx5jJ9XCEJV5JuRyrwpXqgQkgsawjdui04AMPpQk5oo"
+          "x": "nQeuV4JuCyACwxWKiEnepjGsbEUsgVwgYDvdidDxvIE",
+          "y": "mvAKZoDU-y-dVF_NCXkwNvrZOumOLZ1prRfWc0zFZrg"
         }
       },
       {
         "id": "#additional-key",
-        "controller": "did:sidetree:EiDGO8-FsxRI6Q-TB1p9XclZ1VAU1MD-_vTSrsvzXaioWQ",
+        "controller": "did:sidetree:EiA9Io0y0_GAese4CtsaHXOrxaazuQZ7rNmBOnfgZ1rxdA",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
           "crv": "secp256k1",
-          "x": "iTuDOvu7EVFUWt7mVFhOOhCiQyaIrFh4W0Q5f2pTqPw",
-          "y": "AekLfibV243Kv-ntejKqGd92l1n1Sm1o08KoXmqKl8g"
+          "x": "NqElKrx2olZWNRSUV6-wI0ask8uFXbU1CFNh0ysBPB0",
+          "y": "8fXQ6SA3xijTTtkvo9jSJAxl1BlpK2FyyzpjphBZpTI"
         }
       }
     ],
@@ -46,7 +46,7 @@
   },
   "methodMetadata": {
     "published": true,
-    "recoveryCommitment": "EiBc1CxauU0zhsz0Lx3f1-44Jsn4YBDFXniXAiYB7aNjBA",
-    "updateCommitment": "EiBhLfjaOC8OQ9YFFTzun699fwMi8yChuonyLgExyeZuwA"
+    "recoveryCommitment": "EiCEuF9zDy6o__nwG-vP1fFom1leShxcWrPLA9GMS0umgQ",
+    "updateCommitment": "EiCDY21f3dOXTbqL11qb9c1ZmsABdcrVdb9xrnLQrXtYlQ"
   }
 }

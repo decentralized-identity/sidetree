@@ -6,6 +6,6 @@ import ServiceEndpointModel from './ServiceEndpointModel';
  * NOTE: This model should ONLY be used by the `DocumentComposer`.
  */
 export default interface DocumentModel {
-  publicKey?: PublicKeyModel[];
+  publicKeys?: PublicKeyModel[];
   service?: ServiceEndpointModel[];
 }

@@ -14,7 +14,7 @@ describe('DocumentComposer', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [VerificationRelationship.Authentication]);
       const document = {
-        publicKey: [anySigningPublicKey, authPublicKey]
+        publicKeys: [anySigningPublicKey, authPublicKey]
       };
       const didState: DidState = {
         document,
@@ -60,7 +60,7 @@ describe('DocumentComposer', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [VerificationRelationship.Authentication]);
       const document = {
-        publicKey: [anySigningPublicKey, authPublicKey]
+        publicKeys: [anySigningPublicKey, authPublicKey]
       };
       const didState: DidState = {
         document,
@@ -100,7 +100,7 @@ describe('DocumentComposer', async () => {
   describe('addServiceEndpoints', () => {
     it('should add expected service endpoints to document', () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }]
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }]
       };
 
       const patch = {
@@ -121,7 +121,7 @@ describe('DocumentComposer', async () => {
   describe('removeServiceEndpoints', () => {
     it('should remove the expected elements from service', () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }],
         service: [
           { id: '1', type: 't', endpoint: 'se' },
           { id: '2', type: 't', endpoint: 'se' },
@@ -138,7 +138,7 @@ describe('DocumentComposer', async () => {
       const result = DocumentComposer['removeServiceEndpoints'](document, patch);
 
       const expected = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }],
         service: [
           { id: '2', type: 't', endpoint: 'se' },
           { id: '4', type: 't', endpoint: 'se' }
@@ -150,7 +150,7 @@ describe('DocumentComposer', async () => {
 
     it('should leave document unchanged if it does not have service endpoint property', () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }]
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }]
       };
 
       const patch = {
@@ -355,7 +355,7 @@ describe('DocumentComposer', async () => {
     it('should throw DocumentComposerServiceNotArray if service is not an array', () => {
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
       const document = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
         service: 'this is not an array'
       };
       spyOn(DocumentComposer as any, 'validatePublicKeys').and.returnValue(1);
@@ -389,7 +389,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if `publicKey` in an add-public-keys patch is not an array.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[0] as any).publicKey = 'incorrectType';
+      (patches[0] as any).publicKeys = 'incorrectType';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeysNotArray);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -397,7 +397,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if an entry in `publicKey` in an add-public-keys patch contains additional unknown property.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[0].publicKey![0] as any).unknownProperty = 'unknownProperty';
+      (patches[0].publicKeys![0] as any).unknownProperty = 'unknownProperty';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -405,7 +405,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if `id` of a public key in an add-public-keys patch is not a string.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[0].publicKey![0] as any).id = { invalidType: true };
+      (patches[0].publicKeys![0] as any).id = { invalidType: true };
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => { DocumentComposer.validateDocumentPatches(patches); }, ErrorCode.DocumentComposerIdNotString
@@ -416,9 +416,9 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
 
       // Simulate that `publicKeyJwk` is missing.
-      delete (patches[0].publicKey![0] as any).publicKeyJwk;
+      delete (patches[0].publicKeys![0] as any).publicKeyJwk;
 
-      (patches[0].publicKey![0] as any).publicKeyPem = 'DummyPemString';
+      (patches[0].publicKeys![0] as any).publicKeyPem = 'DummyPemString';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyJwkMissingOrIncorrectType);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -428,7 +428,7 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
 
       // Simulate that a `type` has an incorrect type.
-      (patches[0].publicKey![0] as any).type = 123;
+      (patches[0].publicKeys![0] as any).type = 123;
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrIncorrectType);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -444,7 +444,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if `publicKey` in an add-public-keys patch is not an array.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[1] as any).publicKey = 'incorrectType';
+      (patches[1] as any).publicKeys = 'incorrectType';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdsNotArray);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -452,7 +452,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if any of the public keys in a remove-public-keys patch is not a string.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[1].publicKey![0] as any) = { invalidType: true };
+      (patches[1].publicKeys![0] as any) = { invalidType: true };
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -482,7 +482,7 @@ describe('DocumentComposer', async () => {
       const patches = [
         {
           action: 'add-public-keys',
-          publicKey: [
+          publicKeys: [
             { id: 'aNonRepeatingId', type: 'someType' }
           ]
         }
@@ -490,7 +490,7 @@ describe('DocumentComposer', async () => {
 
       const resultantDocument = DocumentComposer.applyPatches(document, patches);
 
-      expect(resultantDocument.publicKey).toEqual([
+      expect(resultantDocument.publicKeys).toEqual([
         { id: 'aNonRepeatingId', type: 'someType' }
       ]);
 
@@ -498,13 +498,13 @@ describe('DocumentComposer', async () => {
 
     it('should replace old key with the same ID with new values.', async () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [VerificationRelationship.VerificationMethod] }],
         service: []
       };
       const patches = [
         {
           action: 'add-public-keys',
-          publicKey: [
+          publicKeys: [
             { id: 'aRepeatingId', type: 'newTypeValue' },
             { id: 'aNonRepeatingId', type: 'someType' }
           ]
@@ -513,7 +513,7 @@ describe('DocumentComposer', async () => {
 
       const resultantDocument = DocumentComposer.applyPatches(document, patches);
 
-      expect(resultantDocument.publicKey).toEqual([
+      expect(resultantDocument.publicKeys).toEqual([
         { id: 'aRepeatingId', type: 'newTypeValue' },
         { id: 'aNonRepeatingId', type: 'someType' }
       ]);
@@ -533,7 +533,7 @@ describe('DocumentComposer', async () => {
   describe('validateDocument()', async () => {
     it('should throw if document contains 2 keys of with the same ID.', async () => {
       const document = {
-        publicKey: [
+        publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
@@ -555,7 +555,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw if document public key verificationRelationship is empty array.', async () => {
       const document = {
-        publicKey: [
+        publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
@@ -571,7 +571,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw if document publicKey verificationRelationship is not an array.', async () => {
       const document = {
-        publicKey: [
+        publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
@@ -587,7 +587,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw if document publicKey is bigger than expected length.', async () => {
       const document = {
-        publicKey: [
+        publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
@@ -603,7 +603,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw if document publicKey contains invalid verificationRelationship.', async () => {
       const document = {
-        publicKey: [
+        publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
@@ -640,7 +640,7 @@ function generatePatchesForPublicKeys () {
   return [
     {
       action: 'add-public-keys',
-      publicKey: [
+      publicKeys: [
         {
           id: 'keyX',
           type: 'EcdsaSecp256k1VerificationKey2019',
@@ -656,7 +656,7 @@ function generatePatchesForPublicKeys () {
     },
     {
       action: 'remove-public-keys',
-      publicKey: ['keyY']
+      publicKeys: ['keyY']
     },
     {
       action: 'add-service-endpoints',
