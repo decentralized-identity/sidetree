@@ -66,7 +66,7 @@ describe('Test Vectors', () => {
       recover: fixtureData
     };
     // here is where you would assert that
-    // no breaking changes have occured for recover operations
+    // no breaking changes have occurred for recover operations
     // if test vector generation was deterministic
   });
 
@@ -76,7 +76,7 @@ describe('Test Vectors', () => {
       recoverOperationData.recoveryPrivateKey
     );
     const fixtureData = { ...deactivateOperationData } as any;
-    // TODO: fix operation data structures so stuff like this is not requiried
+    // TODO: fix operation data structures so stuff like this is not required
     // to get consistent references to request objects.
     fixtureData.operationRequest = JSON.parse(fixtureData.deactivateOperation.operationBuffer.toString());
     delete fixtureData.deactivateOperation.operationBuffer;

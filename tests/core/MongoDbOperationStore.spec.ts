@@ -116,7 +116,7 @@ describe('MongoDbOperationStore', async () => {
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
 
     // Generate an update operation.
-    const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
+    const operationRequest = await OperationGenerator.generateUpdateOperationRequestForServices(
       didUniqueSuffix,
       createOperationData.signingPublicKey.publicKeyJwk,
       createOperationData.signingPrivateKey,
@@ -141,7 +141,7 @@ describe('MongoDbOperationStore', async () => {
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
 
     // Generate an update operation.
-    const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
+    const operationRequest = await OperationGenerator.generateUpdateOperationRequestForServices(
       didUniqueSuffix,
       createOperationData.signingPublicKey.publicKeyJwk,
       createOperationData.signingPrivateKey,

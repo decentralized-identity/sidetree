@@ -42,7 +42,7 @@ async function createUpdateSequence (
       },
       {
         action: 'add-service-endpoints',
-        service: OperationGenerator.generateServiceEndpoints(['serviceEndpointId' + i])
+        services: OperationGenerator.generateServiceEndpoints(['serviceEndpointId' + i])
       }
     ];
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
@@ -107,7 +107,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDocumentAfterUpdates (document: DocumentModel | undefined, numberOfUpdates: number) {
   expect(document).toBeDefined();
-  expect(document!.service![0].id).toEqual('serviceEndpointId' + (numberOfUpdates - 1));
+  expect(document!.services![0].id).toEqual('serviceEndpointId' + (numberOfUpdates - 1));
 }
 
 describe('OperationProcessor', async () => {
@@ -390,17 +390,17 @@ describe('OperationProcessor', async () => {
       // MUST reset the DID state back to `undefined` for each test.
       didState = undefined;
 
-      // Generate key(s) and service endpoint(s) to be included in the DID Document.
+      // Generate key(s) and service(s) to be included in the DID Document.
       [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
       nextRecoveryCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey);
-      const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri']);
+      const services = OperationGenerator.generateServiceEndpoints(['dummyHubUri']);
 
       // Create the initial create operation.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         signingPublicKey,
-        serviceEndpoints
+        services
       );
       const createOperation = await CreateOperation.parse(createOperationBuffer);
       namedAnchoredCreateOperationModel = {

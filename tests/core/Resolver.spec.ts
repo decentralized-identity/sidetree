@@ -164,16 +164,16 @@ describe('Resolver', () => {
 
   describe('Recovery operation', () => {
     it('should apply correctly with updates that came before and after the recover operation.', async () => {
-      // Generate key(s) and service endpoint(s) to be included in the DID Document.
+      // Generate key(s) and service(s) to be included in the DID Document.
       const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
-      const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri1']);
+      const services = OperationGenerator.generateServiceEndpoints(['dummyHubUri1']);
 
       // Create the initial create operation and insert it to the operation store.
       const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         signingPublicKey,
-        serviceEndpoints
+        services
       );
       const createOperation = await CreateOperation.parse(operationBuffer);
       const anchoredOperationModel = {
@@ -210,7 +210,7 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation1PriorRecovery]);
 
       // Create another update operation and insert it to the operation store.
-      const updatePayload2PriorRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
+      const updatePayload2PriorRecovery = await OperationGenerator.generateUpdateOperationRequestForServices(
         didUniqueSuffix,
         nextUpdateKey.publicKeyJwk,
         nextUpdatePrivateKey,
@@ -232,12 +232,12 @@ describe('Resolver', () => {
       // Sanity check to make sure the DID Document with update is resolved correctly.
       let didState = await resolver.resolve(didUniqueSuffix) as DidState;
       expect(didState.document.publicKeys.length).toEqual(2);
-      expect(didState.document.service.length).toEqual(2);
+      expect(didState.document.services.length).toEqual(2);
 
       // Create new keys used for new document for recovery request.
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey, newSigningPrivateKey] = await OperationGenerator.generateKeyPair('newSigningKey');
-      const newServiceEndpoints = OperationGenerator.generateServiceEndpoints(['newDummyHubUri1']);
+      const newServices = OperationGenerator.generateServiceEndpoints(['newDummyHubUri1']);
 
       // Create the recover operation and insert it to the operation store.
       const recoverOperationJson = await OperationGenerator.generateRecoverOperationRequest(
@@ -245,7 +245,7 @@ describe('Resolver', () => {
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey,
-        newServiceEndpoints,
+        newServices,
         [newSigningPublicKey]
       );
       const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationJson));
@@ -275,7 +275,7 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation1AfterRecovery]);
 
       // Create another update and insert it to the operation store.
-      const updatePayload2AfterRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
+      const updatePayload2AfterRecovery = await OperationGenerator.generateUpdateOperationRequestForServices(
         didUniqueSuffix,
         nextUpdateKey.publicKeyJwk,
         nextUpdatePrivateKey,
@@ -306,10 +306,10 @@ describe('Resolver', () => {
       expect(document.publicKeys.length).toEqual(2);
       expect(actualNewSigningPublicKey1!.publicKeyJwk).toEqual(newSigningPublicKey.publicKeyJwk);
       expect(actualNewSigningPublicKey2!.publicKeyJwk).toEqual(newKey2ForUpdate1AfterRecovery.publicKeyJwk);
-      expect(document.service).toBeDefined();
-      expect(document.service.length).toEqual(1);
-      expect(document.service[0].endpoint).toBeDefined();
-      expect(document.service[0].id).toEqual('newDummyHubUri2');
+      expect(document.services).toBeDefined();
+      expect(document.services.length).toEqual(1);
+      expect(document.services[0].endpoint).toBeDefined();
+      expect(document.services[0].id).toEqual('newDummyHubUri2');
     });
 
   });

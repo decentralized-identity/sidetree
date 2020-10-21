@@ -123,16 +123,16 @@ export default class OperationGenerator {
    * @param recoveryPublicKey
    * @param updatePublicKey
    * @param otherPublicKeys
-   * @param serviceEndpoints
+   * @param services
    */
   public static async generateLongFormDid (
     otherPublicKeys?: PublicKeyModel[],
-    serviceEndpoints?: ServiceEndpointModel[],
+    services?: ServiceEndpointModel[],
     network?: string) {
 
     const document = {
       publicKeys: otherPublicKeys || [],
-      service: serviceEndpoints || []
+      services: services || []
     };
 
     const patches = [{
@@ -220,13 +220,13 @@ export default class OperationGenerator {
     const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [updatePublicKey, updatePrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-    const service = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
 
     const operationRequest = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
       updatePublicKey,
       [signingPublicKey],
-      service
+      services
     );
 
     const operationBuffer = Buffer.from(JSON.stringify(operationRequest));
@@ -337,10 +337,10 @@ export default class OperationGenerator {
     recoveryPublicKey: JwkEs256k,
     updatePublicKey: JwkEs256k,
     otherPublicKeys: PublicKeyModel[],
-    serviceEndpoints?: ServiceEndpointModel[]) {
+    services?: ServiceEndpointModel[]) {
     const document: DocumentModel = {
       publicKeys: otherPublicKeys,
-      service: serviceEndpoints
+      services
     };
 
     const patches = [{
@@ -448,11 +448,11 @@ export default class OperationGenerator {
     recoveryPrivateKey: JwkEs256k,
     newRecoveryPublicKey: JwkEs256k,
     newSigningPublicKey: PublicKeyModel,
-    serviceEndpoints?: ServiceEndpointModel[],
+    services?: ServiceEndpointModel[],
     publicKeys?: PublicKeyModel[]) {
     const document = {
       publicKeys: publicKeys,
-      service: serviceEndpoints
+      services
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
       didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, Multihash.canonicalizeThenDoubleHashThenEncode(newSigningPublicKey.publicKeyJwk), document
@@ -529,13 +529,13 @@ export default class OperationGenerator {
   public static async generateCreateOperationBuffer (
     recoveryPublicKey: JwkEs256k,
     signingPublicKey: PublicKeyModel,
-    serviceEndpoints?: ServiceEndpointModel[]
+    services?: ServiceEndpointModel[]
   ): Promise<Buffer> {
     const operation = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
       signingPublicKey.publicKeyJwk,
       [signingPublicKey],
-      serviceEndpoints
+      services
     );
 
     return Buffer.from(JSON.stringify(operation));
@@ -572,9 +572,9 @@ export default class OperationGenerator {
   }
 
   /**
-   * Creates an update operation for adding and/or removing hub service endpoints.
+   * Generate an update operation for adding and/or removing services.
    */
-  public static async createUpdateOperationRequestForHubEndpoints (
+  public static async generateUpdateOperationRequestForServices (
     didUniqueSuffix: string,
     updatePublicKey: any,
     updatePrivateKey: JwkEs256k,
@@ -586,7 +586,7 @@ export default class OperationGenerator {
     if (idOfServiceEndpointToAdd !== undefined) {
       const patch = {
         action: 'add-service-endpoints',
-        service: OperationGenerator.generateServiceEndpoints([idOfServiceEndpointToAdd])
+        services: OperationGenerator.generateServiceEndpoints([idOfServiceEndpointToAdd])
       };
 
       patches.push(patch);
@@ -642,13 +642,13 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates an array of service endpoints with specified ids
+   * Generates an array of service with specified ids
    * @param ids the id field in endpoint.
    */
   public static generateServiceEndpoints (ids: string[]): any[] {
-    const serviceEndpoints = [];
+    const services = [];
     for (const id of ids) {
-      serviceEndpoints.push(
+      services.push(
         {
           id: id,
           type: 'someType',
@@ -656,7 +656,7 @@ export default class OperationGenerator {
         }
       );
     }
-    return serviceEndpoints;
+    return services;
   }
 
   /**
