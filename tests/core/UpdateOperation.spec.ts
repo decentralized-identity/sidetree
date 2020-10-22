@@ -83,7 +83,7 @@ describe('UpdateOperation', async () => {
       const signedData = {
         deltaHash: 'anyUnusedHash',
         extraProperty: 'An unknown extra property',
-        update_key: {}
+        updateKey: {}
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
       await expectAsync((UpdateOperation as any).parseSignedDataPayload(encodedSignedData))

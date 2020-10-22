@@ -585,7 +585,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document public key is bigger than expected length.', async () => {
+    it('should throw if document public key purposes is bigger than expected length.', async () => {
       const document = {
         publicKeys: [
           {

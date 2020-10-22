@@ -124,11 +124,8 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationSignedDidUniqueSuffixMismatch);
     }
 
-    Jwk.validateJwkEs256k(signedData.recovery_key);
+    Jwk.validateJwkEs256k(signedData.recoveryKey);
 
-    return {
-      didSuffix: signedData.didSuffix,
-      recoveryKey: signedData.recovery_key
-    };
+    return signedData;
   }
 }

@@ -140,7 +140,7 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty);
     }
 
-    Jwk.validateJwkEs256k(signedData.recovery_key);
+    Jwk.validateJwkEs256k(signedData.recoveryKey);
 
     const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
@@ -148,10 +148,6 @@ export default class RecoverOperation implements OperationModel {
     const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.recoveryCommitment);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
 
-    return {
-      deltaHash: signedData.deltaHash,
-      recoveryKey: signedData.recovery_key,
-      recoveryCommitment: signedData.recoveryCommitment
-    };
+    return signedData;
   }
 }

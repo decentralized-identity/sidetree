@@ -2,14 +2,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import OperationGenerator from '../generators/OperationGenerator';
 
-const OVERWITE_TEST_VECTORS = false;
+const OVERWRITE_TEST_VECTORS = false;
 
 describe('Test Vectors', () => {
-  let fixture:any = {};
-  let createOperationData:any;
-  let updateOperationData:any;
-  let recoverOperationData:any;
-  let deactivateOperationData:any;
+  let fixture: any = {};
+  let createOperationData: any;
+  let updateOperationData: any;
+  let recoverOperationData: any;
+  let deactivateOperationData: any;
 
   it('can generate create', async () => {
     createOperationData = await OperationGenerator.generateCreateOperation();
@@ -91,7 +91,7 @@ describe('Test Vectors', () => {
   });
 
   it('should write fixture to disk', async () => {
-    if (OVERWITE_TEST_VECTORS) {
+    if (OVERWRITE_TEST_VECTORS) {
       fs.writeFileSync(path.resolve(__dirname, '../../../tests/vectors/generated.json'), JSON.stringify(fixture, null, 2));
     }
   });

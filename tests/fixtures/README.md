@@ -2,7 +2,7 @@ Test Vectors have moved to [test-vectors](../vectors).
 
 When implementing features that impact test vectors you will need to regenerate them.
 
-Toggle the `OVERWITE_TEST_VECTORS` boolean on [test-vectors](../vectors/generate.spec.ts).
+Toggle the `OVERWRITE_TEST_VECTORS` boolean on [test-vectors](../vectors/generate.spec.ts).
 
 Once new vectors have been generated, your tests will all start failing.
 

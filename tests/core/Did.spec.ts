@@ -84,7 +84,7 @@ describe('DID', async () => {
       const didMethodName = 'sidetree';
       const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
       const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-      const longFormDid = `${shortFormDid}?-sidetree-initial-state=unused_suffixData.unused_delta&extra-param`;
+      const longFormDid = `${shortFormDid}?-sidetree-initial-state=unused_suffix_data.unused_delta&extra-param`;
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         async () => Did.create(longFormDid, didMethodName),

@@ -178,7 +178,7 @@ export default class OperationGenerator {
   /**
    * Generates a long from from create operation data.
    */
-  public static async longFormFromCreateOperationData (createOperationData:any, network?: string) {
+  public static async longFormFromCreateOperationData (createOperationData: any, network?: string) {
 
     const delta = {
       updateCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.updatePublicKey),
@@ -425,7 +425,7 @@ export default class OperationGenerator {
     const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const signedDataPayloadObject = {
-      update_key: updatePublicKey,
+      updateKey: updatePublicKey,
       deltaHash: deltaHash
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, updatePrivateKey);
@@ -484,7 +484,7 @@ export default class OperationGenerator {
 
     const signedDataPayloadObject = {
       deltaHash: deltaHash,
-      recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey),
+      recoveryKey: Jwk.getEs256kPublicKey(recoveryPrivateKey),
       recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(newRecoveryPublicKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
@@ -508,7 +508,7 @@ export default class OperationGenerator {
 
     const signedDataPayloadObject = {
       didSuffix: didUniqueSuffix,
-      recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey)
+      recoveryKey: Jwk.getEs256kPublicKey(recoveryPrivateKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 

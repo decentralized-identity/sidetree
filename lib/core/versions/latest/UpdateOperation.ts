@@ -125,14 +125,11 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationSignedDataHasMissingOrUnknownProperty);
     }
 
-    Jwk.validateJwkEs256k(signedData.update_key);
+    Jwk.validateJwkEs256k(signedData.updateKey);
 
     const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
 
-    return {
-      deltaHash: signedData.deltaHash,
-      updateKey: signedData.update_key
-    };
+    return signedData;
   }
 }
