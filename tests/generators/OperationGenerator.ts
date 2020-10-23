@@ -16,7 +16,7 @@ import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
-import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
+import ServiceModel from '../../lib/core/versions/latest/models/ServiceModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
@@ -74,17 +74,17 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates SECP256K1 key pair to be used in an operation. If purpose not supplied, all purposes will be included
+   * Generates SECP256K1 key pair to be used in an operation. If purposes not supplied, all purposes will be included
    * Mainly used for testing.
    * @returns [publicKey, privateKey]
    */
-  public static async generateKeyPair (id: string, purpose?: PublicKeyPurpose[]): Promise<[PublicKeyModel, JwkEs256k]> {
+  public static async generateKeyPair (id: string, purposes?: PublicKeyPurpose[]): Promise<[PublicKeyModel, JwkEs256k]> {
     const [publicKey, privateKey] = await Jwk.generateEs256kKeyPair();
     const publicKeyModel = {
       id,
       type: 'EcdsaSecp256k1VerificationKey2019',
-      jwk: publicKey,
-      purpose: purpose || Object.values(PublicKeyPurpose)
+      publicKeyJwk: publicKey,
+      purposes: purposes || Object.values(PublicKeyPurpose)
     };
 
     return [publicKeyModel, privateKey];
@@ -123,16 +123,16 @@ export default class OperationGenerator {
    * @param recoveryPublicKey
    * @param updatePublicKey
    * @param otherPublicKeys
-   * @param serviceEndpoints
+   * @param services
    */
   public static async generateLongFormDid (
     otherPublicKeys?: PublicKeyModel[],
-    serviceEndpoints?: ServiceEndpointModel[],
+    services?: ServiceModel[],
     network?: string) {
 
     const document = {
-      public_keys: otherPublicKeys || [],
-      service_endpoints: serviceEndpoints || []
+      publicKeys: otherPublicKeys || [],
+      services: services || []
     };
 
     const patches = [{
@@ -144,15 +144,15 @@ export default class OperationGenerator {
     const [updatePublicKey] = await Jwk.generateEs256kKeyPair();
 
     const delta = {
-      update_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
+      updateCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
       patches
     };
 
     const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const suffixData = {
-      delta_hash: deltaHash,
-      recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
+      deltaHash: deltaHash,
+      recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
     const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
@@ -160,7 +160,44 @@ export default class OperationGenerator {
     const shortFormDid = network ? `did:sidetree:${network}:${didUniqueSuffix}` : `did:sidetree:${didUniqueSuffix}`;
 
     const initialState = {
-      suffix_data: suffixData,
+      suffixData: suffixData,
+      delta: delta
+    };
+
+    const canonicalizedInitialStateBuffer = JsonCanonicalizer.canonicalizeAsBuffer(initialState);
+    const encodedCanonicalizedInitialStateString = Encoder.encode(canonicalizedInitialStateBuffer);
+
+    const longFormDid = `${shortFormDid}:${encodedCanonicalizedInitialStateString}`;
+    return {
+      longFormDid,
+      shortFormDid,
+      didUniqueSuffix
+    };
+  }
+
+  /**
+   * Generates a long from from create operation data.
+   */
+  public static async longFormFromCreateOperationData (createOperationData: any, network?: string) {
+
+    const delta = {
+      updateCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.updatePublicKey),
+      patches: createOperationData.createOperation.delta.patches
+    };
+
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
+
+    const suffixData = {
+      deltaHash: deltaHash,
+      recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.recoveryPublicKey)
+    };
+
+    const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
+
+    const shortFormDid = network ? `did:sidetree:${network}:${didUniqueSuffix}` : `did:sidetree:${didUniqueSuffix}`;
+
+    const initialState = {
+      suffixData: suffixData,
       delta: delta
     };
 
@@ -183,13 +220,13 @@ export default class OperationGenerator {
     const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [updatePublicKey, updatePrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-    const service = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+    const services = OperationGenerator.generateServices(['serviceId123']);
 
     const operationRequest = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
       updatePublicKey,
       [signingPublicKey],
-      service
+      services
     );
 
     const operationBuffer = Buffer.from(JSON.stringify(operationRequest));
@@ -216,7 +253,7 @@ export default class OperationGenerator {
     const [newRecoveryPublicKey, newRecoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [newSigningPublicKey, newSigningPrivateKey] = await OperationGenerator.generateKeyPair(newSigningKeyId);
     const [publicKeyToBeInDocument] = await OperationGenerator.generateKeyPair('newKey');
-    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+    const services = OperationGenerator.generateServices(['serviceId123']);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [updateKey, updatePrivateKey] = await OperationGenerator.generateKeyPair('updateKey');
@@ -269,7 +306,7 @@ export default class OperationGenerator {
       additionalKeyId,
       additionalPublicKey,
       additionalPrivateKey,
-      nextUpdateKey: additionalPublicKey.jwk
+      nextUpdateKey: additionalPublicKey.publicKeyJwk
     };
   }
 
@@ -300,10 +337,10 @@ export default class OperationGenerator {
     recoveryPublicKey: JwkEs256k,
     updatePublicKey: JwkEs256k,
     otherPublicKeys: PublicKeyModel[],
-    serviceEndpoints?: ServiceEndpointModel[]) {
+    services?: ServiceModel[]) {
     const document: DocumentModel = {
-      public_keys: otherPublicKeys,
-      service_endpoints: serviceEndpoints
+      publicKeys: otherPublicKeys,
+      services
     };
 
     const patches = [{
@@ -312,20 +349,20 @@ export default class OperationGenerator {
     }];
 
     const delta = {
-      update_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
+      updateCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
       patches
     };
 
     const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const suffixData = {
-      delta_hash: deltaHash,
-      recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
+      deltaHash: deltaHash,
+      recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
     const operation = {
       type: OperationType.Create,
-      suffix_data: suffixData,
+      suffixData: suffixData,
       delta: delta
     };
 
@@ -340,13 +377,13 @@ export default class OperationGenerator {
       didUniqueSuffix = OperationGenerator.generateRandomHash();
     }
     const [nextUpdateKey] = await OperationGenerator.generateKeyPair('nextUpdateKey');
-    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk);
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk);
     const anyNewSigningPublicKeyId = 'anyNewKey';
     const [anyNewSigningKey] = await OperationGenerator.generateKeyPair(anyNewSigningPublicKeyId);
     const patches = [
       {
         action: 'add-public-keys',
-        public_keys: [
+        publicKeys: [
           anyNewSigningKey
         ]
       }
@@ -355,7 +392,7 @@ export default class OperationGenerator {
     const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
     const request = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
-      signingPublicKey.jwk,
+      signingPublicKey.publicKeyJwk,
       signingPrivateKey,
       nextUpdateCommitmentHash,
       patches
@@ -383,21 +420,21 @@ export default class OperationGenerator {
   ) {
     const delta = {
       patches,
-      update_commitment: nextUpdateCommitmentHash
+      updateCommitment: nextUpdateCommitmentHash
     };
     const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const signedDataPayloadObject = {
-      update_key: updatePublicKey,
-      delta_hash: deltaHash
+      updateKey: updatePublicKey,
+      deltaHash: deltaHash
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, updatePrivateKey);
 
     const updateOperationRequest = {
       type: OperationType.Update,
-      did_suffix: didUniqueSuffix,
+      didSuffix: didUniqueSuffix,
       delta: delta,
-      signed_data: signedData
+      signedData: signedData
     };
 
     return updateOperationRequest;
@@ -411,14 +448,14 @@ export default class OperationGenerator {
     recoveryPrivateKey: JwkEs256k,
     newRecoveryPublicKey: JwkEs256k,
     newSigningPublicKey: PublicKeyModel,
-    serviceEndpoints?: ServiceEndpointModel[],
+    services?: ServiceModel[],
     publicKeys?: PublicKeyModel[]) {
     const document = {
-      public_keys: publicKeys,
-      service_endpoints: serviceEndpoints
+      publicKeys: publicKeys,
+      services
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
-      didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, Multihash.canonicalizeThenDoubleHashThenEncode(newSigningPublicKey.jwk), document
+      didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, Multihash.canonicalizeThenDoubleHashThenEncode(newSigningPublicKey.publicKeyJwk), document
     );
     return recoverOperation;
   }
@@ -440,22 +477,22 @@ export default class OperationGenerator {
 
     const delta = {
       patches,
-      update_commitment: nextUpdateCommitmentHash
+      updateCommitment: nextUpdateCommitmentHash
     };
 
     const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const signedDataPayloadObject = {
-      delta_hash: deltaHash,
-      recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey),
-      recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(newRecoveryPublicKey)
+      deltaHash: deltaHash,
+      recoveryKey: Jwk.getEs256kPublicKey(recoveryPrivateKey),
+      recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(newRecoveryPublicKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Recover,
-      did_suffix: didUniqueSuffix,
-      signed_data: signedData,
+      didSuffix: didUniqueSuffix,
+      signedData: signedData,
       delta: delta
     };
 
@@ -470,15 +507,15 @@ export default class OperationGenerator {
     recoveryPrivateKey: JwkEs256k) {
 
     const signedDataPayloadObject = {
-      did_suffix: didUniqueSuffix,
-      recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey)
+      didSuffix: didUniqueSuffix,
+      recoveryKey: Jwk.getEs256kPublicKey(recoveryPrivateKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Deactivate,
-      did_suffix: didUniqueSuffix,
-      signed_data: signedData
+      didSuffix: didUniqueSuffix,
+      signedData: signedData
     };
 
     return operation;
@@ -492,13 +529,13 @@ export default class OperationGenerator {
   public static async generateCreateOperationBuffer (
     recoveryPublicKey: JwkEs256k,
     signingPublicKey: PublicKeyModel,
-    serviceEndpoints?: ServiceEndpointModel[]
+    services?: ServiceModel[]
   ): Promise<Buffer> {
     const operation = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
-      signingPublicKey.jwk,
+      signingPublicKey.publicKeyJwk,
       [signingPublicKey],
-      serviceEndpoints
+      services
     );
 
     return Buffer.from(JSON.stringify(operation));
@@ -517,7 +554,7 @@ export default class OperationGenerator {
     const patches = [
       {
         action: 'add-public-keys',
-        public_keys: [
+        publicKeys: [
           newPublicKey
         ]
       }
@@ -535,9 +572,9 @@ export default class OperationGenerator {
   }
 
   /**
-   * Creates an update operation for adding and/or removing hub service endpoints.
+   * Generate an update operation for adding and/or removing services.
    */
-  public static async createUpdateOperationRequestForHubEndpoints (
+  public static async generateUpdateOperationRequestForServices (
     didUniqueSuffix: string,
     updatePublicKey: any,
     updatePrivateKey: JwkEs256k,
@@ -548,8 +585,8 @@ export default class OperationGenerator {
 
     if (idOfServiceEndpointToAdd !== undefined) {
       const patch = {
-        action: 'add-service-endpoints',
-        service_endpoints: OperationGenerator.generateServiceEndpoints([idOfServiceEndpointToAdd])
+        action: 'add-services',
+        services: OperationGenerator.generateServices([idOfServiceEndpointToAdd])
       };
 
       patches.push(patch);
@@ -557,7 +594,7 @@ export default class OperationGenerator {
 
     if (idsOfServiceEndpointToRemove.length > 0) {
       const patch = {
-        action: 'remove-service-endpoints',
+        action: 'remove-services',
         ids: idsOfServiceEndpointToRemove
       };
 
@@ -605,21 +642,21 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates an array of service endpoints with specified ids
-   * @param ids the id field in endpoint.
+   * Generates an array of services with specified ids
+   * @param ids the id field in service.
    */
-  public static generateServiceEndpoints (ids: string[]): any[] {
-    const serviceEndpoints = [];
+  public static generateServices (ids: string[]): any[] {
+    const services = [];
     for (const id of ids) {
-      serviceEndpoints.push(
+      services.push(
         {
           id: id,
           type: 'someType',
-          endpoint: 'https://www.url.com'
+          serviceEndpoint: 'https://www.url.com'
         }
       );
     }
-    return serviceEndpoints;
+    return services;
   }
 
   /**

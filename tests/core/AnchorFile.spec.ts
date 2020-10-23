@@ -36,7 +36,7 @@ describe('AnchorFile', async () => {
       expect(parsedAnchorFile.recoverOperations[0].signedDataJws.toCompactJws()).toEqual(recoverOperation.signedDataJws.toCompactJws());
       expect(parsedAnchorFile.deactivateOperations.length).toEqual(1);
       expect(parsedAnchorFile.deactivateOperations[0].signedDataJws.toCompactJws()).toEqual(deactivateOperation.signedDataJws.toCompactJws());
-      expect(parsedAnchorFile.model.map_file_uri).toEqual(mapFileUri);
+      expect(parsedAnchorFile.model.mapFileUri).toEqual(mapFileUri);
     });
 
     it('should throw if buffer given is not valid JSON.', async () => {
@@ -50,7 +50,7 @@ describe('AnchorFile', async () => {
 
     it('should throw if the buffer is not compressed', async () => {
       const anchorFile = {
-        map_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -63,8 +63,8 @@ describe('AnchorFile', async () => {
     it('should throw if has an unknown property.', async () => {
       const anchorFile = {
         unknownProperty: 'Unknown property',
-        writer_lock_id: 'writer lock',
-        map_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        writerLockId: 'writer lock',
+        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {}
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -75,8 +75,8 @@ describe('AnchorFile', async () => {
 
     it('should throw if `operations` property has an unknown property.', async () => {
       const anchorFile = {
-        writer_lock_id: 'writer lock',
-        map_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        writerLockId: 'writer lock',
+        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           unexpectedProperty: 'any value'
         }
@@ -92,7 +92,7 @@ describe('AnchorFile', async () => {
 
     it('should throw if missing map file hash.', async () => {
       const anchorFile = {
-        // map_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what is missing.
+        // mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what is missing.
         operations: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -103,7 +103,7 @@ describe('AnchorFile', async () => {
 
     it('should throw if missing operations property.', async () => {
       const anchorFile = {
-        map_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
         // operations: {}, // Intentionally missing operations.
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -115,7 +115,7 @@ describe('AnchorFile', async () => {
     it('should throw if any additional property.', async () => {
       const anchorFile = {
         invalidProperty: 'some property value',
-        map_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {}
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -129,7 +129,7 @@ describe('AnchorFile', async () => {
       const createOperation = createOperationData.createOperation;
       const anchorFileModel = await AnchorFile.createModel('writerLock', 'unusedMockFileHash', [createOperation], [], []);
 
-      (anchorFileModel as any).map_file_uri = 1234; // Intentionally setting the map_file_uri as an incorrect type.
+      (anchorFileModel as any).mapFileUri = 1234; // Intentionally setting the mapFileUri as an incorrect type.
 
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -157,7 +157,7 @@ describe('AnchorFile', async () => {
       const createOperation = createOperationData.createOperation;
       const anchorFileModel = await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', [createOperation], [], []);
 
-      (anchorFileModel as any).writer_lock_id = {}; // intentionally set to invalid value
+      (anchorFileModel as any).writerLockId = {}; // intentionally set to invalid value
 
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -170,7 +170,7 @@ describe('AnchorFile', async () => {
       const createOperation = createOperationData.createOperation;
       const anchorFileModel = await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', [createOperation], [], []);
 
-      (anchorFileModel as any).writer_lock_id = crypto.randomBytes(2000).toString('hex'); // Intentionally larger than maximum.
+      (anchorFileModel as any).writerLockId = crypto.randomBytes(2000).toString('hex'); // Intentionally larger than maximum.
 
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -182,7 +182,7 @@ describe('AnchorFile', async () => {
 
     it('should throw if `create` property is not an array.', async () => {
       const anchorFile = {
-        map_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           create: 'IncorrectType'
         }
@@ -196,7 +196,7 @@ describe('AnchorFile', async () => {
 
     it('should throw if `recover` property is not an array.', async () => {
       const anchorFile = {
-        map_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           recover: 'IncorrectType'
         }
@@ -210,7 +210,7 @@ describe('AnchorFile', async () => {
 
     it('should throw if `deactivate` property is not an array.', async () => {
       const anchorFile = {
-        map_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           deactivate: 'IncorrectType'
         }
@@ -238,7 +238,7 @@ describe('AnchorFile', async () => {
       // Strip away properties not allowed in the deactivateOperations array elements.
       delete deactivateOperationRequest.type;
       const anchorFile = {
-        map_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           create: [createOperationRequest],
           deactivate: [deactivateOperationRequest]
@@ -272,20 +272,20 @@ describe('AnchorFile', async () => {
 
       const anchorFileModel = await AnchorFile.createModel(undefined, mapFileUri, [createOperation], [recoverOperation], [deactivateOperation]);
 
-      expect(anchorFileModel.map_file_uri).toEqual(mapFileUri);
-      expect(anchorFileModel.operations.create![0].suffix_data).toEqual({
-        delta_hash: createOperation.suffixData.deltaHash, recovery_commitment: createOperation.suffixData.recoveryCommitment, type: undefined
+      expect(anchorFileModel.mapFileUri).toEqual(mapFileUri);
+      expect(anchorFileModel.operations.create![0].suffixData).toEqual({
+        deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment, type: undefined
       });
 
       // Verify recover operation.
       const recoveryOperationInAnchorFile = anchorFileModel.operations.recover![0];
-      expect(recoveryOperationInAnchorFile.did_suffix).toEqual(recoverOperation.didUniqueSuffix);
-      expect(recoveryOperationInAnchorFile.signed_data).toEqual(recoverOperation.signedDataJws.toCompactJws());
+      expect(recoveryOperationInAnchorFile.didSuffix).toEqual(recoverOperation.didUniqueSuffix);
+      expect(recoveryOperationInAnchorFile.signedData).toEqual(recoverOperation.signedDataJws.toCompactJws());
 
       // Verify deactivate operation.
       const deactivateOperationInAnchorFile = anchorFileModel.operations.deactivate![0];
-      expect(deactivateOperationInAnchorFile.did_suffix).toEqual(deactivateOperation.didUniqueSuffix);
-      expect(deactivateOperationInAnchorFile.signed_data).toEqual(deactivateOperation.signedDataJws.toCompactJws());
+      expect(deactivateOperationInAnchorFile.didSuffix).toEqual(deactivateOperation.didUniqueSuffix);
+      expect(deactivateOperationInAnchorFile.signedData).toEqual(deactivateOperation.signedDataJws.toCompactJws());
     });
   });
 
@@ -299,9 +299,9 @@ describe('AnchorFile', async () => {
 
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
-      expect(anchorFile.model.map_file_uri).toEqual(mapFileHash);
-      expect(anchorFile.model.operations.create![0].suffix_data).toEqual({
-        delta_hash: createOperation.suffixData.deltaHash, recovery_commitment: createOperation.suffixData.recoveryCommitment
+      expect(anchorFile.model.mapFileUri).toEqual(mapFileHash);
+      expect(anchorFile.model.operations.create![0].suffixData).toEqual({
+        deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment
       });
     });
   });

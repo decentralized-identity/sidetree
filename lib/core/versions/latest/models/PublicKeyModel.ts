@@ -1,11 +1,11 @@
 import PublicKeyPurpose from '../PublicKeyPurpose';
 
 /**
- * Data model representing a public key in the 'publicKey' array in patches.
+ * Data model representing a public key in the 'publicKeys' array in patches.
  */
 export default interface PublicKeyModel {
   id: string;
   type: string;
-  jwk: any;
-  purpose: PublicKeyPurpose[];
+  publicKeyJwk: any;
+  purposes: PublicKeyPurpose[];
 }

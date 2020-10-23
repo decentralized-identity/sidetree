@@ -14,12 +14,12 @@ export default class TestVectorGenerator {
 
     // derive an update operation request from the create
     const [nextUpdateKey] = await OperationGenerator.generateKeyPair('nextUpdateKey');
-    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk);
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk);
     const [anyNewSigningKey] = await OperationGenerator.generateKeyPair('newKeyId');
     const patches = [
       {
         action: 'add-public-keys',
-        public_keys: [
+        publicKeys: [
           anyNewSigningKey
         ]
       }
@@ -37,14 +37,14 @@ export default class TestVectorGenerator {
     const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('keyAfterRecover');
 
     const [documentKey] = await OperationGenerator.generateKeyPair('newDocumentKey');
-    const newServiceEndpoints = OperationGenerator.generateServiceEndpoints(['newId']);
+    const newServices = OperationGenerator.generateServices(['newId']);
 
     const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
       createOperationData.createOperation.didUniqueSuffix,
       createOperationData.recoveryPrivateKey,
       newRecoveryPublicKey,
       newSigningPublicKey,
-      newServiceEndpoints,
+      newServices,
       [documentKey]
     );
 

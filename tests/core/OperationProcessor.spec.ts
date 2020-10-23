@@ -34,15 +34,15 @@ async function createUpdateSequence (
   let currentPrivateKey = privateKey;
   for (let i = 0; i < numberOfUpdates; ++i) {
     const [nextUpdateKey, nextPrivateKey] = await OperationGenerator.generateKeyPair('updateKey');
-    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk);
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk);
     const patches = [
       {
-        action: 'remove-service-endpoints',
-        ids: ['serviceEndpointId' + (i - 1)]
+        action: 'remove-services',
+        ids: ['serviceId' + (i - 1)]
       },
       {
-        action: 'add-service-endpoints',
-        service_endpoints: OperationGenerator.generateServiceEndpoints(['serviceEndpointId' + i])
+        action: 'add-services',
+        services: OperationGenerator.generateServices(['serviceId' + i])
       }
     ];
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
@@ -54,7 +54,7 @@ async function createUpdateSequence (
     );
 
     // Now that the update payload is created, update the update reveal for the next operation generation to use.
-    currentUpdateKey = nextUpdateKey.jwk;
+    currentUpdateKey = nextUpdateKey.publicKeyJwk;
     currentPrivateKey = nextPrivateKey;
 
     const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -107,7 +107,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDocumentAfterUpdates (document: DocumentModel | undefined, numberOfUpdates: number) {
   expect(document).toBeDefined();
-  expect(document!.service_endpoints![0].id).toEqual('serviceEndpointId' + (numberOfUpdates - 1));
+  expect(document!.services![0].id).toEqual('serviceId' + (numberOfUpdates - 1));
 }
 
 describe('OperationProcessor', async () => {
@@ -134,7 +134,7 @@ describe('OperationProcessor', async () => {
     signingKeyId = 'signingKey';
     [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId0']);
+    const services = OperationGenerator.generateServices(['serviceId0']);
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
@@ -180,13 +180,13 @@ describe('OperationProcessor', async () => {
     const patches = [
       {
         action: 'remove-public-keys',
-        public_keys: [signingKeyId]
+        publicKeys: [signingKeyId]
       }
     ];
     const nextUpdateCommitmentHash = 'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
-      signingPublicKey.jwk,
+      signingPublicKey.publicKeyJwk,
       signingPrivateKey,
       nextUpdateCommitmentHash,
       patches
@@ -319,7 +319,7 @@ describe('OperationProcessor', async () => {
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const [invalidKey] = await OperationGenerator.generateKeyPair('invalidKey');
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, invalidKey.jwk, signingPrivateKey, anyPublicKey, OperationGenerator.generateRandomHash()
+      didUniqueSuffix, invalidKey.publicKeyJwk, signingPrivateKey, anyPublicKey, OperationGenerator.generateRandomHash()
     );
 
     // Generate operation with an invalid key
@@ -342,7 +342,7 @@ describe('OperationProcessor', async () => {
     const [, anyIncorrectSigningPrivateKey] = await OperationGenerator.generateKeyPair('key1');
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, signingPublicKey.jwk, anyIncorrectSigningPrivateKey, anyPublicKey, OperationGenerator.generateRandomHash()
+      didUniqueSuffix, signingPublicKey.publicKeyJwk, anyIncorrectSigningPrivateKey, anyPublicKey, OperationGenerator.generateRandomHash()
     );
 
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -390,17 +390,17 @@ describe('OperationProcessor', async () => {
       // MUST reset the DID state back to `undefined` for each test.
       didState = undefined;
 
-      // Generate key(s) and service endpoint(s) to be included in the DID Document.
+      // Generate key(s) and service(s) to be included in the DID Document.
       [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
       nextRecoveryCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey);
-      const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri']);
+      const services = OperationGenerator.generateServices(['dummyHubUri']);
 
       // Create the initial create operation.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         signingPublicKey,
-        serviceEndpoints
+        services
       );
       const createOperation = await CreateOperation.parse(createOperationBuffer);
       namedAnchoredCreateOperationModel = {
@@ -499,7 +499,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDidState!.document.public_keys.length).toEqual(1);
+        expect(newDidState!.document.publicKeys.length).toEqual(1);
       });
 
       it('should not apply update operation if signature is invalid.', async () => {
@@ -507,7 +507,7 @@ describe('OperationProcessor', async () => {
         const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
-          signingPublicKey.jwk,
+          signingPublicKey.publicKeyJwk,
           recoveryPrivateKey, // NOTE: Using recovery private key to generate an invalid signautre.
           additionalKey,
           OperationGenerator.generateRandomHash()
@@ -527,7 +527,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document).toBeDefined();
 
         // The count of public signing keys should remain 1, not 2.
-        expect(newDidState!.document.public_keys.length).toEqual(1);
+        expect(newDidState!.document.publicKeys.length).toEqual(1);
       });
 
       it('should not apply update operation if updateKey is invalid', async () => {
@@ -536,7 +536,7 @@ describe('OperationProcessor', async () => {
         const [invalidUpdateKey] = await OperationGenerator.generateKeyPair('invalid');
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
-          invalidUpdateKey.jwk,
+          invalidUpdateKey.publicKeyJwk,
           signingPrivateKey,
           additionalKey,
           OperationGenerator.generateRandomHash()
@@ -556,7 +556,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDidState!.document.public_keys.length).toEqual(1);
+        expect(newDidState!.document.publicKeys.length).toEqual(1);
       });
     });
 
@@ -597,7 +597,7 @@ describe('OperationProcessor', async () => {
       });
 
       it('should still apply successfully with resultant document being { } if delta hash mismatch.', async () => {
-        const document = { public_keys: [] };
+        const document = { publicKeys: [] };
         const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
         const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(
           didUniqueSuffix,
@@ -631,7 +631,7 @@ describe('OperationProcessor', async () => {
         // Expecting resulting DID state to still be the same as prior to attempting to apply the invalid deactivate operation.
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
         expect(newDidState!.document).toBeDefined();
-        expect(newDidState!.document.public_keys.length).toEqual(1);
+        expect(newDidState!.document.publicKeys.length).toEqual(1);
         expect(newDidState!.nextUpdateCommitmentHash).toEqual(didState!.nextUpdateCommitmentHash);
       });
     });

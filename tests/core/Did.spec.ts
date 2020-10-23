@@ -15,7 +15,7 @@ describe('DID', async () => {
         Did['constructCreateOperationFromEncodedJcs'](testInitialState);
         fail('expect to throw sidetree error but did not');
       } catch (e) {
-        expect(e).toEqual(new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'Long form initial state should be encoded jcs.'));
+        expect(e).toEqual(new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJson, 'Long form initial state should be encoded jcs.'));
       }
     });
 
@@ -32,7 +32,7 @@ describe('DID', async () => {
     it('should throw sidetree error if delta exceeds size limit', () => {
       const largeData = crypto.randomBytes(2000).toString('hex');// Intentionally exceeding max size.
       const largeDelta = { data: largeData };
-      const testInitialState = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer({ suffix_data: 'some data', delta: largeDelta }));
+      const testInitialState = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer({ suffixData: 'some data', delta: largeDelta }));
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(() => {
         Did['constructCreateOperationFromEncodedJcs'](testInitialState);

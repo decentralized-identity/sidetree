@@ -95,11 +95,11 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrUnknownProperty);
     }
 
-    if (typeof operationObject.did_suffix !== 'string') {
+    if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    const signedDataJws = Jws.parseCompactJws(operationObject.signed_data);
+    const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
     const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
     // If not in anchor file mode, we need to validate `type` and `delta` properties.
@@ -113,7 +113,7 @@ export default class RecoverOperation implements OperationModel {
         Operation.validateDelta(operationObject.delta);
         delta = {
           patches: operationObject.delta.patches,
-          updateCommitment: operationObject.delta.update_commitment
+          updateCommitment: operationObject.delta.updateCommitment
         };
       } catch {
         // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
@@ -124,7 +124,7 @@ export default class RecoverOperation implements OperationModel {
 
     return new RecoverOperation(
       operationBuffer,
-      operationObject.did_suffix,
+      operationObject.didSuffix,
       signedDataJws,
       signedData,
       delta
@@ -140,18 +140,14 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty);
     }
 
-    Jwk.validateJwkEs256k(signedData.recovery_key);
+    Jwk.validateJwkEs256k(signedData.recoveryKey);
 
-    const deltaHash = Encoder.decodeAsBuffer(signedData.delta_hash);
+    const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
 
-    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.recovery_commitment);
+    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.recoveryCommitment);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
 
-    return {
-      deltaHash: signedData.delta_hash,
-      recoveryKey: signedData.recovery_key,
-      recoveryCommitment: signedData.recovery_commitment
-    };
+    return signedData;
   }
 }

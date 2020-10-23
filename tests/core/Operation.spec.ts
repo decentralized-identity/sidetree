@@ -37,7 +37,7 @@ describe('Operation', async () => {
     it('should throw if delta contains an additional unknown property.', async () => {
       const delta = {
         patches: 'any opaque content',
-        update_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        updateCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'
       };
       const encodedDelta = Encoder.encode(JSON.stringify(delta));
@@ -48,7 +48,7 @@ describe('Operation', async () => {
     it('should throw if delta is missing patches property.', async () => {
       const delta = {
         // patches: 'any opaque content', // Intentionally missing.
-        update_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        updateCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         unknownProperty: 'An unknown property'
       };
       const encodedDelta = Encoder.encode(JSON.stringify(delta));

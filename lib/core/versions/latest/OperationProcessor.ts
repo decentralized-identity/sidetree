@@ -115,7 +115,7 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // Verify the delta hash against the expected delta hash.
     const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
-      update_commitment: operation.delta.updateCommitment,
+      updateCommitment: operation.delta.updateCommitment,
       patches: operation.delta.patches
     }) : undefined;
     if (deltaPayload === undefined) {
@@ -172,7 +172,7 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // Verify the delta hash against the expected delta hash.
     const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
-      update_commitment: operation.delta.updateCommitment,
+      updateCommitment: operation.delta.updateCommitment,
       patches: operation.delta.patches
     }) : undefined;
     if (deltaPayload === undefined) {
@@ -239,7 +239,7 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // Verify the delta hash against the expected delta hash.
     const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
-      update_commitment: operation.delta.updateCommitment,
+      updateCommitment: operation.delta.updateCommitment,
       patches: operation.delta.patches
     }) : undefined;
     if (deltaPayload === undefined) {

@@ -60,7 +60,7 @@ describe('DeactivateOperation', async () => {
         recoveryPrivateKey
       );
 
-      (deactivateOperationRequest.did_suffix as any) = 123; // Intentionally incorrect type.
+      (deactivateOperationRequest.didSuffix as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(deactivateOperationRequest));
       await expectAsync(DeactivateOperation
@@ -74,7 +74,7 @@ describe('DeactivateOperation', async () => {
       const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
       const recoveryRevealValue = 'anyUnusedRecoveryRevealValue';
       const signedData = {
-        did_suffix: didUniqueSuffix,
+        didSuffix: didUniqueSuffix,
         recovery_reveal_value: recoveryRevealValue,
         extraProperty: 'An unknown extra property'
       };
@@ -97,7 +97,7 @@ describe('DeactivateOperation', async () => {
       const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
       const recoveryRevealValue = 'anyUnusedRecoveryRevealValue';
       const signedData = {
-        did_suffix: didUniqueSuffix,
+        didSuffix: didUniqueSuffix,
         recovery_reveal_value: recoveryRevealValue
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));

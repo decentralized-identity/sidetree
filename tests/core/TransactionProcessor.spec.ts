@@ -256,7 +256,7 @@ describe('TransactionProcessor', () => {
       const mockAnchorFile: AnchorFile = {
         createOperations: [],
         didUniqueSuffixes: ['abc', 'def'],
-        model: { writer_lock_id: 'lock', map_file_uri: 'map_hash', operations: {} },
+        model: { writerLockId: 'lock', mapFileUri: 'map_hash', operations: {} },
         recoverOperations: [],
         deactivateOperations: []
       };
@@ -347,7 +347,7 @@ describe('TransactionProcessor', () => {
 
       expect(fetchedMapFile).toBeDefined();
       expect(fetchedMapFile!.updateOperations.length).toEqual(0);
-      expect(fetchedMapFile!.model.chunks[0].chunk_file_uri).toEqual(chunkFileHash);
+      expect(fetchedMapFile!.model.chunks[0].chunkFileUri).toEqual(chunkFileHash);
       done();
     });
 

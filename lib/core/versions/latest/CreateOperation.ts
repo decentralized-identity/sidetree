@@ -98,7 +98,7 @@ export default class CreateOperation implements OperationModel {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
     let createOperation;
-    if (typeof operationObject.suffix_data === 'string') {
+    if (typeof operationObject.suffixData === 'string') {
       // TODO: SIP 2 #781 deprecates this. Should be deleted when fully switched over
       createOperation = await CreateOperation.parseObject(operationObject, operationBuffer, false);
     } else {
@@ -126,14 +126,11 @@ export default class CreateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty);
     }
 
-    CreateOperation.validateSuffixData(operationObject.suffix_data);
-    const suffixData: SuffixDataModel = {
-      deltaHash: operationObject.suffix_data.delta_hash,
-      recoveryCommitment: operationObject.suffix_data.recovery_commitment
-    };
+    CreateOperation.validateSuffixData(operationObject.suffixData);
+    const suffixData: SuffixDataModel = operationObject.suffixData;
 
-    if (operationObject.suffix_data.type !== undefined) {
-      suffixData.type = operationObject.suffix_data.type;
+    if (operationObject.suffixData.type !== undefined) {
+      suffixData.type = operationObject.suffixData.type;
     }
 
     // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
@@ -148,10 +145,7 @@ export default class CreateOperation implements OperationModel {
 
       try {
         Operation.validateDelta(operationObject.delta);
-        delta = {
-          patches: operationObject.delta.patches,
-          updateCommitment: operationObject.delta.update_commitment
-        };
+        delta = operationObject.delta;
       } catch {
         // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
         // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
@@ -161,9 +155,9 @@ export default class CreateOperation implements OperationModel {
       encodedDelta = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.delta));
     }
 
-    const didUniqueSuffix = CreateOperation.computeJcsDidUniqueSuffix(operationObject.suffix_data);
+    const didUniqueSuffix = CreateOperation.computeJcsDidUniqueSuffix(operationObject.suffixData);
 
-    const encodedSuffixData = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.suffix_data));
+    const encodedSuffixData = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.suffixData));
     return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, suffixData, encodedDelta, delta);
   }
 
@@ -186,7 +180,7 @@ export default class CreateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty);
     }
 
-    const encodedSuffixData = operationObject.suffix_data;
+    const encodedSuffixData = operationObject.suffixData;
     const suffixData = await CreateOperation.parseSuffixData(encodedSuffixData);
 
     // If not in anchor file mode, we need to validate `type` and `delta` properties.
@@ -207,7 +201,7 @@ export default class CreateOperation implements OperationModel {
       }
     }
 
-    const didUniqueSuffix = CreateOperation.computeDidUniqueSuffix(operationObject.suffix_data);
+    const didUniqueSuffix = CreateOperation.computeDidUniqueSuffix(operationObject.suffixData);
     return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, suffixData, encodedDelta, delta);
   }
 
@@ -222,8 +216,8 @@ export default class CreateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty);
     }
 
-    const deltaHash = Encoder.decodeAsBuffer(suffixData.delta_hash);
-    const nextRecoveryCommitment = Encoder.decodeAsBuffer(suffixData.recovery_commitment);
+    const deltaHash = Encoder.decodeAsBuffer(suffixData.deltaHash);
+    const nextRecoveryCommitment = Encoder.decodeAsBuffer(suffixData.recoveryCommitment);
 
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitment);
@@ -254,8 +248,8 @@ export default class CreateOperation implements OperationModel {
     CreateOperation.validateSuffixData(suffixData);
 
     return {
-      deltaHash: suffixData.delta_hash,
-      recoveryCommitment: suffixData.recovery_commitment,
+      deltaHash: suffixData.deltaHash,
+      recoveryCommitment: suffixData.recoveryCommitment,
       type: suffixData.type
     };
   }

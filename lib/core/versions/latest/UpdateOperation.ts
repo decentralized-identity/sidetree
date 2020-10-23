@@ -93,11 +93,11 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingOrUnknownProperty);
     }
 
-    if (typeof operationObject.did_suffix !== 'string') {
+    if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
 
-    const signedData = Jws.parseCompactJws(operationObject.signed_data);
+    const signedData = Jws.parseCompactJws(operationObject.signedData);
     const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
 
     // If not in map file mode, we need to validate `type` and `delta` properties.
@@ -109,11 +109,11 @@ export default class UpdateOperation implements OperationModel {
       Operation.validateDelta(operationObject.delta);
       delta = {
         patches: operationObject.delta.patches,
-        updateCommitment: operationObject.delta.update_commitment
+        updateCommitment: operationObject.delta.updateCommitment
       };
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.did_suffix, signedData, signedDataModel, delta);
+    return new UpdateOperation(operationBuffer, operationObject.didSuffix, signedData, signedDataModel, delta);
   }
 
   private static async parseSignedDataPayload (signedDataEncodedString: string): Promise<SignedDataModel> {
@@ -125,14 +125,11 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationSignedDataHasMissingOrUnknownProperty);
     }
 
-    Jwk.validateJwkEs256k(signedData.update_key);
+    Jwk.validateJwkEs256k(signedData.updateKey);
 
-    const deltaHash = Encoder.decodeAsBuffer(signedData.delta_hash);
+    const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
 
-    return {
-      deltaHash: signedData.delta_hash,
-      updateKey: signedData.update_key
-    };
+    return signedData;
   }
 }

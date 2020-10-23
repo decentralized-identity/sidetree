@@ -11,7 +11,7 @@ describe('UpdateOperation', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         signingPrivateKey,
         OperationGenerator.generateRandomHash(),
         []
@@ -26,13 +26,13 @@ describe('UpdateOperation', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         signingPrivateKey,
         'unusedNextUpdateCommitmentHash',
         'opaque-unused-document-patch'
       );
 
-      (updateOperationRequest.did_suffix as any) = 123;
+      (updateOperationRequest.didSuffix as any) = 123;
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix));
@@ -42,7 +42,7 @@ describe('UpdateOperation', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         signingPrivateKey,
         'unusedNextUpdateCommitmentHash',
         'opaque-unused-document-patch'
@@ -58,8 +58,8 @@ describe('UpdateOperation', async () => {
   describe('parseObject()', async () => {
     it('should throw if operation contains an additional unknown property.', async (done) => {
       const updateOperation = {
-        did_suffix: 'unusedSuffix',
-        signed_data: 'unusedSignedData',
+        didSuffix: 'unusedSuffix',
+        signedData: 'unusedSignedData',
         extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
       };
 
@@ -81,9 +81,9 @@ describe('UpdateOperation', async () => {
 
     it('should throw if signedData contains an additional unknown property.', async (done) => {
       const signedData = {
-        delta_hash: 'anyUnusedHash',
+        deltaHash: 'anyUnusedHash',
         extraProperty: 'An unknown extra property',
-        update_key: {}
+        updateKey: {}
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
       await expectAsync((UpdateOperation as any).parseSignedDataPayload(encodedSignedData))

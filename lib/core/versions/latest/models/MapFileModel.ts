@@ -3,13 +3,13 @@
  */
 export default interface MapFileModel {
   chunks: {
-    chunk_file_uri: string
+    chunkFileUri: string
   }[];
 
   operations?: {
     update: {
-      did_suffix: string,
-      signed_data: string
+      didSuffix: string,
+      signedData: string
     }[]
   };
 }

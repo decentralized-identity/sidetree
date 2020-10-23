@@ -1,6 +1,3 @@
-import * as fs from 'fs';
-import * as suffixData from '../fixtures/uniqueSuffix/suffixData.json';
-
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
@@ -9,15 +6,16 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
+import * as generatedFixtures from '../vectors/generated.json';
 
 describe('CreateOperation', async () => {
   describe('parseJcsObject', () => {
     it('should leave delta as empty if it is not valid', () => {
       const operationObject = {
         type: 'create',
-        suffix_data: {
-          delta_hash: 'something',
-          recovery_commitment: 'something',
+        suffixData: {
+          deltaHash: 'something',
+          recoveryCommitment: 'something',
           type: 'type'
         },
         delta: 'this is not a valid delta'
@@ -33,9 +31,9 @@ describe('CreateOperation', async () => {
 
     it('should process as anchor file mode when anchorFileMode is true', () => {
       const operationObject = {
-        suffix_data: {
-          delta_hash: 'something',
-          recovery_commitment: 'something',
+        suffixData: {
+          deltaHash: 'something',
+          recoveryCommitment: 'something',
           type: 'type'
         }
       };
@@ -71,9 +69,9 @@ describe('CreateOperation', async () => {
     it('should throw sidetree error if type is not create', () => {
       const testObject = {
         type: 'notCreate',
-        suffix_data: {
-          delta_hash: 'something',
-          recovery_commitment: 'something',
+        suffixData: {
+          deltaHash: 'something',
+          recoveryCommitment: 'something',
           type: 'type'
         },
         delta: 'something'
@@ -94,9 +92,9 @@ describe('CreateOperation', async () => {
     it('should throw sidetree error if has more or less than 1 property when in anchor file mode', () => {
       const testObject = {
         type: 'this should not exist',
-        suffix_data: {
-          delta_hash: 'something',
-          recovery_commitment: 'something',
+        suffixData: {
+          deltaHash: 'something',
+          recoveryCommitment: 'something',
           type: 'type'
         }
       };
@@ -111,9 +109,8 @@ describe('CreateOperation', async () => {
 
   describe('computeJcsDidUniqueSuffix', () => {
     it('should return expected did unique suffix', () => {
-      const actual = Multihash.canonicalizeThenHashThenEncode(suffixData);
-      const expected = fs.readFileSync('tests/fixtures/uniqueSuffix/resultingSuffix.txt', 'utf8');
-      expect(actual).toEqual(expected);
+      const actual = Multihash.canonicalizeThenHashThenEncode(generatedFixtures.create.createOperation.suffixData);
+      expect(actual).toEqual(generatedFixtures.create.didUniqueSuffix);
     });
   });
 
@@ -133,10 +130,10 @@ describe('CreateOperation', async () => {
     it('should throw if create operation request has more than 3 properties.', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
-      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+      const services = OperationGenerator.generateServices(['serviceId123']);
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         [signingPublicKey],
         services
       );
@@ -150,10 +147,10 @@ describe('CreateOperation', async () => {
     it('should throw if operation type is incorrect', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
-      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+      const services = OperationGenerator.generateServices(['serviceId123']);
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         [signingPublicKey],
         services
       );
@@ -180,8 +177,8 @@ describe('CreateOperation', async () => {
     // TODO: SIP 2 #781 deprecates this. These tests can be siwtched over to validateSuffixData
     it('should function as expected with type', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 'type'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -191,8 +188,8 @@ describe('CreateOperation', async () => {
 
     it('should function as expected without type', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       const result = (CreateOperation as any).parseSuffixData(encodedSuffixData);
@@ -206,8 +203,8 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data contains an additional unknown property.', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 'type',
         extraProperty: 'An unknown extra property'
       };
@@ -227,8 +224,8 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data type is not string', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 123
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -238,8 +235,8 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data type length is greater than 4', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 'this is too long!!!!!'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -249,8 +246,8 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data type is not in base64url character set', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: '/\|='
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));

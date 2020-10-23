@@ -174,7 +174,7 @@ export default class Did {
     try {
       initialStateObject = JSON.parse(initialStateDecodedJcs);
     } catch {
-      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'Long form initial state should be encoded jcs.');
+      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJson, 'Long form initial state should be encoded jcs.');
     }
 
     Did.validateInitialState(initialStateEncodedJcs, initialStateObject);
@@ -182,7 +182,7 @@ export default class Did {
 
     const createOperationRequest = {
       type: OperationType.Create,
-      suffix_data: initialStateObject.suffix_data,
+      suffixData: initialStateObject.suffixData,
       delta: initialStateObject.delta
     };
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
@@ -226,7 +226,7 @@ export default class Did {
 
     const createOperationRequest = {
       type: OperationType.Create,
-      suffix_data: suffixData,
+      suffixData: suffixData,
       delta
     };
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));

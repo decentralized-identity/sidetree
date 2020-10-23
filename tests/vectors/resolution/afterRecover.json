@@ -1,0 +1,40 @@
+{
+  "@context": "https://www.w3.org/ns/did-resolution/v1",
+  "didDocument": {
+    "id": "did:sidetree:EiA5vyaRzJIxbkuZbvwEXiC__u8ieFx50TAAo98tBzCuyA",
+    "@context": [
+      "https://www.w3.org/ns/did/v1",
+      {
+        "@base": "did:sidetree:EiA5vyaRzJIxbkuZbvwEXiC__u8ieFx50TAAo98tBzCuyA"
+      }
+    ],
+    "service": [
+      {
+        "id": "#serviceId123",
+        "type": "someType",
+        "serviceEndpoint": "https://www.url.com"
+      }
+    ],
+    "publicKey": [
+      {
+        "id": "#newKey",
+        "controller": "did:sidetree:EiA5vyaRzJIxbkuZbvwEXiC__u8ieFx50TAAo98tBzCuyA",
+        "type": "EcdsaSecp256k1VerificationKey2019",
+        "publicKeyJwk": {
+          "kty": "EC",
+          "crv": "secp256k1",
+          "x": "FivvBjUMUcRJ26VlYkZaZbh4fuxYUx7-u0vi_y-NATM",
+          "y": "efz6F6iNJrtVrPorqy20D7r4oU3rkx-CE8AnqxO72Q8"
+        }
+      }
+    ],
+    "authentication": [
+      "#newKey"
+    ]
+  },
+  "methodMetadata": {
+    "published": true,
+    "recoveryCommitment": "EiANBMe5RSzO-mapupf6UFVjYo1v-SXltrozwU2eRvadwQ",
+    "updateCommitment": "EiAl2dRBfu4H3YCJIbpMzlWpgNYm7z0Kbgs9isiFdg2_7w"
+  }
+}

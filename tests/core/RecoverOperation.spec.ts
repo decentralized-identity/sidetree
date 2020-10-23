@@ -58,7 +58,7 @@ describe('RecoverOperation', async () => {
         newSigningPublicKey
       );
 
-      (recoverOperationRequest.did_suffix as any) = 123; // Intentionally incorrect type.
+      (recoverOperationRequest.didSuffix as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
       await expectAsync(RecoverOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix));
@@ -92,9 +92,9 @@ describe('RecoverOperation', async () => {
   describe('parseObject()', async () => {
     it('should throw if operation contains an additional unknown property.', async (done) => {
       const recoverOperation = {
-        did_suffix: 'unusedSuffix',
+        didSuffix: 'unusedSuffix',
         recovery_reveal_value: 'unusedReveal',
-        signed_data: 'unusedSignedData',
+        signedData: 'unusedSignedData',
         extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
       };
 
@@ -108,7 +108,7 @@ describe('RecoverOperation', async () => {
   describe('parseSignedDataPayload()', async () => {
     it('should throw if signedData contains an additional unknown property.', async (done) => {
       const signedData = {
-        delta_hash: 'anyUnusedHash',
+        deltaHash: 'anyUnusedHash',
         recoveryKey: 'anyUnusedRecoveryKey',
         nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property',

@@ -10,6 +10,8 @@ See The [test vectors](tests/fixtures) for input fixtures that are expected by a
 
 See the [implementation document](docs/implementation.md) for the detailed description of this implementation.
 
+See the [styleguide](docs/styleguide.md) for details regarding this specification and implementation conformance to industry conventions for JSON and HTTP.
+
 ## Reference Implementation 
 
 ![CI](https://github.com/decentralized-identity/sidetree/workflows/CI/badge.svg)

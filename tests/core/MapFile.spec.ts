@@ -21,7 +21,7 @@ describe('MapFile', async () => {
 
     it('should throw if the buffer is not compressed', async () => {
       const mapFileModel: MapFileModel = {
-        chunks: [{ chunk_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' }]
+        chunks: [{ chunkFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' }]
       };
       const fileBuffer = Buffer.from(JSON.stringify(mapFileModel));
 
@@ -99,8 +99,8 @@ describe('MapFile', async () => {
   describe('validateChunksProperty()', async () => {
     it('should throw if there is more than one chunk in chunks array.', async () => {
       const chunks = [
-        { chunk_file_uri: Encoder.encode(Multihash.hash(Buffer.from('anyValue1'))) },
-        { chunk_file_uri: Encoder.encode(Multihash.hash(Buffer.from('anyValue2'))) } // Intentionally adding more than one element.
+        { chunkFileUri: Encoder.encode(Multihash.hash(Buffer.from('anyValue1'))) },
+        { chunkFileUri: Encoder.encode(Multihash.hash(Buffer.from('anyValue2'))) } // Intentionally adding more than one element.
       ];
 
       expect(() => (MapFile as any).validateChunksProperty(chunks)).toThrow(new SidetreeError(ErrorCode.MapFileChunksPropertyDoesNotHaveExactlyOneElement));
@@ -109,7 +109,7 @@ describe('MapFile', async () => {
     it('should throw if there is more than one property in a chunk element.', async () => {
       const chunks = [
         {
-          chunk_file_uri: Encoder.encode(Multihash.hash(Buffer.from('anyValue1'))),
+          chunkFileUri: Encoder.encode(Multihash.hash(Buffer.from('anyValue1'))),
           unexpectedProperty: 'any value'
         }
       ];

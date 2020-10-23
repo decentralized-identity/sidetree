@@ -1,14 +1,8 @@
-import * as createFixture from '../fixtures/create/create.json';
-import * as createResultingDocument from '../fixtures/create/resultingDocument.json';
-import * as deactivateFixture from '../fixtures/deactivate/deactivate.json';
-import * as deactivateFixtureCreate from '../fixtures/deactivate/create.json';
-import * as deactivateResultingDocument from '../fixtures/deactivate/resultingDocument.json';
-import * as recoverFixture from '../fixtures/recover/recover.json';
-import * as recoverFixtureCreate from '../fixtures/recover/create.json';
-import * as recoverResultingDocument from '../fixtures/recover/resultingDocument.json';
-import * as updateFixture from '../fixtures/update/update.json';
-import * as updateFixtureCreate from '../fixtures/update/create.json';
-import * as updateResultingDocument from '../fixtures/update/resultingDocument.json';
+import * as generatedFixture from '../vectors/generated.json';
+import * as afterCreate from '../vectors/resolution/afterCreate.json';
+import * as afterUpdate from '../vectors/resolution/afterUpdate.json';
+import * as afterRecover from '../vectors/resolution/afterRecover.json';
+import * as afterDeactivate from '../vectors/resolution/afterDeactivate.json';
 
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
@@ -27,6 +21,9 @@ import OperationProcessor from '../../lib/core/versions/latest/OperationProcesso
 import OperationType from '../../lib/core/enums/OperationType';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
+import { fixtureDriftHelper } from '../utils';
+
+const OVERWRITE_FIXTURES = false;
 
 describe('Resolver', () => {
   let resolver: Resolver;
@@ -45,7 +42,7 @@ describe('Resolver', () => {
 
   describe('Resolving against test vectors', () => {
     it('should resolve create operation', async () => {
-      const operationBuffer = Buffer.from(JSON.stringify(createFixture));
+      const operationBuffer = Buffer.from(JSON.stringify(generatedFixture.create.operationRequest));
       const createOperation = await CreateOperation.parse(operationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
       const anchoredOperationModel = {
@@ -57,15 +54,15 @@ describe('Resolver', () => {
         operationIndex: 1
       };
       await operationStore.put([anchoredOperationModel]);
-
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      expect(resultingDocument).toEqual(createResultingDocument);
+      fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/afterCreate.json', OVERWRITE_FIXTURES);
+      expect(resultingDocument).toEqual(afterCreate);
     });
 
     it('should resolve DID that has an update operation', async () => {
-      const operationBuffer = Buffer.from(JSON.stringify(updateFixtureCreate));
+      const operationBuffer = Buffer.from(JSON.stringify(generatedFixture.create.operationRequest));
       const createOperation = await CreateOperation.parse(operationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
       const anchoredOperationModel = {
@@ -78,7 +75,7 @@ describe('Resolver', () => {
       };
       await operationStore.put([anchoredOperationModel]);
 
-      const updateOperation = Buffer.from(JSON.stringify(updateFixture));
+      const updateOperation = Buffer.from(JSON.stringify(generatedFixture.update.operationRequest));
       const anchoredUpdateOperation: AnchoredOperationModel = {
         type: OperationType.Update,
         didUniqueSuffix,
@@ -92,11 +89,12 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      expect(resultingDocument).toEqual(updateResultingDocument);
+      fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
+      expect(resultingDocument).toEqual(afterUpdate);
     });
 
     it('should resolve DID that has a recover operation', async () => {
-      const operationBuffer = Buffer.from(JSON.stringify(recoverFixtureCreate));
+      const operationBuffer = Buffer.from(JSON.stringify(generatedFixture.create.operationRequest));
       const createOperation = await CreateOperation.parse(operationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
       const anchoredOperationModel = {
@@ -109,7 +107,7 @@ describe('Resolver', () => {
       };
       await operationStore.put([anchoredOperationModel]);
 
-      const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverFixture));
+      const recoverOperationBuffer = Buffer.from(JSON.stringify(generatedFixture.recover.operationRequest));
       const recoverOperation = await RecoverOperation.parse(recoverOperationBuffer);
       const anchoredRecoverOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
       await operationStore.put([anchoredRecoverOperation]);
@@ -117,11 +115,12 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      expect(resultingDocument).toEqual(recoverResultingDocument);
+      fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
+      expect(resultingDocument).toEqual(afterRecover);
     });
 
     it('should resolve DID that has a deactivate operation', async () => {
-      const operationBuffer = Buffer.from(JSON.stringify(deactivateFixtureCreate));
+      const operationBuffer = Buffer.from(JSON.stringify(generatedFixture.create.operationRequest));
       const createOperation = await CreateOperation.parse(operationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
       const anchoredOperationModel = {
@@ -134,30 +133,47 @@ describe('Resolver', () => {
       };
       await operationStore.put([anchoredOperationModel]);
 
-      const deactivateOperationBuffer = Buffer.from(JSON.stringify(deactivateFixture));
-      const recoverOperation = await DeactivateOperation.parse(deactivateOperationBuffer);
-      const anchoredRecoverOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
-      await operationStore.put([anchoredRecoverOperation]);
+      const updateOperation = Buffer.from(JSON.stringify(generatedFixture.update.operationRequest));
+      const anchoredUpdateOperation: AnchoredOperationModel = {
+        type: OperationType.Update,
+        didUniqueSuffix,
+        operationBuffer: updateOperation,
+        transactionTime: 2,
+        transactionNumber: 2,
+        operationIndex: 2
+      };
+      await operationStore.put([anchoredUpdateOperation]);
+
+      const recoverOperationBuffer = Buffer.from(JSON.stringify(generatedFixture.recover.operationRequest));
+      const recoverOperation0 = await RecoverOperation.parse(recoverOperationBuffer);
+      const anchoredRecoverOperation0 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation0, 3, 3, 3);
+      await operationStore.put([anchoredRecoverOperation0]);
+
+      const deactivateOperationBuffer = Buffer.from(JSON.stringify(generatedFixture.deactivate.operationRequest));
+      const deactivateOperation = await DeactivateOperation.parse(deactivateOperationBuffer);
+      const anchoredDeactivateOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperation, 4, 4, 4);
+      await operationStore.put([anchoredDeactivateOperation]);
 
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const published = true;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      expect(resultingDocument).toEqual(deactivateResultingDocument);
+      fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', OVERWRITE_FIXTURES);
+      expect(resultingDocument).toEqual(afterDeactivate);
     });
   });
 
   describe('Recovery operation', () => {
     it('should apply correctly with updates that came before and after the recover operation.', async () => {
-      // Generate key(s) and service endpoint(s) to be included in the DID Document.
+      // Generate key(s) and service(s) to be included in the DID Document.
       const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
-      const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri1']);
+      const services = OperationGenerator.generateServices(['dummyHubUri1']);
 
       // Create the initial create operation and insert it to the operation store.
       const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         signingPublicKey,
-        serviceEndpoints
+        services
       );
       const createOperation = await CreateOperation.parse(operationBuffer);
       const anchoredOperationModel = {
@@ -177,10 +193,10 @@ describe('Resolver', () => {
       let [nextUpdateKey, nextUpdatePrivateKey] = await OperationGenerator.generateKeyPair(`next-update-key`);
       const updateOperation1PriorRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         signingPrivateKey,
         additionalKey,
-        Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk)
+        Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk)
       );
       const updateOperation1BufferPriorRecovery = Buffer.from(JSON.stringify(updateOperation1PriorRecovery));
       const anchoredUpdateOperation1PriorRecovery: AnchoredOperationModel = {
@@ -194,9 +210,9 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation1PriorRecovery]);
 
       // Create another update operation and insert it to the operation store.
-      const updatePayload2PriorRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
+      const updatePayload2PriorRecovery = await OperationGenerator.generateUpdateOperationRequestForServices(
         didUniqueSuffix,
-        nextUpdateKey.jwk,
+        nextUpdateKey.publicKeyJwk,
         nextUpdatePrivateKey,
         OperationGenerator.generateRandomHash(),
         'dummyUri2',
@@ -215,13 +231,13 @@ describe('Resolver', () => {
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
       let didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      expect(didState.document.public_keys.length).toEqual(2);
-      expect(didState.document.service_endpoints.length).toEqual(2);
+      expect(didState.document.publicKeys.length).toEqual(2);
+      expect(didState.document.services.length).toEqual(2);
 
       // Create new keys used for new document for recovery request.
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey, newSigningPrivateKey] = await OperationGenerator.generateKeyPair('newSigningKey');
-      const newServiceEndpoints = OperationGenerator.generateServiceEndpoints(['newDummyHubUri1']);
+      const newServices = OperationGenerator.generateServices(['newDummyHubUri1']);
 
       // Create the recover operation and insert it to the operation store.
       const recoverOperationJson = await OperationGenerator.generateRecoverOperationRequest(
@@ -229,7 +245,7 @@ describe('Resolver', () => {
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey,
-        newServiceEndpoints,
+        newServices,
         [newSigningPublicKey]
       );
       const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationJson));
@@ -242,10 +258,10 @@ describe('Resolver', () => {
       [nextUpdateKey, nextUpdatePrivateKey] = await OperationGenerator.generateKeyPair(`next-update-key`);
       const updateOperation1AfterRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
-        newSigningPublicKey.jwk,
+        newSigningPublicKey.publicKeyJwk,
         newSigningPrivateKey,
         newKey2ForUpdate1AfterRecovery,
-        Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk)
+        Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk)
       );
       const updateOperation1BufferAfterRecovery = Buffer.from(JSON.stringify(updateOperation1AfterRecovery));
       const anchoredUpdateOperation1AfterRecovery: AnchoredOperationModel = {
@@ -259,9 +275,9 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation1AfterRecovery]);
 
       // Create another update and insert it to the operation store.
-      const updatePayload2AfterRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
+      const updatePayload2AfterRecovery = await OperationGenerator.generateUpdateOperationRequestForServices(
         didUniqueSuffix,
-        nextUpdateKey.jwk,
+        nextUpdateKey.publicKeyJwk,
         nextUpdatePrivateKey,
         OperationGenerator.generateRandomHash(),
         'newDummyHubUri2',
@@ -287,13 +303,13 @@ describe('Resolver', () => {
       const actualNewSigningPublicKey2 = Document.getPublicKey(document, 'newKey2Updte1PostRec');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
-      expect(document.public_keys.length).toEqual(2);
-      expect(actualNewSigningPublicKey1!.jwk).toEqual(newSigningPublicKey.jwk);
-      expect(actualNewSigningPublicKey2!.jwk).toEqual(newKey2ForUpdate1AfterRecovery.jwk);
-      expect(document.service_endpoints).toBeDefined();
-      expect(document.service_endpoints.length).toEqual(1);
-      expect(document.service_endpoints[0].endpoint).toBeDefined();
-      expect(document.service_endpoints[0].id).toEqual('newDummyHubUri2');
+      expect(document.publicKeys.length).toEqual(2);
+      expect(actualNewSigningPublicKey1!.publicKeyJwk).toEqual(newSigningPublicKey.publicKeyJwk);
+      expect(actualNewSigningPublicKey2!.publicKeyJwk).toEqual(newKey2ForUpdate1AfterRecovery.publicKeyJwk);
+      expect(document.services).toBeDefined();
+      expect(document.services.length).toEqual(1);
+      expect(document.services[0].serviceEndpoint).toBeDefined();
+      expect(document.services[0].id).toEqual('newDummyHubUri2');
     });
 
   });

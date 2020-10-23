@@ -111,7 +111,7 @@ export default class MapFile {
       throw new SidetreeError(ErrorCode.MapFileChunkHasMissingOrUnknownProperty);
     }
 
-    Multihash.verifyEncodedHashIsComputedUsingLastestAlgorithm(chunk.chunk_file_uri);
+    Multihash.verifyEncodedHashIsComputedUsingLastestAlgorithm(chunk.chunkFileUri);
   }
 
   /**
@@ -120,13 +120,13 @@ export default class MapFile {
   public static async createBuffer (chunkFileHash: string, updateOperationArray: UpdateOperation[]): Promise<Buffer> {
     const updateOperations = updateOperationArray.map(operation => {
       return {
-        did_suffix: operation.didUniqueSuffix,
-        signed_data: operation.signedDataJws.toCompactJws()
+        didSuffix: operation.didUniqueSuffix,
+        signedData: operation.signedDataJws.toCompactJws()
       };
     });
 
     const mapFileModel: MapFileModel = {
-      chunks: [{ chunk_file_uri: chunkFileHash }]
+      chunks: [{ chunkFileUri: chunkFileHash }]
     };
 
     // Only insert an `operations` property if there are update operations.

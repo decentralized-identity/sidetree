@@ -49,14 +49,14 @@ export default class AnchorFile {
       throw SidetreeError.createFromError(ErrorCode.AnchorFileNotJson, e);
     }
 
-    const allowedProperties = new Set(['map_file_uri', 'operations', 'writer_lock_id']);
+    const allowedProperties = new Set(['mapFileUri', 'operations', 'writerLockId']);
     for (const property in anchorFileModel) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
       }
     }
 
-    if (!anchorFileModel.hasOwnProperty('map_file_uri')) {
+    if (!anchorFileModel.hasOwnProperty('mapFileUri')) {
       throw new SidetreeError(ErrorCode.AnchorFileMapFileHashMissing);
     }
 
@@ -64,17 +64,17 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty);
     }
 
-    // `writer_lock_id` validations.
-    if (anchorFileModel.hasOwnProperty('writer_lock_id')) {
-      if (typeof anchorFileModel.writer_lock_id !== 'string') {
+    // `writerLockId` validations.
+    if (anchorFileModel.hasOwnProperty('writerLockId')) {
+      if (typeof anchorFileModel.writerLockId !== 'string') {
         throw new SidetreeError(ErrorCode.AnchorFileWriterLockIdPropertyNotString);
       }
 
-      AnchorFile.validateWriterLockId(anchorFileModel.writer_lock_id);
+      AnchorFile.validateWriterLockId(anchorFileModel.writerLockId);
     }
 
     // Map file hash validations.
-    const mapFileUri = anchorFileModel.map_file_uri;
+    const mapFileUri = anchorFileModel.mapFileUri;
     if (typeof mapFileUri !== 'string') {
       throw new SidetreeError(ErrorCode.AnchorFileMapFileHashNotString);
     }
@@ -167,9 +167,9 @@ export default class AnchorFile {
 
     const createOperations = createOperationArray.map(operation => {
       return {
-        suffix_data: { 
-          delta_hash: operation.suffixData.deltaHash, 
-          recovery_commitment: operation.suffixData.recoveryCommitment, 
+        suffixData: { 
+          deltaHash: operation.suffixData.deltaHash, 
+          recoveryCommitment: operation.suffixData.recoveryCommitment, 
           type: operation.suffixData.type 
         }
       };
@@ -177,21 +177,21 @@ export default class AnchorFile {
 
     const recoverOperations = recoverOperationArray.map(operation => {
       return {
-        did_suffix: operation.didUniqueSuffix,
-        signed_data: operation.signedDataJws.toCompactJws()
+        didSuffix: operation.didUniqueSuffix,
+        signedData: operation.signedDataJws.toCompactJws()
       };
     });
 
     const deactivateOperations = deactivateOperationArray.map(operation => {
       return {
-        did_suffix: operation.didUniqueSuffix,
-        signed_data: operation.signedDataJws.toCompactJws()
+        didSuffix: operation.didUniqueSuffix,
+        signedData: operation.signedDataJws.toCompactJws()
       };
     });
 
     const anchorFileModel = {
-      writer_lock_id: writerLockId,
-      map_file_uri: mapFileHash,
+      writerLockId: writerLockId,
+      mapFileUri: mapFileHash,
       operations: {
         create: createOperations,
         recover: recoverOperations,
