@@ -15,7 +15,7 @@ async function createBlockMetadataStore (storeUri: string, databaseName: string)
 }
 
 describe('MongoDbBlockMetadataStore', async () => {
-  const config: Config = require('../json/bitcoin-config-test.json');
+  const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
   let mongoServiceAvailable = false;

@@ -1,7 +1,7 @@
 import ErrorCode from '../ErrorCode';
+import { JWK } from 'jose';
 import JwkEs256k from '../../../models/JwkEs256k';
 import SidetreeError from '../../../../common/SidetreeError';
-import { JWK } from 'jose';
 
 /**
  * Class containing reusable JWK operations.

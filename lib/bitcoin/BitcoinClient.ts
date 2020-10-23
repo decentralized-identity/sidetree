@@ -1,16 +1,16 @@
 import * as httpStatus from 'http-status';
+import { Address, Block, Networks, PrivateKey, Script, Transaction, Unit, crypto } from 'bitcore-lib';
+import nodeFetch, { FetchError, RequestInit, Response } from 'node-fetch';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
-import BitcoinSidetreeTransactionModel from './models/BitcoinSidetreeTransactionModel';
 import BitcoinInputModel from './models/BitcoinInputModel';
+import BitcoinSidetreeTransactionModel from './models/BitcoinSidetreeTransactionModel';
 import BitcoinLockTransactionModel from './models/BitcoinLockTransactionModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import BitcoinWallet from './BitcoinWallet';
 import IBitcoinWallet from './interfaces/IBitcoinWallet';
-import nodeFetch, { FetchError, RequestInit, Response } from 'node-fetch';
-import ReadableStream from '../common/ReadableStream';
-import { Address, Block, Networks, PrivateKey, Script, Transaction, Unit, crypto } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
+import ReadableStream from '../common/ReadableStream';
 
 /**
  * Structure (internal to this class) to store the transaction information
@@ -119,7 +119,7 @@ export default class BitcoinClient {
    * @param bitcoinLockTransaction The transaction object.
    */
   public async broadcastLockTransaction (bitcoinLockTransaction: BitcoinLockTransactionModel): Promise<string> {
-    const transactionHash = this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
+    const transactionHash = await this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
     console.info(`Broadcasted lock transaction: ${transactionHash}`);
 
     return transactionHash;
@@ -590,8 +590,8 @@ export default class BitcoinClient {
     previousFreezeDurationInBlocks: number,
     newFreezeDurationInBlocks: number): Promise<[Transaction, Script]> {
 
-    // tslint:disable-next-line: max-line-length
-    console.info(`Creating a freeze transaction with freeze time in blocks: ${newFreezeDurationInBlocks} from previously frozen transaction with id: ${previousFreezeTransaction.id}`);
+    // eslint-disable-next-line max-len
+    console.info(`Creating a freeze transaction with freeze time of ${newFreezeDurationInBlocks} blocks, from previously frozen transaction with id: ${previousFreezeTransaction.id}`);
 
     const freezeScript = BitcoinClient.createFreezeScript(newFreezeDurationInBlocks, this.bitcoinWallet.getAddress());
     const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
@@ -611,7 +611,7 @@ export default class BitcoinClient {
     previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeDurationInBlocks: number): Promise<Transaction> {
 
-    // tslint:disable-next-line: max-line-length
+    // eslint-disable-next-line max-len
     console.info(`Creating a transaction to return (to the wallet) the previously frozen amount from transaction with id: ${previousFreezeTransaction.id} which was frozen for block duration: ${previousFreezeDurationInBlocks}`);
 
     return this.createSpendTransactionFromFrozenTransaction(

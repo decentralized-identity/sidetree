@@ -5,6 +5,8 @@
 | Ledger { #ledger }  | A decentralized linear sequencing oracle (e.g. Bitcoin) that can be used to anchor the PKI state transformations of Decentralized Identifiers (DIDs) in a shared record that can be deterministically replayed by observers to derive the current PKI state of DIDs. |
 | Anchor File  | JSON Document containing proving and index data for Create, Recovery, and Deactivate operations, and a CAS URI for the associated Map File. This file is anchored to the target ledger. |
 | Map File  | JSON Document containing Update operation proving and index data, as well as CAS URI for Chunk File chunks.                   |
+| Core Proof File  | JSON Document containing the cryptographic proofs for Recovery and Deactivate operations, which form the persistent backbone of DID PKI lineages. |
+| Provisional Proof File  | JSON Document containing the cryptographic proofs for Update operations, which can be pruned via decentralized checkpointing mechanisms (this mechanism will arrive in future versions of the Sidetree protocol). |
 | Chunk File  | JSON Document containing all verbose operation data for the corresponding set of DIDs specified in the related Map File.                   |
 | CAS { #cas }    | Content-addressable storage protocol/network (e.g. IPFS)                       |
 | CAS URI { #cas-uri }               | The unique content-bound identifier used to locate a resource via the [CAS](#cas) protocol/network (e.g. IPFS)                       |
@@ -23,7 +25,7 @@
 | Recovery Commitment { #recovery-commitment }   | The resulting [commitment](#commitment) obtained by applying the defined [commitment scheme](#recovery-commitment-scheme) to the public key of a [recovery key pair](#recovery-key-pair)          |
 | Sidetree Node         | Executable code that implements all the required components, functionality, and rules specified in the Sidetree protocol specification.                            |
 | Transaction           | Ledger transaction that anchors a set of Sidetree operations, via a CAS URI for an associated Anchor File.          |
-| Anchor String  | The string anchored to the ledger, composed of the CAS URI to the [Anchor File](#anchor-file), prefixed with the declared operation count .                                               |
+| Anchor String  | The string anchored to the ledger, composed of the CAS URI to the [Anchor File](#anchor-file), prefixed with the declared operation count.                                               |
 | Ledger Time { #ledger-time }          | The deterministic logical clock variable manifested in the underlying ledger system that can be used as a deterministic chronological reference (e.g. Bitcoin block numbers).         |
 | Transaction Number  { #transaction-number }        | A monotonically increasing number deterministically ordered and assigned to every transaction relative to its position in [Ledger Time](#ledger-time).          |
 | Light Node  { #light-node }        | A node that downloads and processes only [Anchor Files](#anchor-file) and [Map Files](#map-file) on a proactive basis, waiting until resolution time to download and process the [Chunk File](#chunk-files) related to a given DID. This type of configuration enables a node to operate trustlessly while consuming approximately one order of magnitude less storage.  |

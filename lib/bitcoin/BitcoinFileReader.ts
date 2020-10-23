@@ -1,7 +1,7 @@
+import * as fs from 'fs';
 import ErrorCode from './ErrorCode';
 import IBitcoinFileReader from './interfaces/IBitcoinFileReader';
 import SidetreeError from '../common/SidetreeError';
-import * as fs from 'fs';
 
 /**
  * concrete implementation of BitcoinFileReader

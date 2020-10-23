@@ -1,4 +1,4 @@
-# Sidetree Node.js Implementation Document
+# Sidetree Core Node.js Implementation Document
 
 This document focuses on the Node.js implementation of the Sidetree protocol.
 
@@ -82,6 +82,7 @@ The orchestration layer requires implementation of following interfaces per prot
 - `IRequestHandler` - Handles REST API requests.
 
 
+## Core Service REST API
 
 ### REST API HTTP Response status codes
 
@@ -94,9 +95,7 @@ The orchestration layer requires implementation of following interfaces per prot
 | 500              | Server error.                            |
 
 
-
-## Core Serivce REST API
-The Core Service REST API impliments the [Sidetree REST API](https://identity.foundation/sidetree/api/), in addition it also exposes the following version API.
+The Core Service REST API implements the [Sidetree REST API](https://identity.foundation/sidetree/api/), in addition it also exposes the following version API.
 
 ### Fetch the current service versions.
 Fetches the current version of the core and the dependent services. The service implementation defines the versioning scheme and its interpretation.
@@ -694,141 +693,6 @@ HTTP/1.1 200 OK
 
 {
   "name": "bitcoin",
-  "version": "1.0.0"
-}
-```
-
-
-## CAS REST API
-The CAS (content addressable storage) REST API interface aims to abstract the underlying Sidetree storage away from the main protocol logic. This allows the CAS to be updated or even replaced if needed without affecting the core protocol logic. Conversely, the interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same CAS.
-
-All hashes used in the API are encoded multihash as specified by the Sidetree protocol.
-
-### Read content
-Read the content of a given address and return it in the response body as octet-stream.
-
-#### Request path
-```
-GET /<hash>?max-size=<maximum-allowed-size>
-```
-
-#### Request query parameters
-- `max-size`
-
-  Required.
-
-  If the content exceeds the specified maximum allowed size, `HTTP 400 Bad Request` with `content_exceeds_maximum_allowed_size` as the value for the `code` parameter in a JSON body is returned.
-
-
-#### Request example
-```
-GET /QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
-```
-#### Response headers
-| Name                  | Value                  |
-| --------------------- | ---------------------- |
-| ```Content-Type```    | ```application/octet-stream``` |
-
-#### Response example - Resoucre not found
-
-```http
-HTTP/1.1 404 Not Found
-```
-
-#### Response example - Content exceeds maximum allowed size
-
-```http
-HTTP/1.1 400 Bad Request
-
-{
-  "code": "content_exceeds_maximum_allowed_size"
-}
-```
-
-#### Response example - Content not a file
-
-```http
-HTTP/1.1 400 Bad Request
-
-{
-  "code": "content_not_a_file"
-}
-```
-
-#### Response example - Content hash is invalid
-
-```http
-HTTP/1.1 400 Bad Request
-
-{
-  "code": "content_hash_invalid"
-}
-```
-
-### Write content
-Write content to CAS.
-
-#### Request path
-```
-POST /
-```
-
-#### Request headers
-| Name                  | Value                  |
-| --------------------- | ---------------------- |
-| ```Content-Type```    | ```application/octet-stream``` |
-
-#### Response headers
-| Name                  | Value                  |
-| --------------------- | ---------------------- |
-| ```Content-Type```    | ```application/json``` |
-
-#### Response body schema
-```json
-{
-  "hash": "Hash of data written to CAS"
-}
-```
-
-#### Response body example
-```json
-{
-  "hash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
-}
-```
-
-### Fetch the current service version
-Fetches the current version of the service. The service implementation defines the versioning scheme and its interpretation.
-
-Returns the service _name_ and _version_ of the CAS service.
-
-#### Request path
-```
-GET /version
-```
-
-#### Request headers
-None.
-
-#### Request example
-```
-GET /version
-```
-
-#### Response body schema
-```json
-{
-  "name": "A string representing the name of the service",
-  "version": "A string representing the version of currently running service."
-}
-```
-
-#### Response example
-```http
-HTTP/1.1 200 OK
-
-{
-  "name": "ipfs",
   "version": "1.0.0"
 }
 ```

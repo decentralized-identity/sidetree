@@ -1,5 +1,5 @@
-import SidetreeError from './SidetreeError';
 import ErrorCode from '../common/SharedErrorCode';
+import SidetreeError from './SidetreeError';
 
 /**
  * ReadableStream utilities

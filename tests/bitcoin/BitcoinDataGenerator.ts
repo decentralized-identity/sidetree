@@ -1,6 +1,6 @@
+import { PrivateKey, Transaction } from 'bitcore-lib';
 import BitcoinBlockModel from '../../lib/bitcoin/models/BitcoinBlockModel';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
-import { PrivateKey, Transaction } from 'bitcore-lib';
 
 /**
  * Encapsulates the functions that help with generating the test data for the Bitcoin blockchain.

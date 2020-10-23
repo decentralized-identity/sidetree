@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as suffixData from '../fixtures/uniqueSuffix/suffixData.json';
+
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';

@@ -1,6 +1,6 @@
+import AnchorFile from './AnchorFile';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
-import AnchorFile from './AnchorFile';
 import ArrayMethods from './util/ArrayMethods';
 import ChunkFile from './ChunkFile';
 import ChunkFileModel from './models/ChunkFileModel';

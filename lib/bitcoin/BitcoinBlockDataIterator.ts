@@ -1,5 +1,5 @@
-import BitcoinFileReader from './BitcoinFileReader';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
+import BitcoinFileReader from './BitcoinFileReader';
 import BitcoinRawDataParser from './BitcoinRawDataParser';
 
 /**

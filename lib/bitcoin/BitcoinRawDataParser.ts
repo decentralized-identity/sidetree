@@ -1,8 +1,8 @@
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
+import { Block } from 'bitcore-lib';
 import ErrorCode from './ErrorCode';
 import SidetreeError from '../common/SidetreeError';
-import { Block } from 'bitcore-lib';
 
 /**
  * Parser for raw bitcoin block data

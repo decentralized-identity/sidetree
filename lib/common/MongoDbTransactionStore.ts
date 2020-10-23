@@ -1,6 +1,6 @@
+import { Collection, Cursor, Db, Long, MongoClient } from 'mongodb';
 import ITransactionStore from '../core/interfaces/ITransactionStore';
 import TransactionModel from './models/TransactionModel';
-import { Collection, Cursor, Db, Long, MongoClient } from 'mongodb';
 
 /**
  * Implementation of ITransactionStore that stores the transaction data in a MongoDB database.
@@ -153,7 +153,7 @@ export default class MongoDbTransactionStore implements ITransactionStore {
    * @param transactionTimeHash the transaction time hash which the transactions should be removed for
    */
   public async removeTransactionByTransactionTimeHash (transactionTimeHash: string) {
-    await this.transactionCollection!.deleteMany({ transactionTimeHash: { $eq:  transactionTimeHash } });
+    await this.transactionCollection!.deleteMany({ transactionTimeHash: { $eq: transactionTimeHash } });
   }
 
   /**

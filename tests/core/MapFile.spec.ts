@@ -21,7 +21,7 @@ describe('MapFile', async () => {
 
     it('should throw if the buffer is not compressed', async () => {
       const mapFileModel: MapFileModel = {
-        chunks: [ { chunkFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' } ]
+        chunks: [{ chunkFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' }]
       };
       const fileBuffer = Buffer.from(JSON.stringify(mapFileModel));
 

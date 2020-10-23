@@ -7,7 +7,7 @@ const uniqueDidCount = 20000;
 const endpointUrl = 'http://localhost:3000/';
 const outputFolder = `d:/vegeta-localhost-jws`;
 
-void (async () => {
+(async () => {
   console.info(`Generating load requests...`);
   const startTime = process.hrtime(); // For calculating time taken to process operations.
   await VegetaLoadGenerator.generateLoadFiles(uniqueDidCount, endpointUrl, outputFolder);

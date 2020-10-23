@@ -1,13 +1,13 @@
 import * as httpStatus from 'http-status';
 import * as nodeFetchPackage from 'node-fetch';
-import BitcoinDataGenerator from './BitcoinDataGenerator';
+import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
+import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinLockTransactionModel from '../../lib/bitcoin/models/BitcoinLockTransactionModel';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import BitcoinWallet from '../../lib/bitcoin/BitcoinWallet';
 import IBitcoinWallet from '../../lib/bitcoin/interfaces/IBitcoinWallet';
 import ReadableStream from '../../lib/common/ReadableStream';
-import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 
 describe('BitcoinClient', async () => {
 
