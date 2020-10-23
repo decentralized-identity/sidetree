@@ -5,6 +5,7 @@ import ErrorCode from './ErrorCode';
 import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
+import ArrayMethods from '../0.11.0/util/ArrayMethods';
 
 /**
  * Class that handles the composition of operations into final external-facing document.
@@ -210,10 +211,8 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeMissingOrUnknown);
       }
 
-      // TODO: this test is not strong enough... what about repeated values?
-      // suggest using json schema.
-      if (publicKey.purposes.length > Object.values(PublicKeyPurpose).length) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeExceedsMaxLength);
+      if(ArrayMethods.hasDuplicates(publicKey.purposes)) {
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeDuplicated);
       }
 
       const validPurposes = new Set(Object.values(PublicKeyPurpose));

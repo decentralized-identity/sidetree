@@ -592,12 +592,12 @@ describe('DocumentComposer', async () => {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: {},
-            purposes: ['verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod', 'verificationMethod']
+            purposes: ['verificationMethod', 'verificationMethod']
           }
         ]
       };
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeExceedsMaxLength);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeDuplicated);
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
