@@ -1,3 +1,4 @@
+import ArrayMethods from './util/ArrayMethods';
 import DocumentModel from './models/DocumentModel';
 import DidState from '../../models/DidState';
 import Encoder from './Encoder';
@@ -5,7 +6,6 @@ import ErrorCode from './ErrorCode';
 import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
-import ArrayMethods from '../0.11.0/util/ArrayMethods';
 
 /**
  * Class that handles the composition of operations into final external-facing document.
@@ -59,7 +59,7 @@ export default class DocumentComposer {
         const didDocumentService = {
           id: '#' + service.id,
           type: service.type,
-          serviceEndpoint: service.endpoint
+          serviceEndpoint: service.serviceEndpoint
         };
 
         services.push(didDocumentService);
@@ -287,7 +287,7 @@ export default class DocumentComposer {
 
     for (const service of services) {
       const serviceProperties = Object.keys(service);
-      if (serviceProperties.length !== 3) { // type, id, and endpoint
+      if (serviceProperties.length !== 3) { // type, id, and serviceEndpoint
         throw new SidetreeError(ErrorCode.DocumentComposerServiceHasMissingOrUnknownProperty);
       }
 
@@ -301,19 +301,19 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceTypeTooLong);
       }
 
-      // `endpoint` validation.
-      const endpoint = service.endpoint;
-      if (typeof endpoint === 'string') {
+      // `serviceEndpoint` validation.
+      const serviceEndpoint = service.serviceEndpoint;
+      if (typeof serviceEndpoint === 'string') {
         try {
           // just want to validate url, no need to assign to variable, it will throw if not valid
           // tslint:disable-next-line
-          new URL(service.endpoint);
+          new URL(service.serviceEndpoint);
         } catch {
           throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointNotValidUrl);
         }
-      } else if (typeof endpoint === 'object') {
+      } else if (typeof serviceEndpoint === 'object') {
         // Allow `object` type only if it is not an array.
-        if (Array.isArray(endpoint)) {
+        if (Array.isArray(serviceEndpoint)) {
           throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointCannotBeAnArray);
         }
       } else {

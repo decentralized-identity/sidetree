@@ -4,5 +4,5 @@
 export default interface ServiceModel {
   id: string;
   type: string;
-  endpoint: string | object;
+  serviceEndpoint: string | object;
 }

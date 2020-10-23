@@ -108,13 +108,13 @@ describe('DocumentComposer', async () => {
         services: [{
           id: 'someId',
           type: 'someType',
-          endpoint: 'someEndpoint'
+          serviceEndpoint: 'someEndpoint'
         }]
       };
 
       const result = DocumentComposer['addServices'](document, patch);
 
-      expect(result.services).toEqual([{ id: 'someId', type: 'someType', endpoint: 'someEndpoint' }]);
+      expect(result.services).toEqual([{ id: 'someId', type: 'someType', serviceEndpoint: 'someEndpoint' }]);
     });
   });
 
@@ -123,10 +123,10 @@ describe('DocumentComposer', async () => {
       const document: DocumentModel = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', purposes: [PublicKeyPurpose.VerificationMethod] }],
         services: [
-          { id: '1', type: 't', endpoint: 'se' },
-          { id: '2', type: 't', endpoint: 'se' },
-          { id: '3', type: 't', endpoint: 'se' },
-          { id: '4', type: 't', endpoint: 'se' }
+          { id: '1', type: 't', serviceEndpoint: 'se' },
+          { id: '2', type: 't', serviceEndpoint: 'se' },
+          { id: '3', type: 't', serviceEndpoint: 'se' },
+          { id: '4', type: 't', serviceEndpoint: 'se' }
         ]
       };
 
@@ -140,8 +140,8 @@ describe('DocumentComposer', async () => {
       const expected = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', purposes: [PublicKeyPurpose.VerificationMethod] }],
         services: [
-          { id: '2', type: 't', endpoint: 'se' },
-          { id: '4', type: 't', endpoint: 'se' }
+          { id: '2', type: 't', serviceEndpoint: 'se' },
+          { id: '4', type: 't', serviceEndpoint: 'se' }
         ]
       };
 
@@ -233,7 +233,7 @@ describe('DocumentComposer', async () => {
         services: [{
           id: 'super long super long super long super long super long super long super long super long super long',
           type: undefined,
-          endpoint: 'something'
+          serviceEndpoint: 'something'
         }]
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
@@ -247,14 +247,14 @@ describe('DocumentComposer', async () => {
           extra: 'property',
           id: 'someId',
           type: undefined,
-          endpoint: 'something'
+          serviceEndpoint: 'something'
         }]
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerServiceHasMissingOrUnknownProperty);
       expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerServiceHasMissingOrUnknownProperty if endpoint is missing', () => {
+    it('should throw DocumentComposerServiceHasMissingOrUnknownProperty if `serviceEndpoint` is missing', () => {
       const patch = {
         action: 'add-services',
         services: [{
@@ -272,7 +272,7 @@ describe('DocumentComposer', async () => {
         services: [{
           id: 'someId',
           type: undefined,
-          endpoint: 'something'
+          serviceEndpoint: 'something'
         }]
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceTypeNotString);
@@ -285,20 +285,20 @@ describe('DocumentComposer', async () => {
         services: [{
           id: 'someId',
           type: '1234567890123456789012345678901234567890',
-          endpoint: 'something'
+          serviceEndpoint: 'something'
         }]
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceTypeTooLong);
       expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should allow an non-array object as endpoint.', () => {
+    it('should allow an non-array object as `serviceEndpoint`.', () => {
       const patch = {
         action: 'add-services',
         services: [{
           id: 'someId',
           type: 'someType',
-          endpoint: { anyObject: '123' }
+          serviceEndpoint: { anyObject: '123' }
         }]
       };
 
@@ -306,39 +306,39 @@ describe('DocumentComposer', async () => {
       DocumentComposer['validateAddServicesPatch'](patch);
     });
 
-    it('should throw error if endpoint is an array.', () => {
+    it('should throw error if `serviceEndpoint` is an array.', () => {
       const patch = {
         action: 'add-services',
         services: [{
           id: 'someId',
           type: 'someType',
-          endpoint: []
+          serviceEndpoint: []
         }]
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointCannotBeAnArray);
       expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw error if endpoint has an invalid type.', () => {
+    it('should throw error if `serviceEndpoint` has an invalid type.', () => {
       const patch = {
         action: 'add-services',
         services: [{
           id: 'someId',
           type: 'someType',
-          endpoint: 123 // Invalid endpoint type.
+          serviceEndpoint: 123 // Invalid serviceEndpoint type.
         }]
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointMustBeStringOrNonArrayObject);
       expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointNotValidUrl if endpoint is not valid url', () => {
+    it('should throw DocumentComposerPatchServiceEndpointNotValidUrl if `serviceEndpoint` is not valid url', () => {
       const patch = {
         action: 'add-services',
         services: [{
           id: 'someId',
           type: 'someType',
-          endpoint: 'this is not a valid url'
+          serviceEndpoint: 'this is not a valid url'
         }]
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointNotValidUrl);

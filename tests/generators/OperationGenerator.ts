@@ -643,7 +643,7 @@ export default class OperationGenerator {
 
   /**
    * Generates an array of services with specified ids
-   * @param ids the id field in endpoint.
+   * @param ids the id field in service.
    */
   public static generateServices (ids: string[]): any[] {
     const services = [];
@@ -652,7 +652,7 @@ export default class OperationGenerator {
         {
           id: id,
           type: 'someType',
-          endpoint: 'https://www.url.com'
+          serviceEndpoint: 'https://www.url.com'
         }
       );
     }

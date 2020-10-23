@@ -308,7 +308,7 @@ describe('Resolver', () => {
       expect(actualNewSigningPublicKey2!.publicKeyJwk).toEqual(newKey2ForUpdate1AfterRecovery.publicKeyJwk);
       expect(document.services).toBeDefined();
       expect(document.services.length).toEqual(1);
-      expect(document.services[0].endpoint).toBeDefined();
+      expect(document.services[0].serviceEndpoint).toBeDefined();
       expect(document.services[0].id).toEqual('newDummyHubUri2');
     });
 
