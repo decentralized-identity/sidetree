@@ -178,18 +178,22 @@ export default class OperationGenerator {
   /**
    * Generates a long from from create operation data.
    */
-  public static async longFormFromCreateOperationData (createOperationData: any, network?: string) {
-
+  public static async createLongFormDid (
+    recoveryKey: JwkEs256k,
+    updateKey: JwkEs256k,
+    patches: any,
+    network?: string
+  ) {
     const delta = {
-      updateCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.updatePublicKey),
-      patches: createOperationData.createOperation.delta.patches
+      updateCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(updateKey),
+      patches
     };
 
     const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const suffixData = {
       deltaHash: deltaHash,
-      recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.recoveryPublicKey)
+      recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryKey)
     };
 
     const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
@@ -222,7 +226,7 @@ export default class OperationGenerator {
     const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
     const services = OperationGenerator.generateServices(['serviceId123']);
 
-    const operationRequest = await OperationGenerator.generateCreateOperationRequest(
+    const operationRequest = await OperationGenerator.createCreateOperationRequest(
       recoveryPublicKey,
       updatePublicKey,
       [signingPublicKey],
@@ -289,12 +293,15 @@ export default class OperationGenerator {
     const additionalKeyId = `additional-key`;
     const [additionalPublicKey, additionalPrivateKey] = await OperationGenerator.generateKeyPair(additionalKeyId);
 
+    // Should really use an independent key, but reusing key for convenience in test.
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(additionalPublicKey);
+
     const operationJson = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
       didUniqueSuffix,
       updatePublicKey,
       updatePrivateKey,
       additionalPublicKey,
-      Multihash.canonicalizeThenDoubleHashThenEncode(additionalPublicKey)
+      nextUpdateCommitmentHash
     );
 
     const operationBuffer = Buffer.from(JSON.stringify(operationJson));
@@ -331,9 +338,9 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a create operation request.
+   * Creates a create operation request.
    */
-  public static async generateCreateOperationRequest (
+  public static async createCreateOperationRequest (
     recoveryPublicKey: JwkEs256k,
     updatePublicKey: JwkEs256k,
     otherPublicKeys: PublicKeyModel[],
@@ -531,7 +538,7 @@ export default class OperationGenerator {
     signingPublicKey: PublicKeyModel,
     services?: ServiceModel[]
   ): Promise<Buffer> {
-    const operation = await OperationGenerator.generateCreateOperationRequest(
+    const operation = await OperationGenerator.createCreateOperationRequest(
       recoveryPublicKey,
       signingPublicKey.publicKeyJwk,
       [signingPublicKey],

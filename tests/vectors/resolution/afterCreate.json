@@ -1,40 +1,37 @@
 {
   "@context": "https://www.w3.org/ns/did-resolution/v1",
   "didDocument": {
-    "id": "did:sidetree:EiA5vyaRzJIxbkuZbvwEXiC__u8ieFx50TAAo98tBzCuyA",
+    "id": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
     "@context": [
       "https://www.w3.org/ns/did/v1",
       {
-        "@base": "did:sidetree:EiA5vyaRzJIxbkuZbvwEXiC__u8ieFx50TAAo98tBzCuyA"
+        "@base": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg"
       }
     ],
     "service": [
       {
-        "id": "#serviceId123",
-        "type": "someType",
-        "serviceEndpoint": "https://www.url.com"
+        "id": "#service1Id",
+        "type": "service1Type",
+        "serviceEndpoint": "http://www.service1.com"
       }
     ],
-    "publicKey": [
+    "authentication": [
       {
-        "id": "#signingKey",
-        "controller": "did:sidetree:EiA5vyaRzJIxbkuZbvwEXiC__u8ieFx50TAAo98tBzCuyA",
+        "id": "#publicKeyModel1Id",
+        "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
           "crv": "secp256k1",
-          "x": "dSaBRNtGvyj22e9T4N5Lj7Xv7uxiPLwSFxkhv04-mg0",
-          "y": "x67SIfiDe1lNv8oKS1xcBoob-9lNma3afo1erd35pgg"
+          "x": "tXSKB_rubXS7sCjXqupVJEzTcW3MsjmEvq1YpXn96Zg",
+          "y": "dOicXqbjFxoGJ-K0-GJ1kHYJqic_D_OMuUwkQ7Ol6nk"
         }
       }
-    ],
-    "authentication": [
-      "#signingKey"
     ]
   },
   "methodMetadata": {
     "published": true,
-    "recoveryCommitment": "EiAAZJYry29vICkwmso8FL92WAISMAhsL8xkCm8dYVnq_w",
-    "updateCommitment": "EiAvTIT-0XBWXarpjvMPPhZi3c4sU1Ci_rOzPD7W5v8Shw"
+    "recoveryCommitment": "EiBfOZdMtU6OBw8Pk879QtZ-2J-9FbbjSZyoaA_bqD4zhA",
+    "updateCommitment": "EiDKIkwqO69IPG3pOlHkdb86nYt0aNxSHZu2r-bhEznjdA"
   }
 }
