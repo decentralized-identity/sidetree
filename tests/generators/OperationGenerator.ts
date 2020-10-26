@@ -178,7 +178,7 @@ export default class OperationGenerator {
   /**
    * Generates a long from from create operation data.
    */
-  public static async createLongFormDid (
+  public static async createDid (
     recoveryKey: JwkEs256k,
     updateKey: JwkEs256k,
     patches: any,

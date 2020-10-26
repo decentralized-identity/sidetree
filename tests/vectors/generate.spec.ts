@@ -22,11 +22,11 @@ describe('Test Vectors', () => {
     const otherKeys = [publicKeyModel1 as any];
     const services = [service1];
     const operationRequest = await OperationGenerator.createCreateOperationRequest(recoveryKey, updateKey, otherKeys, services);
-    const dids = await OperationGenerator.createLongFormDid(recoveryKey, updateKey, operationRequest.delta.patches);
+    const did = await OperationGenerator.createDid(recoveryKey, updateKey, operationRequest.delta.patches);
     fixture = {
       ...fixture,
       create: {
-        ...dids,
+        ...did,
         operationRequest
       }
     };
