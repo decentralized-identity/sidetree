@@ -1,5 +1,4 @@
 import * as fs from 'fs';
-import * as url from 'url';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from './OperationGenerator';
@@ -87,7 +86,7 @@ export default class VegetaLoadGenerator {
     }
 
     // Operations URL.
-    const operationsUrl = url.resolve(endpointUrl, 'operations'); // e.g. http://localhost:3000/operations
+    const operationsUrl = new URL('operations', endpointUrl).toString(); // e.g. http://localhost:3000/operations
 
     // Generate Create API calls in a targets file.
     let createTargetsFileString = '';

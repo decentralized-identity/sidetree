@@ -103,7 +103,7 @@ export default class RecoverOperation implements OperationModel {
     const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
     // If not in anchor file mode, we need to validate `type` and `delta` properties.
-    let delta = undefined;
+    let delta;
     if (!anchorFileMode) {
       if (operationObject.type !== OperationType.Recover) {
         throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);

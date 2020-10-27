@@ -56,16 +56,16 @@ export default class AnchorFile {
       }
     }
 
-    if (!anchorFileModel.hasOwnProperty('mapFileUri')) {
+    if (!('mapFileUri' in anchorFileModel)) {
       throw new SidetreeError(ErrorCode.AnchorFileMapFileHashMissing);
     }
 
-    if (!anchorFileModel.hasOwnProperty('operations')) {
+    if (!('operations' in anchorFileModel)) {
       throw new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty);
     }
 
     // `writerLockId` validations.
-    if (anchorFileModel.hasOwnProperty('writerLockId')) {
+    if (('writerLockId' in anchorFileModel)) {
       if (typeof anchorFileModel.writerLockId !== 'string') {
         throw new SidetreeError(ErrorCode.AnchorFileWriterLockIdPropertyNotString);
       }
@@ -167,10 +167,10 @@ export default class AnchorFile {
 
     const createOperations = createOperationArray.map(operation => {
       return {
-        suffixData: { 
-          deltaHash: operation.suffixData.deltaHash, 
-          recoveryCommitment: operation.suffixData.recoveryCommitment, 
-          type: operation.suffixData.type 
+        suffixData: {
+          deltaHash: operation.suffixData.deltaHash,
+          recoveryCommitment: operation.suffixData.recoveryCommitment,
+          type: operation.suffixData.type
         }
       };
     });

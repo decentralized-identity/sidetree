@@ -1,6 +1,5 @@
 import * as HttpStatus from 'http-status';
 import * as crypto from 'crypto';
-import * as url from 'url';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/enums/FetchResultCode';
 import ICas from '../core/interfaces/ICas';
@@ -48,7 +47,7 @@ export default class Ipfs implements ICas {
       body: requestBody
     };
 
-    const addUrl = url.resolve(this.uri, '/api/v0/add'); // e.g. 'http://127.0.0.1:5001/api/v0/add'
+    const addUrl = new URL('/api/v0/add', this.uri).toString(); // e.g. 'http://127.0.0.1:5001/api/v0/add'
     const response = await this.fetch(addUrl, requestParameters);
 
     if (response.status !== HttpStatus.OK) {
@@ -130,7 +129,7 @@ export default class Ipfs implements ICas {
       // we can safely discard the content (in the stream read below) and return size exceeded as the fetch result.
       // Alternatively, we could choose not to supply this optional `length` parameter, but we do so such that
       // IPFS is given the opportunity to optimize its download logic. (e.g. not needing to download the entire content).
-      const catUrl = url.resolve(this.uri, `/api/v0/cat?arg=${base58Multihash}&length=${maxSizeInBytes + 1}`);
+      const catUrl = new URL(`/api/v0/cat?arg=${base58Multihash}&length=${maxSizeInBytes + 1}`, this.uri).toString();
       response = await this.fetch(catUrl, { method: 'POST' });
     } catch (error) {
       if (error.code === 'ECONNREFUSED') {
@@ -169,7 +168,7 @@ export default class Ipfs implements ICas {
 
   private async pinContent (hash: string) {
     // e.g. 'http://127.0.0.1:5001/api/v0/pin?arg=QmPPsg8BeJdqK2TnRHx5L2BFyjmFr9FK6giyznNjdL93NL'
-    const pinUrl = url.resolve(this.uri, `/api/v0/pin?arg=${hash}`);
+    const pinUrl = new URL(`/api/v0/pin?arg=${hash}`, this.uri).toString();
     await this.fetch(pinUrl, { method: 'POST' });
   }
 }

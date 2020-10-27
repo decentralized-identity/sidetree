@@ -11,6 +11,8 @@ import SavedLockType from '../enums/SavedLockType';
 import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
 
+/* global NodeJS */
+
 /** Enum (internal to this class) to track the status of the lock. */
 enum LockStatus {
   Confirmed = 'confirmed',

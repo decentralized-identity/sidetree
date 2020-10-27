@@ -1,6 +1,6 @@
+import * as fs from 'fs';
 import BitcoinBlockDataIterator from '../../lib/bitcoin/BitcoinBlockDataIterator';
 import BitcoinRawDataParser from '../../lib/bitcoin/BitcoinRawDataParser';
-import * as fs from 'fs';
 
 describe('bitcoinBlockDataIterator', () => {
   let bitcoinBlockDataIterator: BitcoinBlockDataIterator;

@@ -101,7 +101,7 @@ export default class UpdateOperation implements OperationModel {
     const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
 
     // If not in map file mode, we need to validate `type` and `delta` properties.
-    let delta = undefined;
+    let delta;
     if (!mapFileMode) {
       if (operationObject.type !== OperationType.Update) {
         throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);

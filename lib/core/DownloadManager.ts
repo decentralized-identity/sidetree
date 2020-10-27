@@ -100,7 +100,7 @@ export default class DownloadManager {
         const downloadInfo = this.pendingDownloads[i];
 
         // Intentionally not awaiting on a download.
-        void this.downloadAsync(downloadInfo);
+        this.downloadAsync(downloadInfo);
         this.activeDownloads.set(downloadInfo.handle, downloadInfo);
       }
 

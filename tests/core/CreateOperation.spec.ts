@@ -6,7 +6,6 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
-import * as generatedFixtures from '../vectors/generated.json';
 
 describe('CreateOperation', async () => {
   describe('parseJcsObject', () => {
@@ -107,13 +106,6 @@ describe('CreateOperation', async () => {
     });
   });
 
-  describe('computeJcsDidUniqueSuffix', () => {
-    it('should return expected did unique suffix', () => {
-      const actual = Multihash.canonicalizeThenHashThenEncode(generatedFixtures.create.createOperation.suffixData);
-      expect(actual).toEqual(generatedFixtures.create.didUniqueSuffix);
-    });
-  });
-
   describe('computeDidUniqueSuffix()', async () => {
     it('should return expected did unique suffix', async (done) => {
       const suffixDataString = 'AStringActingAsTheSuffixData';
@@ -131,7 +123,7 @@ describe('CreateOperation', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
       const services = OperationGenerator.generateServices(['serviceId123']);
-      const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
+      const createOperationRequest = await OperationGenerator.createCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey.publicKeyJwk,
         [signingPublicKey],
@@ -148,7 +140,7 @@ describe('CreateOperation', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
       const services = OperationGenerator.generateServices(['serviceId123']);
-      const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
+      const createOperationRequest = await OperationGenerator.createCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey.publicKeyJwk,
         [signingPublicKey],
@@ -248,7 +240,7 @@ describe('CreateOperation', async () => {
       const suffixData = {
         deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        type: '/\|='
+        type: '/|='
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))

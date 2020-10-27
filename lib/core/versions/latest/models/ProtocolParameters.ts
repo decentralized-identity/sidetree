@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Defines the list of protocol parameters, intended ONLY to be used within each version of the protocol implementation.
  */
 export default interface ProtocolParameters {

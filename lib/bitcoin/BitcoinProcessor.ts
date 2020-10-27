@@ -196,7 +196,8 @@ export default class BitcoinProcessor {
     // have all the data.
     await this.lockMonitor.startPeriodicProcessing();
 
-    void this.periodicPoll();
+    // Intentionally not await on the promise.
+    this.periodicPoll();
   }
 
   private async upgradeDatabaseIfNeeded () {
