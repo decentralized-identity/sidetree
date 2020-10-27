@@ -13,6 +13,7 @@ export default class Timeout {
    * @throws `TimeoutPromiseTimedOut` Error task timed out. Rethrows the error that the given task throws.
    */
   public static async timeout<T> (task: Promise<T>, timeoutInMilliseconds: number): Promise<T> {
+    // eslint-disable-next-line promise/param-names
     const timeoutPromise = new Promise<T>((_resolve, reject) => {
       setTimeout(
         () => { reject(new SidetreeError(IpfsErrorCode.TimeoutPromiseTimedOut, `Promise timed out after ${timeoutInMilliseconds} milliseconds.`)); },

@@ -1,6 +1,8 @@
 import ErrorCode from '../common/SharedErrorCode';
 import SidetreeError from './SidetreeError';
 
+/* global NodeJS */
+
 /**
  * ReadableStream utilities
  */

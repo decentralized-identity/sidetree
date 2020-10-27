@@ -121,12 +121,12 @@ export default class DocumentComposer {
     }
 
     // Verify 'publicKeys' property if it exists.
-    if (document.hasOwnProperty('publicKeys')) {
+    if (('publicKeys' in document)) {
       DocumentComposer.validatePublicKeys(document.publicKeys);
     }
 
     // Verify 'services' property if it exists.
-    if (document.hasOwnProperty('services')) {
+    if (('services' in document)) {
       // Verify each entry in services array.
       DocumentComposer.validateServices(document.services);
     }
@@ -211,7 +211,7 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeMissingOrUnknown);
       }
 
-      if(ArrayMethods.hasDuplicates(publicKey.purposes)) {
+      if (ArrayMethods.hasDuplicates(publicKey.purposes)) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeDuplicated);
       }
 
@@ -305,8 +305,9 @@ export default class DocumentComposer {
       const serviceEndpoint = service.serviceEndpoint;
       if (typeof serviceEndpoint === 'string') {
         try {
+          // TODO: Issue #898 - `serviceEndpoint` string check should use a proper URI library.
           // just want to validate url, no need to assign to variable, it will throw if not valid
-          // tslint:disable-next-line
+          // eslint-disable-next-line no-new
           new URL(service.serviceEndpoint);
         } catch {
           throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointNotValidUrl);

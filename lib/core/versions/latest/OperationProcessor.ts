@@ -70,18 +70,22 @@ export default class OperationProcessor implements IOperationProcessor {
 
     let canonicalizedKeyBuffer;
     switch (operation.type) {
-      case OperationType.Recover:
+      case OperationType.Recover: {
         const recoverOperation = (operation as RecoverOperation);
         canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(recoverOperation.signedData.recoveryKey);
         break;
-      case OperationType.Update:
+      }
+      case OperationType.Update: {
         const updateOperation = (operation as UpdateOperation);
         canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(updateOperation.signedData.updateKey);
         break;
-      default: // This is a deactivate.
+      }
+      default: {
+        // This is a deactivate.
         const deactivateOperation = (operation as DeactivateOperation);
         canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(deactivateOperation.signedData.recoveryKey);
         break;
+      }
     }
 
     // TODO: Issue #766 - Remove temporary assumption on reveal value being calculated using the same hash algorithm
