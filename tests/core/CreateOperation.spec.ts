@@ -106,13 +106,6 @@ describe('CreateOperation', async () => {
     });
   });
 
-  describe('computeJcsDidUniqueSuffix', () => {
-    // it('vector test - should return expected did unique suffix', () => {
-    //   const actual = Multihash.canonicalizeThenHashThenEncode(generatedFixtures.create.createOperation.suffixData);
-    //   expect(actual).toEqual(generatedFixtures.create.didUniqueSuffix);
-    // });
-  });
-
   describe('computeDidUniqueSuffix()', async () => {
     it('should return expected did unique suffix', async (done) => {
       const suffixDataString = 'AStringActingAsTheSuffixData';
