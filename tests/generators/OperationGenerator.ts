@@ -652,7 +652,7 @@ export default class OperationGenerator {
    * Generates an array of services with specified ids
    * @param ids the id field in service.
    */
-  public static generateServices (ids: string[]): any[] {
+  public static generateServices (ids: string[]): ServiceModel[] {
     const services = [];
     for (const id of ids) {
       services.push(
