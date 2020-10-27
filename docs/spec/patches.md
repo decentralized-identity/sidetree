@@ -34,12 +34,12 @@ The following set of standard _Patch Actions_ are specified to help align on a c
 ```json
 {
   "action": "add-public-keys",
-  "public_keys": [
+  "publicKeys": [
     {
       "id": "key1",
-      "purpose": ["auth"],
+      "purposes": ["authentication"],
       "type": "EcdsaSecp256k1VerificationKey2019",
-      "jwk": {...}
+      "publicKeyJwk": {...}
     }
   ]
 }
@@ -49,30 +49,19 @@ The following set of standard _Patch Actions_ are specified to help align on a c
 The `add-public-keys` _Patch Action_ describes the addition of cryptographic keys associated with a given DID. For any part of an `add-public-keys` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct an `add-public-keys` patch, compose an object as follows:
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `add-public-keys`.
-2. The object ****MUST**** include a `public_keys` property, and its value ****MUST**** be an array.
+2. The object ****MUST**** include a `publicKeys` property, and its value ****MUST**** be an array.
 3. Each key being added ****MUST**** be represented by an entry in the `public_keys` array, and each entry must be an object composed as follows:
     1. The object ****MUST**** include an `id` property, and its value ****MUST**** be a string with no more than fifty (50) Base64URL encoded characters. If the value is not of the correct type or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
-    2. The object ****MUST**** include a type property, and its value ****SHOULD**** be the identifier type string of a registered [Cryptographic Suite](https://w3c-ccg.github.io/ld-cryptosuite-registry/) that supports JWK representations - for example:
+    2. The object ****MUST**** include a `type` property, and its value ****SHOULD**** be the type string of a registered [Cryptographic Suite](https://w3c-ccg.github.io/ld-cryptosuite-registry/) that supports JWK representations - for example:
         - `EcdsaSecp256k1VerificationKey2019`
         - `JsonWebKey2020`
-    3. The object ****MUST**** include a `jwk` property, and its value ****MUST**** be a public key expressed as a [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation for a [`KEY_ALGORITHM`](#key-algorithm) supported by the implementation. If the value is not a compliant JWK representation, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
-    4. The object ****MUST**** include a `purpose` property, and its value ****MUST**** be an array that includes one or more of the strings listed below. If the value is not of the correct type or contains any string not listed below, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
-        - **`general`**: the key ****MUST**** be included in the `public_keys` section of the resolved _DID Document_.
-        - **`auth`**: the key ****MUST**** be included in the `authentication` section of the resolved _DID Document_, as follows:
-            - If the `general` purpose value IS NOT present in the `purpose` array, the key descriptor object ****MUST**** be included directly in the `authentication` section of the resolved _DID Document_. 
-            - If the `general` purpose value IS present in the `purpose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `authentication` section.
-        - **`agreement`**: the key ****MUST**** be included in the `keyAgreement` section of the resolved _DID Document_, as follows:
-            - If the `general` purpose value IS NOT present in the `purpose` array, the key descriptor object ****MUST**** be included directly in the `keyAgreement` section of the resolved _DID Document_. 
-            - If the `general` purpose value IS present in the `purpose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `keyAgreement` section.
-        - **`assertion`**: the key ****MUST**** be included in the `assertionMethod` section of the resolved _DID Document_, as follows:
-            - If the `general` purpose value IS NOT present in the `purpose` array, the key descriptor object ****MUST**** be included directly in the `assertionMethod` section of the resolved _DID Document_. 
-            - If the `general` purpose value IS present in the `purpose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `assertionMethod` section.
-        - **`delegation`**: the key ****MUST**** be included in the `capabilityDelegation` section of the resolved _DID Document_, as follows:
-            - If the `general` purpose value IS NOT present in the `purpose` array, the key descriptor object ****MUST**** be included directly in the `capabilityDelegation` section of the resolved _DID Document_. 
-            - If the `general` purpose value IS present in the `purpose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityDelegation` section.
-        - **`invocation`**: the key ****MUST**** be included in the `capabilityInvocation` section of the resolved _DID Document_, as follows:
-            - If the `general` purpose value IS NOT present in the `purpose` array, the key descriptor object ****MUST**** be included directly in the `capabilityInvocation` section of the resolved _DID Document_. 
-            - If the `general` purpose value IS present in the `purpose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityInvocation` section.
+    3. The object ****MUST**** include a `publicKeyJwk` property, and its value ****MUST**** be a public key expressed as a [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation for a [`KEY_ALGORITHM`](#key-algorithm) supported by the implementation. The key represented by the JWK object ****MUST**** be projected into the `assertionMethod` array of the DID Document upon resolution. If the value is not a compliant JWK representation, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
+    4. The object ****MAY**** include a `purposes` property, and if included, its value ****MUST**** be an array of one or more of the strings listed below. If the value is not of the correct type or contains any string not listed below, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
+        - **`authentication`**: a reference to the key's `id` ****MUST**** be included in the `authentication` array of the resolved _DID Document_.
+        - **`keyAgreement`**: a reference to the key's `id` ****MUST**** be included in the `keyAgreement` array of the resolved _DID Document_.
+        - **`assertionMethod`**: a reference to the key's `id` ****MUST**** be included in the `assertionMethod` array of the resolved _DID Document_.
+        - **`capabilityDelegation`**: a reference to the key's `id` ****MUST**** be included in the `capabilityDelegation` array of the resolved _DID Document_.
+        - **`capabilityInvocation`**: a reference to the key's `id` ****MUST**** be included in the `capabilityInvocation` array of the resolved _DID Document_.
     
 
 #### `remove-public-keys`
@@ -81,7 +70,7 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
 ```json
 {
   "action": "remove-public-keys",
-  "public_keys": ["key1", "key2"]
+  "ids": ["key1", "key2"]
 }
 ```
 :::
@@ -89,7 +78,7 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
 The `remove-public-keys` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. For any part of an `remove-public-keys` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct a `remove-public-keys` _Patch Action_, compose an object as follows:
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `remove-public-keys`.
-2. The object ****MUST**** include a `public_keys` property, and its value ****MUST**** be an array of key IDs that correspond with keys presently associated with the DID that are to be removed. If the value is not of the correct type or includes a string value that is not associated with a key in the document, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
+2. The object ****MUST**** include a `ids` property, and its value ****MUST**** be an array of key IDs that correspond with keys presently associated with the DID that are to be removed. If the value is not of the correct type or includes a string value that is not associated with a key in the document, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
 
 #### `add-services`
 
@@ -97,16 +86,16 @@ The `remove-public-keys` _Patch Action_ describes the removal of cryptographic k
 ```json
 {
   "action": "add-services",
-  "service_endpoints": [
+  "services": [
     {
       "id": "sds",
       "type": "SecureDataStore",
-      "endpoint": "http://hub.my-personal-server.com"
+      "serviceEndpoint": "http://hub.my-personal-server.com"
     },
     {
       "id": "did-config",
       "type": "LinkedDomains",
-      "endpoint": {
+      "serviceEndpoint": {
         "origins": ["https://foo.com", "https://bar.com"]
       }
     }
@@ -118,11 +107,11 @@ The `remove-public-keys` _Patch Action_ describes the removal of cryptographic k
 The `add-services` _Patch Action_ describes the addition of [Service Endpoints](https://w3c.github.io/did-core/#service-endpoints) to a DID's state. For any part of an `add-services` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct an `add-services` patch, compose an object as follows:
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `add-services`.
-2. The object ****MUST**** include a `service_endpoints` property, and its value ****MUST**** be an array. If the value is not of the correct type, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
-3. Each service being added ****MUST**** be represented by an entry in the `service_endpoints` array, and each entry must be an object composed as follows:
+2. The object ****MUST**** include a `services` property, and its value ****MUST**** be an array. If the value is not of the correct type, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
+3. Each service being added ****MUST**** be represented by an entry in the `services` array, and each entry must be an object composed as follows:
     1. The object ****MUST**** include an `id` property, and its value ****MUST**** be a string with a length of no more than fifty (50) Base64URL encoded characters. If the value is not of the correct type or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
     2. The object ****MUST**** include a `type` property, and its value ****MUST**** be a string with a length of no more than thirty (30) Base64URL encoded characters. If the value is not a string or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
-    3. The object ****MUST**** include a `endpoint` property, and its value ****MUST**** be either a valid URI string (including a scheme segment: i.e. http://, git://) or a JSON object with properties that describe the Service Endpoint further. If the values do not adhere to these constraints, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
+    3. The object ****MUST**** include a `serviceEndpoint` property, and its value ****MUST**** be either a valid URI string (including a scheme segment: i.e. http://, git://) or a JSON object with properties that describe the Service Endpoint further. If the values do not adhere to these constraints, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
 
 
 #### `remove-services`
@@ -148,19 +137,19 @@ The `remove-services` _Patch Action_ describes the removal of cryptographic keys
 {
   "action": "replace",
   "document": {
-    "public_keys": [
+    "publicKeys": [
       {
         "id": "key2",
-        "purpose": ["auth"],
+        "purposes": ["authentication"],
         "type": "EcdsaSecp256k1VerificationKey2019",
-        "jwk": {...}
+        "publicKeyJwk": {...}
       }
     ],
-    "service_endpoints": [
+    "services": [
       {
         "id": "sds3",
         "type": "SecureDataStore",
-        "endpoint": "http://hub.my-personal-server.com"
+        "serviceEndpoint": "http://hub.my-personal-server.com"
       }
     ]
   }
@@ -172,8 +161,8 @@ The `replace` _Patch Action_ acts as a total state reset that replaces a DID's c
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `replace`.
 2. The object ****MUST**** include a `document` property, and its value ****MUST**** be an object, which may contain the following properties:
-    - The object ****MAY**** include a `public_keys` property, and if present, its value ****MUST**** be an array of public key entries that follow the same schema and requirements as the public key entries from the [`add-public-keys`](#add-public-keys) _Patch Action_
-    - The object ****MAY**** include a `service_endpoints` property, and if present, its value ****MUST**** be an array of service endpoint entries that follow the same schema and requirements as the service endpoint entries from the [`add-services`](#add-services) _Patch Action_.
+    - The object ****MAY**** include a `publicKeys` property, and if present, its value ****MUST**** be an array of public key entries that follow the same schema and requirements as the public key entries from the [`add-public-keys`](#add-public-keys) _Patch Action_
+    - The object ****MAY**** include a `services` property, and if present, its value ****MUST**** be an array of service endpoint entries that follow the same schema and requirements as the service endpoint entries from the [`add-services`](#add-services) _Patch Action_.
 
 #### `ietf-json-patch`
 
