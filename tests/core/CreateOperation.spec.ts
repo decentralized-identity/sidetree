@@ -247,7 +247,7 @@ describe('CreateOperation', async () => {
       const suffixData = {
         deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        type: '/\|='
+        type: '/|='
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))

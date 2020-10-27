@@ -1,5 +1,5 @@
-import DocumentModel from './models/DocumentModel';
 import DidState from '../../models/DidState';
+import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import PublicKeyPurpose from './PublicKeyPurpose';

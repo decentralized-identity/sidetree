@@ -1,9 +1,9 @@
 import Encoder from '../Encoder';
 import ErrorCode from '../ErrorCode';
+import { JWS } from 'jose';
 import JwkEs256k from '../../../models/JwkEs256k';
 import JwsModel from '../models/JwsModel';
 import SidetreeError from '../../../../common/SidetreeError';
-import { JWS } from 'jose';
 
 /**
  * Class containing reusable JWS operations.

@@ -1,8 +1,8 @@
-import * as generatedFixture from '../vectors/generated.json';
 import * as afterCreate from '../vectors/resolution/afterCreate.json';
-import * as afterUpdate from '../vectors/resolution/afterUpdate.json';
-import * as afterRecover from '../vectors/resolution/afterRecover.json';
 import * as afterDeactivate from '../vectors/resolution/afterDeactivate.json';
+import * as afterRecover from '../vectors/resolution/afterRecover.json';
+import * as afterUpdate from '../vectors/resolution/afterUpdate.json';
+import * as generatedFixture from '../vectors/generated.json';
 
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';

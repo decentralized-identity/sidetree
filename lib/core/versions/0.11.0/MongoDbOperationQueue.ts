@@ -1,8 +1,8 @@
+import { Binary, Collection, Db, MongoClient } from 'mongodb';
 import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
-import SidetreeError from '../../../common/SidetreeError';
-import { Binary, Collection, Db, MongoClient } from 'mongodb';
 import QueuedOperationModel from './models/QueuedOperationModel';
+import SidetreeError from '../../../common/SidetreeError';
 
 /**
  * Sidetree operation stored in MongoDb.

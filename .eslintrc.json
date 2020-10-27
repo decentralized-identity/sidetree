@@ -33,6 +33,8 @@
         "argsIgnorePattern": "^_"
       }
     ],
+    "no-useless-constructor": "off",
+    "@typescript-eslint/no-useless-constructor": ["error"],
     "padded-blocks": ["off"],
     "quotes": ["error", "single", { "avoidEscape": true, "allowTemplateLiterals": true} ],
     "semi": ["off"],

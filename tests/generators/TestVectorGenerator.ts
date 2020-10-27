@@ -6,9 +6,9 @@ import * as jwkEs256k2Public from '../vectors/inputs/jwkEs256k2Public.json';
 import * as path from 'path';
 import * as publicKeyModel1 from '../vectors/inputs/publicKeyModel1.json';
 import * as service1 from '../vectors/inputs/service1.json';
-import Jwk from "../../lib/core/versions/latest/util/Jwk";
-import Multihash from "../../lib/core/versions/latest/Multihash";
-import OperationGenerator from "./OperationGenerator";
+import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import Multihash from '../../lib/core/versions/latest/Multihash';
+import OperationGenerator from './OperationGenerator';
 
 const saveLocation = path.resolve(__dirname, '../../../tests/vectors/inputs');
 fs.mkdirSync(saveLocation, { recursive: true });
@@ -42,7 +42,7 @@ fs.mkdirSync(saveLocation, { recursive: true });
     updatePrivateKey,
     nextUpdateCommitmentHash,
     patches
-  )
+  );
 
   // derive a recover operation from the create operation
   const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
@@ -61,7 +61,6 @@ fs.mkdirSync(saveLocation, { recursive: true });
   );
 
   const deactivateRequest = await OperationGenerator.createDeactivateOperationRequest(did.didUniqueSuffix, recoveryPrivateKey);
-
 
   const createRequestString = JSON.stringify(createOperationRequest, null, 2);
   const updateRequestString = JSON.stringify(updateRequest, null, 2);

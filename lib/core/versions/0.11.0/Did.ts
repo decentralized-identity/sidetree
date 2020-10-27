@@ -113,7 +113,7 @@ export default class Did {
   }
 
   private static getInitialStateFromDidStringWithQueryParameter (didString: string, methodNameWithNetworkId: string): string {
-    let didStringUrl = undefined;
+    let didStringUrl;
     try {
       didStringUrl = new URL(didString);
     } catch {

@@ -3,9 +3,9 @@ import * as jwkEs256k1Private from './inputs/jwkEs256k1Private.json';
 import * as jwkEs256k1Public from './inputs/jwkEs256k1Public.json';
 import * as jwkEs256k2Private from './inputs/jwkEs256k2Private.json';
 import * as jwkEs256k2Public from './inputs/jwkEs256k2Public.json';
+import * as path from 'path';
 import * as publicKeyModel1 from './inputs/publicKeyModel1.json';
 import * as service1 from './inputs/service1.json';
-import * as path from 'path';
 import OperationGenerator from '../generators/OperationGenerator';
 
 const OVERWRITE_TEST_VECTORS = false;
