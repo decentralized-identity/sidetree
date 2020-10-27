@@ -226,19 +226,19 @@ export default class DocumentComposer {
   }
 
   private static validateRemovePublicKeysPatch (patch: any) {
-    const patchProperties = Object.keys(patch);
-    if (patchProperties.length !== 2) {
-      throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
+    const allowedProperties = new Set(['action', 'ids']);
+    for (const property in patch) {
+      if (!allowedProperties.has(property)) {
+        throw new SidetreeError(ErrorCode.DocumentComposerUnknownPropertyInRemovePublicKeysPatch, `Unexpected property ${property} in remove-public-keys patch.`);
+      }
     }
 
-    if (!Array.isArray(patch.publicKeys)) {
+    if (!Array.isArray(patch.ids)) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdsNotArray);
     }
 
-    for (const publicKeyId of patch.publicKeys) {
-      if (typeof publicKeyId !== 'string') {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
-      }
+    for (const id of patch.ids) {
+      DocumentComposer.validateId(id);
     }
   }
 
@@ -246,9 +246,11 @@ export default class DocumentComposer {
    * validate update patch for removing services
    */
   private static validateRemoveServicesPatch (patch: any) {
-    const patchProperties = Object.keys(patch);
-    if (patchProperties.length !== 2) {
-      throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
+    const allowedProperties = new Set(['action', 'ids']);
+    for (const property in patch) {
+      if (!allowedProperties.has(property)) {
+        throw new SidetreeError(ErrorCode.DocumentComposerUnknownPropertyInRemoveServicesPatch, `Unexpected property ${property} in remove-services patch.`);
+      }
     }
 
     if (!Array.isArray(patch.ids)) {
@@ -374,10 +376,10 @@ export default class DocumentComposer {
   private static addPublicKeys (document: DocumentModel, patch: any): DocumentModel {
     const publicKeyMap = new Map((document.publicKeys || []).map(publicKey => [publicKey.id, publicKey]));
 
-    // Loop through all given public keys and add them if they don't exist already.
+    // Loop through all given public keys and add them.
+    // NOTE: If a key ID already exists, we will just replace the existing key.
+    // Not throwing error will minimize the need (thus risk) of reusing exposed update reveal value.
     for (const publicKey of patch.publicKeys) {
-      // NOTE: If a key ID already exists, we will just replace the existing key.
-      // Not throwing error will minimize the need (thus risk) of reusing exposed update reveal value.
       publicKeyMap.set(publicKey.id, publicKey);
     }
 
@@ -390,20 +392,14 @@ export default class DocumentComposer {
    * Removes public keys from document.
    */
   private static removePublicKeys (document: DocumentModel, patch: any): DocumentModel {
-    const publicKeyMap = new Map((document.publicKeys || []).map(publicKey => [publicKey.id, publicKey]));
-
-    // Loop through all given public key IDs and delete them from the existing public key only if it is not a recovery key.
-    for (const publicKey of patch.publicKeys) {
-      const existingKey = publicKeyMap.get(publicKey);
-
-      if (existingKey !== undefined) {
-        publicKeyMap.delete(publicKey);
-      }
-      // NOTE: Else we will just treat this key removal as a no-op.
-      // Not throwing error will minimize the need (thus risk) of reusing exposed update reveal value.
+    if (document.publicKeys === undefined) {
+      return document;
     }
 
-    document.publicKeys = [...publicKeyMap.values()];
+    const idsOfKeysToRemove = new Set(patch.ids);
+
+    // Keep only keys that are not in the removal list.
+    document.publicKeys = document.publicKeys.filter(publicKey => !idsOfKeysToRemove.has(publicKey.id));
 
     return document;
   }

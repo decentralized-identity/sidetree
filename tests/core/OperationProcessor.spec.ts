@@ -180,7 +180,7 @@ describe('OperationProcessor', async () => {
     const patches = [
       {
         action: 'remove-public-keys',
-        publicKeys: [signingKeyId]
+        ids: [signingKeyId]
       }
     ];
     const nextUpdateCommitmentHash = 'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA';
@@ -508,7 +508,7 @@ describe('OperationProcessor', async () => {
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
           signingPublicKey.publicKeyJwk,
-          recoveryPrivateKey, // NOTE: Using recovery private key to generate an invalid signautre.
+          recoveryPrivateKey, // NOTE: Using recovery private key to generate an invalid signature.
           additionalKey,
           OperationGenerator.generateRandomHash()
         );
