@@ -363,14 +363,14 @@ export default class OperationGenerator {
     const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const suffixData = {
-      deltaHash: deltaHash,
+      deltaHash,
       recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
     const operation = {
       type: OperationType.Create,
-      suffixData: suffixData,
-      delta: delta
+      suffixData,
+      delta
     };
 
     return operation;
