@@ -309,13 +309,13 @@ describe('BitcoinProcessor', () => {
   describe('transactions', () => {
     it('should get transactions since genesis capped by page size in blocks', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
+      // return as many as page size
+      const transactions: TransactionModel[] = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true);
       bitcoinProcessor['lastProcessedBlock'] = {
-        height: Number.MAX_SAFE_INTEGER,
+        height: transactions[transactions.length - 1].transactionTime + 1,
         hash: 'some hash',
         previousHash: 'previous hash'
       };
-      // return as many as page size
-      const transactions: TransactionModel[] = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true);
       const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake(() => {
         return Promise.resolve(transactions);
       });
@@ -367,7 +367,7 @@ describe('BitcoinProcessor', () => {
       const actual = await bitcoinProcessor.transactions();
       expect(verifyMock).toHaveBeenCalledTimes(1);
       expect(laterThanMock).toHaveBeenCalled();
-      expect(actual.moreTransactions).toBeTruthy();
+      expect(actual.moreTransactions).toBeFalsy(); // Looks at genesis to genesis + 100 but lastProcessedBlock is genesis + 99
       expect(actual.transactions).toEqual(transactions);
       done();
     });
@@ -394,26 +394,27 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
-    it('should group transactions correctly by transaction time', async (done) => {
+    it('should find at least 1 transaction and return', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
-      // make the last transaction time genesis + 100 so it needs to call getTransactionsStartingFrom multiple times
-      const lastProcessedBlockHeight = bitcoinProcessor['genesisBlockNumber'] + 100;
+      // make the last transaction time genesis + 1000 so it needs to call getTransactionsStartingFrom multiple times
+      const lastProcessedBlockHeight = bitcoinProcessor['genesisBlockNumber'] + 1000;
       bitcoinProcessor['lastProcessedBlock'] = {
         height: lastProcessedBlockHeight,
         hash: 'some hash',
         previousHash: 'previous hash'
       };
       const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake((begin) => {
-        return Promise.resolve(createTransactions(10, begin, false));
+        if (begin === bitcoinProcessor['genesisBlockNumber'] + 500) {
+          return Promise.resolve(createTransactions(1, begin + 5, false));
+        }
+        return Promise.resolve([]);
       });
 
       const actual = await bitcoinProcessor.transactions();
       expect(verifyMock).toHaveBeenCalledTimes(1);
-      expect(laterThanMock).toHaveBeenCalled();
-      expect(actual.moreTransactions).toBeTruthy(); // more transactions because last block returned is 90
-      expect(actual.transactions.length).toEqual(100); // 100 because 10 per query and called 10 times
-      expect(actual.transactions[99].transactionTime).toEqual(bitcoinProcessor['genesisBlockNumber'] + 90);
-      expect(actual.transactions[0].transactionTime).toEqual(bitcoinProcessor['genesisBlockNumber']);
+      expect(laterThanMock).toHaveBeenCalledTimes(6);
+      expect(actual.moreTransactions).toBeTruthy(); // more transactions because it didn't reach latestProcessedBlock
+      expect(actual.transactions.length).toEqual(1);
       done();
     });
 

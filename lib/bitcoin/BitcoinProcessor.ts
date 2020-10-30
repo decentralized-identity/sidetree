@@ -101,7 +101,7 @@ export default class BitcoinProcessor {
   private bitcoinDataDirectory: string | undefined;
 
   /** at least 10 blocks per page unless reaching the last block */
-  private static readonly pageSizeInBlocks = 10;
+  private static readonly pageSizeInBlocks = 100;
 
   public constructor (config: IBitcoinConfig, versionModels: VersionModel[]) {
     this.versionManager = new VersionManager(versionModels);
@@ -430,7 +430,7 @@ export default class BitcoinProcessor {
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
     // deep copy last processed block
     const currentLastProcessedBlock = Object.assign({}, this.lastProcessedBlock!);
-    const [transactions, numOfBlocksAcquired] = await this.getTransactionsSince(since, currentLastProcessedBlock.height);
+    const [transactions, lastBlockSeen] = await this.getTransactionsSince(since, currentLastProcessedBlock.height);
 
     // make sure the last processed block hasn't changed since before getting transactions
     // if changed, then a block reorg happened.
@@ -440,7 +440,7 @@ export default class BitcoinProcessor {
     }
 
     // if not enough blocks to fill the page then there are no more transactions
-    const moreTransactions = numOfBlocksAcquired >= BitcoinProcessor.pageSizeInBlocks;
+    const moreTransactions = lastBlockSeen <= currentLastProcessedBlock.height;
 
     return {
       transactions,
@@ -810,16 +810,15 @@ export default class BitcoinProcessor {
    * Return transactions since transaction number and number of blocks acquired (Will get at least pageSizeInBlocks)
    * @param since Transaction number to query since
    * @param maxBlockHeight The last block height to consider included in transactions
-   * @returns a tuple of [transactions, numberOfBlocksContainedInTransactions]
+   * @returns a tuple of [transactions, lastBlockSeen]
    */
   private async getTransactionsSince (since: number | undefined, maxBlockHeight: number): Promise<[TransactionModel[], number]> {
     let inclusiveBeginTransactionTime = since === undefined ? this.genesisBlockNumber : TransactionNumber.getBlockNumber(since);
-    let numOfBlocksAcquired = 0;
 
     const transactionsToReturn: TransactionModel[] = [];
 
     // while need more blocks and have not reached the processed block
-    while (numOfBlocksAcquired < BitcoinProcessor.pageSizeInBlocks && inclusiveBeginTransactionTime <= maxBlockHeight) {
+    while (transactionsToReturn.length === 0 && inclusiveBeginTransactionTime <= maxBlockHeight) {
       const exclusiveEndTransactionTime = inclusiveBeginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
       let transactions: TransactionModel[] = await this.transactionStore.getTransactionsStartingFrom(
         inclusiveBeginTransactionTime, exclusiveEndTransactionTime);
@@ -831,20 +830,10 @@ export default class BitcoinProcessor {
           (since === undefined || transaction.transactionNumber > since);
       });
 
-      numOfBlocksAcquired += BitcoinProcessor.getUniqueNumOfBlocksInTransactions(transactions);
       inclusiveBeginTransactionTime = exclusiveEndTransactionTime;
       transactionsToReturn.push(...transactions);
     }
 
-    return [transactionsToReturn, numOfBlocksAcquired];
-  }
-
-  private static getUniqueNumOfBlocksInTransactions (transactions: TransactionModel[]): number {
-    const uniqueBlockNumbers = new Set<number>();
-    for (const transaction of transactions) {
-      uniqueBlockNumbers.add(transaction.transactionTime);
-    }
-
-    return uniqueBlockNumbers.size;
+    return [transactionsToReturn, inclusiveBeginTransactionTime];
   }
 }
