@@ -439,7 +439,7 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.InvalidTransactionNumberOrTimeHash);
     }
 
-    // if not enough blocks to fill the page then there are no more transactions
+    // if last processed block has not been seen, then there are more transactions
     const moreTransactions = lastBlockSeen < currentLastProcessedBlock.height;
 
     return {
