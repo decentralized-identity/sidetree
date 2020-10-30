@@ -229,7 +229,8 @@ export default class DocumentComposer {
     const allowedProperties = new Set(['action', 'ids']);
     for (const property in patch) {
       if (!allowedProperties.has(property)) {
-        throw new SidetreeError(ErrorCode.DocumentComposerUnknownPropertyInRemovePublicKeysPatch, `Unexpected property ${property} in remove-public-keys patch.`);
+        throw new SidetreeError(ErrorCode.DocumentComposerUnknownPropertyInRemovePublicKeysPatch,
+          `Unexpected property ${property} in remove-public-keys patch.`);
       }
     }
 
