@@ -836,6 +836,7 @@ export default class BitcoinProcessor {
       transactionsToReturn.push(...transactions);
     }
 
+    // the -1 makes the last seen transaction time inclusive because the variable is set to the exclusive one every loop
     return [transactionsToReturn, inclusiveBeginTransactionTime - 1];
   }
 }
