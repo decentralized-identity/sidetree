@@ -1,3 +1,4 @@
+import * as URI from 'uri-js';
 import ArrayMethods from './util/ArrayMethods';
 import DidState from '../../models/DidState';
 import DocumentModel from './models/DocumentModel';
@@ -304,16 +305,12 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceTypeTooLong);
       }
 
-      // `serviceEndpoint` validation.
+      // `serviceEndpoint` validations.
       const serviceEndpoint = service.serviceEndpoint;
       if (typeof serviceEndpoint === 'string') {
-        try {
-          // TODO: Issue #898 - `serviceEndpoint` string check should use a proper URI library.
-          // just want to validate url, no need to assign to variable, it will throw if not valid
-          // eslint-disable-next-line no-new
-          new URL(service.serviceEndpoint);
-        } catch {
-          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointNotValidUrl);
+        const uri = URI.parse(service.serviceEndpoint);
+        if (uri.error !== undefined) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointStringNotValidUri, `Service endpoint string '${serviceEndpoint}' is not a valid URI.`);
         }
       } else if (typeof serviceEndpoint === 'object') {
         // Allow `object` type only if it is not an array.

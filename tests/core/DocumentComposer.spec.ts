@@ -345,17 +345,20 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointNotValidUrl if `serviceEndpoint` is not valid url', () => {
+    it('Should throw if `serviceEndpoint` is not valid URI.', () => {
       const patch = {
         action: 'add-services',
         services: [{
           id: 'someId',
           type: 'someType',
-          serviceEndpoint: 'this is not a valid url'
+          serviceEndpoint: 'http://' // Invalid URI.
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointNotValidUrl);
-      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => DocumentComposer['validateAddServicesPatch'](patch),
+        ErrorCode.DocumentComposerPatchServiceEndpointStringNotValidUri
+      );
     });
   });
 

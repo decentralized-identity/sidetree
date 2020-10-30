@@ -80,7 +80,7 @@ export default {
   DocumentComposerPublicKeyInvalidPurpose: 'document_composer_public_key_invalid_purpose',
   DocumentComposerPatchServiceEndpointCannotBeAnArray: 'document_composer_service_endpoint_cannot_be_an_array',
   DocumentComposerPatchServiceEndpointMustBeStringOrNonArrayObject: 'document_composer_service_endpoint_must_be_string_or_non_array_object',
-  DocumentComposerPatchServiceEndpointNotValidUrl: 'document_composer_service_endpoint_not_valid_url',
+  DocumentComposerPatchServiceEndpointStringNotValidUri: 'document_composer_patch_service_endpoint_string_not_valid_uri',
   DocumentComposerPatchServiceIdsNotArray: 'document_composer_service_ids_not_array',
   DocumentComposerPatchServiceTypeNotString: 'document_composer_service_type_not_string',
   DocumentComposerPatchServiceTypeTooLong: 'document_composer_service_type_too_long',
