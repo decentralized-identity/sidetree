@@ -807,7 +807,7 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Return transactions since transaction number and number of blocks acquired (Will get at least pageSizeInBlocks)
+   * Return transactions since transaction number and number of blocks acquired (Will get at least 1 block worth of data)
    * @param since Transaction number to query since
    * @param maxBlockHeight The last block height to consider included in transactions
    * @returns a tuple of [transactions, lastBlockSeen]
