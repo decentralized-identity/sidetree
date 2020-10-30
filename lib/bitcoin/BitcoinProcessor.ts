@@ -100,7 +100,7 @@ export default class BitcoinProcessor {
 
   private bitcoinDataDirectory: string | undefined;
 
-  /** at least 10 blocks per page unless reaching the last block */
+  /** at least 100 blocks per page unless reaching the last block */
   private static readonly pageSizeInBlocks = 100;
 
   public constructor (config: IBitcoinConfig, versionModels: VersionModel[]) {
@@ -440,7 +440,7 @@ export default class BitcoinProcessor {
     }
 
     // if not enough blocks to fill the page then there are no more transactions
-    const moreTransactions = lastBlockSeen <= currentLastProcessedBlock.height;
+    const moreTransactions = lastBlockSeen < currentLastProcessedBlock.height;
 
     return {
       transactions,
@@ -807,12 +807,14 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Return transactions since transaction number and number of blocks acquired (Will get at least 1 block worth of data)
+   * Return transactions since transaction number and number of blocks acquired
+   * (Will get at least 1 full block worth of data unless there is no transaction to return)
    * @param since Transaction number to query since
    * @param maxBlockHeight The last block height to consider included in transactions
    * @returns a tuple of [transactions, lastBlockSeen]
    */
   private async getTransactionsSince (since: number | undefined, maxBlockHeight: number): Promise<[TransactionModel[], number]> {
+    // test against undefined because 0 is falsey and this helps differenciate the behavior between 0 and undefined
     let inclusiveBeginTransactionTime = since === undefined ? this.genesisBlockNumber : TransactionNumber.getBlockNumber(since);
 
     const transactionsToReturn: TransactionModel[] = [];
@@ -834,6 +836,6 @@ export default class BitcoinProcessor {
       transactionsToReturn.push(...transactions);
     }
 
-    return [transactionsToReturn, inclusiveBeginTransactionTime];
+    return [transactionsToReturn, inclusiveBeginTransactionTime - 1];
   }
 }
