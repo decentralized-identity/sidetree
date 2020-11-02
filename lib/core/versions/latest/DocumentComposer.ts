@@ -192,10 +192,11 @@ export default class DocumentComposer {
 
     const publicKeyIdSet: Set<string> = new Set();
     for (const publicKey of publicKeys) {
-      const publicKeyProperties = Object.keys(publicKey);
-      // the expected fields are id, purposes, type and publicKeyJwk
-      if (publicKeyProperties.length !== 4) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
+      const allowedProperties = new Set(['id', 'type', 'purposes', 'publicKeyJwk']);
+      for (const property in publicKey) {
+        if (!allowedProperties.has(property)) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUnknownProperty, `Unexpected property ${property} in publicKey`);
+        }
       }
 
       if (typeof publicKey.publicKeyJwk !== 'object' || Array.isArray(publicKey.publicKeyJwk)) {
@@ -214,19 +215,21 @@ export default class DocumentComposer {
       }
       publicKeyIdSet.add(publicKey.id);
 
-      if (!Array.isArray(publicKey.purposes) || publicKey.purposes.length === 0) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeMissingOrUnknown);
-      }
-
-      if (ArrayMethods.hasDuplicates(publicKey.purposes)) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeDuplicated);
-      }
-
-      const validPurposes = new Set(Object.values(PublicKeyPurpose));
-      // Purpose must be one of the valid ones in PublicKeyPurpose
-      for (const purpose of publicKey.purposes) {
-        if (!validPurposes.has(purpose)) {
-          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidPurpose);
+      if ('purposes' in publicKey) {
+        if (!Array.isArray(publicKey.purposes)) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposesIncorrectType);
+        }
+  
+        if (ArrayMethods.hasDuplicates(publicKey.purposes)) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposesDuplicated);
+        }
+  
+        const validPurposes = new Set(Object.values(PublicKeyPurpose));
+        // Purpose must be one of the valid ones in PublicKeyPurpose
+        for (const purpose of publicKey.purposes) {
+          if (!validPurposes.has(purpose)) {
+            throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidPurpose);
+          }
         }
       }
     }
