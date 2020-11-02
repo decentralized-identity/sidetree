@@ -24,10 +24,11 @@ export default class DocumentComposer {
 
     const document = didState.document as DocumentModel;
 
-    // Only populate `publicKey` if general purpose exists.
-    // Only populate `authentication` if authentication purpose exists.
-    const authentication: any[] = [];
-    const publicKeys: any[] = [];
+    // Put each public key in verificationMethod
+    // then populate the verification relationships by reference if a key has multiple purposes,
+    // or populate the verification relattionship by full description if a key has only 1 purpose
+    const verificationRelationships: Map<string, Array<object | string>> = new Map();
+    const verificationMethod: any[] = [];
     if (Array.isArray(document.publicKeys)) {
       for (const publicKey of document.publicKeys) {
         const id = '#' + publicKey.id;
@@ -39,15 +40,20 @@ export default class DocumentComposer {
         };
         const purposeSet: Set<string> = new Set(publicKey.purposes);
 
-        if (purposeSet.has(PublicKeyPurpose.VerificationMethod)) {
-          publicKeys.push(didDocumentPublicKey);
-          if (purposeSet.has(PublicKeyPurpose.Authentication)) {
-            // add into authentication by reference if has auth and has general
-            authentication.push(id);
+        // add to verificationMethod no matter what,
+        // then look at purpose to decide what verification relationship to add to
+        verificationMethod.push(didDocumentPublicKey);
+        
+        if (purposeSet.size > 0) {
+          const valueToAdd = purposeSet.size === 1 ? didDocumentPublicKey : (didDocumentPublicKey.controller + didDocumentPublicKey.id);
+
+          for (const purpose of purposeSet) {
+            if (!verificationRelationships.has(purpose)) {
+              verificationRelationships.set(purpose, [valueToAdd]);
+            } else {
+              verificationRelationships.get(purpose)!.push(valueToAdd);
+            }
           }
-        } else if (purposeSet.has(PublicKeyPurpose.Authentication)) {
-          // add into authentication by object if has auth but no general
-          authentication.push(didDocumentPublicKey);
         }
       }
     }
@@ -73,13 +79,13 @@ export default class DocumentComposer {
       service: services
     };
 
-    if (publicKeys.length !== 0) {
-      didDocument.publicKey = publicKeys;
+    if (verificationMethod.length !== 0) {
+      didDocument.verificationMethod = verificationMethod;
     }
 
-    if (authentication.length !== 0) {
-      didDocument.authentication = authentication;
-    }
+    verificationRelationships.forEach((value, key) => {
+      didDocument[key] = value;
+    })
 
     const didResolutionResult: any = {
       '@context': 'https://www.w3.org/ns/did-resolution/v1',
