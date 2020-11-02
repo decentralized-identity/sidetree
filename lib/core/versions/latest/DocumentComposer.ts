@@ -195,7 +195,7 @@ export default class DocumentComposer {
       const allowedProperties = new Set(['id', 'type', 'purposes', 'publicKeyJwk']);
       for (const property in publicKey) {
         if (!allowedProperties.has(property)) {
-          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUnknownProperty, `Unexpected property, ${property}, in publicKey`);
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUnknownProperty, `Unexpected property, ${property}, in publicKey.`);
         }
       }
 
