@@ -45,13 +45,13 @@ export default class DocumentComposer {
         verificationMethod.push(didDocumentPublicKey);
         
         if (purposeSet.size > 0) {
-          const valueToAdd = purposeSet.size === 1 ? didDocumentPublicKey : (didDocumentPublicKey.controller + didDocumentPublicKey.id);
+          const reference = didDocumentPublicKey.controller + didDocumentPublicKey.id;
 
           for (const purpose of purposeSet) {
             if (!verificationRelationships.has(purpose)) {
-              verificationRelationships.set(purpose, [valueToAdd]);
+              verificationRelationships.set(purpose, [reference]);
             } else {
-              verificationRelationships.get(purpose)!.push(valueToAdd);
+              verificationRelationships.get(purpose)!.push(reference);
             }
           }
         }
@@ -195,7 +195,7 @@ export default class DocumentComposer {
       const allowedProperties = new Set(['id', 'type', 'purposes', 'publicKeyJwk']);
       for (const property in publicKey) {
         if (!allowedProperties.has(property)) {
-          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUnknownProperty, `Unexpected property ${property} in publicKey`);
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUnknownProperty, `Unexpected property, ${property}, in publicKey`);
         }
       }
 
