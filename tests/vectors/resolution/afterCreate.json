@@ -15,7 +15,7 @@
         "serviceEndpoint": "http://www.service1.com"
       }
     ],
-    "authentication": [
+    "verificationMethod": [
       {
         "id": "#publicKeyModel1Id",
         "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
@@ -27,6 +27,12 @@
           "y": "dOicXqbjFxoGJ-K0-GJ1kHYJqic_D_OMuUwkQ7Ol6nk"
         }
       }
+    ],
+    "authentication": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#publicKeyModel1Id"
+    ],
+    "keyAgreement": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#publicKeyModel1Id"
     ]
   },
   "methodMetadata": {
