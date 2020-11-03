@@ -73,7 +73,7 @@ Long-form DID JSON data payload:
     ],
     "updateCommitment": "EiBMWE2JFaFipPdthcFiQek-SXTMi5IWIFXAN8hKFCyLJw"
   },
-  "suffix_data": {
+  "suffixData": {
     "deltaHash": "EiBP6gAOxx3YOL8PZPZG3medFgdqWSDayVX3u1W2f-IPEQ",
     "recoveryCommitment": "EiBg8oqvU0Zq_H5BoqmWf0IrhetQ91wXc5fDPpIjB9wW5w"
   }

@@ -19,7 +19,7 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
   "operations": {
     "create": [
       {
-        "suffix_data": {
+        "suffixData": {
           "deltaHash": DELTA_HASH,
           "recoveryCommitment": COMMITMENT_HASH
         }
@@ -55,7 +55,7 @@ A valid [Anchor File](#anchor-file) is a JSON document that ****MUST NOT**** exc
     - If there are any [Create](#create) operations to be included in the Anchor File:
       1. The `operations` object ****MUST**** include a `create` property, and its value ****MUST**** be an array.
       2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Anchor File Create Entries_](#anchor-file-create-entry){id="anchor-file-create-entry"}, use the following process to compose and include a JSON object for each entry:
-          - Each object must contain a `suffix_data` property, and its value ****MUST**** be a [_Create Operation Suffix Data Object_](#create-suffix-data-object).
+          - Each object must contain a `suffixData` property, and its value ****MUST**** be a [_Create Operation Suffix Data Object_](#create-suffix-data-object).
       3. The [Anchor File](#anchor-file) ****MUST NOT**** include multiple [Create](#create) operations that produce the same [DID Suffix](#did-suffix).
     - If there are any [Recovery](#recover) operations to be included in the Anchor File:
       1. The `operations` object ****MUST**** include a `recover` property, and its value ****MUST**** be an array.
