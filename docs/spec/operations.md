@@ -29,22 +29,22 @@ Use the following process to generate a Sidetree-based DID:
     ```json
     {
       "patches": [ PATCH_1, PATCH_2, ... ],
-      "update_commitment": COMMITMENT_HASH
+      "updateCommitment": COMMITMENT_HASH
     }
     ```
     - The object ****MUST**** contain a `patches` property, and its value ****MUST**** be a JSON array of [DID State Patches](#did-state-patches).
-    - The object ****MUST**** contain an `update_commitment` property, and its value ****MUST**** be the [update commitment](#update-commitment) as generated in step 2.
+    - The object ****MUST**** contain an `updateCommitment` property, and its value ****MUST**** be the [update commitment](#update-commitment) as generated in step 2.
 4. Generate a key pair using the defined [`KEY_ALGORITHM`](#key-algorithm), let this be known as the [recovery key pair](#recovery-key-pair), where the public key of this pair is used for generating the [recovery commitment](#recovery-commitment), and the private key for use in the next [recovery](#recovery) operation.
 5. Generate a [public key commitment](#public-key-commitment) using the defined [public key commitment scheme](#public-key-commitment-scheme) and public key of the generated [recovery key pair](#recovery-key-pair), let this resulting commitment be known as the [recovery commitment](#recovery-commitment).
 6. Generate a canonicalized representation of the following object using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme), herein referred to as the [_Create Operation Suffix Data Object_](#create-suffix-data-object){ id="create-suffix-data-object" }:
     ```json
     {
-      "delta_hash": DELTA_HASH,
-      "recovery_commitment": COMMITMENT_HASH
+      "deltaHash": DELTA_HASH,
+      "recoveryCommitment": COMMITMENT_HASH
     }
     ```
-    - The object ****MUST**** contain a `delta_hash` property, and its value ****MUST**** be a hash of the canonicalized [_Create Operation Delta Object_](#create-delta-object) (detailed above), generated via the [`HASH_PROTOCOL`](#hash-protocol).
-    - The object ****MUST**** contain a `recovery_commitment` property, and its value ****MUST**** be the [recovery commitment](#recovery-commitment) as generated in step 2.
+    - The object ****MUST**** contain a `deltaHash` property, and its value ****MUST**** be a hash of the canonicalized [_Create Operation Delta Object_](#create-delta-object) (detailed above), generated via the [`HASH_PROTOCOL`](#hash-protocol).
+    - The object ****MUST**** contain a `recoveryCommitment` property, and its value ****MUST**** be the [recovery commitment](#recovery-commitment) as generated in step 2.
 
 ::: note
 Implementations ****MAY**** choose to define additional properties for inclusion in the [_Create Operation Suffix Data Object_](#create-suffix-data-object), but the presence of any properties beyond the standard properties or implementation-defined properties ****ARE NOT**** permitted.
@@ -59,24 +59,24 @@ The following process must be used to update the state a Sidetree-based DID:
     ```json
     {
       "patches": [ PATCH_1, PATCH_2, ... ],
-      "update_commitment": COMMITMENT_HASH
+      "updateCommitment": COMMITMENT_HASH
     }
     ```
     - The object ****MUST**** contain a `patches` property, and its value ****MUST**** be an array of [DID State Patches](#did-state-patches).
-    - The object ****MUST**** contain a `update_commitment` property, and its value ****MUST**** be a new _Update Commitment_, the value of which will be revealed for the next Update operation.
+    - The object ****MUST**** contain a `updateCommitment` property, and its value ****MUST**** be a new _Update Commitment_, the value of which will be revealed for the next Update operation.
 3. Generate a canonicalized representation of the following object using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme), herein referred to as the [_Update Operation Signed Data Object_](#update-signed-data-object){ id="update-signed-data-object" }. The object ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant compact JWS object with a signature that validates against a currently active operation key, and contains the following payload values:
     ```json
     {
       "protected": {...},
       "payload": {
-        "update_key": JWK_OBJECT,
-        "delta_hash": DELTA_HASH
+        "updateKey": JWK_OBJECT,
+        "deltaHash": DELTA_HASH
       },
       "signature": SIGNATURE_STRING
     }
     ```
-    - The JWS `payload` object ****MUST**** include a `update_key` property, and its value ****MUST**** be a canonicalized [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation (using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme)) matching the previous _Update Commitment_.
-    - The JWS `payload` object ****MUST**** contain a `delta_hash` property, and its value ****MUST**** be a hash of the canonicalized [_Update Operation Delta Object_](#update-delta-object), generated via the [`HASH_PROTOCOL`](#hash-protocol).
+    - The JWS `payload` object ****MUST**** include a `updateKey` property, and its value ****MUST**** be a canonicalized [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation (using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme)) matching the previous _Update Commitment_.
+    - The JWS `payload` object ****MUST**** contain a `deltaHash` property, and its value ****MUST**** be a hash of the canonicalized [_Update Operation Delta Object_](#update-delta-object), generated via the [`HASH_PROTOCOL`](#hash-protocol).
 
 ### Recover
 
@@ -93,26 +93,26 @@ Use the following process to recover a Sidetree-based DID:
     ```json
     {
       "patches": [ PATCH_1, PATCH_2, ... ],
-      "update_commitment": COMMITMENT_HASH
+      "updateCommitment": COMMITMENT_HASH
     }
     ```
     - The object ****MUST**** contain a `patches` property, and its value ****MUST**** be an array of [DID State Patches](#did-state-patches).
-    - The object ****MUST**** contain a `update_commitment` property, and its value ****MUST**** be the _Update Commitment_, as described above.
+    - The object ****MUST**** contain a `updateCommitment` property, and its value ****MUST**** be the _Update Commitment_, as described above.
 9. Generate a canonicalized representation of the following object using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme), herein referred to as the [_Recovery Operation Signed Data Object_](#recovery-signed-data-object){ id="recovery-signed-data-object" }. The object ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant compact JWS object with a signature that validates against the currently active recovery key, and contains the following `payload` values:
     ```json
     {
       "protected": {...},
       "payload": {
-        "recovery_commitment": COMMITMENT_HASH,
-        "recovery_key": JWK_OBJECT,
-        "delta_hash": DELTA_HASH
+        "recoveryCommitment": COMMITMENT_HASH,
+        "recoveryKey": JWK_OBJECT,
+        "deltaHash": DELTA_HASH
       },
       "signature": SIGNATURE_STRING
     }
     ```
-    - The JWS `payload` object ****MUST**** contain a `recovery_commitment` property, and its value ****MUST**** be the next [_Recovery Commitment_](#recovery-commitment), as described above.
-    - The JWS `payload` object ****MUST**** include a `recovery_key` property, and its value ****MUST**** be the canonicalized [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation (using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme)) matching the previous _Recovery Commitment_.
-    - The JWS `payload` object ****MUST**** contain a `delta_hash` property, and its value ****MUST**** be a hash of the canonicalized [_Recovery Operation Delta Object_](#recover-delta-object), generated via the [`HASH_PROTOCOL`](#hash-protocol).
+    - The JWS `payload` object ****MUST**** contain a `recoveryCommitment` property, and its value ****MUST**** be the next [_Recovery Commitment_](#recovery-commitment), as described above.
+    - The JWS `payload` object ****MUST**** include a `recoveryKey` property, and its value ****MUST**** be the canonicalized [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation (using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme)) matching the previous _Recovery Commitment_.
+    - The JWS `payload` object ****MUST**** contain a `deltaHash` property, and its value ****MUST**** be a hash of the canonicalized [_Recovery Operation Delta Object_](#recover-delta-object), generated via the [`HASH_PROTOCOL`](#hash-protocol).
 
 ### Deactivate
 
@@ -124,11 +124,11 @@ The following process must be used to deactivate a Sidetree-based DID:
     {
       "protected": {...},
       "payload": {
-        "did_suffix": SUFFIX_STRING,
-        "recovery_key": JWK_OBJECT
+        "didSuffix": SUFFIX_STRING,
+        "recoveryKey": JWK_OBJECT
       },
       "signature": SIGNATURE_STRING
     }
     ```
-    - The JWS `payload` object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-    - The JWS `payload` object ****MUST**** contain a `recovery_key` property, and its value ****MUST**** match the last _Recovery Commitment_.
+    - The JWS `payload` object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
+    - The JWS `payload` object ****MUST**** contain a `recoveryKey` property, and its value ****MUST**** match the last _Recovery Commitment_.

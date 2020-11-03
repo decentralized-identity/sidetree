@@ -46,36 +46,36 @@ Long-form DID JSON data payload:
       {
         "action": "replace",
         "document": {
-          "public_keys": [
+          "publicKeys": [
             {
               "id": "anySigningKeyId",
-              "jwk": {
+              "publicKeyJwk": {
                 "crv": "secp256k1",
                 "kty": "EC",
                 "x": "H61vqAm_-TC3OrFSqPrEfSfg422NR8QHPqr0mLx64DM",
                 "y": "s0WnWY87JriBjbyoY3FdUmifK7JJRLR65GtPthXeyuc"
               },
-              "purpose": [
+              "purposes": [
                 "auth"
               ],
               "type": "EcdsaSecp256k1VerificationKey2019"
             }
           ],
-          "service_endpoints": [
+          "services": [
             {
-              "endpoint": "http://any.endpoint",
               "id": "anyServiceEndpointId",
-              "type": "anyType"
+              "type": "anyType",
+              "serviceEndpoint": "http://any.endpoint"
             }
           ]
         }
       }
     ],
-    "update_commitment": "EiBMWE2JFaFipPdthcFiQek-SXTMi5IWIFXAN8hKFCyLJw"
+    "updateCommitment": "EiBMWE2JFaFipPdthcFiQek-SXTMi5IWIFXAN8hKFCyLJw"
   },
   "suffix_data": {
-    "delta_hash": "EiBP6gAOxx3YOL8PZPZG3medFgdqWSDayVX3u1W2f-IPEQ",
-    "recovery_commitment": "EiBg8oqvU0Zq_H5BoqmWf0IrhetQ91wXc5fDPpIjB9wW5w"
+    "deltaHash": "EiBP6gAOxx3YOL8PZPZG3medFgdqWSDayVX3u1W2f-IPEQ",
+    "recoveryCommitment": "EiBg8oqvU0Zq_H5BoqmWf0IrhetQ91wXc5fDPpIjB9wW5w"
   }
 }
 ```

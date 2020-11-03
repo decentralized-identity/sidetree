@@ -203,9 +203,9 @@ See [Operation Verification](https://identity.foundation/sidetree/spec/#operatio
               "id": "did:example:123#edv",
               "type": "EncryptedDataVault",
               "serviceEndpoint": "https://edv.example.com/",
-          },
-      ],
-      }
+          }
+      ]
+    }
   ]
 }
 ```
