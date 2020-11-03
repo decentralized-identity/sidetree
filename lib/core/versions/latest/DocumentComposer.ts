@@ -25,9 +25,8 @@ export default class DocumentComposer {
     const document = didState.document as DocumentModel;
 
     // Put each public key in verificationMethod
-    // then populate the verification relationships by reference if a key has multiple purposes,
-    // or populate the verification relattionship by full description if a key has only 1 purpose
-    const verificationRelationships: Map<string, Array<object | string>> = new Map();
+    // then populate the verification relationships by reference if a key has purposes,
+    const verificationRelationships: Map<string, string[]> = new Map();
     const verificationMethod: any[] = [];
     if (Array.isArray(document.publicKeys)) {
       for (const publicKey of document.publicKeys) {
