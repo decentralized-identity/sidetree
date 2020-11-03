@@ -93,7 +93,7 @@ describe('Resolver', () => {
       expect(resultingDocument).toEqual(afterUpdate);
     });
 
-    it('should resolve DID that has a recover operation', async () => {
+    fit('should resolve DID that has a recover operation', async () => {
       const operationBuffer = Buffer.from(JSON.stringify(generatedFixture.create.operationRequest));
       const createOperation = await CreateOperation.parse(operationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;

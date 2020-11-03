@@ -15,20 +15,7 @@
         "serviceEndpoint": "http://www.service1.com"
       }
     ],
-    "publicKey": [
-      {
-        "id": "#additional-key",
-        "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
-        "type": "EcdsaSecp256k1VerificationKey2019",
-        "publicKeyJwk": {
-          "kty": "EC",
-          "crv": "secp256k1",
-          "x": "M5w8MiQbTZKVLRz7N705Y2cZEaLuRAZivq6qH6ib9dU",
-          "y": "4qLY9x18J1sPSUsrNs4ZZuEsefdOPg-HpUBn2_Q4vsQ"
-        }
-      }
-    ],
-    "authentication": [
+    "verificationMethod": [
       {
         "id": "#publicKeyModel1Id",
         "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
@@ -39,13 +26,18 @@
           "x": "tXSKB_rubXS7sCjXqupVJEzTcW3MsjmEvq1YpXn96Zg",
           "y": "dOicXqbjFxoGJ-K0-GJ1kHYJqic_D_OMuUwkQ7Ol6nk"
         }
-      },
-      "#additional-key"
+      }
+    ],
+    "authentication": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#publicKeyModel1Id"
+    ],
+    "keyAgreement": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#publicKeyModel1Id"
     ]
   },
   "methodMetadata": {
     "published": true,
     "recoveryCommitment": "EiBfOZdMtU6OBw8Pk879QtZ-2J-9FbbjSZyoaA_bqD4zhA",
-    "updateCommitment": "EiBwe2CAW4wkbTFTf91DTlC4h21cKPCvQVl-EPC5cRHUTg"
+    "updateCommitment": "EiDKIkwqO69IPG3pOlHkdb86nYt0aNxSHZu2r-bhEznjdA"
   }
 }

@@ -77,7 +77,6 @@
                   "y": "4qLY9x18J1sPSUsrNs4ZZuEsefdOPg-HpUBn2_Q4vsQ"
                 },
                 "purposes": [
-                  "verificationMethod",
                   "authentication",
                   "assertionMethod",
                   "capabilityInvocation",
@@ -102,7 +101,6 @@
         "y": "4qLY9x18J1sPSUsrNs4ZZuEsefdOPg-HpUBn2_Q4vsQ"
       },
       "purposes": [
-        "verificationMethod",
         "authentication",
         "assertionMethod",
         "capabilityInvocation",
@@ -141,7 +139,6 @@
                   "y": "4qLY9x18J1sPSUsrNs4ZZuEsefdOPg-HpUBn2_Q4vsQ"
                 },
                 "purposes": [
-                  "verificationMethod",
                   "authentication",
                   "assertionMethod",
                   "capabilityInvocation",
@@ -192,7 +189,6 @@
                     "y": "sSNOZTJh_9pZOknwNckmzAauom4r0EmwOSiKuZUrrVU"
                   },
                   "purposes": [
-                    "verificationMethod",
                     "authentication",
                     "assertionMethod",
                     "capabilityInvocation",
@@ -237,7 +233,6 @@
         "y": "IwpGWb5nJ5MqVYHLA5OtQ56sYOq6fh6mXaW1TTVPKMk"
       },
       "purposes": [
-        "verificationMethod",
         "authentication",
         "assertionMethod",
         "capabilityInvocation",
@@ -262,7 +257,6 @@
         "y": "oztGyORo64SEdBH9RQ6Wy0_ajoRcpYEN9r4gD8NYQ7E"
       },
       "purposes": [
-        "verificationMethod",
         "authentication",
         "assertionMethod",
         "capabilityInvocation",
@@ -297,7 +291,6 @@
                     "y": "sSNOZTJh_9pZOknwNckmzAauom4r0EmwOSiKuZUrrVU"
                   },
                   "purposes": [
-                    "verificationMethod",
                     "authentication",
                     "assertionMethod",
                     "capabilityInvocation",

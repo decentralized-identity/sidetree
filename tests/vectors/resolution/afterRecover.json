@@ -15,7 +15,7 @@
         "serviceEndpoint": "https://www.url.com"
       }
     ],
-    "publicKey": [
+    "verificationMethod": [
       {
         "id": "#newKey",
         "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
@@ -29,7 +29,19 @@
       }
     ],
     "authentication": [
-      "#newKey"
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#newKey"
+    ],
+    "assertionMethod": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#newKey"
+    ],
+    "capabilityInvocation": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#newKey"
+    ],
+    "capabilityDelegation": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#newKey"
+    ],
+    "keyAgreement": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#newKey"
     ]
   },
   "methodMetadata": {
