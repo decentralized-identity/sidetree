@@ -1,7 +1,7 @@
 
 import * as crypto from 'crypto';
 import * as generatedFixture from '../vectors/generated.json';
-import * as longFormResponse from '../vectors/resolution/longFormResponse.json';
+import * as longFormResponseDidDocument from '../vectors/resolution/longFormResponseDidDocument.json';
 
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import BatchScheduler from '../../lib/core/BatchScheduler';
@@ -147,12 +147,9 @@ describe('RequestHandler', () => {
   it('should resolve long form did from test vectors correctly', async () => {
     const response = await requestHandler.handleResolveRequest(generatedFixture.create.longFormDid);
     expect(response.status).toEqual(ResponseStatus.Succeeded);
-    // this will break every time fixtures are generated because of randomness.
-    // really this should be in an "integration test", not request handler unit tests.
-    // or even better, integrated into fixture generation.
-    fixtureDriftHelper(response, longFormResponse, 'resolution/longFormResponse.json', OVERWRITE_FIXTURES);
-    expect(response).toEqual(longFormResponse as any);
 
+    fixtureDriftHelper(response.body, longFormResponseDidDocument, 'resolution/longFormResponseDidDocument.json', OVERWRITE_FIXTURES);
+    expect(response.body).toEqual(longFormResponseDidDocument as any);
   });
 
   it('should process create operation from test vectors correctly', async () => {

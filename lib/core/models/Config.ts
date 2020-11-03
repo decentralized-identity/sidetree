@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Defines all the configuration parameters needed to initialize Sidetree Core.
  */
 export default interface Config {

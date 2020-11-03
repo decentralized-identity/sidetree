@@ -13,7 +13,7 @@ describe('Ipfs', async () => {
 
   beforeEach(() => {
     const fetchTimeoutInSeconds = 1;
-    casClient = new Ipfs('unused', fetchTimeoutInSeconds);
+    casClient = new Ipfs('http://anything.com/', fetchTimeoutInSeconds);
   });
 
   describe('write()', async () => {

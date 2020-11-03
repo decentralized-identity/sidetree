@@ -184,8 +184,8 @@ export default class CreateOperation implements OperationModel {
     const suffixData = await CreateOperation.parseSuffixData(encodedSuffixData);
 
     // If not in anchor file mode, we need to validate `type` and `delta` properties.
-    let encodedDelta = undefined;
-    let delta = undefined;
+    let encodedDelta;
+    let delta;
     if (!anchorFileMode) {
       if (operationObject.type !== OperationType.Create) {
         throw new SidetreeError(ErrorCode.CreateOperationTypeIncorrect);

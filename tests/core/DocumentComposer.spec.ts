@@ -118,7 +118,23 @@ describe('DocumentComposer', async () => {
     });
   });
 
-  describe('removeServices', () => {
+  describe('removePublicKeys()', () => {
+    it('should leave document unchanged if it does not have `publicKeys` property.', () => {
+      const document: DocumentModel = {
+        services: OperationGenerator.generateServices(['anyServiceId'])
+      };
+
+      const patch = {
+        action: 'remove-public-keys',
+        ids: ['1', '3']
+      };
+
+      const result = DocumentComposer['removePublicKeys'](document, patch);
+      expect(result).toEqual(document);
+    });
+  });
+
+  describe('removeServices()', () => {
     it('should remove the expected elements from services', () => {
       const document: DocumentModel = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', purposes: [PublicKeyPurpose.VerificationMethod] }],
@@ -164,20 +180,17 @@ describe('DocumentComposer', async () => {
   });
 
   describe('validateRemoveServicesPatch', () => {
-    it('should detect missing error and throw', () => {
-      const patch = {};
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
-      expect(() => { DocumentComposer['validateRemoveServicesPatch'](patch); }).toThrow(expectedError);
-    });
-
-    it('should detect unknown error and throw', () => {
+    it('should throw error if a remove-services patch contains additional unknown property.', async () => {
       const patch = {
         extra: 'unknown value',
         action: 'remove-services',
         ids: 'not an array'
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
-      expect(() => { DocumentComposer['validateRemoveServicesPatch'](patch); }).toThrow(expectedError);
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => DocumentComposer['validateRemoveServicesPatch'](patch),
+        ErrorCode.DocumentComposerUnknownPropertyInRemoveServicesPatch
+      );
     });
 
     it('should throw DocumentComposerPatchServiceIdsNotArray if ids is not an array', () => {
@@ -332,17 +345,20 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointNotValidUrl if `serviceEndpoint` is not valid url', () => {
+    it('Should throw if `serviceEndpoint` is not valid URI.', () => {
       const patch = {
         action: 'add-services',
         services: [{
           id: 'someId',
           type: 'someType',
-          serviceEndpoint: 'this is not a valid url'
+          serviceEndpoint: 'http://' // Invalid URI.
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointNotValidUrl);
-      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => DocumentComposer['validateAddServicesPatch'](patch),
+        ErrorCode.DocumentComposerPatchServiceEndpointStringNotValidUri
+      );
     });
   });
 
@@ -387,7 +403,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if `publicKey` in an add-public-keys patch is not an array.', async () => {
+    it('should throw error if `publicKeys` in an add-public-keys patch is not an array.', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0] as any).publicKeys = 'incorrectType';
 
@@ -434,28 +450,32 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if a remove-public-keys patch contains additional unknown property..', async () => {
+    it('should throw error if a remove-public-keys patch contains additional unknown property.', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[1] as any).unknownProperty = 'unknownProperty';
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
-      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => DocumentComposer.validateDocumentPatches(patches),
+        ErrorCode.DocumentComposerUnknownPropertyInRemovePublicKeysPatch
+      );
     });
 
-    it('should throw error if `publicKey` in an add-public-keys patch is not an array.', async () => {
+    it('should throw error if `ids` in an remove-public-keys patch is not an array.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[1] as any).publicKeys = 'incorrectType';
+      (patches[1] as any).ids = 'incorrectType';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdsNotArray);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if any of the public keys in a remove-public-keys patch is not a string.', async () => {
+    it('should throw error if any of the entries in `ids` in a remove-public-keys patch is not a string.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[1].publicKeys![0] as any) = { invalidType: true };
+      (patches[1].ids![0] as any) = { invalidType: true };
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
-      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => DocumentComposer.validateDocumentPatches(patches),
+        ErrorCode.DocumentComposerIdNotString
+      );
     });
 
     it('should throw error if `services` in an add-services patch is not an array.', async () => {
@@ -656,7 +676,7 @@ function generatePatchesForPublicKeys () {
     },
     {
       action: 'remove-public-keys',
-      publicKeys: ['keyY']
+      ids: ['keyY']
     },
     {
       action: 'add-services',

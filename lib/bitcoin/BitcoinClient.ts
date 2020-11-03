@@ -3,9 +3,9 @@ import { Address, Block, Networks, PrivateKey, Script, Transaction, Unit, crypto
 import nodeFetch, { FetchError, RequestInit, Response } from 'node-fetch';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinInputModel from './models/BitcoinInputModel';
-import BitcoinSidetreeTransactionModel from './models/BitcoinSidetreeTransactionModel';
 import BitcoinLockTransactionModel from './models/BitcoinLockTransactionModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
+import BitcoinSidetreeTransactionModel from './models/BitcoinSidetreeTransactionModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import BitcoinWallet from './BitcoinWallet';
 import IBitcoinWallet from './interfaces/IBitcoinWallet';

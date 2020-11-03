@@ -116,7 +116,7 @@ export default class Observer {
           };
           this.transactionsUnderProcessing.push(awaitingTransaction);
           // Intentionally not awaiting on downloading and processing each operation batch.
-          void this.processTransaction(transaction, awaitingTransaction);
+          this.processTransaction(transaction, awaitingTransaction);
         }
 
         // NOTE: Blockchain reorg has happened for sure only if `invalidTransactionNumberOrTimeHash` AND
@@ -200,7 +200,7 @@ export default class Observer {
       };
       unresolvableTransactionStatus.push(awaitingTransaction);
       // Intentionally not awaiting on downloading and processing each operation batch.
-      void this.processTransaction(transaction, awaitingTransaction);
+      this.processTransaction(transaction, awaitingTransaction);
     }
 
     // Wait until all unresolvable transactions are processed,

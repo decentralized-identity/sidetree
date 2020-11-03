@@ -1,26 +1,33 @@
 import * as fs from 'fs';
+import * as jwkEs256k1Private from './inputs/jwkEs256k1Private.json';
+import * as jwkEs256k1Public from './inputs/jwkEs256k1Public.json';
+import * as jwkEs256k2Private from './inputs/jwkEs256k2Private.json';
+import * as jwkEs256k2Public from './inputs/jwkEs256k2Public.json';
 import * as path from 'path';
+import * as publicKeyModel1 from './inputs/publicKeyModel1.json';
+import * as service1 from './inputs/service1.json';
 import OperationGenerator from '../generators/OperationGenerator';
 
 const OVERWRITE_TEST_VECTORS = false;
 
 describe('Test Vectors', () => {
   let fixture: any = {};
-  let createOperationData: any;
   let updateOperationData: any;
   let recoverOperationData: any;
   let deactivateOperationData: any;
 
   it('can generate create', async () => {
-    createOperationData = await OperationGenerator.generateCreateOperation();
-    const fixtureData = { ...createOperationData } as any;
-    delete fixtureData.createOperation.operationBuffer;
-    const dids = await OperationGenerator.longFormFromCreateOperationData(createOperationData);
+    const recoveryKey = jwkEs256k1Public;
+    const updateKey = jwkEs256k2Public;
+    const otherKeys = [publicKeyModel1 as any];
+    const services = [service1];
+    const operationRequest = await OperationGenerator.createCreateOperationRequest(recoveryKey, updateKey, otherKeys, services);
+    const did = await OperationGenerator.createDid(recoveryKey, updateKey, operationRequest.delta.patches);
     fixture = {
       ...fixture,
       create: {
-        ...dids,
-        ...fixtureData
+        ...did,
+        operationRequest
       }
     };
     // here is where you would assert that
@@ -30,9 +37,9 @@ describe('Test Vectors', () => {
 
   it('can generate update', async () => {
     updateOperationData = await OperationGenerator.generateUpdateOperation(
-      createOperationData.createOperation.didUniqueSuffix,
-      createOperationData.updatePublicKey,
-      createOperationData.updatePrivateKey
+      fixture.create.didUniqueSuffix,
+      jwkEs256k2Public,
+      jwkEs256k2Private
     );
     const fixtureData = { ...updateOperationData } as any;
     // TODO: fix operation data structures so stuff like this is not required
@@ -51,12 +58,12 @@ describe('Test Vectors', () => {
 
   it('can generate recover', async () => {
     const input = {
-      didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
-      recoveryPrivateKey: createOperationData.recoveryPrivateKey
+      didUniqueSuffix: fixture.create.didUniqueSuffix,
+      recoveryPrivateKey: jwkEs256k1Private
     };
     recoverOperationData = await OperationGenerator.generateRecoverOperation(input);
     const fixtureData = { ...recoverOperationData } as any;
-    // TODO: fix operation data structures so stuff like this is not requiried
+    // TODO: fix operation data structures so stuff like this is not required
     // to get consistent references to request objects.
     fixtureData.operationRequest = JSON.parse(fixtureData.recoverOperation.operationBuffer.toString());
     delete fixtureData.recoverOperation.operationBuffer;
@@ -72,7 +79,7 @@ describe('Test Vectors', () => {
 
   it('can generate deactivate', async () => {
     deactivateOperationData = await OperationGenerator.createDeactivateOperation(
-      createOperationData.createOperation.didUniqueSuffix,
+      fixture.create.didUniqueSuffix,
       recoverOperationData.recoveryPrivateKey
     );
     const fixtureData = { ...deactivateOperationData } as any;

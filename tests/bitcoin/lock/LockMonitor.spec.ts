@@ -161,7 +161,6 @@ describe('LockMonitor', () => {
       expect(releaseLockSpy).not.toHaveBeenCalled();
     });
 
-    
     it('should rebroadcast if the last lock transaction is still pending.', async () => {
       const rebroadcastTransactionSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
       const mockCurrentValueLock: ValueTimeLockModel = {
@@ -366,7 +365,7 @@ describe('LockMonitor', () => {
 
       lockMonitor['desiredLockAmountInSatoshis'] = 0;
       await lockMonitor['handlePeriodicPolling']();
-      
+
       expect(getCurrentLockStateSpy).toHaveBeenCalled();
       expect(createNewLockSpy).not.toHaveBeenCalled();
       expect(existingLockSpy).not.toHaveBeenCalled();
