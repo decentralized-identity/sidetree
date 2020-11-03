@@ -86,7 +86,7 @@ Map Files contain [Update](#update) operation proving data, as well as CAS URI l
   "operations": {
     "update": [
       {
-        "didSuffix": didSuffix,
+        "didSuffix": SUFFIX_STRING,
         "revealValue": MULTIHASH_OF_JWK
       },
       {...}
