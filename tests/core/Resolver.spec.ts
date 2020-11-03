@@ -89,11 +89,11 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
+      fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', false);
       expect(resultingDocument).toEqual(afterUpdate);
     });
 
-    fit('should resolve DID that has a recover operation', async () => {
+    it('should resolve DID that has a recover operation', async () => {
       const operationBuffer = Buffer.from(JSON.stringify(generatedFixture.create.operationRequest));
       const createOperation = await CreateOperation.parse(operationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
@@ -115,7 +115,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
+      fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', false);
       expect(resultingDocument).toEqual(afterRecover);
     });
 
