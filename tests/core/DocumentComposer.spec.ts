@@ -12,9 +12,10 @@ describe('DocumentComposer', async () => {
   describe('transformToExternalDocument', () => {
     it('should output the expected resolution result given key(s) across all purpose types.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
+      const [noPurposePublicKey] = await OperationGenerator.generateKeyPair('noPurposePublicKey', []);
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Authentication]);
       const document = {
-        publicKeys: [anySigningPublicKey, authPublicKey]
+        publicKeys: [anySigningPublicKey, authPublicKey, noPurposePublicKey]
       };
       const didState: DidState = {
         document,
@@ -48,6 +49,12 @@ describe('DocumentComposer', async () => {
             controller: result.didDocument.id,
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: authPublicKey.publicKeyJwk.x, y: authPublicKey.publicKeyJwk.y }
+          },
+          {
+            id: '#noPurposePublicKey',
+            controller: result.didDocument.id,
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: noPurposePublicKey.publicKeyJwk.x, y: noPurposePublicKey.publicKeyJwk.y }
           }
         ],
         assertionMethod: [ 'did:method:suffix#anySigningKey' ],
