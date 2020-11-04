@@ -42,6 +42,26 @@ describe('AnchorFile', async () => {
       expect(parsedAnchorFile.model.mapFileUri).toEqual(mapFileUri);
     });
 
+    it('should parse an anchor file model correctly.', async () => {
+      const mapFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+      const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'; // Should not be allowed with no recovers and deactivates.
+      const provisionalProofFileUri = undefined;
+
+      // Create operation.
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
+
+      const anchorFileBuffer =
+        await AnchorFile.createBuffer(undefined, mapFileUri, coreProofFileUri, provisionalProofFileUri, [createOperation], [], []);
+
+      // const parsedAnchorFile = await AnchorFile.parse(anchorFileBuffer);
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => AnchorFile.parse(anchorFileBuffer),
+        ErrorCode.AnchorFileCoreProofFileUriNotAllowed
+      );
+    });
+
     it('should throw if buffer given is not valid JSON.', async () => {
       const anchorFileBuffer = Buffer.from('NotJsonString');
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
