@@ -11,8 +11,7 @@ import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
 /**
- * Defines the schema of a Chunk File and its related operations.
- * NOTE: Must NOT add properties not defined by Sidetree protocol.
+ * Defines operations related to a Chunk File.
  */
 export default class ChunkFile {
   /**

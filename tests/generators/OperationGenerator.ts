@@ -671,6 +671,8 @@ export default class OperationGenerator {
    */
   public static async generateAnchorFile (recoveryOperationCount: number): Promise<Buffer> {
     const mapFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+    const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
+    const provisionalProofFileHash = undefined;
 
     const recoverOperations = [];
 
@@ -683,7 +685,7 @@ export default class OperationGenerator {
 
       recoverOperations.push(recoverOperation);
     }
-    const anchorFileBuffer = await AnchorFile.createBuffer(undefined, mapFileUri, [], recoverOperations, []);
+    const anchorFileBuffer = await AnchorFile.createBuffer(undefined, mapFileUri, coreProofFileUri, provisionalProofFileHash, [], recoverOperations, []);
 
     return anchorFileBuffer;
   }

@@ -163,6 +163,9 @@ describe('Observer', async () => {
     const operation2Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 2 });
     const createOperations = [operation1Data.createOperation, operation2Data.createOperation];
 
+    const coreProofFileHash = undefined;
+    const provisionalProofFileHash = undefined;
+
     // Generating chunk file data.
     const mockbChunkFileBuffer = await ChunkFile.createBuffer(createOperations, [], []);
     const mockChunkFileFetchResult: FetchResult = {
@@ -180,7 +183,8 @@ describe('Observer', async () => {
     };
 
     // Generating anchor file data.
-    const mockAnchorFileBuffer = await AnchorFile.createBuffer('writerlock', mockMapFileHash, createOperations, [], []);
+    const mockAnchorFileBuffer =
+      await AnchorFile.createBuffer('writerlock', mockMapFileHash, coreProofFileHash, provisionalProofFileHash, createOperations, [], []);
     const mockAnchoreFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: mockAnchorFileBuffer
