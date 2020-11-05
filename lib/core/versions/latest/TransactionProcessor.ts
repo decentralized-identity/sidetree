@@ -4,6 +4,7 @@ import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import ArrayMethods from './util/ArrayMethods';
 import ChunkFile from './ChunkFile';
 import ChunkFileModel from './models/ChunkFileModel';
+import CoreProofFile from './CoreProofFile';
 import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
@@ -17,10 +18,10 @@ import LogColor from '../../../common/LogColor';
 import MapFile from './MapFile';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
+import ProvisionalProofFile from './ProvisionalProofFile';
 import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
 import ValueTimeLockVerifier from './ValueTimeLockVerifier';
-import CoreProofFile from './CoreProofFile';
 
 /**
  * Implementation of the `ITransactionProcessor`.
@@ -51,6 +52,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       await this.downloadAndVerifyCoreProofFile(anchorFile);
 
       // Download and verify provisional proof file.
+      await this.downloadAndVerifyProvisionalProofFile(anchorFile);
 
       // Download and verify chunk file.
       const chunkFileModel = await this.downloadAndVerifyChunkFile(mapFile);
@@ -125,13 +127,28 @@ export default class TransactionProcessor implements ITransactionProcessor {
       return;
     }
 
-    console.info(`Downloading core proof file '${coreProofFileUri}', max file size limit ${ProtocolParameters.maxCoreProofFileSizeInBytes}...`);
+    console.info(`Downloading core proof file '${coreProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
 
-    const fileBuffer = await this.downloadFileFromCas(coreProofFileUri, ProtocolParameters.maxCoreProofFileSizeInBytes);
+    const fileBuffer = await this.downloadFileFromCas(coreProofFileUri, ProtocolParameters.maxProofFileSizeInBytes);
     const coreProofFile = await CoreProofFile.parse(fileBuffer, anchorFile.deactivateOperations.map(operation => operation.didUniqueSuffix));
 
     return coreProofFile;
   }
+
+  private async downloadAndVerifyProvisionalProofFile (anchorFile: AnchorFile): Promise<ProvisionalProofFile | undefined> {
+    const provisionalProofFileUri = anchorFile.model.provisionalProofFileUri;
+    if (provisionalProofFileUri === undefined) {
+      return;
+    }
+
+    console.info(`Downloading core proof file '${provisionalProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
+
+    const fileBuffer = await this.downloadFileFromCas(provisionalProofFileUri, ProtocolParameters.maxProofFileSizeInBytes);
+    const provisionalProofFile = await ProvisionalProofFile.parse(fileBuffer);
+
+    return provisionalProofFile;
+  }
+
   /**
    * NOTE: In order to be forward-compatible with data-pruning feature,
    * we must continue to process the operations declared in the anchor file even if the map/chunk file is invalid.

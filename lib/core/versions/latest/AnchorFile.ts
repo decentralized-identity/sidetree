@@ -233,7 +233,7 @@ export default class AnchorFile {
   }
 
   private static validateCasFileUri (casFileUri: any) {
-    if (typeof casFileUri !== 'string') { 
+    if (typeof casFileUri !== 'string') {
       throw new SidetreeError(ErrorCode.AnchorFileCasFileUriNotString);
     }
 

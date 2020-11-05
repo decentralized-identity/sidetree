@@ -1,14 +1,14 @@
 import Compressor from './util/Compressor';
+import CoreProofFileModel from './models/CoreProofFileModel';
 import DeactivateOperation from './DeactivateOperation';
-import RecoverOperation from './RecoverOperation';
-import protocolParameters from './ProtocolParameters';
-import SidetreeError from '../../../common/SidetreeError';
+import DeactivateSignedDataModel from './models/DeactivateSignedDataModel';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
-import CoreProofFileModel from './models/CoreProofFileModel';
+import ProtocolParameters from './ProtocolParameters';
+import RecoverOperation from './RecoverOperation';
 import RecoverSignedDataModel from './models/RecoverSignedDataModel';
-import DeactivateSignedDataModel from './models/DeactivateSignedDataModel';
+import SidetreeError from '../../../common/SidetreeError';
 
 /**
  * Defines operations related to a Core Proof File.
@@ -28,7 +28,7 @@ export default class CoreProofFile {
 
   /**
    * Creates the buffer of a Core Proof File.
-   * 
+   *
    * @returns `Buffer` if at least one operation is given, `undefined` otherwise.
    */
   public static async createBuffer (recoverOperations: RecoverOperation[], deactivateOperations: DeactivateOperation[]): Promise<Buffer | undefined> {
@@ -36,8 +36,8 @@ export default class CoreProofFile {
       return undefined;
     }
 
-    const recoverProofs = recoverOperations.map(operation => { return { signedData: operation.signedDataJws.toCompactJws() }});
-    const deactivateProofs = deactivateOperations.map(operation => { return { signedData: operation.signedDataJws.toCompactJws() }});
+    const recoverProofs = recoverOperations.map(operation => { return { signedData: operation.signedDataJws.toCompactJws() }; });
+    const deactivateProofs = deactivateOperations.map(operation => { return { signedData: operation.signedDataJws.toCompactJws() }; });
 
     const coreProofFileModel = {
       operations: {
@@ -59,7 +59,7 @@ export default class CoreProofFile {
   public static async parse (coreProofFileBuffer: Buffer, expectedDeactivatedDidUniqueSuffixes: string[]): Promise<CoreProofFile> {
     let coreProofFileDecompressedBuffer;
     try {
-      const maxAllowedDecompressedSizeInBytes = protocolParameters.maxCoreProofFileSizeInBytes * Compressor.estimatedDecompressionMultiplier;
+      const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxProofFileSizeInBytes * Compressor.estimatedDecompressionMultiplier;
       coreProofFileDecompressedBuffer = await Compressor.decompress(coreProofFileBuffer, maxAllowedDecompressedSizeInBytes);
     } catch (error) {
       throw SidetreeError.createFromError(ErrorCode.CoreProofFileDecompressionFailure, error);
@@ -117,24 +117,27 @@ export default class CoreProofFile {
       }
 
       // Parse and validate each compact JWS.
-      let deativateProofIndex = 0;
+      let deactivateProofIndex = 0;
       for (const proof of deactivateProofModels) {
         const signedDataJws = Jws.parseCompactJws(proof.signedData);
-        const signedDataModel = await DeactivateOperation.parseSignedDataPayload(signedDataJws.payload, expectedDeactivatedDidUniqueSuffixes[deativateProofIndex]);
+        const signedDataModel = await DeactivateOperation.parseSignedDataPayload(
+          signedDataJws.payload,
+          expectedDeactivatedDidUniqueSuffixes[deactivateProofIndex]
+        );
 
         deactivateProofs.push({
           signedDataJws,
           signedDataModel
         });
 
-        deativateProofIndex++;
+        deactivateProofIndex++;
       }
 
       numberOfProofs += deactivateProofModels.length;
     }
 
     if (numberOfProofs === 0) {
-      throw new SidetreeError(ErrorCode.CoreProofFileHasNoProofs, `'Core proof file has no proofs.`);
+      throw new SidetreeError(ErrorCode.CoreProofFileHasNoProofs, `Core proof file has no proofs.`);
     }
 
     return new CoreProofFile(coreProofFileModel, recoverProofs, deactivateProofs);

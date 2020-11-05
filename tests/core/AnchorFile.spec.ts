@@ -28,8 +28,9 @@ describe('AnchorFile', async () => {
       const deactivateOperationData = await OperationGenerator.createDeactivateOperation('anyDid2', anyRecoveryPrivateKey);
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
-      const anchorFileBuffer =
-        await AnchorFile.createBuffer(undefined, mapFileUri, coreProofFileUri, provisionalProofFileUri, [createOperation], [recoverOperation], [deactivateOperation]);
+      const anchorFileBuffer = await AnchorFile.createBuffer(
+        undefined, mapFileUri, coreProofFileUri, provisionalProofFileUri, [createOperation], [recoverOperation], [deactivateOperation]
+      );
 
       const parsedAnchorFile = await AnchorFile.parse(anchorFileBuffer);
 

@@ -8,8 +8,8 @@ export default interface ProtocolParameters {
   maxAnchorFileSizeInBytes: number;
   /** Maximum allowed size of map file stored in Content Addressable Storage. */
   maxMapFileSizeInBytes: number;
-  /** Maximum allowed size of core proof file stored in Content Addressable Storage. */
-  maxCoreProofFileSizeInBytes: number;
+  /** Maximum allowed size of core/provisional proof file stored in Content Addressable Storage. */
+  maxProofFileSizeInBytes: number;
   /** Maximum allowed size of chunk file stored in Content Addressable Storage. */
   maxChunkFileSizeInBytes: number;
   /** Maximum size of the `delta` property in bytes. */

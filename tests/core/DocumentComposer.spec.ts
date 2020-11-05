@@ -57,14 +57,14 @@ describe('DocumentComposer', async () => {
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: noPurposePublicKey.publicKeyJwk.x, y: noPurposePublicKey.publicKeyJwk.y }
           }
         ],
-        assertionMethod: [ 'did:method:suffix#anySigningKey' ],
+        assertionMethod: ['did:method:suffix#anySigningKey'],
         authentication: [
           'did:method:suffix#anySigningKey',
           'did:method:suffix#authPublicKey'
         ],
-        capabilityDelegation: [ 'did:method:suffix#anySigningKey' ],
-        capabilityInvocation: [ 'did:method:suffix#anySigningKey' ],
-        keyAgreement: [ 'did:method:suffix#anySigningKey' ]
+        capabilityDelegation: ['did:method:suffix#anySigningKey'],
+        capabilityInvocation: ['did:method:suffix#anySigningKey'],
+        keyAgreement: ['did:method:suffix#anySigningKey']
       });
     });
 
