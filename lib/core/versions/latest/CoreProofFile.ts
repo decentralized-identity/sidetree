@@ -1,11 +1,30 @@
 import Compressor from './util/Compressor';
 import DeactivateOperation from './DeactivateOperation';
 import RecoverOperation from './RecoverOperation';
+import protocolParameters from './ProtocolParameters';
+import SidetreeError from '../../../common/SidetreeError';
+import ErrorCode from './ErrorCode';
+import JsonAsync from './util/JsonAsync';
+import Jws from './util/Jws';
+import CoreProofFileModel from './models/CoreProofFileModel';
+import RecoverSignedDataModel from './models/RecoverSignedDataModel';
+import DeactivateSignedDataModel from './models/DeactivateSignedDataModel';
 
 /**
  * Defines operations related to a Core Proof File.
  */
 export default class CoreProofFile {
+
+  /**
+   * Class that represents a core proof file.
+   * NOTE: this class is introduced as an internal structure that keeps useful states in replacement to `CoreProofFileModel`
+   * so that repeated computation can be avoided.
+   */
+  private constructor (
+    public readonly coreProofFileModel: CoreProofFileModel,
+    public readonly recoverProofs: { signedDataJws: Jws, signedDataModel: RecoverSignedDataModel }[],
+    public readonly deactivateProofs: { signedDataJws: Jws, signedDataModel: DeactivateSignedDataModel }[]
+  ) { }
 
   /**
    * Creates the buffer of a Core Proof File.
@@ -31,5 +50,93 @@ export default class CoreProofFile {
     const compressedRawData = await Compressor.compress(Buffer.from(rawData));
 
     return compressedRawData;
+  }
+
+  /**
+   * Parses and validates the given core proof file buffer.
+   * @throws `SidetreeError` if failed parsing or validation.
+   */
+  public static async parse (coreProofFileBuffer: Buffer, expectedDeactivatedDidUniqueSuffixes: string[]): Promise<CoreProofFile> {
+    let coreProofFileDecompressedBuffer;
+    try {
+      const maxAllowedDecompressedSizeInBytes = protocolParameters.maxCoreProofFileSizeInBytes * Compressor.estimatedDecompressionMultiplier;
+      coreProofFileDecompressedBuffer = await Compressor.decompress(coreProofFileBuffer, maxAllowedDecompressedSizeInBytes);
+    } catch (error) {
+      throw SidetreeError.createFromError(ErrorCode.CoreProofFileDecompressionFailure, error);
+    }
+
+    let coreProofFileModel;
+    try {
+      coreProofFileModel = await JsonAsync.parse(coreProofFileDecompressedBuffer);
+    } catch (error) {
+      throw SidetreeError.createFromError(ErrorCode.CoreProofFileNotJson, error);
+    }
+
+    if (coreProofFileModel.operations === undefined) {
+      throw new SidetreeError(ErrorCode.CoreProofFileOperationsNotFound, `Core proof file does not have any operation proofs.`);
+    }
+
+    const operations = coreProofFileModel.operations;
+    const allowedProperties = new Set(['recover', 'deactivate']);
+    for (const property in operations) {
+      if (!allowedProperties.has(property)) {
+        throw new SidetreeError(ErrorCode.CoreProofFileHasUnknownProperty, `Core proof file has an unknown property '${property}'`);
+      }
+    }
+
+    const recoverProofs = [];
+    const deactivateProofs = [];
+    let numberOfProofs = 0;
+
+    // Validate `recover` array if it is defined.
+    const recoverProofModels = operations.recover;
+    if (recoverProofModels !== undefined) {
+      if (!Array.isArray(recoverProofModels)) {
+        throw new SidetreeError(ErrorCode.CoreProofFileRecoverPropertyNotAnArray, `'recover' property in core proof file is not an array.`);
+      }
+
+      // Parse and validate each compact JWS.
+      for (const proof of recoverProofModels) {
+        const signedDataJws = Jws.parseCompactJws(proof.signedData);
+        const signedDataModel = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
+
+        recoverProofs.push({
+          signedDataJws,
+          signedDataModel
+        });
+      }
+
+      numberOfProofs += recoverProofs.length;
+    }
+
+    // Validate `deactivate` array if it is defined.
+    const deactivateProofModels = operations.deactivate;
+    if (deactivateProofModels !== undefined) {
+      if (!Array.isArray(deactivateProofModels)) {
+        throw new SidetreeError(ErrorCode.CoreProofFileDeactivatePropertyNotAnArray, `'deactivate' property in core proof file is not an array.`);
+      }
+
+      // Parse and validate each compact JWS.
+      let deativateProofIndex = 0;
+      for (const proof of deactivateProofModels) {
+        const signedDataJws = Jws.parseCompactJws(proof.signedData);
+        const signedDataModel = await DeactivateOperation.parseSignedDataPayload(signedDataJws.payload, expectedDeactivatedDidUniqueSuffixes[deativateProofIndex]);
+
+        deactivateProofs.push({
+          signedDataJws,
+          signedDataModel
+        });
+
+        deativateProofIndex++;
+      }
+
+      numberOfProofs += deactivateProofModels.length;
+    }
+
+    if (numberOfProofs === 0) {
+      throw new SidetreeError(ErrorCode.CoreProofFileHasNoProofs, `'Core proof file has no proofs.`);
+    }
+
+    return new CoreProofFile(coreProofFileModel, recoverProofs, deactivateProofs);
   }
 }

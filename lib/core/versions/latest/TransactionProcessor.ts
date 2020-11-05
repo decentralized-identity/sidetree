@@ -20,6 +20,7 @@ import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
 import ValueTimeLockVerifier from './ValueTimeLockVerifier';
+import CoreProofFile from './CoreProofFile';
 
 /**
  * Implementation of the `ITransactionProcessor`.
@@ -45,6 +46,11 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
       // Download and verify map file.
       const mapFile = await this.downloadAndVerifyMapFile(anchorFile, anchoredData.numberOfOperations);
+
+      // Download and verify core proof file.
+      await this.downloadAndVerifyCoreProofFile(anchorFile);
+
+      // Download and verify provisional proof file.
 
       // Download and verify chunk file.
       const chunkFileModel = await this.downloadAndVerifyChunkFile(mapFile);
@@ -113,6 +119,19 @@ export default class TransactionProcessor implements ITransactionProcessor {
     return anchorFile;
   }
 
+  private async downloadAndVerifyCoreProofFile (anchorFile: AnchorFile): Promise<CoreProofFile | undefined> {
+    const coreProofFileUri = anchorFile.model.coreProofFileUri;
+    if (coreProofFileUri === undefined) {
+      return;
+    }
+
+    console.info(`Downloading core proof file '${coreProofFileUri}', max file size limit ${ProtocolParameters.maxCoreProofFileSizeInBytes}...`);
+
+    const fileBuffer = await this.downloadFileFromCas(coreProofFileUri, ProtocolParameters.maxCoreProofFileSizeInBytes);
+    const coreProofFile = await CoreProofFile.parse(fileBuffer, anchorFile.deactivateOperations.map(operation => operation.didUniqueSuffix));
+
+    return coreProofFile;
+  }
   /**
    * NOTE: In order to be forward-compatible with data-pruning feature,
    * we must continue to process the operations declared in the anchor file even if the map/chunk file is invalid.
