@@ -3,13 +3,13 @@ import CoreProofFileModel from './models/CoreProofFileModel';
 import DeactivateOperation from './DeactivateOperation';
 import DeactivateSignedDataModel from './models/DeactivateSignedDataModel';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import RecoverSignedDataModel from './models/RecoverSignedDataModel';
 import SidetreeError from '../../../common/SidetreeError';
-import InputValidator from './InputValidator';
 
 /**
  * Defines operations related to a Core Proof File.
@@ -99,7 +99,7 @@ export default class CoreProofFile {
 
       // Parse and validate each compact JWS.
       for (const proof of recoverProofModels) {
-        InputValidator.validateObjectOnlyContainsAllowedProperties(proof, ['signedData']);
+        InputValidator.validateObjectContainsOnlyAllowedProperties(proof, ['signedData'], 'recover proof');
 
         const signedDataJws = Jws.parseCompactJws(proof.signedData);
         const signedDataModel = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
@@ -123,7 +123,7 @@ export default class CoreProofFile {
       // Parse and validate each compact JWS.
       let deactivateProofIndex = 0;
       for (const proof of deactivateProofModels) {
-        InputValidator.validateObjectOnlyContainsAllowedProperties(proof, ['signedData']);
+        InputValidator.validateObjectContainsOnlyAllowedProperties(proof, ['signedData'], 'deactivate proof');
 
         const signedDataJws = Jws.parseCompactJws(proof.signedData);
         const signedDataModel = await DeactivateOperation.parseSignedDataPayload(

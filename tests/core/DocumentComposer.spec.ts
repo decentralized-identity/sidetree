@@ -446,8 +446,11 @@ describe('DocumentComposer', async () => {
       // Simulate that `publicKeyJwk` is missing.
       delete (patches[0].publicKeys![0] as any).publicKeyJwk;
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyJwkMissingOrIncorrectType);
-      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => DocumentComposer.validateDocumentPatches(patches),
+        ErrorCode.InputValidatorInputIsNotAnObject,
+        'publicKeyJwk'
+      );
     });
 
     it('should throw error if `type` of a public key is not a string.', async () => {

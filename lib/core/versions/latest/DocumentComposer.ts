@@ -4,6 +4,7 @@ import DidState from '../../models/DidState';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
@@ -198,9 +199,7 @@ export default class DocumentComposer {
         }
       }
 
-      if (typeof publicKey.publicKeyJwk !== 'object' || Array.isArray(publicKey.publicKeyJwk)) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyJwkMissingOrIncorrectType);
-      }
+      InputValidator.validateNonArrayObject(publicKey.publicKeyJwk, 'publicKeyJwk');
 
       if (typeof publicKey.type !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrIncorrectType);

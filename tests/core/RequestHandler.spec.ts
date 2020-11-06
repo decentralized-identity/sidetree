@@ -177,23 +177,47 @@ describe('RequestHandler', () => {
   });
 
   it('should queue operation request and have it processed by the batch scheduler correctly.', async () => {
+    const [anyPublicKey, anyPrivateKey] = await Jwk.generateEs256kKeyPair(); // Used in multiple operation requests for testing purposes.
+
+    // Create request.
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ operationIndex: 1, transactionNumber: 1, transactionTime: 1 });
     const createOperationBuffer = createOperationData.anchoredOperationModel.operationBuffer;
+    const createOperation = createOperationData.createOperation;
+
+    // Update request.
+    const didToUpdate = OperationGenerator.generateRandomHash();
+    const updateOperationData = await OperationGenerator.generateUpdateOperation(didToUpdate, anyPublicKey, anyPrivateKey);
+    const updateRequestBuffer = updateOperationData.operationBuffer;
+    const updateOperation = updateOperationData.updateOperation;
+
+    // Recover request.
+    const didToRecover = OperationGenerator.generateRandomHash();
+    const recoverOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix: didToRecover, recoveryPrivateKey: anyPrivateKey });
+    const recoverRequestBuffer = recoverOperationData.operationBuffer;
+    const recoverOperation = recoverOperationData.recoverOperation;
+
+    // Deactivate request.
+    const didToDeactivate = OperationGenerator.generateRandomHash();
+    const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didToDeactivate, anyPrivateKey);
+    const deactivateRequestBuffer = deactivateOperationData.operationBuffer;
+
     await requestHandler.handleOperationRequest(createOperationBuffer);
+    await requestHandler.handleOperationRequest(updateRequestBuffer);
+    await requestHandler.handleOperationRequest(recoverRequestBuffer);
+    await requestHandler.handleOperationRequest(deactivateRequestBuffer);
 
     const blockchainWriteSpy = spyOn(blockchain, 'write');
-
     await batchScheduler.writeOperationBatch();
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
 
     // Verify that CAS was invoked to store the chunk file.
     const maxChunkFileSize = 20000000;
-    const expectedBatchBuffer = await ChunkFile.createBuffer([createOperationData.createOperation], [], []);
+    const expectedBatchBuffer = await ChunkFile.createBuffer([createOperation], [recoverOperation], [updateOperation]);
     const expectedChunkFileHash = MockCas.getAddress(expectedBatchBuffer);
     const fetchResult = await cas.read(expectedChunkFileHash, maxChunkFileSize);
     const decompressedData = await Compressor.decompress(fetchResult.content!, maxChunkFileSize);
     const chunkFile = JSON.parse(decompressedData.toString());
-    expect(chunkFile.deltas.length).toEqual(1);
+    expect(chunkFile.deltas.length).toEqual(3); // Deactivates do not have `delta`.
   });
 
   it('should return bad request if delta given in request is larger than protocol limit.', async () => {

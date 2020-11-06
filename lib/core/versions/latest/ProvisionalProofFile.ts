@@ -1,5 +1,6 @@
 import Compressor from './util/Compressor';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
 import ProtocolParameters from './ProtocolParameters';
@@ -7,7 +8,6 @@ import ProvisionalProofFileModel from './models/ProvisionalProofFileModel';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 import UpdateSignedDataModel from './models/UpdateSignedDataModel';
-import InputValidator from './InputValidator';
 
 /**
  * Defines operations related to a Provisional Proof File.
@@ -93,7 +93,7 @@ export default class ProvisionalProofFile {
 
     // Parse and validate each compact JWS.
     for (const proof of updateProofModels) {
-      InputValidator.validateObjectOnlyContainsAllowedProperties(proof, ['signedData']);
+      InputValidator.validateObjectContainsOnlyAllowedProperties(proof, ['signedData'], 'update proof');
 
       const signedDataJws = Jws.parseCompactJws(proof.signedData);
       const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedDataJws.payload);

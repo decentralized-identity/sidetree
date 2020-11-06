@@ -1,13 +1,13 @@
-import ProvisionalProofFile from "../../lib/core/versions/latest/ProvisionalProofFile";
-import ErrorCode from "../../lib/core/versions/latest/ErrorCode";
-import Compressor from "../../lib/core/versions/latest/util/Compressor";
-import Jwk from "../../lib/core/versions/latest/util/Jwk";
-import OperationGenerator from "../generators/OperationGenerator";
-import JasmineSidetreeErrorValidator from "../JasmineSidetreeErrorValidator";
+import Compressor from '../../lib/core/versions/latest/util/Compressor';
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import OperationGenerator from '../generators/OperationGenerator';
+import ProvisionalProofFile from '../../lib/core/versions/latest/ProvisionalProofFile';
 
 describe('ProvisionalProofFile', async () => {
   describe('parse()', async () => {
-   it('should parse a valid provisional proof file successfully.', async () => {
+    it('should parse a valid provisional proof file successfully.', async () => {
       const [anyPublicKey, anyPrivateKey] = await Jwk.generateEs256kKeyPair(); // Used in multiple signed data for testing purposes.
 
       const updateOperationData1 = await OperationGenerator.generateUpdateOperation('unused', anyPublicKey, anyPrivateKey);

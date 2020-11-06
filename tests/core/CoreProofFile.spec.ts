@@ -1,9 +1,9 @@
-import CoreProofFile from "../../lib/core/versions/latest/CoreProofFile";
-import ErrorCode from "../../lib/core/versions/latest/ErrorCode";
-import Compressor from "../../lib/core/versions/latest/util/Compressor";
-import Jwk from "../../lib/core/versions/latest/util/Jwk";
-import OperationGenerator from "../generators/OperationGenerator";
-import JasmineSidetreeErrorValidator from "../JasmineSidetreeErrorValidator";
+import Compressor from '../../lib/core/versions/latest/util/Compressor';
+import CoreProofFile from '../../lib/core/versions/latest/CoreProofFile';
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import OperationGenerator from '../generators/OperationGenerator';
 
 describe('CoreProofFile', async () => {
 
@@ -17,7 +17,7 @@ describe('CoreProofFile', async () => {
   });
 
   describe('parse()', async () => {
-   it('should parse a valid core proof file successfully.', async () => {
+    it('should parse a valid core proof file successfully.', async () => {
       const [, anyPrivateKey] = await Jwk.generateEs256kKeyPair(); // Used in multiple signed data for testing purposes.
 
       const didOfDeactivate1 = OperationGenerator.generateRandomHash();
