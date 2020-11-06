@@ -43,7 +43,7 @@ describe('AnchorFile', async () => {
       expect(parsedAnchorFile.model.mapFileUri).toEqual(mapFileUri);
     });
 
-    it('should parse an anchor file model correctly.', async () => {
+    it('should throw error if core proof file is specified but there is no recover and no deactivate operation.', async () => {
       const mapFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
       const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'; // Should not be allowed with no recovers and deactivates.
       const provisionalProofFileUri = undefined;
@@ -54,8 +54,6 @@ describe('AnchorFile', async () => {
 
       const anchorFileBuffer =
         await AnchorFile.createBuffer(undefined, mapFileUri, coreProofFileUri, provisionalProofFileUri, [createOperation], [], []);
-
-      // const parsedAnchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => AnchorFile.parse(anchorFileBuffer),

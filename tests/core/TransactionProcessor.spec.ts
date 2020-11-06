@@ -19,6 +19,10 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockVerifier';
+import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import CoreProofFile from '../../lib/core/versions/latest/CoreProofFile';
+import ProvisionalProofFile from '../../lib/core/versions/latest/ProvisionalProofFile';
+// import Jwk from '../../lib/core/versions/latest/util/Jwk';
 
 describe('TransactionProcessor', () => {
   let casClient: Ipfs;
@@ -49,7 +53,7 @@ describe('TransactionProcessor', () => {
     transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, versionMetadataFetcher);
   });
 
-  describe('processTransaction', () => {
+  describe('processTransaction()', () => {
     it('should ignore error and return true when AnchoredDataSerializer throws a sidetree error', async () => {
       const anchoredData = 'Bad Format';
       const mockTransaction: TransactionModel = {
@@ -458,6 +462,64 @@ describe('TransactionProcessor', () => {
 
       expect(fetchedMapFile).toBeUndefined();
       done();
+    });
+  });
+
+  describe('downloadAndVerifyCoreProofFile()', () => {
+    it('should download and parse the core proof file.', async () => {
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
+
+      const [, anyPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const recoverOperationData = await OperationGenerator.generateRecoverOperation(
+        { didUniqueSuffix: 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', recoveryPrivateKey: anyPrivateKey }
+      );
+      const recoverOperation = recoverOperationData.recoverOperation;
+
+      const deactivateOperationData = await OperationGenerator.createDeactivateOperation('EiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', anyPrivateKey);
+      const deactivateOperation = deactivateOperationData.deactivateOperation;
+
+      const mapFileHash = OperationGenerator.generateRandomHash();
+      const coreProofFileHash = OperationGenerator.generateRandomHash();
+      const provisionalProofFileHash = undefined;
+      const anchorFileBuffer = await AnchorFile.createBuffer(
+        'writerLockId', mapFileHash, coreProofFileHash, provisionalProofFileHash, [createOperation], [recoverOperation], [deactivateOperation]
+      );
+      const anchorFile = await AnchorFile.parse(anchorFileBuffer);
+
+      const downloadFileFromCasSpy = spyOn(transactionProcessor as any, 'downloadFileFromCas');
+      const coreProofFileParseSpy = spyOn(CoreProofFile, 'parse');
+      await transactionProcessor['downloadAndVerifyCoreProofFile'](anchorFile);
+
+      expect(downloadFileFromCasSpy).toHaveBeenCalled();
+      expect(coreProofFileParseSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('downloadAndVerifyProvisionalProofFile()', () => {
+    it('should download and parse the provisional proof file.', async () => {
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
+
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const recoverOperationData = await OperationGenerator.generateRecoverOperation(
+        { didUniqueSuffix: 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', recoveryPrivateKey }
+      );
+      const recoverOperation = recoverOperationData.recoverOperation;
+
+      const mapFileHash = OperationGenerator.generateRandomHash();
+      const coreProofFileHash = OperationGenerator.generateRandomHash();
+      const provisionalProofFileHash = OperationGenerator.generateRandomHash();
+      const anchorFileBuffer =
+        await AnchorFile.createBuffer('writerLockId', mapFileHash, coreProofFileHash, provisionalProofFileHash, [createOperation], [recoverOperation], []);
+      const anchorFile = await AnchorFile.parse(anchorFileBuffer);
+
+      const downloadFileFromCasSpy = spyOn(transactionProcessor as any, 'downloadFileFromCas');
+      const provisionalProofFileParseSpy = spyOn(ProvisionalProofFile, 'parse');
+      await transactionProcessor['downloadAndVerifyProvisionalProofFile'](anchorFile);
+
+      expect(downloadFileFromCasSpy).toHaveBeenCalled();
+      expect(provisionalProofFileParseSpy).toHaveBeenCalled();
     });
   });
 

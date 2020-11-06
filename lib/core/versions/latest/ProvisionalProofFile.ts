@@ -7,6 +7,7 @@ import ProvisionalProofFileModel from './models/ProvisionalProofFileModel';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 import UpdateSignedDataModel from './models/UpdateSignedDataModel';
+import InputValidator from './InputValidator';
 
 /**
  * Defines operations related to a Provisional Proof File.
@@ -48,6 +49,7 @@ export default class ProvisionalProofFile {
 
   /**
    * Parses and validates the given provisional proof file buffer.
+   * @param provisionalProofFileBuffer Compressed provisional proof file.
    * @throws `SidetreeError` if failed parsing or validation.
    */
   public static async parse (provisionalProofFileBuffer: Buffer): Promise<ProvisionalProofFile> {
@@ -91,6 +93,8 @@ export default class ProvisionalProofFile {
 
     // Parse and validate each compact JWS.
     for (const proof of updateProofModels) {
+      InputValidator.validateObjectOnlyContainsAllowedProperties(proof, ['signedData']);
+
       const signedDataJws = Jws.parseCompactJws(proof.signedData);
       const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedDataJws.payload);
 

@@ -9,6 +9,7 @@ import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import RecoverSignedDataModel from './models/RecoverSignedDataModel';
 import SidetreeError from '../../../common/SidetreeError';
+import InputValidator from './InputValidator';
 
 /**
  * Defines operations related to a Core Proof File.
@@ -54,6 +55,7 @@ export default class CoreProofFile {
 
   /**
    * Parses and validates the given core proof file buffer.
+   * @param coreProofFileBuffer Compressed core proof file.
    * @throws `SidetreeError` if failed parsing or validation.
    */
   public static async parse (coreProofFileBuffer: Buffer, expectedDeactivatedDidUniqueSuffixes: string[]): Promise<CoreProofFile> {
@@ -97,6 +99,8 @@ export default class CoreProofFile {
 
       // Parse and validate each compact JWS.
       for (const proof of recoverProofModels) {
+        InputValidator.validateObjectOnlyContainsAllowedProperties(proof, ['signedData']);
+
         const signedDataJws = Jws.parseCompactJws(proof.signedData);
         const signedDataModel = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
@@ -119,6 +123,8 @@ export default class CoreProofFile {
       // Parse and validate each compact JWS.
       let deactivateProofIndex = 0;
       for (const proof of deactivateProofModels) {
+        InputValidator.validateObjectOnlyContainsAllowedProperties(proof, ['signedData']);
+
         const signedDataJws = Jws.parseCompactJws(proof.signedData);
         const signedDataModel = await DeactivateOperation.parseSignedDataPayload(
           signedDataJws.payload,

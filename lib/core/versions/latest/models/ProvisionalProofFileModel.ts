@@ -3,6 +3,8 @@
  */
 export default interface ProvisionalProofFileModel {
   operations: {
-    update: string[]
+    update: {
+      signedData: string
+    }[]
   }
 }

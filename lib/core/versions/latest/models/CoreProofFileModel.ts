@@ -3,7 +3,11 @@
  */
 export default interface CoreProofFileModel {
   operations: {
-    recover?: string[],
-    deactivate?: string[]
+    recover?: {
+      signedData: string
+    }[],
+    deactivate?: {
+      signedData: string
+    }[]
   }
 }

@@ -102,6 +102,8 @@ export default {
   DocumentNotValidOriginalDocument: 'document_not_valid_original_document',
   EncoderValidateBase64UrlStringInputNotBase64UrlString: 'encoder_validate_base64_url_string_input_not_base64_url_string',
   EncoderValidateBase64UrlStringInputNotString: 'encoder_validate_base64_url_string_input_not_string',
+  InputValidatorInputContainsNowAllowedProperty: 'input_validator_input_contains_now_allowed_property',
+  InputValidatorInputNotANonArrayObject: 'input_validator_input_not_a_non_array_object',
   JwkEs256kHasIncorrectLengthOfX: 'jwk_es256k_has_incorrect_length_of_x',
   JwkEs256kHasIncorrectLengthOfY: 'jwk_es256k_has_incorrect_length_of_y',
   JwkEs256kHasUnknownProperty: 'jwk_es256k_has_unknown_property',

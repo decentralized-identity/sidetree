@@ -141,7 +141,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       return;
     }
 
-    console.info(`Downloading core proof file '${provisionalProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
+    console.info(`Downloading provisional proof file '${provisionalProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
 
     const fileBuffer = await this.downloadFileFromCas(provisionalProofFileUri, ProtocolParameters.maxProofFileSizeInBytes);
     const provisionalProofFile = await ProvisionalProofFile.parse(fileBuffer);
