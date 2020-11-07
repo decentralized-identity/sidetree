@@ -57,14 +57,14 @@ describe('DocumentComposer', async () => {
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: noPurposePublicKey.publicKeyJwk.x, y: noPurposePublicKey.publicKeyJwk.y }
           }
         ],
-        assertionMethod: [ 'did:method:suffix#anySigningKey' ],
+        assertionMethod: ['did:method:suffix#anySigningKey'],
         authentication: [
           'did:method:suffix#anySigningKey',
           'did:method:suffix#authPublicKey'
         ],
-        capabilityDelegation: [ 'did:method:suffix#anySigningKey' ],
-        capabilityInvocation: [ 'did:method:suffix#anySigningKey' ],
-        keyAgreement: [ 'did:method:suffix#anySigningKey' ]
+        capabilityDelegation: ['did:method:suffix#anySigningKey'],
+        capabilityInvocation: ['did:method:suffix#anySigningKey'],
+        keyAgreement: ['did:method:suffix#anySigningKey']
       });
     });
 
@@ -446,8 +446,11 @@ describe('DocumentComposer', async () => {
       // Simulate that `publicKeyJwk` is missing.
       delete (patches[0].publicKeys![0] as any).publicKeyJwk;
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyJwkMissingOrIncorrectType);
-      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => DocumentComposer.validateDocumentPatches(patches),
+        ErrorCode.InputValidatorInputIsNotAnObject,
+        'publicKeyJwk'
+      );
     });
 
     it('should throw error if `type` of a public key is not a string.', async () => {

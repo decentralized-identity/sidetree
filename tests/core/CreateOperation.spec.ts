@@ -233,7 +233,7 @@ describe('CreateOperation', async () => {
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeLengtGreaterThanFour));
+        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeLengthGreaterThanFour));
     });
 
     it('should throw if suffix data type is not in base64url character set', async () => {

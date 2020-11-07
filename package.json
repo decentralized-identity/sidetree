@@ -62,6 +62,7 @@
     "test": "npm run build && nyc jasmine --config=./tests/jasmine.json",
     "test:only": "npm run build && jasmine --config=./tests/jasmine.json",
     "test:generate-vectors": "node dist/tests/generators/TestVectorGenerator.js",
+    "util:generate-error-codes": "node dist/tests/generators/ErrorCodeGenerator.js",
     "publish:unstable": "./scripts/publish-unstable.sh",
     "publish:release": "./scripts/publish.sh",
     "version:release": "npm version --message \"chore(ref-imp): publish release [skip ci]\"",

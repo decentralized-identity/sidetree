@@ -4,6 +4,7 @@ import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import ArrayMethods from './util/ArrayMethods';
 import ChunkFile from './ChunkFile';
 import ChunkFileModel from './models/ChunkFileModel';
+import CoreProofFile from './CoreProofFile';
 import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
@@ -17,6 +18,7 @@ import LogColor from '../../../common/LogColor';
 import MapFile from './MapFile';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
+import ProvisionalProofFile from './ProvisionalProofFile';
 import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
 import ValueTimeLockVerifier from './ValueTimeLockVerifier';
@@ -45,6 +47,12 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
       // Download and verify map file.
       const mapFile = await this.downloadAndVerifyMapFile(anchorFile, anchoredData.numberOfOperations);
+
+      // Download and verify core proof file.
+      await this.downloadAndVerifyCoreProofFile(anchorFile);
+
+      // Download and verify provisional proof file.
+      await this.downloadAndVerifyProvisionalProofFile(anchorFile);
 
       // Download and verify chunk file.
       const chunkFileModel = await this.downloadAndVerifyChunkFile(mapFile);
@@ -111,6 +119,34 @@ export default class TransactionProcessor implements ITransactionProcessor {
       this.versionMetadataFetcher);
 
     return anchorFile;
+  }
+
+  private async downloadAndVerifyCoreProofFile (anchorFile: AnchorFile): Promise<CoreProofFile | undefined> {
+    const coreProofFileUri = anchorFile.model.coreProofFileUri;
+    if (coreProofFileUri === undefined) {
+      return;
+    }
+
+    console.info(`Downloading core proof file '${coreProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
+
+    const fileBuffer = await this.downloadFileFromCas(coreProofFileUri, ProtocolParameters.maxProofFileSizeInBytes);
+    const coreProofFile = await CoreProofFile.parse(fileBuffer, anchorFile.deactivateOperations.map(operation => operation.didUniqueSuffix));
+
+    return coreProofFile;
+  }
+
+  private async downloadAndVerifyProvisionalProofFile (anchorFile: AnchorFile): Promise<ProvisionalProofFile | undefined> {
+    const provisionalProofFileUri = anchorFile.model.provisionalProofFileUri;
+    if (provisionalProofFileUri === undefined) {
+      return;
+    }
+
+    console.info(`Downloading provisional proof file '${provisionalProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
+
+    const fileBuffer = await this.downloadFileFromCas(provisionalProofFileUri, ProtocolParameters.maxProofFileSizeInBytes);
+    const provisionalProofFile = await ProvisionalProofFile.parse(fileBuffer);
+
+    return provisionalProofFile;
   }
 
   /**

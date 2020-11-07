@@ -115,7 +115,7 @@ describe('RecoverOperation', async () => {
         recovery_reveal_value: 'some value'
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((RecoverOperation as any).parseSignedDataPayload(encodedSignedData))
+      await expectAsync(RecoverOperation.parseSignedDataPayload(encodedSignedData))
         .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty));
       done();
     });
@@ -124,7 +124,7 @@ describe('RecoverOperation', async () => {
       const signedData = {
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((RecoverOperation as any).parseSignedDataPayload(encodedSignedData))
+      await expectAsync(RecoverOperation.parseSignedDataPayload(encodedSignedData))
         .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty));
       done();
     });

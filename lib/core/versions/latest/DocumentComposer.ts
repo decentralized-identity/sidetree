@@ -4,6 +4,7 @@ import DidState from '../../models/DidState';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
@@ -42,7 +43,7 @@ export default class DocumentComposer {
         // add to verificationMethod no matter what,
         // then look at purpose to decide what verification relationship to add to
         verificationMethod.push(didDocumentPublicKey);
-        
+
         if (purposeSet.size > 0) {
           const reference = didDocumentPublicKey.controller + didDocumentPublicKey.id;
 
@@ -84,7 +85,7 @@ export default class DocumentComposer {
 
     verificationRelationships.forEach((value, key) => {
       didDocument[key] = value;
-    })
+    });
 
     const didResolutionResult: any = {
       '@context': 'https://www.w3.org/ns/did-resolution/v1',
@@ -198,9 +199,7 @@ export default class DocumentComposer {
         }
       }
 
-      if (typeof publicKey.publicKeyJwk !== 'object' || Array.isArray(publicKey.publicKeyJwk)) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyJwkMissingOrIncorrectType);
-      }
+      InputValidator.validateNonArrayObject(publicKey.publicKeyJwk, 'publicKeyJwk');
 
       if (typeof publicKey.type !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrIncorrectType);
@@ -218,11 +217,11 @@ export default class DocumentComposer {
         if (!Array.isArray(publicKey.purposes)) {
           throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposesIncorrectType);
         }
-  
+
         if (ArrayMethods.hasDuplicates(publicKey.purposes)) {
           throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposesDuplicated);
         }
-  
+
         const validPurposes = new Set(Object.values(PublicKeyPurpose));
         // Purpose must be one of the valid ones in PublicKeyPurpose
         for (const purpose of publicKey.purposes) {
@@ -318,7 +317,10 @@ export default class DocumentComposer {
       if (typeof serviceEndpoint === 'string') {
         const uri = URI.parse(service.serviceEndpoint);
         if (uri.error !== undefined) {
-          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointStringNotValidUri, `Service endpoint string '${serviceEndpoint}' is not a valid URI.`);
+          throw new SidetreeError(
+            ErrorCode.DocumentComposerPatchServiceEndpointStringNotValidUri,
+            `Service endpoint string '${serviceEndpoint}' is not a valid URI.`
+          );
         }
       } else if (typeof serviceEndpoint === 'object') {
         // Allow `object` type only if it is not an array.

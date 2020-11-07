@@ -58,14 +58,14 @@ export default class BatchWriter implements IBatchWriter {
     // Write core proof File if needed.
     const coreProofFileBuffer = await CoreProofFile.createBuffer(recoverOperations, deactivateOperations);
     let coreProofFileHash: string | undefined;
-    if (coreProofFileBuffer !== undefined ) {
+    if (coreProofFileBuffer !== undefined) {
       coreProofFileHash = await this.cas.write(coreProofFileBuffer);
     }
 
     // Write provisional proof File if needed.
     const provisionalProofFileBuffer = await ProvisionalProofFile.createBuffer(updateOperations);
     let provisionalProofFileHash: string | undefined;
-    if (provisionalProofFileBuffer !== undefined ) {
+    if (provisionalProofFileBuffer !== undefined) {
       provisionalProofFileHash = await this.cas.write(provisionalProofFileBuffer);
     }
 

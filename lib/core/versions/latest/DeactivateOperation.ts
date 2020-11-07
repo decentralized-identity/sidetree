@@ -2,16 +2,11 @@ import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jwk from './util/Jwk';
-import JwkEs256k from '../../models/JwkEs256k';
 import Jws from './util/Jws';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
-
-interface SignedDataModel {
-  didSuffix: string;
-  recoveryKey: JwkEs256k;
-}
+import SignedDataModel from './models/DeactivateSignedDataModel';
 
 /**
  * A class that represents a deactivate operation.
@@ -109,7 +104,10 @@ export default class DeactivateOperation implements OperationModel {
     );
   }
 
-  private static async parseSignedDataPayload (
+  /**
+   * Parses the signed data payload of a deactivate operation.
+   */
+  public static async parseSignedDataPayload (
     deltaEncodedString: string, expectedDidUniqueSuffix: string): Promise<SignedDataModel> {
 
     const signedDataJsonString = Encoder.decodeAsString(deltaEncodedString);

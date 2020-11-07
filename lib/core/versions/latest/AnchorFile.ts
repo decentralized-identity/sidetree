@@ -139,7 +139,7 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid);
     }
 
-    // Validate Core Proof File URI.
+    // Validate core proof file URI.
     if (recoverOperations.length > 0 || deactivateOperations.length > 0) {
       AnchorFile.validateCasFileUri(anchorFileModel.coreProofFileUri);
     } else {
@@ -149,6 +149,11 @@ export default class AnchorFile {
           `Core proof file '${anchorFileModel.coreProofFileUri}' not allowed in an anchor file with no recovers and deactivates.`
         );
       }
+    }
+
+    // Validate provisional proof file URI.
+    if (anchorFileModel.provisionalProofFileUri !== undefined) {
+      AnchorFile.validateCasFileUri(anchorFileModel.provisionalProofFileUri);
     }
 
     const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes, createOperations, recoverOperations, deactivateOperations);
@@ -233,7 +238,7 @@ export default class AnchorFile {
   }
 
   private static validateCasFileUri (casFileUri: any) {
-    if (typeof casFileUri !== 'string') { 
+    if (typeof casFileUri !== 'string') {
       throw new SidetreeError(ErrorCode.AnchorFileCasFileUriNotString);
     }
 

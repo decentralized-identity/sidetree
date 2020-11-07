@@ -28,7 +28,7 @@ describe('BatchWriter', () => {
 
   describe('write()', () => {
 
-    it('should return without writing anything if operation queue is emtpy.', async (done) => {
+    it('should return without writing anything if operation queue is empty.', async (done) => {
       const mockOpsByLock = ProtocolParameters.maxOperationsPerBatch;
       spyOn(blockchain, 'getFee').and.returnValue(Promise.resolve(100)); // Any fee, unused.
       spyOn(blockchain, 'getWriterValueTimeLock').and.returnValue(Promise.resolve(undefined)); // Any value, unused.
@@ -47,7 +47,7 @@ describe('BatchWriter', () => {
       done();
     });
 
-    it('should pass the writer lock ID to AnchoreFile.createBuffer() if a value lock exists.', async (done) => {
+    it('should pass the writer lock ID to AnchorFile.createBuffer() if a value lock exists.', async (done) => {
       spyOn(blockchain, 'getFee').and.returnValue(Promise.resolve(100));
 
       // Simulate a value lock fetched.
