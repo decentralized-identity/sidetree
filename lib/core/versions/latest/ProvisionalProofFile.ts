@@ -73,12 +73,7 @@ export default class ProvisionalProofFile {
     }
 
     const operations = provisionalProofFileModel.operations;
-    const allowedProperties = new Set(['update']);
-    for (const property in operations) {
-      if (!allowedProperties.has(property)) {
-        throw new SidetreeError(ErrorCode.ProvisionalProofFileHasUnknownProperty, `Provisional proof file has an unknown property '${property}'`);
-      }
-    }
+    InputValidator.validateObjectContainsOnlyAllowedProperties(operations, ['update'], 'provisional proof file');
 
     const updateProofs = [];
 

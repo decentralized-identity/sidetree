@@ -83,7 +83,8 @@ describe('CoreProofFile', async () => {
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => CoreProofFile.parse(fileCompressed, ['unused array']),
-        ErrorCode.CoreProofFileHasUnknownProperty
+        ErrorCode.InputValidatorInputContainsNowAllowedProperty,
+        'core proof file'
       );
     });
 

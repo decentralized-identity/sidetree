@@ -79,12 +79,7 @@ export default class CoreProofFile {
     }
 
     const operations = coreProofFileModel.operations;
-    const allowedProperties = new Set(['recover', 'deactivate']);
-    for (const property in operations) {
-      if (!allowedProperties.has(property)) {
-        throw new SidetreeError(ErrorCode.CoreProofFileHasUnknownProperty, `Core proof file has an unknown property '${property}'`);
-      }
-    }
+    InputValidator.validateObjectContainsOnlyAllowedProperties(operations, ['recover', 'deactivate'], 'core proof file');
 
     const recoverProofs = [];
     const deactivateProofs = [];

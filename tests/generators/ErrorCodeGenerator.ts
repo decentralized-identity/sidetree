@@ -2,11 +2,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 
+// Auto-generates error code messages based on the enum value and overwrites the original error code file.
+
 const saveLocation = path.resolve(__dirname, '../../../lib/core/versions/latest/ErrorCode.ts');
-// fs.mkdirSync(saveLocation, { recursive: true });
 
 (async () => {
-  // Auto-generates error code based on the enum value and overwrites the original error code file.
 
   let errorCodeFileContent =
 `/**

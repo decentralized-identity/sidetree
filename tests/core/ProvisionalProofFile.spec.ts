@@ -66,7 +66,8 @@ describe('ProvisionalProofFile', async () => {
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => ProvisionalProofFile.parse(fileCompressed),
-        ErrorCode.ProvisionalProofFileHasUnknownProperty
+        ErrorCode.InputValidatorInputContainsNowAllowedProperty,
+        'provisional proof file'
       );
     });
 
