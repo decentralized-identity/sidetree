@@ -7,6 +7,7 @@ import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
+import InputValidator from './InputValidator';
 
 /**
  * Class containing Map File related operations.
@@ -43,7 +44,7 @@ export default class MapFile {
       throw SidetreeError.createFromError(ErrorCode.MapFileNotJson, error);
     }
 
-    const allowedProperties = new Set(['chunks', 'operations']);
+    const allowedProperties = new Set(['chunks', 'operations', 'provisionalProofFileUri']);
     for (const property in mapFileModel) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.MapFileHasUnknownProperty);
@@ -54,6 +55,19 @@ export default class MapFile {
 
     const updateOperations = await MapFile.parseOperationsProperty(mapFileModel.operations);
     const didUniqueSuffixes = updateOperations.map(operation => operation.didUniqueSuffix);
+
+
+    // Validate provisional proof file URI.
+    if (updateOperations.length > 0) {
+      InputValidator.validateCasFileUri(mapFileModel.provisionalProofFileUri, 'provisional proof file URI');
+    } else {
+      if (mapFileModel.provisionalProofFileUri !== undefined) {
+        throw new SidetreeError(
+          ErrorCode.MapFileProvisionalProofFileUriNotAllowed,
+          `Provisional proof file '${mapFileModel.provisionalProofFileUri}' not allowed in a map file with no updates.`
+        );
+      }
+    }
 
     const mapFile = new MapFile(mapFileModel, didUniqueSuffixes, updateOperations);
     return mapFile;
@@ -117,7 +131,9 @@ export default class MapFile {
   /**
    * Creates the Map File buffer.
    */
-  public static async createBuffer (chunkFileHash: string, updateOperationArray: UpdateOperation[]): Promise<Buffer> {
+  public static async createBuffer (
+    chunkFileHash: string, provisionalProofFileHash: string | undefined, updateOperationArray: UpdateOperation[]
+  ): Promise<Buffer> {
     const updateOperations = updateOperationArray.map(operation => {
       return {
         didSuffix: operation.didUniqueSuffix,
@@ -129,11 +145,13 @@ export default class MapFile {
       chunks: [{ chunkFileUri: chunkFileHash }]
     };
 
-    // Only insert an `operations` property if there are update operations.
+    // Only insert `operations` and `provisionalProofFileHash` properties if there are update operations.
     if (updateOperations.length > 0) {
       mapFileModel.operations = {
         update: updateOperations
       };
+
+      mapFileModel.provisionalProofFileUri = provisionalProofFileHash;
     }
 
     const rawData = JSON.stringify(mapFileModel);

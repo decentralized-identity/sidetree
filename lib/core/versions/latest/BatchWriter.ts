@@ -76,7 +76,7 @@ export default class BatchWriter implements IBatchWriter {
     console.info(LogColor.lightBlue(`Wrote chunk file ${LogColor.green(chunkFileHash)} to content addressable store.`));
 
     // Write the map file to content addressable store.
-    const mapFileBuffer = await MapFile.createBuffer(chunkFileHash, updateOperations);
+    const mapFileBuffer = await MapFile.createBuffer(chunkFileHash, provisionalProofFileHash, updateOperations);
     const mapFileHash = await this.cas.write(mapFileBuffer);
     console.info(LogColor.lightBlue(`Wrote map file ${LogColor.green(mapFileHash)} to content addressable store.`));
 
@@ -86,7 +86,6 @@ export default class BatchWriter implements IBatchWriter {
       writerLockId,
       mapFileHash,
       coreProofFileHash,
-      provisionalProofFileHash,
       createOperations,
       recoverOperations,
       deactivateOperations

@@ -164,7 +164,6 @@ describe('Observer', async () => {
     const createOperations = [operation1Data.createOperation, operation2Data.createOperation];
 
     const coreProofFileHash = undefined;
-    const provisionalProofFileHash = undefined;
 
     // Generating chunk file data.
     const mockChunkFileBuffer = await ChunkFile.createBuffer(createOperations, [], []);
@@ -175,7 +174,8 @@ describe('Observer', async () => {
     const mockChunkFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockChunkFileHash')));
 
     // Generating map file data.
-    const mockMapFileBuffer = await MapFile.createBuffer(mockChunkFileHash, []);
+    const mockProvisionalProofFileUri = undefined;
+    const mockMapFileBuffer = await MapFile.createBuffer(mockChunkFileHash, mockProvisionalProofFileUri, []);
     const mockMapFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockMapFileHash')));
     const mockMapFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
@@ -184,7 +184,7 @@ describe('Observer', async () => {
 
     // Generating anchor file data.
     const mockAnchorFileBuffer =
-      await AnchorFile.createBuffer('writerlock', mockMapFileHash, coreProofFileHash, provisionalProofFileHash, createOperations, [], []);
+      await AnchorFile.createBuffer('writerlock', mockMapFileHash, coreProofFileHash, createOperations, [], []);
     const mockAnchoredFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: mockAnchorFileBuffer
