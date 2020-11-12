@@ -26,9 +26,7 @@ export default class LockResolver {
 
   constructor (
     private versionManager: VersionManager,
-    private bitcoinClient: BitcoinClient,
-    private minimumLockDurationInBlocks: number,
-    private maximumLockDurationInBlocks: number) {
+    private bitcoinClient: BitcoinClient) {
   }
 
   /**
@@ -87,11 +85,13 @@ export default class LockResolver {
     // (C). verify that the lock duration is valid
     const unlockAtBlock = lockStartBlock + scriptVerifyResult.lockDurationInBlocks!;
 
+    const [minimumLockDurationInBlocks, maximumLockDurationInBlocks] = this.versionManager.getLockDurationInBlocks(lockStartBlock);
+
     if (!this.isLockDurationValid(lockStartBlock, unlockAtBlock)) {
       throw new SidetreeError(
         ErrorCode.LockResolverDurationIsInvalid,
         // eslint-disable-next-line max-len
-        `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}. Allowed range: [${this.minimumLockDurationInBlocks} - ${this.maximumLockDurationInBlocks}.]`
+        `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}. Allowed range: [${minimumLockDurationInBlocks} - ${maximumLockDurationInBlocks}.]`
       );
     }
 
@@ -192,7 +192,8 @@ export default class LockResolver {
     //  lock-duration: unlockBlock - startBlock = 10 blocks
 
     const lockDuration = unlockBlock - startBlock;
+    const [minimumLockDurationInBlocks, maximumLockDurationInBlocks] = this.versionManager.getLockDurationInBlocks(startBlock);
 
-    return lockDuration >= this.minimumLockDurationInBlocks && lockDuration <= this.maximumLockDurationInBlocks;
+    return lockDuration >= minimumLockDurationInBlocks && lockDuration <= maximumLockDurationInBlocks;
   }
 }

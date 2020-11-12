@@ -1,37 +1,47 @@
 import BitcoinErrorCode from './ErrorCode';
+import BitcoinVersionModel from './models/BitcoinVersionModel';
+import IBlockMetadataStore from './interfaces/IBlockMetadataStore';
 import IFeeCalculator from './interfaces/IFeeCalculator';
 import SidetreeError from '../common/SidetreeError';
-import VersionModel from '../common/models/VersionModel';
+import IBitcoinConfig from './IBitcoinConfig';
+import ProtocolParameters from './models/ProtocolParameters';
 
 /**
  * The class that handles code versioning.
  */
 export default class VersionManager {
   // Reverse sorted implementation versions. ie. latest version first.
-  private versionsReverseSorted: VersionModel[];
+  private versionsReverseSorted: BitcoinVersionModel[];
 
   private feeCalculators: Map<string, IFeeCalculator>;
+  private protocolParameters: Map<string, ProtocolParameters>;
 
-  public constructor (versions: VersionModel[]) {
+  public constructor (versions: BitcoinVersionModel[], private config: IBitcoinConfig) {
     // Reverse sort versions.
     this.versionsReverseSorted = versions.sort((a, b) => b.startingBlockchainTime - a.startingBlockchainTime);
 
     this.feeCalculators = new Map();
+    this.protocolParameters = new Map();
   }
 
   /**
    * Loads all the implementation versions.
    */
-  public async initialize () {
+  public async initialize (
+    blockMetadataStore: IBlockMetadataStore
+  ) {
     // NOTE: In principal each version of the interface implementations can have different constructors,
     // but we currently keep the constructor signature the same as much as possible for simple instance construction,
     // but it is not inherently "bad" if we have to have conditional constructions for each if we have to.
     for (const versionModel of this.versionsReverseSorted) {
       const version = versionModel.version;
+      const initialNormalizedFee = versionModel.protocolParameters.initialNormalizedFee;
+
+      this.protocolParameters.set(version, versionModel.protocolParameters)
 
       /* tslint:disable-next-line */
       const FeeCalculator = await this.loadDefaultExportsForVersion(version, 'NormalizedFeeCalculator');
-      const feeCalculator = new FeeCalculator();
+      const feeCalculator = new FeeCalculator(blockMetadataStore, this.config.genesisBlockNumber, initialNormalizedFee);
       this.feeCalculators.set(version, feeCalculator);
     }
   }
@@ -43,6 +53,17 @@ export default class VersionManager {
     const version = this.getVersionString(blockHeight);
     const feeCalculator = this.feeCalculators.get(version)!;
     return feeCalculator;
+  }
+
+  /**
+   * Gets the corresponding version of the lock duration based on the given block height.
+   * 
+   * @returns An array with 2 elements, the 0th index being the minimum duration, and the 1st index being the maximum duration
+   */
+  public getLockDurationInBlocks (blockHeight: number): [number, number] {
+    const version = this.getVersionString(blockHeight);
+    const protocolParameter = this.protocolParameters.get(version)!;
+    return [protocolParameter.minimumValueTimeLockDurationInBlocks, protocolParameter.maximumValueTimeLockDurationInBlocks];
   }
 
   /**

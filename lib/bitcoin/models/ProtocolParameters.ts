@@ -7,4 +7,7 @@ export default interface ProtocolParameters {
 
   /** The minimum duration for the value-time-lock */
   minimumValueTimeLockDurationInBlocks: number;
+
+  /** The initial normalized fee */
+  initialNormalizedFee: number;
 }

@@ -4,6 +4,7 @@ import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
 import BitcoinServiceStateModel from './models/BitcoinServiceStateModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
+import BitcoinVersionModel from './models/BitcoinVersionModel';
 import BlockMetadata from './models/BlockMetadata';
 import ErrorCode from './ErrorCode';
 import IBitcoinConfig from './IBitcoinConfig';
@@ -23,12 +24,11 @@ import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionParser from './SidetreeTransactionParser';
 import SpendingMonitor from './SpendingMonitor';
-import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import VersionManager from './VersionManager';
-import VersionModel from '../common/models/VersionModel';
+
 
 /**
  * Object representing a blockchain time and hash
@@ -103,8 +103,8 @@ export default class BitcoinProcessor {
   /** at least 100 blocks per page unless reaching the last block */
   private static readonly pageSizeInBlocks = 100;
 
-  public constructor (config: IBitcoinConfig, versionModels: VersionModel[]) {
-    this.versionManager = new VersionManager(versionModels);
+  public constructor (config: IBitcoinConfig, versionModels: BitcoinVersionModel[]) {
+    this.versionManager = new VersionManager(versionModels, config);
 
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
@@ -138,9 +138,7 @@ export default class BitcoinProcessor {
     this.lockResolver =
       new LockResolver(
         this.versionManager,
-        this.bitcoinClient,
-        ProtocolParameters.minimumValueTimeLockDurationInBlocks,
-        ProtocolParameters.maximumValueTimeLockDurationInBlocks);
+        this.bitcoinClient);
 
     this.mongoDbLockTransactionStore = new MongoDbLockTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
@@ -163,7 +161,7 @@ export default class BitcoinProcessor {
    * Initializes the Bitcoin processor
    */
   public async initialize () {
-    await this.versionManager.initialize();
+    await this.versionManager.initialize(this.blockMetadataStore);
     await this.serviceStateStore.initialize();
     await this.blockMetadataStore.initialize();
     await this.transactionStore.initialize();
@@ -282,12 +280,13 @@ export default class BitcoinProcessor {
           {
             height: block.height,
             hash: block.hash,
+            normalizedFee: -1, // set to -1 to mark that it is not calculated yet
             totalFee: BitcoinProcessor.getBitcoinBlockTotalFee(block),
             transactionCount: block.transactions.length,
             previousHash: block.previousHash
           }
         );
-        await this.processSidetreeTransactionsInBlock(block);
+        await this.processSidetreeTransactionsInBlock(block, -1);
       }
     }
   }
@@ -357,14 +356,14 @@ export default class BitcoinProcessor {
    * Iterates through the transactions within the given block and process the sidetree transactions
    * @param block the block to process
    */
-  private async processSidetreeTransactionsInBlock (block: BitcoinBlockModel) {
+  private async processSidetreeTransactionsInBlock (block: BitcoinBlockModel, normalizedFee: number) {
     const transactions = block.transactions;
     // iterate through transactions
     for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
       const transaction = transactions[transactionIndex];
 
       try {
-        const sidetreeTxToAdd = await this.getSidetreeTransactionModelIfExist(transaction, transactionIndex, block.height);
+        const sidetreeTxToAdd = await this.getSidetreeTransactionModelIfExist(transaction, transactionIndex, block.height, normalizedFee);
 
         // If there are transactions found then add them to the transaction store
         if (sidetreeTxToAdd) {
@@ -523,7 +522,7 @@ export default class BitcoinProcessor {
   /**
    * Return proof-of-fee value for a particular block.
    */
-  public async getNormalizedFee (block: number): Promise<TransactionFeeModel> {
+  public async getNormalizedFee (block: number): Promise<number> {
 
     if (block < this.genesisBlockNumber) {
       const error = `The input block number must be greater than or equal to: ${this.genesisBlockNumber}`;
@@ -531,9 +530,9 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
     }
 
-    const normalizedTransactionFee = this.versionManager.getFeeCalculator(block).getNormalizedFee(block);
+    const normalizedTransactionFee = await this.versionManager.getFeeCalculator(block).getNormalizedFee(block);
 
-    return { normalizedTransactionFee };
+    return normalizedTransactionFee;
   }
 
   /**
@@ -764,7 +763,9 @@ export default class BitcoinProcessor {
         `Previous hash from blockchain: ${blockData.previousHash}. Expected value: ${previousBlockHash}`);
     }
 
-    await this.processSidetreeTransactionsInBlock(blockData);
+    const normalizedFee = await this.getNormalizedFee(blockHeight);
+
+    await this.processSidetreeTransactionsInBlock(blockData, normalizedFee);
 
     // Compute the total fee paid and total transaction count.
     const transactionCount = blockData.transactions.length;
@@ -774,6 +775,7 @@ export default class BitcoinProcessor {
       hash: blockHash,
       height: blockHeight,
       previousHash: blockData.previousHash,
+      normalizedFee,
       totalFee,
       transactionCount
     };
@@ -784,13 +786,13 @@ export default class BitcoinProcessor {
   private async getSidetreeTransactionModelIfExist (
     transaction: BitcoinTransactionModel,
     transactionIndex: number,
-    transactionBlock: number): Promise<TransactionModel | undefined> {
+    transactionBlock: number,
+    normalizedFee: number): Promise<TransactionModel | undefined> {
 
     const sidetreeData = await this.sidetreeTransactionParser.parse(transaction);
 
     if (sidetreeData) {
       const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transaction.id);
-      const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
 
       return {
         transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
@@ -798,7 +800,7 @@ export default class BitcoinProcessor {
         transactionTimeHash: transaction.blockHash,
         anchorString: sidetreeData.data,
         transactionFeePaid: transactionFeePaid,
-        normalizedTransactionFee: normalizedFeeModel.normalizedTransactionFee,
+        normalizedTransactionFee: normalizedFee,
         writer: sidetreeData.writer
       };
     }
