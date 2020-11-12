@@ -4,11 +4,11 @@ import Compressor from './util/Compressor';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
-import InputValidator from './InputValidator';
 
 /**
  * Class containing Anchor File related operations.

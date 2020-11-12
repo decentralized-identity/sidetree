@@ -50,7 +50,7 @@ describe('MapFile', async () => {
 
       await expectAsync(MapFile.parse(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileChunksPropertyMissingOrIncorrectType));
     });
-    
+
     it('should throw if there is no updates but a provisional proof file URI is given.', async () => {
       const mapFile: MapFileModel = {
         provisionalProofFileUri: 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',

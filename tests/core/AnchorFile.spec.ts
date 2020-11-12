@@ -159,7 +159,7 @@ describe('AnchorFile', async () => {
         () => AnchorFile.parse(anchorFileCompressed),
         ErrorCode.InputValidatorCasFileUriNotString,
         'map file URI'
-      )
+      );
     });
 
     it('should throw if map file hash is invalid.', async () => {

@@ -7,6 +7,7 @@ import DownloadManager from '../../lib/core/DownloadManager';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
+import FileGenerator from '../generators/FileGenerator';
 import IBlockchain from '../../lib/core/interfaces/IBlockchain';
 import Ipfs from '../../lib/ipfs/Ipfs';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
@@ -22,7 +23,6 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockVerifier';
-import FileGenerator from '../generators/FileGenerator';
 
 describe('TransactionProcessor', () => {
   let casClient: Ipfs;
@@ -365,7 +365,7 @@ describe('TransactionProcessor', () => {
       const anchorFileBuffer =
       await AnchorFile.createBuffer('writerLockId', mapFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
-      
+
       // Setting up a mock map file that has 1 update in it to be downloaded.
       const provisionalProofFileHash = undefined;
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest();
@@ -388,7 +388,7 @@ describe('TransactionProcessor', () => {
       const anchorFileBuffer =
       await AnchorFile.createBuffer('writerLockId', mapFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
-      
+
       // Setting up a mock map file that has 1 update in it to be downloaded.
       const provisionalProofFileHash = OperationGenerator.generateRandomHash();
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest(createOperationData.createOperation.didUniqueSuffix);
@@ -517,7 +517,7 @@ describe('TransactionProcessor', () => {
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => transactionProcessor['downloadAndVerifyCoreProofFile'](anchorFile),
         ErrorCode.CoreProofFileProofCountNotTheSameAsOperationCountInAnchorFile
-      )
+      );
     });
   });
 
@@ -563,7 +563,7 @@ describe('TransactionProcessor', () => {
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => transactionProcessor['downloadAndVerifyProvisionalProofFile'](mapFile),
         ErrorCode.ProvisionalProofFileProofCountNotTheSameAsOperationCountInMapFile
-      )
+      );
     });
   });
 

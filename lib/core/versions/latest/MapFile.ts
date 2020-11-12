@@ -1,13 +1,13 @@
 import ArrayMethods from './util/ArrayMethods';
 import Compressor from './util/Compressor';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
 import MapFileModel from './models/MapFileModel';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
-import InputValidator from './InputValidator';
 
 /**
  * Class containing Map File related operations.
@@ -55,7 +55,6 @@ export default class MapFile {
 
     const updateOperations = await MapFile.parseOperationsProperty(mapFileModel.operations);
     const didUniqueSuffixes = updateOperations.map(operation => operation.didUniqueSuffix);
-
 
     // Validate provisional proof file URI.
     if (updateOperations.length > 0) {

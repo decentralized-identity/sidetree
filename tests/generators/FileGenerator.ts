@@ -13,7 +13,9 @@ export default class FileGenerator {
   /**
    * Creates a `CoreProofFile`, mainly used for testing purposes.
    */
-  public static async createCoreProofFile (recoverOperations: RecoverOperation[], deactivateOperations: DeactivateOperation[]): Promise<CoreProofFile | undefined> {
+  public static async createCoreProofFile (
+    recoverOperations: RecoverOperation[], deactivateOperations: DeactivateOperation[]
+  ): Promise<CoreProofFile | undefined> {
     const deactivatedDidUniqueSuffixes = deactivateOperations.map(operation => operation.didUniqueSuffix);
     const coreProofFileBuffer = await CoreProofFile.createBuffer(recoverOperations, deactivateOperations);
 
@@ -30,12 +32,12 @@ export default class FileGenerator {
    */
   public static async createProvisionalProofFile (updateOperations: UpdateOperation[]): Promise<ProvisionalProofFile | undefined> {
     const provisionalProofFileBuffer = await ProvisionalProofFile.createBuffer(updateOperations);
-    
+
     if (provisionalProofFileBuffer === undefined) {
       return undefined;
     }
-    
+
     const provisionalProofFile = await ProvisionalProofFile.parse(provisionalProofFileBuffer);
     return provisionalProofFile;
-  } 
+  }
 }
