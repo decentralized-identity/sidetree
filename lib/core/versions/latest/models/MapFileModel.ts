@@ -2,14 +2,14 @@
  * Defines the external Map File structure.
  */
 export default interface MapFileModel {
-  chunks: {
-    chunkFileUri: string
-  }[];
-
+  provisionalProofFileUri?: string;
   operations?: {
     update: {
       didSuffix: string,
       signedData: string
     }[]
   };
+  chunks: {
+    chunkFileUri: string
+  }[];
 }

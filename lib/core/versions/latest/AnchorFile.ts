@@ -3,10 +3,9 @@ import ArrayMethods from './util/ArrayMethods';
 import Compressor from './util/Compressor';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
-import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
-import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
@@ -49,7 +48,7 @@ export default class AnchorFile {
       throw SidetreeError.createFromError(ErrorCode.AnchorFileNotJson, e);
     }
 
-    const allowedProperties = new Set(['mapFileUri', 'coreProofFileUri', 'provisionalProofFileUri', 'operations', 'writerLockId']);
+    const allowedProperties = new Set(['mapFileUri', 'coreProofFileUri', 'operations', 'writerLockId']);
     for (const property in anchorFileModel) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
@@ -75,7 +74,7 @@ export default class AnchorFile {
 
     // Map file URI validations.
     const mapFileUri = anchorFileModel.mapFileUri;
-    AnchorFile.validateCasFileUri(mapFileUri);
+    InputValidator.validateCasFileUri(mapFileUri, 'map file URI');
 
     // `operations` validations.
 
@@ -141,7 +140,7 @@ export default class AnchorFile {
 
     // Validate core proof file URI.
     if (recoverOperations.length > 0 || deactivateOperations.length > 0) {
-      AnchorFile.validateCasFileUri(anchorFileModel.coreProofFileUri);
+      InputValidator.validateCasFileUri(anchorFileModel.coreProofFileUri, 'core proof file URI');
     } else {
       if (anchorFileModel.coreProofFileUri !== undefined) {
         throw new SidetreeError(
@@ -149,11 +148,6 @@ export default class AnchorFile {
           `Core proof file '${anchorFileModel.coreProofFileUri}' not allowed in an anchor file with no recovers and deactivates.`
         );
       }
-    }
-
-    // Validate provisional proof file URI.
-    if (anchorFileModel.provisionalProofFileUri !== undefined) {
-      AnchorFile.validateCasFileUri(anchorFileModel.provisionalProofFileUri);
     }
 
     const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes, createOperations, recoverOperations, deactivateOperations);
@@ -167,7 +161,6 @@ export default class AnchorFile {
     writerLockId: string | undefined,
     mapFileHash: string,
     coreProofFileHash: string | undefined,
-    provisionalProofFileHash: string | undefined,
     createOperationArray: CreateOperation[],
     recoverOperationArray: RecoverOperation[],
     deactivateOperationArray: DeactivateOperation[]
@@ -205,13 +198,17 @@ export default class AnchorFile {
       writerLockId,
       mapFileUri: mapFileHash,
       coreProofFileUri: coreProofFileHash,
-      provisionalProofFileUri: provisionalProofFileHash,
       operations: {
         create: createOperations,
         recover: recoverOperations,
         deactivate: deactivateOperations
       }
     };
+
+    // Only insert `coreProofFileUri` property if a value is given.
+    if (coreProofFileHash !== undefined) {
+      anchorFileModel.coreProofFileUri = coreProofFileHash;
+    }
 
     return anchorFileModel;
   }
@@ -223,29 +220,17 @@ export default class AnchorFile {
     writerLockId: string | undefined,
     mapFileHash: string,
     coreProofFileHash: string | undefined,
-    provisionalProofFileHash: string | undefined,
     createOperations: CreateOperation[],
     recoverOperations: RecoverOperation[],
     deactivateOperations: DeactivateOperation[]
   ): Promise<Buffer> {
     const anchorFileModel = await AnchorFile.createModel(
-      writerLockId, mapFileHash, coreProofFileHash, provisionalProofFileHash, createOperations, recoverOperations, deactivateOperations
+      writerLockId, mapFileHash, coreProofFileHash, createOperations, recoverOperations, deactivateOperations
     );
     const anchorFileJson = JSON.stringify(anchorFileModel);
     const anchorFileBuffer = Buffer.from(anchorFileJson);
 
     return Compressor.compress(anchorFileBuffer);
-  }
-
-  private static validateCasFileUri (casFileUri: any) {
-    if (typeof casFileUri !== 'string') {
-      throw new SidetreeError(ErrorCode.AnchorFileCasFileUriNotString);
-    }
-
-    const casFileUriAsHashBuffer = Encoder.decodeAsBuffer(casFileUri);
-    if (!Multihash.isComputedUsingHashAlgorithm(casFileUriAsHashBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
-      throw new SidetreeError(ErrorCode.AnchorFileCasFileUriUnsupported, `CAS file URI '${casFileUri}' is computed using an unsupported hash algorithm.`);
-    }
   }
 
   private static validateWriterLockId (writerLockId: string) {

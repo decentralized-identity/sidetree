@@ -6,11 +6,10 @@ import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import OperationGenerator from '../generators/OperationGenerator';
 
 describe('CoreProofFile', async () => {
-
-  xit('Anchor file and core proof file must have matching content.', async () => {
+  xit('Relax logic when failed downloading of core proof files.', async () => {
   });
 
-  xit('Map file and provisional file must have matching content.', async () => {
+  xit('(Same as above) Should allow operations in Anchor file to be constructed even if (map, provisional proof files are not downloadable).', async () => {
   });
 
   xit('Batch writer should not write a proof file that is over the size limit.', async () => {

@@ -5,7 +5,6 @@ export default interface AnchorFileModel {
   writerLockId: string | undefined;
   mapFileUri: string;
   coreProofFileUri?: string;
-  provisionalProofFileUri?: string;
   operations: {
     create?: {
       suffixData: {
