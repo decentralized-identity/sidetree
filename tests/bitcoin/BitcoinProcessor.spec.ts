@@ -66,7 +66,7 @@ describe('BitcoinProcessor', () => {
 
   let bitcoinProcessor: BitcoinProcessor;
 
-  // DB related spys.
+  // DB related spies.
   let blockMetadataStoreInitializeSpy: jasmine.Spy;
   let blockMetadataStoreAddSpy: jasmine.Spy;
   let blockMetadataStoreGetLastSpy: jasmine.Spy;
@@ -84,7 +84,8 @@ describe('BitcoinProcessor', () => {
   let lockMonitorSpy: jasmine.Spy;
 
   beforeEach(() => {
-    bitcoinProcessor = new BitcoinProcessor(testConfig, versionModels);
+    const config = Object.assign({}, testConfig); // Clone the test config so that tests don't share the same object when it is being modified.
+    bitcoinProcessor = new BitcoinProcessor(config, versionModels);
 
     blockMetadataStoreInitializeSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'initialize');
     serviceStateStoreInitializeSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'initialize');
@@ -153,7 +154,7 @@ describe('BitcoinProcessor', () => {
         lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined,
+        transactionPollPeriodInSeconds: 60,
         sidetreeTransactionFeeMarkupPercentage: 0,
         valueTimeLockUpdateEnabled: true,
         valueTimeLockPollPeriodInSeconds: 60,
@@ -164,8 +165,8 @@ describe('BitcoinProcessor', () => {
       const bitcoinProcessor = new BitcoinProcessor(config, versionModels);
       expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
-      expect(bitcoinProcessor.pollPeriod).toEqual(60);
-      expect(bitcoinProcessor.sidetreePrefix).toEqual(config.sidetreeTransactionPrefix);
+      expect((bitcoinProcessor as any).config.transactionPollPeriodInSeconds).toEqual(60);
+      expect((bitcoinProcessor as any).config.sidetreeTransactionPrefix).toEqual(config.sidetreeTransactionPrefix);
       expect(bitcoinProcessor['transactionStore'].databaseName).toEqual(config.databaseName);
       expect(bitcoinProcessor['transactionStore']['serverUrl']).toEqual(config.mongoDbConnectionString);
       expect(bitcoinProcessor['bitcoinClient']['sidetreeTransactionFeeMarkupPercentage']).toEqual(0);
@@ -198,6 +199,13 @@ describe('BitcoinProcessor', () => {
       expect(processTransactionsSpy).toHaveBeenCalledBefore(lockMonitorSpy);
       expect(lockMonitorSpy).toHaveBeenCalled();
       done();
+    });
+
+    it('should not start transaction observer polling if polling is turned off.', async () => {
+      (bitcoinProcessor as any).config.transactionPollPeriodInSeconds = 0;
+
+      await bitcoinProcessor.initialize();
+      expect(periodicPollSpy).not.toHaveBeenCalled();
     });
 
     it('should skip initialization if unable to find a starting block.', async (done) => {
@@ -239,7 +247,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should process all the blocks since its last known With fastProcessTransactions', async (done) => {
-      bitcoinProcessor['bitcoinDataDirectory'] = 'somePath';
+      (bitcoinProcessor as any).config.bitcoinDataDirectory = 'somePath';
       const fromNumber = randomNumber();
       const fromHash = randomString();
 

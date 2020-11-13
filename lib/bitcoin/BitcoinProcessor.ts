@@ -57,17 +57,11 @@ export interface IBlockInfo {
  */
 export default class BitcoinProcessor {
 
-  /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
-  public readonly sidetreePrefix: string;
-
   /** The first Sidetree block in Bitcoin's blockchain. */
   public readonly genesisBlockNumber: number;
 
   /** Store for the state of sidetree transactions. */
   private readonly transactionStore: MongoDbTransactionStore;
-
-  /** Number of seconds between transaction queries */
-  public pollPeriod: number;
 
   /** Days of notice before the wallet is depleted of all funds */
   public lowBalanceNoticeDays: number;
@@ -98,17 +92,13 @@ export default class BitcoinProcessor {
 
   private sidetreeTransactionParser: SidetreeTransactionParser;
 
-  private bitcoinDataDirectory: string | undefined;
-
   /** at least 100 blocks per page unless reaching the last block */
   private static readonly pageSizeInBlocks = 100;
 
-  public constructor (config: IBitcoinConfig, versionModels: VersionModel[]) {
+  public constructor (private config: IBitcoinConfig, versionModels: VersionModel[]) {
     this.versionManager = new VersionManager(versionModels);
 
-    this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
-    this.bitcoinDataDirectory = config.bitcoinDataDirectory;
 
     this.serviceStateStore = new MongoDbServiceStateStore(config.mongoDbConnectionString, config.databaseName);
     this.blockMetadataStore = new MongoDbBlockMetadataStore(config.mongoDbConnectionString, config.databaseName);
@@ -118,7 +108,6 @@ export default class BitcoinProcessor {
       BitcoinClient.convertBtcToSatoshis(config.bitcoinFeeSpendingCutoff),
       this.transactionStore);
 
-    this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
     this.serviceInfoProvider = new ServiceInfoProvider('bitcoin');
 
@@ -133,7 +122,7 @@ export default class BitcoinProcessor {
         config.sidetreeTransactionFeeMarkupPercentage || 0,
         config.defaultTransactionFeeInSatoshisPerKB);
 
-    this.sidetreeTransactionParser = new SidetreeTransactionParser(this.bitcoinClient, this.sidetreePrefix);
+    this.sidetreeTransactionParser = new SidetreeTransactionParser(this.bitcoinClient, this.config.sidetreeTransactionPrefix);
 
     this.lockResolver =
       new LockResolver(
@@ -170,34 +159,39 @@ export default class BitcoinProcessor {
     await this.bitcoinClient.initialize();
     await this.mongoDbLockTransactionStore.initialize();
 
-    await this.upgradeDatabaseIfNeeded();
+    // Only observe transactions if polling is enabled.
+    if (this.config.transactionPollPeriodInSeconds > 0) {
+      await this.upgradeDatabaseIfNeeded();
 
-    // Current implementation records processing progress at block increments using `this.lastProcessedBlock`,
-    // so we need to trim the databases back to the last fully processed block.
-    this.lastProcessedBlock = await this.blockMetadataStore.getLast();
+      // Current implementation records processing progress at block increments using `this.lastProcessedBlock`,
+      // so we need to trim the databases back to the last fully processed block.
+      this.lastProcessedBlock = await this.blockMetadataStore.getLast();
 
-    const startingBlock = await this.getStartingBlockForPeriodicPoll();
+      const startingBlock = await this.getStartingBlockForPeriodicPoll();
 
-    if (startingBlock === undefined) {
-      console.info('Bitcoin processor state is ahead of bitcoind: skipping initialization');
-    } else {
-      console.debug('Synchronizing blocks for sidetree transactions...');
-      console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
-      if (this.bitcoinDataDirectory) {
-        // This reads into the raw block files and parse to speed up the initial startup instead of rpc
-        await this.fastProcessTransactions(startingBlock);
+      if (startingBlock === undefined) {
+        console.info('Bitcoin processor state is ahead of Bitcoin Core, skipping initialization...');
       } else {
-        await this.processTransactions(startingBlock);
+        console.debug('Synchronizing blocks for sidetree transactions...');
+        console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
+        if (this.config.bitcoinDataDirectory) {
+          // This reads into the raw block files and parse to speed up the initial startup instead of rpc
+          await this.fastProcessTransactions(startingBlock);
+        } else {
+          await this.processTransactions(startingBlock);
+        }
       }
+
+      // Intentionally not await on the promise.
+      this.periodicPoll();
+    } else {
+      console.warn(LogColor.yellow(`Transaction observer is disabled.`));
     }
 
-    // NOTE: important to this initialization after we have processed all the blocks
-    // this is because that the lock monitor needs the normalized fee calculator to
-    // have all the data.
+    // NOTE: important to start lock monitor polling AFTER we have processed all the blocks above (for the case that this node is observing transactions),
+    // this is because that the lock monitor depends on lock resolver, and lock resolver currently needs the normalized fee calculator,
+    // even though lock monitor itself does not depend on normalized fee calculator.
     await this.lockMonitor.startPeriodicProcessing();
-
-    // Intentionally not await on the promise.
-    this.periodicPoll();
   }
 
   private async upgradeDatabaseIfNeeded () {
@@ -230,7 +224,7 @@ export default class BitcoinProcessor {
    * @param startingBlock the starting block to begin processing
    */
   private async fastProcessTransactions (startingBlock: IBlockInfo) {
-    const bitcoinBlockDataIterator = new BitcoinBlockDataIterator(this.bitcoinDataDirectory!);
+    const bitcoinBlockDataIterator = new BitcoinBlockDataIterator(this.config.bitcoinDataDirectory!);
     const lastBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
     const lastBlockInfo = await this.bitcoinClient.getBlockInfoFromHeight(lastBlockHeight);
 
@@ -487,7 +481,7 @@ export default class BitcoinProcessor {
    * @param minimumFee The minimum fee to be paid for this transaction.
    */
   public async writeTransaction (anchorString: string, minimumFee: number) {
-    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
+    const sidetreeTransactionString = `${this.config.sidetreeTransactionPrefix}${anchorString}`;
     const sidetreeTransaction = await this.bitcoinClient.createSidetreeTransaction(sidetreeTransactionString, minimumFee);
     const transactionFee = sidetreeTransaction.transactionFee;
     console.info(`Fee: ${transactionFee}. Anchoring string ${anchorString}`);
@@ -598,7 +592,7 @@ export default class BitcoinProcessor {
    * Will process transactions every interval seconds.
    * @param interval Number of seconds between each query
    */
-  private async periodicPoll (interval: number = this.pollPeriod) {
+  private async periodicPoll (interval: number = this.config.transactionPollPeriodInSeconds) {
 
     try {
       // Defensive programming to prevent multiple polling loops even if this method is externally called multiple times.
@@ -814,7 +808,7 @@ export default class BitcoinProcessor {
    * @returns a tuple of [transactions, lastBlockSeen]
    */
   private async getTransactionsSince (since: number | undefined, maxBlockHeight: number): Promise<[TransactionModel[], number]> {
-    // test against undefined because 0 is falsey and this helps differenciate the behavior between 0 and undefined
+    // test against undefined because 0 is falsy and this helps differentiate the behavior between 0 and undefined
     let inclusiveBeginTransactionTime = since === undefined ? this.genesisBlockNumber : TransactionNumber.getBlockNumber(since);
 
     const transactionsToReturn: TransactionModel[] = [];
