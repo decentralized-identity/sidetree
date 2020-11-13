@@ -422,19 +422,28 @@ export default class BitcoinProcessor {
     }
 
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
-    // deep copy last processed block
-    const currentLastProcessedBlock = Object.assign({}, this.lastProcessedBlock!);
-    const [transactions, lastBlockSeen] = await this.getTransactionsSince(since, currentLastProcessedBlock.height);
+
+    // We get the last processed block directly from DB because if this service has observer turned off,
+    // it would not have the last processed block cached in memory.
+    const lastProcessedBlock = await this.blockMetadataStore.getLast();
+    if (lastProcessedBlock === undefined) {
+      return {
+        moreTransactions: false,
+        transactions: []
+      };
+    }
+
+    const [transactions, lastBlockSeen] = await this.getTransactionsSince(since, lastProcessedBlock.height);
 
     // make sure the last processed block hasn't changed since before getting transactions
     // if changed, then a block reorg happened.
-    if (!await this.verifyBlock(currentLastProcessedBlock.height, currentLastProcessedBlock.hash)) {
+    if (!await this.verifyBlock(lastProcessedBlock.height, lastProcessedBlock.hash)) {
       console.info('Requested transactions hash mismatched blockchain');
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.InvalidTransactionNumberOrTimeHash);
     }
 
     // if last processed block has not been seen, then there are more transactions
-    const moreTransactions = lastBlockSeen < currentLastProcessedBlock.height;
+    const moreTransactions = lastBlockSeen < lastProcessedBlock.height;
 
     return {
       transactions,
