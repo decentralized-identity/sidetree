@@ -44,7 +44,7 @@ Core Index Files contain [Create](#create), [Recover](#recover), and [Deactivate
 ```
 :::
 
-A valid [Core Index File](#core-index-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-core-index-file-size), and composed as follows:
+A valid [Core Index File](#core-index-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_CORE_INDEX_FILE_SIZE`](#max-core-index-file-size), and composed as follows:
 
 1. The [Core Index File](#core-index-file) ****MUST**** contain a [`provisionalIndexFileUri`](#provisional-index-file-uri){id="provisional-index-file-uri"} property if the batch of transactions being anchored contains any Create, Recovery, or Update operations, and its value ****MUST**** be a _CAS URI_ for the related Provisional Index File. If the batch of transactions being anchored is only comprised of Deactivate operations, the [`provisionalIndexFileUri`](#provisional-index-file-property) property ****MUST NOT**** be present.
 2. The [Core Index File](#core-index-file) ****MUST**** contain a [`coreProofFileUri`](#core-proof-file-uri){id="core-proof-file-uri"} property if the batch of transactions being anchored contains any Recovery or Deactivate operations, and its value ****MUST**** be a _CAS URI_ for the related [Core Proof File](#core-proof-file).
