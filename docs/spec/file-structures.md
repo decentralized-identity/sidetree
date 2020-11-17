@@ -5,16 +5,15 @@ The protocol defines the following three file structures, which house DID operat
 
 <img src="../diagrams/file-topology.svg" style="display: block; margin: 0 auto; padding: 2em 0; width: 100%; max-width: 620px;" />
 
-### Anchor File
+### Core Index File
 
-Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#deactivate) operation values, as well as a CAS URI for the related Sidetree Map file (detailed below). As the name suggests, Anchor Files are anchored to the target ledger system via embedding a CAS URI in the ledger's transactional history.
+Core Index Files contain [Create](#create), [Recover](#recover), and [Deactivate](#deactivate) operation values, as well as a CAS URI for the related [Provisional Index File](#provisional-index-file) (detailed below). As the name suggests, Core Index Files are anchored to the target ledger system via embedding a CAS URI in the ledger's transactional history.
 
 ::: example
 ```json
 {
   "coreProofFileUri": CAS_URI,
-  "provisionalProofFileUri": CAS_URI,
-  "mapFileUri": CAS_URI,
+  "provisionalIndexFileUri": CAS_URI,
   "writerLockId": OPTIONAL_LOCKING_VALUE,
   "operations": {
     "create": [
@@ -45,40 +44,40 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
 ```
 :::
 
-A valid [Anchor File](#anchor-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-anchor-file-size), and composed as follows:
+A valid [Core Index File](#core-index-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-core-index-file-size), and composed as follows:
 
-1. The [Anchor File](#anchor-file) ****MUST**** contain a [`mapFileUri`](#map-file-uri){id="map-file-uri"} property if the batch of transactions being anchored contains any Create, Recovery, or Update operations, and its value ****MUST**** be a _CAS URI_ for the related Map File. If the batch of transactions being anchored is only comprised of Deactivate operations, the [`mapFileUri`](#map-file-property) property ****MUST NOT**** be present.
-2. The [Anchor File](#anchor-file) ****MUST**** contain a [`coreProofFileUri`](#core-proof-file-uri){id="core-proof-file-uri"} property if the batch of transactions being anchored contains any Recovery or Deactivate operations, and its value ****MUST**** be a _CAS URI_ for the related [Core Proof File](#core-proof-file).
-3. The [Anchor File](#anchor-file) ****MUST**** contain a [`provisionalProofFileUri`](#provisional-proof-file-uri){id="provisional-proof-file-uri"} property if the batch of transactions being anchored contains any Update operations, and its value ****MUST**** be a _CAS URI_ for the related [Provisional Proof File](#provisional-proof-file).
-4. The [Anchor File](#anchor-file) ****MAY**** contain a [`writerLockId`](#writer-lock-property){id="writer-lock-property"} if the implementation chooses to implement a value locking scheme for economically based network protection, and its value ****MUST**** be defined by the implementation to reflect whatever values the are required to facilitate the necessary ledger and operation-level evaluations.
-5. If the set of operations to be anchored contain any [Create](#create), [Recover](#recover), or [Deactivate](#deactivate) operations, the [Anchor File](#anchor-file) ****MUST**** contain an `operations` property, and its value ****MUST**** be an object composed as follows:
-    - If there are any [Create](#create) operations to be included in the Anchor File:
+1. The [Core Index File](#core-index-file) ****MUST**** contain a [`provisionalIndexFileUri`](#provisional-index-file-uri){id="provisional-index-file-uri"} property if the batch of transactions being anchored contains any Create, Recovery, or Update operations, and its value ****MUST**** be a _CAS URI_ for the related Provisional Index File. If the batch of transactions being anchored is only comprised of Deactivate operations, the [`provisionalIndexFileUri`](#provisional-index-file-property) property ****MUST NOT**** be present.
+2. The [Core Index File](#core-index-file) ****MUST**** contain a [`coreProofFileUri`](#core-proof-file-uri){id="core-proof-file-uri"} property if the batch of transactions being anchored contains any Recovery or Deactivate operations, and its value ****MUST**** be a _CAS URI_ for the related [Core Proof File](#core-proof-file).
+4. The [Core Index File](#core-index-file) ****MAY**** contain a [`writerLockId`](#writer-lock-property){id="writer-lock-property"} if the implementation chooses to implement a value locking scheme for economically based network protection, and its value ****MUST**** be defined by the implementation to reflect whatever values the are required to facilitate the necessary ledger and operation-level evaluations.
+5. If the set of operations to be anchored contain any [Create](#create), [Recover](#recover), or [Deactivate](#deactivate) operations, the [Core Index File](#core-index-file) ****MUST**** contain an `operations` property, and its value ****MUST**** be an object composed as follows:
+    - If there are any [Create](#create) operations to be included in the Core Index File:
       1. The `operations` object ****MUST**** include a `create` property, and its value ****MUST**** be an array.
-      2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Anchor File Create Entries_](#anchor-file-create-entry){id="anchor-file-create-entry"}, use the following process to compose and include a JSON object for each entry:
+      2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Core Index File Create Entries_](#core-index-file-create-entry){id="core-index-file-create-entry"}, use the following process to compose and include a JSON object for each entry:
           - Each object must contain a `suffixData` property, and its value ****MUST**** be a [_Create Operation Suffix Data Object_](#create-suffix-data-object).
-      3. The [Anchor File](#anchor-file) ****MUST NOT**** include multiple [Create](#create) operations that produce the same [DID Suffix](#did-suffix).
-    - If there are any [Recovery](#recover) operations to be included in the Anchor File:
+      3. The [Core Index File](#core-index-file) ****MUST NOT**** include multiple [Create](#create) operations that produce the same [DID Suffix](#did-suffix).
+    - If there are any [Recovery](#recover) operations to be included in the Core Index File:
       1. The `operations` object ****MUST**** include a `recover` property, and its value ****MUST**** be an array.
-      2. For each [Recovery](#recover) operation to be included in the `recover` array, herein referred to as [_Anchor File Recovery Entries_](#anchor-file-recovery-entry){id="anchor-file-recovery-entry"}, use the following process to compose and include entries:
-          - The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An [Anchor File](#anchor-file) ****MUST NOT**** contain more than one operation of any type with the same [DID Suffix](#did-suffix).
+      2. For each [Recovery](#recover) operation to be included in the `recover` array, herein referred to as [_Core Index File Recovery Entries_](#core-index-file-recovery-entry){id="core-index-file-recovery-entry"}, use the following process to compose and include entries:
+          - The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An [Core Index File](#core-index-file) ****MUST NOT**** contain more than one operation of any type with the same [DID Suffix](#did-suffix).
           - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [hashed](#multihash) reveal value of the last update commitment.
-    - If there are any [Deactivate](#deactivate) operations to be included in the Anchor File:
+    - If there are any [Deactivate](#deactivate) operations to be included in the Core Index File:
       1. The `operations` object ****MUST**** include a `deactivate` property, and its value ****MUST**** be an array.
       2. For each [Deactivate](#deactivate) operation to be included in the `deactivate` array, use the following process to compose and include entries:
-          - The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An [Anchor File](#anchor-file) ****MUST NOT**** contain more than one operation of any type with the same [DID Suffix](#did-suffix).
+          - The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An [Core Index File](#core-index-file) ****MUST NOT**** contain more than one operation of any type with the same [DID Suffix](#did-suffix).
           - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [hashed](#multihash) reveal value of the last update commitment.
 
 
 
 - The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be a [_Deactivate Operation Signed Data Object_](#deactivate-signed-data-object).
 
-### Map File
+### Provisional Index File
 
-Map Files contain [Update](#update) operation proving data, as well as CAS URI links to [Chunk Files](#chunk-files).
+Provisional Index Files contain [Update](#update) operation proving data, as well as CAS URI links to [Chunk Files](#chunk-files).
 
 ::: example
 ```json
 {
+  "provisionalProofFileUri": CAS_URI,
   "chunks": [
     { "chunkFileUri": CHUNK_HASH },
     {...}
@@ -96,14 +95,15 @@ Map Files contain [Update](#update) operation proving data, as well as CAS URI l
 ```
 :::
 
-A valid [Map File](#map-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_MAP_FILE_SIZE`](#max-map-file-size), and composed as follows:
+A valid [Provisional Index File](#provisional-index-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_PROVISIONAL_INDEX_FILE_SIZE`](#max-provisional-index-file-size), and composed as follows:
 
-1. The [Map File](#map-file) ****MUST**** contain a `chunks` property, and its value ****MUST**** be an array of _Chunk Entries_ for the related delta data for a given chunk of operations in the batch. Future versions of the protocol will specify a process for separating the operations in a batch into multiple _Chunk Entries_, but for this version of the protocol there ****MUST**** be only one _Chunk Entry_ present in the array. _Chunk Entry_ objects are composed as follows:
+1. The [Provisional Index File](#provisional-index-file) ****MUST**** contain a [`provisionalProofFileUri`](#provisional-proof-file-uri){id="provisional-proof-file-uri"} property if the batch of transactions being anchored contains any Update operations, and its value ****MUST**** be a _CAS URI_ for the related [Provisional Proof File](#provisional-proof-file).
+2. The [Provisional Index File](#provisional-index-file) ****MUST**** contain a `chunks` property, and its value ****MUST**** be an array of _Chunk Entries_ for the related delta data for a given chunk of operations in the batch. Future versions of the protocol will specify a process for separating the operations in a batch into multiple _Chunk Entries_, but for this version of the protocol there ****MUST**** be only one _Chunk Entry_ present in the array. _Chunk Entry_ objects are composed as follows:
     1. The _Chunk Entry_ object ****MUST**** contain a [`chunkFileUri`](#chunk-file-uri) property, and its value ****MUST**** be a URI representing the corresponding CAS file entry, generated via the [`CAS_URI_ALGORITHM`](#cas-uri-algorithm).
-2. If there are any operation entries to be included in the [Map File](#map-file) (currently only Update operations), the [Map File](#map-file) ****MUST**** include an `operations` property, and its value ****MUST**** be an object composed as follows:
+3. If there are any operation entries to be included in the [Provisional Index File](#provisional-index-file) (currently only Update operations), the [Provisional Index File](#provisional-index-file) ****MUST**** include an `operations` property, and its value ****MUST**** be an object composed as follows:
     - If there are any [Update](#update) entries to be included:
       1. The `operations` object ****MUST**** include an `update` property, and its value ****MUST**** be an array.
-      2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Map File Update Entries](#map-file-update-entry){id="map-file-update-entry"}, use the following process to compose and include entries:
+      2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Provisional Index File Update Entries](#provisional-index-file-update-entry){id="provisional-index-file-update-entry"}, use the following process to compose and include entries:
           - The object ****MUST**** contain an `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
           - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [hashed](#multihash) reveal value of the last update commitment.
 
@@ -152,10 +152,10 @@ In this version of the protocol, Core Proof Files are constructed as follows:
 1. The Core Proof File ****MUST**** include an `operations` property, and its value ****MUST**** be an object containing cryptographic proof entries for any Recovery and Deactivate operations to be included in a batch. Include the Proof Entries as follows: 
     - If there are any [Recovery](#recover) entries to be included:
       1. The `operations` object ****MUST**** include a `recover` property, and its value ****MUST**** be an array.
-      2. For each [Recovery](#recover) entry to be included in the `recover` array, herein referred to as the [_Core Proof File Recovery Entry_](#core-proof-file-recovery-entry), include the operation's [_Recovery Operation Signed Data Object_](#recovery-signed-data-object) in the same index position of the operation's matching [_Anchor File Create Entry_](#anchor-file-create-entry).
+      2. For each [Recovery](#recover) entry to be included in the `recover` array, herein referred to as the [_Core Proof File Recovery Entry_](#core-proof-file-recovery-entry), include the operation's [_Recovery Operation Signed Data Object_](#recovery-signed-data-object) in the same index position of the operation's matching [_Core Index File Create Entry_](#core-index-file-create-entry).
     - If there are any [Deactivate](#deactivate) entries to be included:
       1. The `operations` object ****MUST**** include a `deactivate` property, and its value ****MUST**** be an array.
-      2. For each [Deactivate](#deactivate) entry to be included in the `deactivate` array, herein referred to as the [_Core Proof File Deactivate Entry_](#core-proof-file-deactivate-entry), include the operation's [_Deactivate Operation Signed Data Object_](#deactivate-signed-data-object) in the same index position of the operation's matching [_Anchor File Deactivate Entry_](#anchor-file-deactivate-entry).
+      2. For each [Deactivate](#deactivate) entry to be included in the `deactivate` array, herein referred to as the [_Core Proof File Deactivate Entry_](#core-proof-file-deactivate-entry), include the operation's [_Deactivate Operation Signed Data Object_](#deactivate-signed-data-object) in the same index position of the operation's matching [_Core Index File Deactivate Entry_](#core-index-file-deactivate-entry).
 
 ### Provisional Proof File
 
@@ -188,7 +188,7 @@ In this version of the protocol, Provisional Proof Files are constructed as foll
 1. The Provisional Proof File ****MUST**** include an `operations` property, and its value ****MUST**** be an object containing cryptographic proof entries for any Recovery and Deactivate operations to be included in a batch. Include the Proof Entries as follows: 
     - If there are any [Update](#update) entries to be included:
       1. The `operations` object ****MUST**** include a `update` property, and its value ****MUST**** be an array.
-      2. For each [Update](#update) entry to be included in the `update` array, herein referred to as the [_Provisional Proof File Update Entry_](#provisional-proof-file-update-entry), include the operation's [_Update Operation Signed Data Object_](#update-signed-data-object) in the same index position of the operation's matching [_Map File Update Entry_](#map-file-update-entry).
+      2. For each [Update](#update) entry to be included in the `update` array, herein referred to as the [_Provisional Proof File Update Entry_](#provisional-proof-file-update-entry), include the operation's [_Update Operation Signed Data Object_](#update-signed-data-object) in the same index position of the operation's matching [_Provisional Index File Update Entry_](#provisional-index-file-update-entry).
 
 ### Chunk Files
 
@@ -219,6 +219,6 @@ In this version of the protocol, Chunk Files are constructed as follows:
     2. The payload ****MUST**** contain an `updateCommitment` property, and its value ****MUST**** be the next _Update Commitment_ generated during the operation process associated with the type of operation being performed.
 
 3. Each [_Chunk File Delta Entry_](#chunk-file-delta-entry) ****MUST**** be appended to the `deltas` array as follows, in this order:
-    1. If any Create operations were present in the associated Anchor File, append all [_Create Operation Delta Objects_](#create-delta-object) in the same index order as their matching [_Anchor File Create Entry_](#anchor-file-create-entry).
-    2. If any Recovery operations were present in the associated Anchor File, append all [_Recovery Operation Delta Objects_](#recovery-delta-object) in the same index order as their matching [_Anchor File Recovery Entry_](#anchor-file-recovery-entry).
-    3. If any Update operations were present in the associated Map File, append all [_Update Operation Delta Objects_](#update-delta-object) in the same index order as their matching [_Map File Update Entry_](#map-file-update-entry).
+    1. If any Create operations were present in the associated Core Index File, append all [_Create Operation Delta Objects_](#create-delta-object) in the same index order as their matching [_Core Index File Create Entry_](#core-index-file-create-entry).
+    2. If any Recovery operations were present in the associated Core Index File, append all [_Recovery Operation Delta Objects_](#recovery-delta-object) in the same index order as their matching [_Core Index File Recovery Entry_](#core-index-file-recovery-entry).
+    3. If any Update operations were present in the associated Provisional Index File, append all [_Update Operation Delta Objects_](#update-delta-object) in the same index order as their matching [_Provisional Index File Update Entry_](#provisional-index-file-update-entry).
