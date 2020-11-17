@@ -11,8 +11,8 @@ As detailed in [Resolution](#resolution), the resolution request MAY include the
 The server responds with the [DID Resolution Result](https://w3c-ccg.github.io/did-resolution/#did-resolution-result) composed of the DID Document and Method Metadata.
 Sidetree defines `published`, `updateCommitment`, and `recoveryCommitment` method metadata.
    - `published` is detailed in [Published Property](#published-property).
-   - `updateCommitment` is the commitement for the next update operation as defined in [commitment value generation](https://identity.foundation/sidetree/spec/#commitment-value-generation).
-   - `recoveryCommitment` is the commitement for the next recover or deactivate operation as defined in [commitment value generation](https://identity.foundation/sidetree/spec/#commitment-value-generation).
+   - `updateCommitment` is the commitement for the next update operation as defined in [commitment schemes](https://identity.foundation/sidetree/spec/#commitment-schemes).
+   - `recoveryCommitment` is the commitement for the next recover or deactivate operation as defined in [commitment schemes](https://identity.foundation/sidetree/spec/#commitment-schemes).
 
 ::: example
 ```json

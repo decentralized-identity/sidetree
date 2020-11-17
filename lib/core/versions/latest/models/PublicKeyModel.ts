@@ -7,5 +7,5 @@ export default interface PublicKeyModel {
   id: string;
   type: string;
   publicKeyJwk: any;
-  purposes: PublicKeyPurpose[];
+  purposes?: PublicKeyPurpose[];
 }

@@ -6,7 +6,7 @@ Sidetree relies on JSON Web Signatures for authentication and integrity protecti
 
 In addition to [RFC7515](https://tools.ietf.org/html/rfc7515), the following additional requirements MUST be observed by Sidetree Method implementeers.
 
-1. `kid` MUST be present in the protected header.
+1. `kid` MAY be present in the protected header.
 2. `alg` MUST be present in the protected header, its value MUST NOT be none.
 3. No additional members may be present in the protected header.
 

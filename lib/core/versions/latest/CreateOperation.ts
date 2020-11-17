@@ -229,7 +229,7 @@ export default class CreateOperation implements OperationModel {
       }
 
       if (suffixData.type.length > 4) {
-        throw new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeLengtGreaterThanFour);
+        throw new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeLengthGreaterThanFour);
       }
 
       if (!Encoder.isBase64UrlString(suffixData.type)) {

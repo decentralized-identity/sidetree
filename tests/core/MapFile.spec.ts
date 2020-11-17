@@ -33,7 +33,7 @@ describe('MapFile', async () => {
     it('should throw if has an unknown property.', async () => {
       const mapFile = {
         unknownProperty: 'Unknown property',
-        ChunkFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        chunks: [{ chunkFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' }]
       };
       const fileBuffer = Buffer.from(JSON.stringify(mapFile));
       const fileCompressed = await Compressor.compress(fileBuffer);
@@ -43,12 +43,26 @@ describe('MapFile', async () => {
 
     it('should throw if missing chunk file hash.', async () => {
       const mapFile = {
-        // ChunkFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what the expected property should be.
+        // chunks: [{ chunkFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' }], // Intentionally kept to show what the expected property should be.
       };
       const fileBuffer = Buffer.from(JSON.stringify(mapFile));
       const fileCompressed = await Compressor.compress(fileBuffer);
 
       await expectAsync(MapFile.parse(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileChunksPropertyMissingOrIncorrectType));
+    });
+
+    it('should throw if there is no updates but a provisional proof file URI is given.', async () => {
+      const mapFile: MapFileModel = {
+        provisionalProofFileUri: 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+        chunks: [{ chunkFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' }]
+      };
+      const fileBuffer = Buffer.from(JSON.stringify(mapFile));
+      const fileCompressed = await Compressor.compress(fileBuffer);
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => MapFile.parse(fileCompressed),
+        ErrorCode.MapFileProvisionalProofFileUriNotAllowed
+      );
     });
   });
 

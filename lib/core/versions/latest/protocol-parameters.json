@@ -2,6 +2,7 @@
   "hashAlgorithmInMultihashCode": 18,
   "maxAnchorFileSizeInBytes": 1000000,
   "maxMapFileSizeInBytes": 1000000,
+  "maxProofFileSizeInBytes": 2000000,
   "maxChunkFileSizeInBytes": 10000000,
   "maxNumberOfOperationsPerTransactionTime": 600000,
   "maxNumberOfTransactionsPerTransactionTime": 300,

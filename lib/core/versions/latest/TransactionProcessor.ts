@@ -4,6 +4,7 @@ import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import ArrayMethods from './util/ArrayMethods';
 import ChunkFile from './ChunkFile';
 import ChunkFileModel from './models/ChunkFileModel';
+import CoreProofFile from './CoreProofFile';
 import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
@@ -17,6 +18,7 @@ import LogColor from '../../../common/LogColor';
 import MapFile from './MapFile';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
+import ProvisionalProofFile from './ProvisionalProofFile';
 import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
 import ValueTimeLockVerifier from './ValueTimeLockVerifier';
@@ -46,11 +48,17 @@ export default class TransactionProcessor implements ITransactionProcessor {
       // Download and verify map file.
       const mapFile = await this.downloadAndVerifyMapFile(anchorFile, anchoredData.numberOfOperations);
 
+      // Download and verify core proof file.
+      const coreProofFile = await this.downloadAndVerifyCoreProofFile(anchorFile);
+
+      // Download and verify provisional proof file.
+      const provisionalProofFile = await this.downloadAndVerifyProvisionalProofFile(mapFile);
+
       // Download and verify chunk file.
       const chunkFileModel = await this.downloadAndVerifyChunkFile(mapFile);
 
       // Compose into operations from all the files downloaded.
-      const operations = await this.composeAnchoredOperationModels(transaction, anchorFile, mapFile, chunkFileModel);
+      const operations = await this.composeAnchoredOperationModels(transaction, anchorFile, mapFile, coreProofFile, provisionalProofFile, chunkFileModel);
 
       // If the code reaches here, it means that the batch of operations is valid, store the operations.
       await this.operationStore.put(operations);
@@ -111,6 +119,53 @@ export default class TransactionProcessor implements ITransactionProcessor {
       this.versionMetadataFetcher);
 
     return anchorFile;
+  }
+
+  private async downloadAndVerifyCoreProofFile (anchorFile: AnchorFile): Promise<CoreProofFile | undefined> {
+    const coreProofFileUri = anchorFile.model.coreProofFileUri;
+    if (coreProofFileUri === undefined) {
+      return;
+    }
+
+    console.info(`Downloading core proof file '${coreProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
+
+    const fileBuffer = await this.downloadFileFromCas(coreProofFileUri, ProtocolParameters.maxProofFileSizeInBytes);
+    const coreProofFile = await CoreProofFile.parse(fileBuffer, anchorFile.deactivateOperations.map(operation => operation.didUniqueSuffix));
+
+    const recoverAndDeactivateCount = anchorFile.deactivateOperations.length + anchorFile.recoverOperations.length;
+    const proofCountInCoreProofFile = coreProofFile.deactivateProofs.length + coreProofFile.recoverProofs.length;
+    if (recoverAndDeactivateCount !== proofCountInCoreProofFile) {
+      throw new SidetreeError(
+        ErrorCode.CoreProofFileProofCountNotTheSameAsOperationCountInAnchorFile,
+        `Proof count of ${proofCountInCoreProofFile} in core proof file different to recover + deactivate count of ${recoverAndDeactivateCount} in anchor file.`
+      );
+    }
+
+    return coreProofFile;
+  }
+
+  private async downloadAndVerifyProvisionalProofFile (mapFile: MapFile | undefined): Promise<ProvisionalProofFile | undefined> {
+    // If there is no provisional proof file to download, just return.
+    if (mapFile === undefined || mapFile.model.provisionalProofFileUri === undefined) {
+      return;
+    }
+
+    const provisionalProofFileUri = mapFile.model.provisionalProofFileUri;
+    console.info(`Downloading provisional proof file '${provisionalProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
+
+    const fileBuffer = await this.downloadFileFromCas(provisionalProofFileUri, ProtocolParameters.maxProofFileSizeInBytes);
+    const provisionalProofFile = await ProvisionalProofFile.parse(fileBuffer);
+
+    const operationCountInMapFile = mapFile.didUniqueSuffixes.length;
+    const proofCountInProvisionalProofFile = provisionalProofFile.updateProofs.length;
+    if (operationCountInMapFile !== proofCountInProvisionalProofFile) {
+      throw new SidetreeError(
+        ErrorCode.ProvisionalProofFileProofCountNotTheSameAsOperationCountInMapFile,
+        `Proof count ${proofCountInProvisionalProofFile} in provisional proof file is different from operation count ${operationCountInMapFile} in map file.`
+      );
+    }
+
+    return provisionalProofFile;
   }
 
   /**
@@ -208,6 +263,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
     transaction: TransactionModel,
     anchorFile: AnchorFile,
     mapFile: MapFile | undefined,
+    coreProofFile: CoreProofFile | undefined,
+    provisionalProofFile: ProvisionalProofFile | undefined,
     chunkFile: ChunkFileModel | undefined
   ): Promise<AnchoredOperationModel[]> {
 
@@ -226,6 +283,19 @@ export default class TransactionProcessor implements ITransactionProcessor {
     // TODO: Issue 442 - https://github.com/decentralized-identity/sidetree/issues/442
     // Use actual operation request object instead of buffer.
 
+    // Prepare proofs to compose the original operation requests.
+    const proofs: (string | undefined)[] = createOperations.map(() => undefined); // Creates do not have proofs.
+    if (coreProofFile !== undefined) {
+      const recoverProofs = coreProofFile.recoverProofs.map((proof) => proof.signedDataJws.toCompactJws());
+      const deactivateProofs = coreProofFile.deactivateProofs.map((proof) => proof.signedDataJws.toCompactJws());
+      proofs.push(...recoverProofs);
+      proofs.push(...deactivateProofs);
+    }
+    if (provisionalProofFile !== undefined) {
+      const updateProofs = provisionalProofFile.updateProofs.map((proof) => proof.signedDataJws.toCompactJws());
+      proofs.push(...updateProofs);
+    }
+
     // NOTE: The last set of `operations` are deactivates, they don't have `delta` property.
     const anchoredOperationModels = [];
     for (let i = 0; i < operations.length; i++) {
@@ -239,6 +309,11 @@ export default class TransactionProcessor implements ITransactionProcessor {
       if (chunkFile !== undefined &&
           operation.type !== OperationType.Deactivate) {
         operationObject.delta = chunkFile.deltas[i];
+      }
+
+      // Add the `signedData` property unless it is a create operation.
+      if (operation.type !== OperationType.Create) {
+        operationObject.signedData = proofs[i];
       }
 
       const patchedOperationBuffer = Buffer.from(JSON.stringify(operationObject));
