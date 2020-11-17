@@ -4,6 +4,7 @@ import DidState from '../../models/DidState';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
@@ -24,10 +25,10 @@ export default class DocumentComposer {
 
     const document = didState.document as DocumentModel;
 
-    // Only populate `publicKey` if general purpose exists.
-    // Only populate `authentication` if authentication purpose exists.
-    const authentication: any[] = [];
-    const publicKeys: any[] = [];
+    // Put each public key in verificationMethod
+    // then populate the verification relationships by reference if a key has purposes,
+    const verificationRelationships: Map<string, string[]> = new Map();
+    const verificationMethod: any[] = [];
     if (Array.isArray(document.publicKeys)) {
       for (const publicKey of document.publicKeys) {
         const id = '#' + publicKey.id;
@@ -39,15 +40,20 @@ export default class DocumentComposer {
         };
         const purposeSet: Set<string> = new Set(publicKey.purposes);
 
-        if (purposeSet.has(PublicKeyPurpose.VerificationMethod)) {
-          publicKeys.push(didDocumentPublicKey);
-          if (purposeSet.has(PublicKeyPurpose.Authentication)) {
-            // add into authentication by reference if has auth and has general
-            authentication.push(id);
+        // add to verificationMethod no matter what,
+        // then look at purpose to decide what verification relationship to add to
+        verificationMethod.push(didDocumentPublicKey);
+
+        if (purposeSet.size > 0) {
+          const reference = didDocumentPublicKey.controller + didDocumentPublicKey.id;
+
+          for (const purpose of purposeSet) {
+            if (!verificationRelationships.has(purpose)) {
+              verificationRelationships.set(purpose, [reference]);
+            } else {
+              verificationRelationships.get(purpose)!.push(reference);
+            }
           }
-        } else if (purposeSet.has(PublicKeyPurpose.Authentication)) {
-          // add into authentication by object if has auth but no general
-          authentication.push(didDocumentPublicKey);
         }
       }
     }
@@ -73,13 +79,13 @@ export default class DocumentComposer {
       service: services
     };
 
-    if (publicKeys.length !== 0) {
-      didDocument.publicKey = publicKeys;
+    if (verificationMethod.length !== 0) {
+      didDocument.verificationMethod = verificationMethod;
     }
 
-    if (authentication.length !== 0) {
-      didDocument.authentication = authentication;
-    }
+    verificationRelationships.forEach((value, key) => {
+      didDocument[key] = value;
+    });
 
     const didResolutionResult: any = {
       '@context': 'https://www.w3.org/ns/did-resolution/v1',
@@ -186,15 +192,14 @@ export default class DocumentComposer {
 
     const publicKeyIdSet: Set<string> = new Set();
     for (const publicKey of publicKeys) {
-      const publicKeyProperties = Object.keys(publicKey);
-      // the expected fields are id, purposes, type and publicKeyJwk
-      if (publicKeyProperties.length !== 4) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
+      const allowedProperties = new Set(['id', 'type', 'purposes', 'publicKeyJwk']);
+      for (const property in publicKey) {
+        if (!allowedProperties.has(property)) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUnknownProperty, `Unexpected property, ${property}, in publicKey.`);
+        }
       }
 
-      if (typeof publicKey.publicKeyJwk !== 'object' || Array.isArray(publicKey.publicKeyJwk)) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyJwkMissingOrIncorrectType);
-      }
+      InputValidator.validateNonArrayObject(publicKey.publicKeyJwk, 'publicKeyJwk');
 
       if (typeof publicKey.type !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrIncorrectType);
@@ -208,19 +213,21 @@ export default class DocumentComposer {
       }
       publicKeyIdSet.add(publicKey.id);
 
-      if (!Array.isArray(publicKey.purposes) || publicKey.purposes.length === 0) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeMissingOrUnknown);
-      }
+      if ('purposes' in publicKey) {
+        if (!Array.isArray(publicKey.purposes)) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposesIncorrectType);
+        }
 
-      if (ArrayMethods.hasDuplicates(publicKey.purposes)) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeDuplicated);
-      }
+        if (ArrayMethods.hasDuplicates(publicKey.purposes)) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposesDuplicated);
+        }
 
-      const validPurposes = new Set(Object.values(PublicKeyPurpose));
-      // Purpose must be one of the valid ones in PublicKeyPurpose
-      for (const purpose of publicKey.purposes) {
-        if (!validPurposes.has(purpose)) {
-          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidPurpose);
+        const validPurposes = new Set(Object.values(PublicKeyPurpose));
+        // Purpose must be one of the valid ones in PublicKeyPurpose
+        for (const purpose of publicKey.purposes) {
+          if (!validPurposes.has(purpose)) {
+            throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidPurpose);
+          }
         }
       }
     }
@@ -310,7 +317,10 @@ export default class DocumentComposer {
       if (typeof serviceEndpoint === 'string') {
         const uri = URI.parse(service.serviceEndpoint);
         if (uri.error !== undefined) {
-          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointStringNotValidUri, `Service endpoint string '${serviceEndpoint}' is not a valid URI.`);
+          throw new SidetreeError(
+            ErrorCode.DocumentComposerPatchServiceEndpointStringNotValidUri,
+            `Service endpoint string '${serviceEndpoint}' is not a valid URI.`
+          );
         }
       } else if (typeof serviceEndpoint === 'object') {
         // Allow `object` type only if it is not an array.

@@ -15,20 +15,7 @@
         "serviceEndpoint": "http://www.service1.com"
       }
     ],
-    "publicKey": [
-      {
-        "id": "#additional-key",
-        "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
-        "type": "EcdsaSecp256k1VerificationKey2019",
-        "publicKeyJwk": {
-          "kty": "EC",
-          "crv": "secp256k1",
-          "x": "M5w8MiQbTZKVLRz7N705Y2cZEaLuRAZivq6qH6ib9dU",
-          "y": "4qLY9x18J1sPSUsrNs4ZZuEsefdOPg-HpUBn2_Q4vsQ"
-        }
-      }
-    ],
-    "authentication": [
+    "verificationMethod": [
       {
         "id": "#publicKeyModel1Id",
         "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
@@ -40,12 +27,39 @@
           "y": "dOicXqbjFxoGJ-K0-GJ1kHYJqic_D_OMuUwkQ7Ol6nk"
         }
       },
-      "#additional-key"
+      {
+        "id": "#additional-key",
+        "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
+        "type": "EcdsaSecp256k1VerificationKey2019",
+        "publicKeyJwk": {
+          "kty": "EC",
+          "crv": "secp256k1",
+          "x": "o3AiFRRHmA2wX1pAa1lwxA3TnGy-FrsJGl3OE5WqhKM",
+          "y": "nKx71xF7VDWS_spIAjs2emHcKsdqBch4dT0MLNdKZP0"
+        }
+      }
+    ],
+    "authentication": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#publicKeyModel1Id",
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+    ],
+    "keyAgreement": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#publicKeyModel1Id",
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+    ],
+    "assertionMethod": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+    ],
+    "capabilityInvocation": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+    ],
+    "capabilityDelegation": [
+      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
     ]
   },
   "methodMetadata": {
     "published": true,
     "recoveryCommitment": "EiBfOZdMtU6OBw8Pk879QtZ-2J-9FbbjSZyoaA_bqD4zhA",
-    "updateCommitment": "EiBwe2CAW4wkbTFTf91DTlC4h21cKPCvQVl-EPC5cRHUTg"
+    "updateCommitment": "EiBHQSkJqupw3NnLmY1v4zJcphY55M3IIgypjoqvVAavUQ"
   }
 }

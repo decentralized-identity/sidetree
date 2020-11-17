@@ -624,7 +624,7 @@
               <span class="token property">"delta_hash"</span><span class="token operator">:</span> DELTA_HASH
             <span class="token punctuation">}</span><span class="token punctuation">,</span>
             <span class="token property">"signature"</span><span class="token operator">:</span> SIGNATURE_STRING
-        <span class="token punctuation">}</span>   
+        <span class="token punctuation">}</span>
       <span class="token punctuation">}</span><span class="token punctuation">,</span>
       <span class="token punctuation">{</span>...<span class="token punctuation">}</span>
     <span class="token punctuation">]</span>
@@ -686,7 +686,7 @@
                     href="#create-operation-chunk-file-entry">EXAMPLE</a>
                 <pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"deltas"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
-       
+
     <span class="token punctuation">{</span> <span class="token comment">// JSON.stringify()-ed, and Base64URL encoded</span>
       <span class="token property">"patches"</span><span class="token operator">:</span> PATCH_ARRAY<span class="token punctuation">,</span>
       <span class="token property">"update_commitment"</span><span class="token operator">:</span> COMMITMENT_HASH
@@ -1040,10 +1040,10 @@
                     the <a href="#recover-delta-object"><em>Recovery Operation Delta Object</em></a>(as described
                     below).</li>
                 <li>Generate and retain a <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a>, in adherence
-                    with the <a href="#commitment-value-generation">Commitment Value Generation</a> directives, for use
+                    with the <a href="#commitment-schemes">Commitment Schemes</a> directives, for use
                     in the next Update operation, herein referred to as the <em>Update Reveal Value</em>.</li>
                 <li>Generate an <em>Update Commitment</em> using the <a href="#hashing-process">Hashing Process</a>, in
-                    adherence with the <a href="#commitment-value-generation">Commitment Value Generation</a>
+                    adherence with the <a href="#commitment-schemes">Commitment Schemes</a>
                     directives, to generate a hash of the <em>Update Reveal Value</em>, and retain the resulting hash
                     value for inclusion in an <a href="#anchor-file">Anchor File</a>.</li>
                 <li>Generate an encoded representation of the following object using the implementation’s
@@ -2389,7 +2389,7 @@ did:elem:EiD0x0JeWXQbVIpBpyeyF5FDdZN1U7enAfHnd13Qk_CYpQ
             <p>For example:</p>
             <pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"@context"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
-        <span class="token string">"https://www.w3.org/ns/did/v1"</span><span class="token punctuation">,</span> 
+        <span class="token string">"https://www.w3.org/ns/did/v1"</span><span class="token punctuation">,</span>
         <span class="token string">"https://identity.foundation/sidetree/context-v1.jsonld"</span><span class="token punctuation">,</span>
         <span class="token string">"https://example.com/method/specific.jsonld"</span>
     <span class="token punctuation">]</span>
@@ -2401,7 +2401,7 @@ did:elem:EiD0x0JeWXQbVIpBpyeyF5FDdZN1U7enAfHnd13Qk_CYpQ
             <p>For Example:</p>
             <pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"@context"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
-        <span class="token string">"https://www.w3.org/ns/did/v1"</span><span class="token punctuation">,</span> 
+        <span class="token string">"https://www.w3.org/ns/did/v1"</span><span class="token punctuation">,</span>
         <span class="token string">"https://identity.foundation/sidetree/context-v1.jsonld"</span>
     <span class="token punctuation">]</span><span class="token punctuation">,</span>
     <span class="token property">"recovery"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">{</span>
@@ -2425,7 +2425,7 @@ did:elem:EiD0x0JeWXQbVIpBpyeyF5FDdZN1U7enAfHnd13Qk_CYpQ
             <p>For Example:</p>
             <pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"@context"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
-        <span class="token string">"https://www.w3.org/ns/did/v1"</span><span class="token punctuation">,</span> 
+        <span class="token string">"https://www.w3.org/ns/did/v1"</span><span class="token punctuation">,</span>
         <span class="token string">"https://identity.foundation/sidetree/context-v1.jsonld"</span>
     <span class="token punctuation">]</span><span class="token punctuation">,</span>
     <span class="token property">"operation"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">{</span>

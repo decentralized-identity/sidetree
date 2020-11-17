@@ -10,8 +10,9 @@ export default class JasmineSidetreeErrorValidator {
    *
    * @param functionToExecute The function to execute.
    * @param expectedErrorCode The expected error code.
+   * @param expectedContainedStringInMessage The string expected to be part of (need not be full error message) the error message.
    */
-  public static expectSidetreeErrorToBeThrown (functionToExecute: () => any, expectedErrorCode: string): void {
+  public static expectSidetreeErrorToBeThrown (functionToExecute: () => any, expectedErrorCode: string, expectedContainedStringInMessage?: string): void {
     let validated: boolean = false;
 
     try {
@@ -19,6 +20,11 @@ export default class JasmineSidetreeErrorValidator {
     } catch (e) {
       if (e instanceof SidetreeError) {
         expect(e.code).toEqual(expectedErrorCode);
+
+        if (expectedContainedStringInMessage !== undefined) {
+          expect(e.message).toContain(expectedContainedStringInMessage);
+        }
+
         validated = true;
       }
     }
@@ -33,8 +39,13 @@ export default class JasmineSidetreeErrorValidator {
    *
    * @param functionToExecute The function to execute.
    * @param expectedErrorCode The expected error code.
+   * @param expectedContainedStringInMessage The string expected to be part of (need not be full error message) the error message.
    */
-  public static async expectSidetreeErrorToBeThrownAsync (functionToExecute: () => Promise<any>, expectedErrorCode: string): Promise<void> {
+  public static async expectSidetreeErrorToBeThrownAsync (
+    functionToExecute: () => Promise<any>,
+    expectedErrorCode: string,
+    expectedContainedStringInMessage?: string
+  ): Promise<void> {
     let validated: boolean = false;
 
     try {
@@ -42,6 +53,11 @@ export default class JasmineSidetreeErrorValidator {
     } catch (e) {
       if (e instanceof SidetreeError) {
         expect(e.code).toEqual(expectedErrorCode);
+
+        if (expectedContainedStringInMessage !== undefined) {
+          expect(e.message).toContain(expectedContainedStringInMessage);
+        }
+
         validated = true;
       }
     }

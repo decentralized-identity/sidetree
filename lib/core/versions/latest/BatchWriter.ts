@@ -2,6 +2,7 @@ import AnchorFile from './AnchorFile';
 import AnchoredData from './models/AnchoredData';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import ChunkFile from './ChunkFile';
+import CoreProofFile from './CoreProofFile';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import FeeManager from './FeeManager';
@@ -15,6 +16,7 @@ import MapFile from './MapFile';
 import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
+import ProvisionalProofFile from './ProvisionalProofFile';
 import RecoverOperation from './RecoverOperation';
 import UpdateOperation from './UpdateOperation';
 import ValueTimeLockModel from '../../../common/models/ValueTimeLockModel';
@@ -53,22 +55,41 @@ export default class BatchWriter implements IBatchWriter {
     const updateOperations = operationModels.filter(operation => operation.type === OperationType.Update) as UpdateOperation[];
     const deactivateOperations = operationModels.filter(operation => operation.type === OperationType.Deactivate) as DeactivateOperation[];
 
-    // Create the chunk file buffer from the operation models.
+    // Write core proof File if needed.
+    const coreProofFileBuffer = await CoreProofFile.createBuffer(recoverOperations, deactivateOperations);
+    let coreProofFileHash: string | undefined;
+    if (coreProofFileBuffer !== undefined) {
+      coreProofFileHash = await this.cas.write(coreProofFileBuffer);
+    }
+
+    // Write provisional proof File if needed.
+    const provisionalProofFileBuffer = await ProvisionalProofFile.createBuffer(updateOperations);
+    let provisionalProofFileHash: string | undefined;
+    if (provisionalProofFileBuffer !== undefined) {
+      provisionalProofFileHash = await this.cas.write(provisionalProofFileBuffer);
+    }
+
+    // Create the chunk file buffer from the operation models, then write the chunk file to content addressable store.
     // NOTE: deactivate operations don't have delta.
     const chunkFileBuffer = await ChunkFile.createBuffer(createOperations, recoverOperations, updateOperations);
-
-    // Write the chunk file to content addressable store.
     const chunkFileHash = await this.cas.write(chunkFileBuffer);
     console.info(LogColor.lightBlue(`Wrote chunk file ${LogColor.green(chunkFileHash)} to content addressable store.`));
 
     // Write the map file to content addressable store.
-    const mapFileBuffer = await MapFile.createBuffer(chunkFileHash, updateOperations);
+    const mapFileBuffer = await MapFile.createBuffer(chunkFileHash, provisionalProofFileHash, updateOperations);
     const mapFileHash = await this.cas.write(mapFileBuffer);
     console.info(LogColor.lightBlue(`Wrote map file ${LogColor.green(mapFileHash)} to content addressable store.`));
 
     // Write the anchor file to content addressable store.
     const writerLockId = currentLock ? currentLock.identifier : undefined;
-    const anchorFileBuffer = await AnchorFile.createBuffer(writerLockId, mapFileHash, createOperations, recoverOperations, deactivateOperations);
+    const anchorFileBuffer = await AnchorFile.createBuffer(
+      writerLockId,
+      mapFileHash,
+      coreProofFileHash,
+      createOperations,
+      recoverOperations,
+      deactivateOperations
+    );
     const anchorFileHash = await this.cas.write(anchorFileBuffer);
     console.info(LogColor.lightBlue(`Wrote anchor file ${LogColor.green(anchorFileHash)} to content addressable store.`));
 

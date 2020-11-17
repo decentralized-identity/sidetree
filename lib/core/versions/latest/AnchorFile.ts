@@ -3,10 +3,9 @@ import ArrayMethods from './util/ArrayMethods';
 import Compressor from './util/Compressor';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
-import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
-import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
@@ -49,7 +48,7 @@ export default class AnchorFile {
       throw SidetreeError.createFromError(ErrorCode.AnchorFileNotJson, e);
     }
 
-    const allowedProperties = new Set(['mapFileUri', 'operations', 'writerLockId']);
+    const allowedProperties = new Set(['mapFileUri', 'coreProofFileUri', 'operations', 'writerLockId']);
     for (const property in anchorFileModel) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
@@ -57,7 +56,7 @@ export default class AnchorFile {
     }
 
     if (!('mapFileUri' in anchorFileModel)) {
-      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashMissing);
+      throw new SidetreeError(ErrorCode.AnchorFileMapFileUriMissing);
     }
 
     if (!('operations' in anchorFileModel)) {
@@ -73,16 +72,9 @@ export default class AnchorFile {
       AnchorFile.validateWriterLockId(anchorFileModel.writerLockId);
     }
 
-    // Map file hash validations.
+    // Map file URI validations.
     const mapFileUri = anchorFileModel.mapFileUri;
-    if (typeof mapFileUri !== 'string') {
-      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashNotString);
-    }
-
-    const mapFileUriAsHashBuffer = Encoder.decodeAsBuffer(mapFileUri);
-    if (!Multihash.isComputedUsingHashAlgorithm(mapFileUriAsHashBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
-      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashUnsupported, `Map file hash '${mapFileUri}' is unsupported.`);
-    }
+    InputValidator.validateCasFileUri(mapFileUri, 'map file URI');
 
     // `operations` validations.
 
@@ -146,6 +138,18 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid);
     }
 
+    // Validate core proof file URI.
+    if (recoverOperations.length > 0 || deactivateOperations.length > 0) {
+      InputValidator.validateCasFileUri(anchorFileModel.coreProofFileUri, 'core proof file URI');
+    } else {
+      if (anchorFileModel.coreProofFileUri !== undefined) {
+        throw new SidetreeError(
+          ErrorCode.AnchorFileCoreProofFileUriNotAllowed,
+          `Core proof file '${anchorFileModel.coreProofFileUri}' not allowed in an anchor file with no recovers and deactivates.`
+        );
+      }
+    }
+
     const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes, createOperations, recoverOperations, deactivateOperations);
     return anchorFile;
   }
@@ -156,6 +160,7 @@ export default class AnchorFile {
   public static async createModel (
     writerLockId: string | undefined,
     mapFileHash: string,
+    coreProofFileHash: string | undefined,
     createOperationArray: CreateOperation[],
     recoverOperationArray: RecoverOperation[],
     deactivateOperationArray: DeactivateOperation[]
@@ -190,14 +195,20 @@ export default class AnchorFile {
     });
 
     const anchorFileModel = {
-      writerLockId: writerLockId,
+      writerLockId,
       mapFileUri: mapFileHash,
+      coreProofFileUri: coreProofFileHash,
       operations: {
         create: createOperations,
         recover: recoverOperations,
         deactivate: deactivateOperations
       }
     };
+
+    // Only insert `coreProofFileUri` property if a value is given.
+    if (coreProofFileHash !== undefined) {
+      anchorFileModel.coreProofFileUri = coreProofFileHash;
+    }
 
     return anchorFileModel;
   }
@@ -208,11 +219,14 @@ export default class AnchorFile {
   public static async createBuffer (
     writerLockId: string | undefined,
     mapFileHash: string,
+    coreProofFileHash: string | undefined,
     createOperations: CreateOperation[],
     recoverOperations: RecoverOperation[],
     deactivateOperations: DeactivateOperation[]
   ): Promise<Buffer> {
-    const anchorFileModel = await AnchorFile.createModel(writerLockId, mapFileHash, createOperations, recoverOperations, deactivateOperations);
+    const anchorFileModel = await AnchorFile.createModel(
+      writerLockId, mapFileHash, coreProofFileHash, createOperations, recoverOperations, deactivateOperations
+    );
     const anchorFileJson = JSON.stringify(anchorFileModel);
     const anchorFileBuffer = Buffer.from(anchorFileJson);
 

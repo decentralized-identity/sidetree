@@ -163,16 +163,19 @@ describe('Observer', async () => {
     const operation2Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 2 });
     const createOperations = [operation1Data.createOperation, operation2Data.createOperation];
 
+    const coreProofFileHash = undefined;
+
     // Generating chunk file data.
-    const mockbChunkFileBuffer = await ChunkFile.createBuffer(createOperations, [], []);
+    const mockChunkFileBuffer = await ChunkFile.createBuffer(createOperations, [], []);
     const mockChunkFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
-      content: mockbChunkFileBuffer
+      content: mockChunkFileBuffer
     };
-    const mockChunkFilehash = Encoder.encode(Multihash.hash(Buffer.from('MockChunkFileHash')));
+    const mockChunkFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockChunkFileHash')));
 
     // Generating map file data.
-    const mockMapFileBuffer = await MapFile.createBuffer(mockChunkFilehash, []);
+    const mockProvisionalProofFileUri = undefined;
+    const mockMapFileBuffer = await MapFile.createBuffer(mockChunkFileHash, mockProvisionalProofFileUri, []);
     const mockMapFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockMapFileHash')));
     const mockMapFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
@@ -180,20 +183,21 @@ describe('Observer', async () => {
     };
 
     // Generating anchor file data.
-    const mockAnchorFileBuffer = await AnchorFile.createBuffer('writerlock', mockMapFileHash, createOperations, [], []);
-    const mockAnchoreFileFetchResult: FetchResult = {
+    const mockAnchorFileBuffer =
+      await AnchorFile.createBuffer('writerlock', mockMapFileHash, coreProofFileHash, createOperations, [], []);
+    const mockAnchoredFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: mockAnchorFileBuffer
     };
-    const mockAnchorFilehash = Encoder.encode(Multihash.hash(Buffer.from('MockAnchorFileHash')));
+    const mockAnchorFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockAnchorFileHash')));
 
     // Prepare the mock fetch results from the `DownloadManager.download()`.
     const mockDownloadFunction = async (hash: string) => {
-      if (hash === mockAnchorFilehash) {
-        return mockAnchoreFileFetchResult;
+      if (hash === mockAnchorFileHash) {
+        return mockAnchoredFileFetchResult;
       } else if (hash === mockMapFileHash) {
         return mockMapFileFetchResult;
-      } else if (hash === mockChunkFilehash) {
+      } else if (hash === mockChunkFileHash) {
         return mockChunkFileFetchResult;
       } else {
         throw new Error('Test failed, unexpected hash given');
@@ -212,7 +216,7 @@ describe('Observer', async () => {
       1
     );
 
-    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: mockAnchorFilehash, numberOfOperations: createOperations.length });
+    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: mockAnchorFileHash, numberOfOperations: createOperations.length });
     const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,

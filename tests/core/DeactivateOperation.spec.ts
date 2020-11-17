@@ -79,7 +79,7 @@ describe('DeactivateOperation', async () => {
         extraProperty: 'An unknown extra property'
       };
       const encodedDelta = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((DeactivateOperation as any).parseSignedDataPayload(encodedDelta, didUniqueSuffix))
+      await expectAsync(DeactivateOperation.parseSignedDataPayload(encodedDelta, didUniqueSuffix))
         .toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationSignedDataMissingOrUnknownProperty));
       done();
     });
@@ -88,7 +88,7 @@ describe('DeactivateOperation', async () => {
       const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
       const signedData = {};
       const encodedDelta = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((DeactivateOperation as any).parseSignedDataPayload(encodedDelta, didUniqueSuffix))
+      await expectAsync(DeactivateOperation.parseSignedDataPayload(encodedDelta, didUniqueSuffix))
         .toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationSignedDataMissingOrUnknownProperty));
       done();
     });
@@ -101,7 +101,7 @@ describe('DeactivateOperation', async () => {
         recovery_reveal_value: recoveryRevealValue
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((DeactivateOperation as any).parseSignedDataPayload(encodedSignedData, 'mismatchingDidUniqueSuffix', recoveryRevealValue))
+      await expectAsync(DeactivateOperation.parseSignedDataPayload(encodedSignedData, 'mismatchingDidUniqueSuffix'))
         .toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationSignedDidUniqueSuffixMismatch));
       done();
     });
