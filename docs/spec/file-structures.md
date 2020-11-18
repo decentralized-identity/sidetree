@@ -79,7 +79,7 @@ Provisional Index Files contain [Update](#update) operation proving data, as wel
 {
   "provisionalProofFileUri": CAS_URI,
   "chunks": [
-    { "chunkFileUri": CHUNK_HASH },
+    { "chunkFileUri": CAS_URI },
     {...}
   ],
   "operations": {

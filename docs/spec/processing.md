@@ -5,14 +5,14 @@
 Once an Core Index File, Provisional Index File, and associated Chunk Files have been assembled for a given set of operations, a reference to the [Core Index File](#core-index-file) must be embedded within the target ledger to enter the set of operations into the Sidetree implementation's global state. The following process:
 
 1. Generate a transaction for the underlying ledger
-2. Generate and include the following value, herein referred to as the [_Core Index String_](#core-index-string){id="core-index-string"}, within the transaction:
+2. Generate and include the following value, herein referred to as the [_Anchor String_](#anchor-string){id="anchor-string"}, within the transaction:
     1. Generate a numerical string (`'732'`) that represents the total number of operations present in the [Core Index File](#core-index-file) and [Provisional Index File](#provisional-index-file), herein referred to as the _Operation Count_.
     2. Using the [`CAS_URI_ALGORITHM`](#cas-uri-algorithm), generate a CID for the Core Index File, herein referred to as the _Core Index File CAS URI_.
     3. Join the _Operation Count_ and _Core Index File CAS URI_ with a `.` as follows:
         ```js
         "10000" + "." + "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
         ```
-    4. Embed the _Core Index String_ in the transaction such that it can be located and parsed by any party that traverses the history of the target ledger.
+    4. Embed the _Anchor String_ in the transaction such that it can be located and parsed by any party that traverses the history of the target ledger.
 2. If the implementation implements a [per-op fee](#proof-of-fee), ensure the transaction includes the fee amount required for the number of operations being anchored.
 3. Encode the transaction with any other data or values required for inclusion by the target ledger, and broadcast it.
 
@@ -37,10 +37,10 @@ Regardless of the ledger system an implementer chooses, the implementer ****MUST
 3. For each transaction found during iteration that is determined to be a protocol-related transaction, process the transaction as follows:
     1. Assign the transaction a _Transaction Number_.
     2. If the implementation supports enforcement value locking, and the transaction is encoded in accordance with the implementation's value locking format, skip the remaining steps and process the transaction as described in the [Proof of Fee](#proof-of-fee) section on [Value Locking](#value-locking).
-    3. The [_Core Index String_](#core-index-string) ****MUST**** be formatted correctly - if it IS NOT, discard the transaction and continue iteration.
+    3. The [_Anchor String_](#anchor-string) ****MUST**** be formatted correctly - if it IS NOT, discard the transaction and continue iteration.
     4. If the implementation DOES NOT support enforcement of a [per-operation fee](#proof-of-fee), skip this step. If enforcement of a [per-operation fee](#proof-of-fee) is supported, ensure the transaction fee meets the [per-operation fee](#proof-of-fee) requirements for inclusion - if it DOES NOT, discard the transaction and continue iteration. 
     5. If the implementation DOES NOT support enforcement of [Value Locking](#value-locking), skip this step. If enforcement of [Value Locking](#value-locking) is supported, ensure the transaction's fee meets the [Value Locking](#value-locking) requirements for inclusion - if it does not, discard the transaction and continue iteration.
-    6. Parse the [_Core Index String_](#core-index-string) to derive the _Operation Count_ and _Core Index File CAS URI_.
+    6. Parse the [_Anchor String_](#anchor-string) to derive the _Operation Count_ and _Core Index File CAS URI_.
     7. Use the [`CAS_PROTOCOL`](#cas-protocol) to fetch the [Core Index File](#core-index-file) using the _Core Index File CAS URI_. If the file cannot be located, retain a reference that signifies the need to retry fetch of the file. If the file successfully retrieved, proceed to the next section on how to [process an Core Index File](#core-index-file-processing)
 
 ### Core Index File Processing
