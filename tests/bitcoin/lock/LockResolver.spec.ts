@@ -33,7 +33,7 @@ function createLockScriptVerifyResult (isScriptValid: boolean, owner: string | u
 }
 
 describe('LockResolver', () => {
-  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { maximumValueTimeLockDurationInBlocks: 5, minimumValueTimeLockDurationInBlocks: 3, initialNormalizedFee: 1 } }];
+  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: 5, initialNormalizedFee: 1 } }];
   const versionManager = new VersionManager(versionModels, { genesisBlockNumber: 0 } as any);
   versionManager.initialize(new MockBlockMetadataStore());
 
@@ -373,33 +373,25 @@ describe('LockResolver', () => {
   });
 
   describe('isLockDurationValid', () => {
-    it('should return true if the lock duration is exactly on the min limit.', () => {
+    it('should return true if the lock duration is exactly on the limit.', () => {
       const startBlock = 100;
-      const unlockBlock = startBlock + versionModels[0].protocolParameters.minimumValueTimeLockDurationInBlocks;
+      const unlockBlock = startBlock + versionModels[0].protocolParameters.valueTimeLockDurationInBlocks;
 
       const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
       expect(actual).toBeTruthy();
     });
 
-    it('should return true if the lock duration is exactly on the max limit.', () => {
+    it('should return false if the lock duration is greater than the limit.', () => {
       const startBlock = 100;
-      const unlockBlock = startBlock + versionModels[0].protocolParameters.maximumValueTimeLockDurationInBlocks;
-
-      const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
-      expect(actual).toBeTruthy();
-    });
-
-    it('should return false if the lock duration is greater than the max limit.', () => {
-      const startBlock = 100;
-      const unlockBlock = startBlock + versionModels[0].protocolParameters.maximumValueTimeLockDurationInBlocks + 1;
+      const unlockBlock = startBlock + versionModels[0].protocolParameters.valueTimeLockDurationInBlocks + 1;
 
       const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
       expect(actual).toBeFalsy();
     });
 
-    it('should return false if the lock duration is below the min limit.', () => {
+    it('should return false if the lock duration is below the limit.', () => {
       const intendedStartBlock = 100;
-      const unlockBlock = intendedStartBlock + versionModels[0].protocolParameters.minimumValueTimeLockDurationInBlocks;
+      const unlockBlock = intendedStartBlock + versionModels[0].protocolParameters.valueTimeLockDurationInBlocks;
       const actualStartBlock = intendedStartBlock + 1;
 
       const actual = lockResolver['isLockDurationValid'](actualStartBlock, unlockBlock);

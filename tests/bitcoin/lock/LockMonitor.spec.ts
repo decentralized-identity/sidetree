@@ -14,6 +14,7 @@ import SidetreeError from '../../../lib/common/SidetreeError';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 import VersionManager from '../../../lib/bitcoin/VersionManager';
 import VersionModel from '../../../lib/bitcoin/models/BitcoinVersionModel';
+import MockBlockMetadataStore from '../../mocks/MockBlockMetadataStore';
 
 function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, activeValueTimeLock: ValueTimeLockModel | undefined, status: any) {
   return {
@@ -24,33 +25,37 @@ function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, act
 }
 
 describe('LockMonitor', () => {
-
   const validTestWalletImportString = 'cTpKFwqu2HqW4y5ByMkNRKAvkPxEcwpax5Qr33ibYvkp1KSxdji6';
 
   const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
   const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
 
-  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { maximumValueTimeLockDurationInBlocks: 1, minimumValueTimeLockDurationInBlocks: 1, initialNormalizedFee: 1 } }];
-  const versionManager = new VersionManager(versionModels, {} as any);
-
+  const lockDuration = 2000;
+  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: lockDuration, initialNormalizedFee: 1 } }];
+  const versionManager = new VersionManager(versionModels, { genesisBlockNumber: 1 } as any);
   const lockResolver = new LockResolver(versionManager, bitcoinClient);
+  
 
   let lockMonitor: LockMonitor;
 
+  beforeAll(async () => {
+    await versionManager.initialize(new MockBlockMetadataStore());
+  });
+
   beforeEach(() => {
-    lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 60, true, 1200, 100, 2000);
+    lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 60, true, 1200, 100, versionManager);
   });
 
   describe('constructor', () => {
     it('should throw if the desired lock amount is not a whole number', () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, true, 1000.34, 25, 1234),
+        () => new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, true, 1000.34, 25, versionManager),
         ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber);
     });
 
     it('should throw if the txn fees amount is not a whole number', () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, true, 1000, 1234.56, 45),
+        () => new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, true, 1000, 1234.56, versionManager),
         ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber);
     });
   });
@@ -595,12 +600,15 @@ describe('LockMonitor', () => {
       const saveBroadcastSpy = spyOn(lockMonitor as any, 'saveThenBroadcastTransaction').and.returnValue(Promise.resolve(mockLockInfoSaved));
 
       const desiredLockAmount = mockWalletBalance - (mockWalletBalance * 0.5);
+
+      spyOn(lockMonitor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(12345));
+
       const actual = await lockMonitor['handleCreatingNewLock'](desiredLockAmount);
 
       expect(actual).toEqual(mockLockInfoSaved);
 
       const expectedLockAmount = desiredLockAmount + lockMonitor['transactionFeesAmountInSatoshis'];
-      expect(createLockTxnSpy).toHaveBeenCalledWith(expectedLockAmount, lockMonitor['lockPeriodInBlocks']);
+      expect(createLockTxnSpy).toHaveBeenCalledWith(expectedLockAmount, lockDuration);
 
       expect(saveBroadcastSpy).toHaveBeenCalledWith(mockLockTxn, SavedLockType.Create, desiredLockAmount);
     });
@@ -890,7 +898,7 @@ describe('LockMonitor', () => {
       expect(actual).toEqual(mockLockInfo);
 
       const existingLockDuration = currentLockInfoInput.unlockTransactionTime - currentLockInfoInput.lockTransactionTime;
-      expect(createRelockTxnSpy).toHaveBeenCalledWith(mockCurrentLockId.transactionId, existingLockDuration, lockMonitor['lockPeriodInBlocks']);
+      expect(createRelockTxnSpy).toHaveBeenCalledWith(mockCurrentLockId.transactionId, existingLockDuration, lockDuration);
       expect(saveBroadcastSpy).toHaveBeenCalledWith(mockRenewLockTxn, SavedLockType.Relock, desiredLockAmountInput);
     });
 

@@ -36,7 +36,7 @@ function randomBlock (above: number = 0): IBlockInfo {
 
 describe('BitcoinProcessor', () => {
   const versionModels: VersionModel[] = [
-    { startingBlockchainTime: 0, version: 'latest', protocolParameters: {maximumValueTimeLockDurationInBlocks: 1, minimumValueTimeLockDurationInBlocks: 1, initialNormalizedFee: 1} }
+    { startingBlockchainTime: 0, version: 'latest', protocolParameters: {valueTimeLockDurationInBlocks: 1, initialNormalizedFee: 1} }
   ];
 
   const testConfig: IBitcoinConfig = {

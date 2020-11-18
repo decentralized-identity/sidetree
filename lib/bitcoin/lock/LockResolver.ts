@@ -85,13 +85,13 @@ export default class LockResolver {
     // (C). verify that the lock duration is valid
     const unlockAtBlock = lockStartBlock + scriptVerifyResult.lockDurationInBlocks!;
 
-    const [minimumLockDurationInBlocks, maximumLockDurationInBlocks] = this.versionManager.getLockDurationInBlocks(lockStartBlock);
+    const lockDurationInBlocks = this.versionManager.getLockDurationInBlocks(lockStartBlock);
 
     if (!this.isLockDurationValid(lockStartBlock, unlockAtBlock)) {
       throw new SidetreeError(
         ErrorCode.LockResolverDurationIsInvalid,
         // eslint-disable-next-line max-len
-        `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}. Allowed range: [${minimumLockDurationInBlocks} - ${maximumLockDurationInBlocks}.]`
+        `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}. Invalid duration: ${unlockAtBlock - lockStartBlock}. Allowed duration: ${lockDurationInBlocks}`
       );
     }
 
@@ -192,8 +192,8 @@ export default class LockResolver {
     //  lock-duration: unlockBlock - startBlock = 10 blocks
 
     const lockDuration = unlockBlock - startBlock;
-    const [minimumLockDurationInBlocks, maximumLockDurationInBlocks] = this.versionManager.getLockDurationInBlocks(startBlock);
+    const lockDurationInBlocks = this.versionManager.getLockDurationInBlocks(startBlock);
 
-    return lockDuration >= minimumLockDurationInBlocks && lockDuration <= maximumLockDurationInBlocks;
+    return lockDuration === lockDurationInBlocks;
   }
 }

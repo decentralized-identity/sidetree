@@ -15,7 +15,6 @@ import MongoDbBlockMetadataStore from './MongoDbBlockMetadataStore';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
 import MongoDbServiceStateStore from '../common/MongoDbServiceStateStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
-import ProtocolParameters from './ProtocolParameters';
 import RequestError from './RequestError';
 import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
@@ -154,7 +153,7 @@ export default class BitcoinProcessor {
       config.valueTimeLockUpdateEnabled,
       BitcoinClient.convertBtcToSatoshis(config.valueTimeLockAmountInBitcoins), // Desired lock amount in satoshis
       BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amount in satoshis
-      ProtocolParameters.maximumValueTimeLockDurationInBlocks                   // Desired lock duration in blocks
+      this.versionManager
     );
   }
 

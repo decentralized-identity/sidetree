@@ -8,8 +8,8 @@ describe('VersionManager', async () => {
     it('should return the correct version of fee calculator.', async () => {
 
       const versionModels: VersionModel[] = [
-        { startingBlockchainTime: 1000, version: '1000', protocolParameters: {maximumValueTimeLockDurationInBlocks: 5, minimumValueTimeLockDurationInBlocks: 2, initialNormalizedFee: 1} },
-        { startingBlockchainTime: 2000, version: '2000', protocolParameters: {maximumValueTimeLockDurationInBlocks: 5, minimumValueTimeLockDurationInBlocks: 2, initialNormalizedFee: 1} }
+        { startingBlockchainTime: 1000, version: '1000', protocolParameters: {valueTimeLockDurationInBlocks: 5, initialNormalizedFee: 1} },
+        { startingBlockchainTime: 2000, version: '2000', protocolParameters: {valueTimeLockDurationInBlocks: 5, initialNormalizedFee: 1} }
       ];
 
       const versionManager = new VersionManager(versionModels, {} as any);
@@ -41,7 +41,7 @@ describe('VersionManager', async () => {
   describe('getVersionString()', () => {
     it('should throw if version given is not in the supported version list.', async () => {
       const versionModels: VersionModel[] = [
-        { startingBlockchainTime: 1000, version: '1000', protocolParameters: { maximumValueTimeLockDurationInBlocks: 1, minimumValueTimeLockDurationInBlocks: 1, initialNormalizedFee: 1 } }
+        { startingBlockchainTime: 1000, version: '1000', protocolParameters: { valueTimeLockDurationInBlocks: 5, initialNormalizedFee: 1 } }
       ];
       const versionManager = new VersionManager(versionModels, {} as any);
 
