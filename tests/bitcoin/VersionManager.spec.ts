@@ -2,6 +2,7 @@ import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import VersionManager from '../../lib/bitcoin/VersionManager';
 import VersionModel from '../../lib/bitcoin/models/BitcoinVersionModel';
+import MockBlockMetadataStore from '../mocks/MockBlockMetadataStore';
 
 describe('VersionManager', async () => {
   describe('getFeeCalculator()', async () => {
@@ -12,7 +13,7 @@ describe('VersionManager', async () => {
         { startingBlockchainTime: 2000, version: '2000', protocolParameters: { valueTimeLockDurationInBlocks: 5, initialNormalizedFee: 1 } }
       ];
 
-      const versionManager = new VersionManager(versionModels, {} as any);
+      const versionManager = new VersionManager(versionModels, { genesisBlockNumber: 1 } as any);
 
       // Setting up loading of mock fee calculators.
       const mockFeeCalculator1 = class {
@@ -31,7 +32,7 @@ describe('VersionManager', async () => {
         }
       });
 
-      await versionManager.initialize({} as any);
+      await versionManager.initialize(new MockBlockMetadataStore());
       const fee = await versionManager.getFeeCalculator(2001).getNormalizedFee(2001);
 
       expect(fee).toEqual(2000);
@@ -43,7 +44,7 @@ describe('VersionManager', async () => {
       const versionModels: VersionModel[] = [
         { startingBlockchainTime: 1000, version: '1000', protocolParameters: { valueTimeLockDurationInBlocks: 5, initialNormalizedFee: 1 } }
       ];
-      const versionManager = new VersionManager(versionModels, {} as any);
+      const versionManager = new VersionManager(versionModels, { genesisBlockNumber: 1 } as any);
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => (versionManager as any).getVersionString(1),
