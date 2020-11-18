@@ -1,10 +1,10 @@
 import BitcoinErrorCode from './ErrorCode';
 import BitcoinVersionModel from './models/BitcoinVersionModel';
+import IBitcoinConfig from './IBitcoinConfig';
 import IBlockMetadataStore from './interfaces/IBlockMetadataStore';
 import IFeeCalculator from './interfaces/IFeeCalculator';
-import SidetreeError from '../common/SidetreeError';
-import IBitcoinConfig from './IBitcoinConfig';
 import ProtocolParameters from './models/ProtocolParameters';
+import SidetreeError from '../common/SidetreeError';
 
 /**
  * The class that handles code versioning.
@@ -38,7 +38,7 @@ export default class VersionManager {
         const version = versionModel.version;
         const initialNormalizedFee = versionModel.protocolParameters.initialNormalizedFee;
 
-        this.protocolParameters.set(version, versionModel.protocolParameters)
+        this.protocolParameters.set(version, versionModel.protocolParameters);
 
         /* tslint:disable-next-line */
         const FeeCalculator = await this.loadDefaultExportsForVersion(version, 'NormalizedFeeCalculator');

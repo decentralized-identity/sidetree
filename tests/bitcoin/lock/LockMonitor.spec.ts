@@ -7,6 +7,7 @@ import LockIdentifier from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockMonitor from '../../../lib/bitcoin/lock/LockMonitor';
 import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
+import MockBlockMetadataStore from '../../mocks/MockBlockMetadataStore';
 import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import SavedLockType from '../../../lib/bitcoin/enums/SavedLockType';
 import SavedLockedModel from '../../../lib/bitcoin/models/SavedLockedModel';
@@ -14,7 +15,6 @@ import SidetreeError from '../../../lib/common/SidetreeError';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 import VersionManager from '../../../lib/bitcoin/VersionManager';
 import VersionModel from '../../../lib/bitcoin/models/BitcoinVersionModel';
-import MockBlockMetadataStore from '../../mocks/MockBlockMetadataStore';
 
 function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, activeValueTimeLock: ValueTimeLockModel | undefined, status: any) {
   return {
@@ -34,7 +34,6 @@ describe('LockMonitor', () => {
   const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: lockDuration, initialNormalizedFee: 1 } }];
   const versionManager = new VersionManager(versionModels, { genesisBlockNumber: 1 } as any);
   const lockResolver = new LockResolver(versionManager, bitcoinClient);
-  
 
   let lockMonitor: LockMonitor;
 

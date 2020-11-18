@@ -23,12 +23,11 @@ import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionParser from './SidetreeTransactionParser';
 import SpendingMonitor from './SpendingMonitor';
+import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import VersionManager from './VersionManager';
-import TransactionFeeModel from '../common/models/TransactionFeeModel';
-
 
 /**
  * Object representing a blockchain time and hash

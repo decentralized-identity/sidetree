@@ -1,4 +1,4 @@
-import ProtocolParameters from "./ProtocolParameters";
+import ProtocolParameters from './ProtocolParameters';
 
 /**
  * Defines an bitcoin implementation version and its starting blockchain time.

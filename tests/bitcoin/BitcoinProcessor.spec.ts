@@ -36,7 +36,7 @@ function randomBlock (above: number = 0): IBlockInfo {
 
 describe('BitcoinProcessor', () => {
   const versionModels: VersionModel[] = [
-    { startingBlockchainTime: 0, version: 'latest', protocolParameters: {valueTimeLockDurationInBlocks: 1, initialNormalizedFee: 1} }
+    { startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: 1, initialNormalizedFee: 1 } }
   ];
 
   const testConfig: IBitcoinConfig = {
@@ -374,7 +374,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should return no transaction if last processed block in DB is not found.', async () => {
-      const mockLastProcessedBlock = undefined
+      const mockLastProcessedBlock = undefined;
       blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(mockLastProcessedBlock));
 
       const fetchedTransactions = await bitcoinProcessor.transactions();
@@ -1007,7 +1007,7 @@ describe('BitcoinProcessor', () => {
           transactionCount: 123,
           totalFee: 123
         }
-      ]
+      ];
 
       const getNormalizedFeeSpy = spyOn(bitcoinProcessor, 'getNormalizedFee').and.returnValue(Promise.resolve({ normalizedTransactionFee: 111 }));
       const getTransactionsStartingFromSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.returnValue(Promise.resolve([{
@@ -1070,8 +1070,8 @@ describe('BitcoinProcessor', () => {
         height: 1000000,
         previousHash: 'prevHash'
       });
-    })
-  })
+    });
+  });
 
   describe('fastProcessTransactions', () => {
     beforeEach(() => {

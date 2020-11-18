@@ -1,14 +1,13 @@
 import IBlockMetadataStore from '../../interfaces/IBlockMetadataStore';
 import IFeeCalculator from '../../interfaces/IFeeCalculator';
 
-
 /**
  * `IFeeCalculator` implementation.
  */
 export default class NormalizedFeeCalculator implements IFeeCalculator {
   private lookBackWindowInterval = 100;
 
-  constructor(private blockMetadataStore: IBlockMetadataStore, private genesisBlockNumber: number, private initialNormalizedFee: number) {}
+  constructor (private blockMetadataStore: IBlockMetadataStore, private genesisBlockNumber: number, private initialNormalizedFee: number) {}
 
   /**
    * Initializes the Bitcoin processor.
@@ -23,12 +22,12 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
       return 0;
     } else if (block < this.genesisBlockNumber + this.lookBackWindowInterval) {
       // if within 100 blocks of genesis, use the initial fee
-      return this.initialNormalizedFee
+      return this.initialNormalizedFee;
     }
 
     // look back 100 blocks
     const blocksToAverage = await this.blockMetadataStore.get(block - 100, block);
-    
+
     let totalFee = 0;
     let totalTransactionCount = 0;
 
@@ -37,12 +36,12 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
       totalTransactionCount += blockToAverage.transactionCount;
     }
 
-    // TODO: #926 investigate potential rounding differences between languages and implemetations 
+    // TODO: #926 investigate potential rounding differences between languages and implemetations
     // https://github.com/decentralized-identity/sidetree/issues/926
     const unadjustedFee = Math.floor(totalFee / totalTransactionCount);
 
     const previousFee = blocksToAverage[blocksToAverage.length - 1].normalizedFee;
-    
+
     return this.limitTenPercentPerYear(unadjustedFee, previousFee);
   }
 
@@ -52,13 +51,13 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
     const previousFeeAdjustedDown = Math.floor(previousFee * (1 - fluctuationRate));
 
     if (unadjustedFee > previousFeeAdjustedUp) {
-      return previousFeeAdjustedUp
+      return previousFeeAdjustedUp;
     }
 
     if (unadjustedFee < previousFeeAdjustedDown) {
-      return previousFeeAdjustedDown
+      return previousFeeAdjustedDown;
     }
 
-    return unadjustedFee
+    return unadjustedFee;
   }
 }

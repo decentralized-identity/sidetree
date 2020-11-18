@@ -7,7 +7,7 @@ describe('NormalizedFeeCalculaor', () => {
   let mockMetadataStore: IBlockMetadataStore;
 
   beforeEach(() => {
-    mockMetadataStore =  new MockBlockMetadataStore();
+    mockMetadataStore = new MockBlockMetadataStore();
     normalizedFeeCalculator = new NormalizedFeeCalculator(mockMetadataStore, 1, 1);
   });
 
