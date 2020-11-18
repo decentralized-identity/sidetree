@@ -2,8 +2,6 @@
  * Error codes used ONLY by this version of the protocol.
  */
 export default {
-  AnchorFileCasFileUriNotString: 'anchor_file_cas_file_uri_not_string',
-  AnchorFileCasFileUriUnsupported: 'anchor_file_cas_file_uri_unsupported',
   AnchorFileCoreProofFileUriNotAllowed: 'anchor_file_core_proof_file_uri_not_allowed',
   AnchorFileCreatePropertyNotArray: 'anchor_file_create_property_not_array',
   AnchorFileDeactivatePropertyNotArray: 'anchor_file_deactivate_property_not_array',
@@ -36,6 +34,7 @@ export default {
   CoreProofFileHasNoProofs: 'core_proof_file_has_no_proofs',
   CoreProofFileNotJson: 'core_proof_file_not_json',
   CoreProofFileOperationsNotFound: 'core_proof_file_operations_not_found',
+  CoreProofFileProofCountNotTheSameAsOperationCountInAnchorFile: 'core_proof_file_proof_count_not_the_same_as_operation_count_in_anchor_file',
   CoreProofFileRecoverPropertyNotAnArray: 'core_proof_file_recover_property_not_an_array',
   CreateOperationMissingOrUnknownProperty: 'create_operation_missing_or_unknown_property',
   CreateOperationSuffixDataIsNotObject: 'create_operation_suffix_data_is_not_object',
@@ -100,6 +99,8 @@ export default {
   DocumentNotValidOriginalDocument: 'document_not_valid_original_document',
   EncoderValidateBase64UrlStringInputNotBase64UrlString: 'encoder_validate_base64_url_string_input_not_base64_url_string',
   EncoderValidateBase64UrlStringInputNotString: 'encoder_validate_base64_url_string_input_not_string',
+  InputValidatorCasFileUriNotString: 'input_validator_cas_file_uri_not_string',
+  InputValidatorCasFileUriUnsupported: 'input_validator_cas_file_uri_unsupported',
   InputValidatorInputCannotBeAnArray: 'input_validator_input_cannot_be_an_array',
   InputValidatorInputContainsNowAllowedProperty: 'input_validator_input_contains_now_allowed_property',
   InputValidatorInputIsNotAnObject: 'input_validator_input_is_not_an_object',
@@ -126,6 +127,7 @@ export default {
   MapFileMultipleOperationsForTheSameDid: 'map_file_multiple_operations_for_the_same_did',
   MapFileNotJson: 'map_file_not_json',
   MapFileOperationsPropertyHasMissingOrUnknownProperty: 'map_file_operations_property_has_missing_or_unknown_property',
+  MapFileProvisionalProofFileUriNotAllowed: 'map_file_provisional_proof_file_uri_not_allowed',
   MapFileUpdateOperationsNotArray: 'map_file_update_operations_not_array',
   MultihashNotLatestSupportedHashAlgorithm: 'multihash_not_latest_supported_hash_algorithm',
   MultihashUnsupportedHashAlgorithm: 'multihash_unsupported_hash_algorithm',
@@ -143,6 +145,7 @@ export default {
   ProvisionalProofFileHasNoProofs: 'provisional_proof_file_has_no_proofs',
   ProvisionalProofFileNotJson: 'provisional_proof_file_not_json',
   ProvisionalProofFileOperationsNotFound: 'provisional_proof_file_operations_not_found',
+  ProvisionalProofFileProofCountNotTheSameAsOperationCountInMapFile: 'provisional_proof_file_proof_count_not_the_same_as_operation_count_in_map_file',
   ProvisionalProofFileUpdatePropertyNotAnArray: 'provisional_proof_file_update_property_not_an_array',
   QueueingMultipleOperationsPerDidNotAllowed: 'queueing_multiple_operations_per_did_not_allowed',
   RecoverOperationMissingOrInvalidDidUniqueSuffix: 'recover_operation_missing_or_invalid_did_unique_suffix',

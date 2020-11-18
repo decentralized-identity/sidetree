@@ -12,7 +12,6 @@ describe('AnchorFile', async () => {
     it('should parse an anchor file model correctly.', async () => {
       const mapFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
       const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
-      const provisionalProofFileUri = undefined;
 
       // Create operation.
       const createOperationData = await OperationGenerator.generateCreateOperation();
@@ -29,7 +28,7 @@ describe('AnchorFile', async () => {
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
       const anchorFileBuffer = await AnchorFile.createBuffer(
-        undefined, mapFileUri, coreProofFileUri, provisionalProofFileUri, [createOperation], [recoverOperation], [deactivateOperation]
+        undefined, mapFileUri, coreProofFileUri, [createOperation], [recoverOperation], [deactivateOperation]
       );
 
       const parsedAnchorFile = await AnchorFile.parse(anchorFileBuffer);
@@ -46,14 +45,13 @@ describe('AnchorFile', async () => {
     it('should throw error if core proof file is specified but there is no recover and no deactivate operation.', async () => {
       const mapFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
       const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'; // Should not be allowed with no recovers and deactivates.
-      const provisionalProofFileUri = undefined;
 
       // Create operation.
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
 
       const anchorFileBuffer =
-        await AnchorFile.createBuffer(undefined, mapFileUri, coreProofFileUri, provisionalProofFileUri, [createOperation], [], []);
+        await AnchorFile.createBuffer(undefined, mapFileUri, coreProofFileUri, [createOperation], [], []);
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => AnchorFile.parse(anchorFileBuffer),
@@ -150,23 +148,25 @@ describe('AnchorFile', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
       const coreProofFileHash = undefined;
-      const provisionalProofFileHash = undefined;
-      const anchorFileModel = await AnchorFile.createModel('writerLock', 'unusedMockFileHash', coreProofFileHash, provisionalProofFileHash, [createOperation], [], []);
+      const anchorFileModel = await AnchorFile.createModel('writerLock', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
 
       (anchorFileModel as any).mapFileUri = 1234; // Intentionally setting the mapFileUri as an incorrect type.
 
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileCasFileUriNotString));
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => AnchorFile.parse(anchorFileCompressed),
+        ErrorCode.InputValidatorCasFileUriNotString,
+        'map file URI'
+      );
     });
 
     it('should throw if map file hash is invalid.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
       const coreProofFileHash = undefined;
-      const provisionalProofFileHash = undefined;
-      const anchorFileModel = await AnchorFile.createModel('writerLock', 'invalidMapFileHash', coreProofFileHash, provisionalProofFileHash, [createOperation], [], []);
+      const anchorFileModel = await AnchorFile.createModel('writerLock', 'invalidMapFileHash', coreProofFileHash, [createOperation], [], []);
 
       try {
         const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
@@ -174,7 +174,7 @@ describe('AnchorFile', async () => {
 
         await AnchorFile.parse(anchorFileCompressed);
       } catch (error) {
-        expect(error.code).toEqual(ErrorCode.AnchorFileCasFileUriUnsupported);
+        expect(error.code).toEqual(ErrorCode.InputValidatorCasFileUriUnsupported);
       }
     });
 
@@ -182,8 +182,7 @@ describe('AnchorFile', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
       const coreProofFileHash = undefined;
-      const provisionalProofFileHash = undefined;
-      const anchorFileModel = await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', coreProofFileHash, provisionalProofFileHash, [createOperation], [], []);
+      const anchorFileModel = await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
 
       (anchorFileModel as any).writerLockId = {}; // intentionally set to invalid value
 
@@ -197,9 +196,8 @@ describe('AnchorFile', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
       const coreProofFileHash = undefined;
-      const provisionalProofFileHash = undefined;
       const anchorFileModel =
-        await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', coreProofFileHash, provisionalProofFileHash, [createOperation], [], []);
+        await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
 
       (anchorFileModel as any).writerLockId = crypto.randomBytes(2000).toString('hex'); // Intentionally larger than maximum.
 
@@ -287,7 +285,6 @@ describe('AnchorFile', async () => {
     it('should created an anchor file model correctly.', async () => {
       const mapFileHash = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
       const coreProofFileHash = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
-      const provisionalProofFileHash = undefined;
 
       // Create operation.
       const createOperationData = await OperationGenerator.generateCreateOperation();
@@ -304,7 +301,7 @@ describe('AnchorFile', async () => {
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
       const anchorFileModel = await AnchorFile.createModel(
-        undefined, mapFileHash, coreProofFileHash, provisionalProofFileHash, [createOperation], [recoverOperation], [deactivateOperation]
+        undefined, mapFileHash, coreProofFileHash, [createOperation], [recoverOperation], [deactivateOperation]
       );
 
       expect(anchorFileModel.mapFileUri).toEqual(mapFileHash);
@@ -328,11 +325,10 @@ describe('AnchorFile', async () => {
     it('should created a compressed buffer correctly.', async () => {
       const mapFileHash = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
       const coreProofFileHash = undefined;
-      const provisionalProofFileHash = undefined;
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
 
-      const anchorFileBuffer = await AnchorFile.createBuffer(undefined, mapFileHash, coreProofFileHash, provisionalProofFileHash, [createOperation], [], []);
+      const anchorFileBuffer = await AnchorFile.createBuffer(undefined, mapFileHash, coreProofFileHash, [createOperation], [], []);
 
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
