@@ -46,7 +46,7 @@ The following set of standard _Patch Actions_ are specified to help align on a c
 ```
 :::
 
-The `add-public-keys` _Patch Action_ describes the addition of cryptographic keys associated with a given DID. For any part of an `add-public-keys` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct an `add-public-keys` patch, compose an object as follows:
+The `add-public-keys` _Patch Action_ describes the addition of cryptographic keys associated with a given DID. For any part of an `add-public-keys` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. In the case a public key entry already exists for the given `id` specified within an `add-public-keys` _Patch Action_, the implementation ****MUST**** overwrite the existing entry entirely with the incoming patch. To construct an `add-public-keys` patch, compose an object as follows:
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `add-public-keys`.
 2. The object ****MUST**** include a `publicKeys` property, and its value ****MUST**** be an array.
@@ -75,7 +75,7 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
 ```
 :::
 
-The `remove-public-keys` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. For any part of an `remove-public-keys` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct a `remove-public-keys` _Patch Action_, compose an object as follows:
+The `remove-public-keys` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. For any part of an `remove-public-keys` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety.  In the case there exists no public key entry for an `id` specified within a `remove-public-keys` _Patch Action_, the implementation ****SHALL**** perform no action and treat application of the delete operation as a success. To construct a `remove-public-keys` _Patch Action_, compose an object as follows:
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `remove-public-keys`.
 2. The object ****MUST**** include a `ids` property, and its value ****MUST**** be an array of key IDs that correspond with keys presently associated with the DID that are to be removed. If the value is not of the correct type or includes a string value that is not associated with a key in the document, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
@@ -104,7 +104,7 @@ The `remove-public-keys` _Patch Action_ describes the removal of cryptographic k
 ```
 :::
 
-The `add-services` _Patch Action_ describes the addition of [Service Endpoints](https://w3c.github.io/did-core/#service-endpoints) to a DID's state. For any part of an `add-services` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct an `add-services` patch, compose an object as follows:
+The `add-services` _Patch Action_ describes the addition of [Service Endpoints](https://w3c.github.io/did-core/#service-endpoints) to a DID's state. For any part of an `add-services` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. In the case a service entry already exists for the given `id` specified within an `add-services` _Patch Action_, the implementation ****MUST**** overwrite the existing entry entirely with the incoming patch. To construct an `add-services` patch, compose an object as follows:
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `add-services`.
 2. The object ****MUST**** include a `services` property, and its value ****MUST**** be an array. If the value is not of the correct type, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
@@ -125,7 +125,7 @@ The `add-services` _Patch Action_ describes the addition of [Service Endpoints](
 ```
 :::
 
-The `remove-services` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. For any part of an `remove-services` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct a `remove-services` _Patch Action_, compose an object as follows:
+The `remove-services` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. For any part of an `remove-services` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. In the case there exists no service entry for an `id` specified within a `remove-public-keys` _Patch Action_, the implementation ****SHALL**** perform no action and treat application of the delete operation as a success. To construct a `remove-services` _Patch Action_, compose an object as follows:
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `remove-services`.
 2. The object ****MUST**** include a `ids` property, and its value ****MUST**** be an array of Service Endpoint IDs that correspond with Service Endpoints presently associated with the DID that are to be removed.
