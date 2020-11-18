@@ -8,9 +8,10 @@ import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifierModel from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
+import MockBlockMetadataStore from '../../mocks/MockBlockMetadataStore';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 import VersionManager from '../../../lib/bitcoin/VersionManager';
-import VersionModel from '../../../lib/common/models/VersionModel';
+import VersionModel from '../../../lib/bitcoin/models/BitcoinVersionModel';
 
 function createValidLockRedeemScript (lockDurationInBlocks: number, targetWalletAddress: Address): Script {
   const lockDurationInBlocksBuffer = Buffer.alloc(3);
@@ -32,8 +33,9 @@ function createLockScriptVerifyResult (isScriptValid: boolean, owner: string | u
 }
 
 describe('LockResolver', () => {
-  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest' }];
-  const versionManager = new VersionManager(versionModels);
+  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { maximumValueTimeLockDurationInBlocks: 5, minimumValueTimeLockDurationInBlocks: 3, initialNormalizedFee: 1 } }];
+  const versionManager = new VersionManager(versionModels, { genesisBlockNumber: 0 } as any);
+  versionManager.initialize(new MockBlockMetadataStore());
 
   const validTestPrivateKey = new PrivateKey(undefined, Networks.testnet);
   const validTestWalletAddress = validTestPrivateKey.toAddress();
@@ -48,8 +50,7 @@ describe('LockResolver', () => {
 
   beforeEach(() => {
     const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
-
-    lockResolver = new LockResolver(versionManager, bitcoinClient, 200, 250);
+    lockResolver = new LockResolver(versionManager, bitcoinClient);
   });
 
   describe('resolveSerializedLockIdentifierAndThrowOnError', () => {
@@ -121,7 +122,7 @@ describe('LockResolver', () => {
 
       const mockNormalizedFee = 87654;
       const mockFeeCalculator = {
-        getNormalizedFee () { return mockNormalizedFee; }
+        async getNormalizedFee () { return mockNormalizedFee; }
       };
       const getFeeCalculatorSpy = spyOn(lockResolver['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 
@@ -374,7 +375,7 @@ describe('LockResolver', () => {
   describe('isLockDurationValid', () => {
     it('should return true if the lock duration is exactly on the min limit.', () => {
       const startBlock = 100;
-      const unlockBlock = startBlock + lockResolver['minimumLockDurationInBlocks'];
+      const unlockBlock = startBlock + versionModels[0].protocolParameters.minimumValueTimeLockDurationInBlocks;
 
       const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
       expect(actual).toBeTruthy();
@@ -382,7 +383,7 @@ describe('LockResolver', () => {
 
     it('should return true if the lock duration is exactly on the max limit.', () => {
       const startBlock = 100;
-      const unlockBlock = startBlock + lockResolver['maximumLockDurationInBlocks'];
+      const unlockBlock = startBlock + versionModels[0].protocolParameters.maximumValueTimeLockDurationInBlocks;
 
       const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
       expect(actual).toBeTruthy();
@@ -390,7 +391,7 @@ describe('LockResolver', () => {
 
     it('should return false if the lock duration is greater than the max limit.', () => {
       const startBlock = 100;
-      const unlockBlock = startBlock + lockResolver['maximumLockDurationInBlocks'] + 1;
+      const unlockBlock = startBlock + versionModels[0].protocolParameters.maximumValueTimeLockDurationInBlocks + 1;
 
       const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
       expect(actual).toBeFalsy();
@@ -398,7 +399,7 @@ describe('LockResolver', () => {
 
     it('should return false if the lock duration is below the min limit.', () => {
       const intendedStartBlock = 100;
-      const unlockBlock = intendedStartBlock + lockResolver['minimumLockDurationInBlocks'];
+      const unlockBlock = intendedStartBlock + versionModels[0].protocolParameters.minimumValueTimeLockDurationInBlocks;
       const actualStartBlock = intendedStartBlock + 1;
 
       const actual = lockResolver['isLockDurationValid'](actualStartBlock, unlockBlock);

@@ -36,9 +36,9 @@ describe('MongoDbBlockMetadataStore', async () => {
   });
 
   it('should add and get metadata of blocks correctly.', async (done) => {
-    const block1: BlockMetadata = { hash: '1', height: 1, previousHash: '1', totalFee: 1, transactionCount: 1 };
-    const block2: BlockMetadata = { hash: '2', height: 2, previousHash: '2', totalFee: 2, transactionCount: 2 };
-    const block3: BlockMetadata = { hash: '3', height: 3, previousHash: '3', totalFee: 3, transactionCount: 3 };
+    const block1: BlockMetadata = { hash: '1', height: 1, previousHash: '1', totalFee: 1, transactionCount: 1, normalizedFee: 1 };
+    const block2: BlockMetadata = { hash: '2', height: 2, previousHash: '2', totalFee: 2, transactionCount: 2, normalizedFee: 1 };
+    const block3: BlockMetadata = { hash: '3', height: 3, previousHash: '3', totalFee: 3, transactionCount: 3, normalizedFee: 1 };
 
     await blockMetadataStore.add([block2, block3, block1]); // Intentionally mixed the order.
 
@@ -79,9 +79,9 @@ describe('MongoDbBlockMetadataStore', async () => {
 
   describe('removeLaterThan()', async () => {
     it('should remove only data later than the specified height.', async (done) => {
-      const block1: BlockMetadata = { hash: '1', height: 1, previousHash: '1', totalFee: 1, transactionCount: 1 };
-      const block2: BlockMetadata = { hash: '2', height: 2, previousHash: '2', totalFee: 2, transactionCount: 2 };
-      const block3: BlockMetadata = { hash: '3', height: 3, previousHash: '3', totalFee: 3, transactionCount: 3 };
+      const block1: BlockMetadata = { hash: '1', height: 1, previousHash: '1', totalFee: 1, transactionCount: 1, normalizedFee: 1 };
+      const block2: BlockMetadata = { hash: '2', height: 2, previousHash: '2', totalFee: 2, transactionCount: 2, normalizedFee: 1 };
+      const block3: BlockMetadata = { hash: '3', height: 3, previousHash: '3', totalFee: 3, transactionCount: 3, normalizedFee: 1 };
 
       await blockMetadataStore.add([block2, block3, block1]); // Intentionally mixed the order.
       await blockMetadataStore.removeLaterThan(block1.height);
@@ -106,9 +106,9 @@ describe('MongoDbBlockMetadataStore', async () => {
 
   describe('getLast()', async () => {
     it('should get block metadata with the largest height.', async (done) => {
-      const block1: BlockMetadata = { hash: '1', height: 1, previousHash: '1', totalFee: 1, transactionCount: 1 };
-      const block2: BlockMetadata = { hash: '2', height: 2, previousHash: '2', totalFee: 2, transactionCount: 2 };
-      const block3: BlockMetadata = { hash: '3', height: 3, previousHash: '3', totalFee: 3, transactionCount: 3 };
+      const block1: BlockMetadata = { hash: '1', height: 1, previousHash: '1', totalFee: 1, transactionCount: 1, normalizedFee: 1 };
+      const block2: BlockMetadata = { hash: '2', height: 2, previousHash: '2', totalFee: 2, transactionCount: 2, normalizedFee: 1 };
+      const block3: BlockMetadata = { hash: '3', height: 3, previousHash: '3', totalFee: 3, transactionCount: 3, normalizedFee: 1 };
 
       await blockMetadataStore.add([block2, block3, block1]); // Intentionally mixed the order.
 
@@ -126,9 +126,9 @@ describe('MongoDbBlockMetadataStore', async () => {
 
   describe('getFirst()', async () => {
     it('should get block metadata with the largest height.', async (done) => {
-      const block1: BlockMetadata = { hash: '1', height: 1, previousHash: '1', totalFee: 1, transactionCount: 1 };
-      const block2: BlockMetadata = { hash: '2', height: 2, previousHash: '2', totalFee: 2, transactionCount: 2 };
-      const block3: BlockMetadata = { hash: '3', height: 3, previousHash: '3', totalFee: 3, transactionCount: 3 };
+      const block1: BlockMetadata = { hash: '1', height: 1, previousHash: '1', totalFee: 1, transactionCount: 1, normalizedFee: 1 };
+      const block2: BlockMetadata = { hash: '2', height: 2, previousHash: '2', totalFee: 2, transactionCount: 2, normalizedFee: 1 };
+      const block3: BlockMetadata = { hash: '3', height: 3, previousHash: '3', totalFee: 3, transactionCount: 3, normalizedFee: 1 };
 
       await blockMetadataStore.add([block2, block3, block1]); // Intentionally mixed the order.
 

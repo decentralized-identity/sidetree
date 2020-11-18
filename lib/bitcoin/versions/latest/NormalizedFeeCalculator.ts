@@ -36,6 +36,9 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
       totalFee += blockToAverage.totalFee;
       totalTransactionCount += blockToAverage.transactionCount;
     }
+
+    // TODO: #926 investigate potential rounding differences between languages and implemetations 
+    // https://github.com/decentralized-identity/sidetree/issues/926
     const unadjustedFee = Math.floor(totalFee / totalTransactionCount);
 
     const previousFee = blocksToAverage[blocksToAverage.length - 1].normalizedFee;

@@ -95,7 +95,7 @@ export default class LockResolver {
       );
     }
 
-    const normalizedFee = this.versionManager.getFeeCalculator(lockStartBlock).getNormalizedFee(lockStartBlock);
+    const normalizedFee = await this.versionManager.getFeeCalculator(lockStartBlock).getNormalizedFee(lockStartBlock);
 
     return {
       identifier: serializedLockIdentifier,

@@ -12,7 +12,7 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
     console.log(`Initializing normalized fee calculator.`);
   }
 
-  public getNormalizedFee (_block: number): number {
+  public async getNormalizedFee (_block: number): Promise<number> {
     // TODO: Issue #783 - Simplify normalized fee calculation algorithm.
     return 10;
   }

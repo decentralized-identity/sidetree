@@ -28,6 +28,7 @@ import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import VersionManager from './VersionManager';
+import TransactionFeeModel from '../common/models/TransactionFeeModel';
 
 
 /**
@@ -260,10 +261,11 @@ export default class BitcoinProcessor {
 
     // Write the block metadata to DB.
     const timer = timeSpan(); // Start timer to measure time taken to write block metadata.
-    await this.blockMetadataStore.add(validatedBlocks);
-    console.info(`Inserted metadata of ${validatedBlocks.length} blocks to DB. Duration: ${timer.rounded()} ms.`);
 
-    this.lastProcessedBlock = lastBlockInfo;
+    // ValidatedBlocks are in descending order, this flips that and make it ascending by height for the purpose of normalized fee calculation
+    const validatedBlocksOrderedByHeight = validatedBlocks.reverse();
+    await this.writeBlocksToMetadataStoreWithFee(validatedBlocksOrderedByHeight);
+    console.info(`Inserted metadata of ${validatedBlocks.length} blocks to DB. Duration: ${timer.rounded()} ms.`);
     console.log('finished fast processing');
   }
 
@@ -520,19 +522,45 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Return proof-of-fee value for a particular block.
+   * Modifies the given array and update the normalized fees, then write to block metadata store.
+   * @param blocks the ordered block metadata to set the normalized fee for.
    */
-  public async getNormalizedFee (block: number): Promise<number> {
+  private async writeBlocksToMetadataStoreWithFee (blocks: BlockMetadata[]) {
+    for (const block of blocks) {
 
+      const normalizedFee = (await this.getNormalizedFee(block.height)).normalizedTransactionFee;
+      block.normalizedFee = normalizedFee;
+
+      // update normalized fee in transactions
+      const transactions = await this.transactionStore.getTransactionsStartingFrom(block.height, block.height + 1);
+      await this.transactionStore.removeTransactionByTransactionTimeHash(block.hash);
+      for (const transaction of transactions) {
+        transaction.normalizedTransactionFee = normalizedFee;
+        await this.transactionStore.addTransaction(transaction);
+      }
+
+      this.blockMetadataStore.add([block]);
+      this.lastProcessedBlock = {
+        hash: block.hash,
+        height: block.height,
+        previousHash: block.previousHash
+      };
+    }
+  }
+
+  /**
+   * Calculate and return proof-of-fee value for a particular block.
+   * @param block The block height to get normalized fee for
+   */
+  public async getNormalizedFee (block: number): Promise<TransactionFeeModel> {
     if (block < this.genesisBlockNumber) {
       const error = `The input block number must be greater than or equal to: ${this.genesisBlockNumber}`;
       console.error(error);
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
     }
-
     const normalizedTransactionFee = await this.versionManager.getFeeCalculator(block).getNormalizedFee(block);
 
-    return normalizedTransactionFee;
+    return { normalizedTransactionFee: normalizedTransactionFee };
   }
 
   /**
@@ -763,7 +791,7 @@ export default class BitcoinProcessor {
         `Previous hash from blockchain: ${blockData.previousHash}. Expected value: ${previousBlockHash}`);
     }
 
-    const normalizedFee = await this.getNormalizedFee(blockHeight);
+    const normalizedFee = (await this.getNormalizedFee(blockHeight)).normalizedTransactionFee;
 
     await this.processSidetreeTransactionsInBlock(blockData, normalizedFee);
 

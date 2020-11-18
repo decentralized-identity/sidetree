@@ -13,7 +13,7 @@ import SavedLockedModel from '../../../lib/bitcoin/models/SavedLockedModel';
 import SidetreeError from '../../../lib/common/SidetreeError';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 import VersionManager from '../../../lib/bitcoin/VersionManager';
-import VersionModel from '../../../lib/common/models/VersionModel';
+import VersionModel from '../../../lib/bitcoin/models/BitcoinVersionModel';
 
 function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, activeValueTimeLock: ValueTimeLockModel | undefined, status: any) {
   return {
@@ -30,10 +30,10 @@ describe('LockMonitor', () => {
   const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
   const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
 
-  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest' }];
-  const versionManager = new VersionManager(versionModels);
+  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { maximumValueTimeLockDurationInBlocks: 1, minimumValueTimeLockDurationInBlocks: 1, initialNormalizedFee: 1 } }];
+  const versionManager = new VersionManager(versionModels, {} as any);
 
-  const lockResolver = new LockResolver(versionManager, bitcoinClient, 500, 600);
+  const lockResolver = new LockResolver(versionManager, bitcoinClient);
 
   let lockMonitor: LockMonitor;
 
