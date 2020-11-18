@@ -11,8 +11,8 @@ As detailed in [Resolution](#resolution), the resolution request MAY include the
 The server responds with the [DID Resolution Result](https://w3c-ccg.github.io/did-resolution/#did-resolution-result) composed of the DID Document and Method Metadata.
 Sidetree defines `published`, `updateCommitment`, and `recoveryCommitment` method metadata.
    - `published` is detailed in [Published Property](#published-property).
-   - `updateCommitment` is the commitement for the next update operation as defined in [commitment schemes](https://identity.foundation/sidetree/spec/#commitment-schemes).
-   - `recoveryCommitment` is the commitement for the next recover or deactivate operation as defined in [commitment schemes](https://identity.foundation/sidetree/spec/#commitment-schemes).
+   - `updateCommitment` is the commitment for the next update operation as defined in [commitment schemes](https://identity.foundation/sidetree/spec/#commitment-schemes).
+   - `recoveryCommitment` is the commitment for the next recover or deactivate operation as defined in [commitment schemes](https://identity.foundation/sidetree/spec/#commitment-schemes).
 
 ::: example
 ```json
@@ -73,7 +73,7 @@ A valid Sidetree Operation Request is a JSON document composed as follows:
 ```json
 {
     "type": "create",
-    "suffix_data": SUFFIX_DATA_OBJECT,
+    "suffixData": SUFFIX_DATA_OBJECT,
     "delta": DELTA_OBJECT
 }
 ```
@@ -82,7 +82,7 @@ A valid Sidetree Operation Request is a JSON document composed as follows:
 Use the following process to generate a Sidetree create operation JSON document for the REST API, composed as follows:
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `create`.
-2. The object ****MUST**** contain a `suffix_data` property, and its value must be a `Base64URL` encoded _Suffix Data Object_(#anchor-file-create-entry).
+2. The object ****MUST**** contain a `suffix_data` property, and its value must be a `Base64URL` encoded _Suffix Data Object_(#core-index-file-create-entry).
 3. The object ****MUST**** contain an `delta` property, and its value must be a `Base64URL` encoded [_Create Operation Data Object_](#create-data-object).
 
 #### Update
@@ -91,9 +91,9 @@ Use the following process to generate a Sidetree create operation JSON document 
 ```json
 {
     "type": "update",
-    "did_suffix": DID_SUFFIX,
+    "didSuffix": DID_SUFFIX,
     "delta": DELTA_OBJECT,
-    "signed_data": JWS_SIGNED_VALUE
+    "signedData": JWS_SIGNED_VALUE
 }
 ```
 :::
@@ -101,10 +101,10 @@ Use the following process to generate a Sidetree create operation JSON document 
 Use the following process to generate a Sidetree update operation JSON document for the REST API, composed as follows:
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `update`.
-1. The object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
+1. The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
 1. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be a `Base64URL` encoded [_Update Operation Delta Object_](#update-data-object).
-1. The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
-as defined in [Map File](https://identity.foundation/sidetree/spec/#map-file) for Update operations.
+1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+as defined in [Provisional Index File](https://identity.foundation/sidetree/spec/#provisional-index-file) for Update operations.
 
 #### Recover
 
@@ -112,9 +112,9 @@ as defined in [Map File](https://identity.foundation/sidetree/spec/#map-file) fo
 ```json
 {
     "type": "recover",
-    "did_suffix": DID_SUFFIX,
+    "didSuffix": DID_SUFFIX,
     "delta": DELTA_OBJECT,
-    "signed_data": JWS_SIGNED_VALUE
+    "signedData": JWS_SIGNED_VALUE
 }
 ```
 :::
@@ -122,10 +122,10 @@ as defined in [Map File](https://identity.foundation/sidetree/spec/#map-file) fo
 Use the following process to generate a Sidetree recovery operation JSON document for the REST API, composed as follows:
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `recover`.
-1. The object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
+1. The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
 1. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be a `Base64URL` encoded [_Recovery Operation Delta Object_](#recover-delta-object).
-1. The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
-as defined in [Anchor File](https://identity.foundation/sidetree/spec/#anchor-file) for Recovery operations.
+1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+as defined in [Core Index File](https://identity.foundation/sidetree/spec/#core-index-file) for Recovery operations.
 
 #### Deactivate
 
@@ -133,8 +133,8 @@ as defined in [Anchor File](https://identity.foundation/sidetree/spec/#anchor-fi
 ```json
 {
     "type": "deactivate",
-    "did_suffix": DID_SUFFIX,
-    "signed_data": JWS_SIGNED_VALUE
+    "didSuffix": DID_SUFFIX,
+    "signedData": JWS_SIGNED_VALUE
 }
 ```
 :::
@@ -142,6 +142,6 @@ as defined in [Anchor File](https://identity.foundation/sidetree/spec/#anchor-fi
 Use the following process to generate a Sidetree deactivate operation JSON document for the REST API, composed as follows:
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `deactivate`.
-1. The object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-1. The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
-as defined in [Anchor File](https://identity.foundation/sidetree/spec/#anchor-file) for Deactivate operations.
+1. The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
+1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+as defined in [Core Index File](https://identity.foundation/sidetree/spec/#core-index-file) for Deactivate operations.
