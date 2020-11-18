@@ -365,7 +365,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should return no transaction if last processed block in DB is not found.', async () => {
-      const mockLastProcessedBlock = undefined
+      const mockLastProcessedBlock = undefined;
       blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(mockLastProcessedBlock));
 
       const fetchedTransactions = await bitcoinProcessor.transactions();

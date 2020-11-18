@@ -66,7 +66,7 @@ describe('MapFile', async () => {
     });
   });
 
-  describe('parseOperationsProperty()', async () => {
+  describe('validateOperationsProperty()', async () => {
     it('should throw if there is more than one (update) property.', async () => {
       const updateOperationData = await OperationGenerator.generateUpdateOperationRequest();
       const updateOperationRequest = updateOperationData.request;
@@ -78,8 +78,11 @@ describe('MapFile', async () => {
         unexpectedProperty: 'anyValue'
       };
 
-      await expectAsync((MapFile as any).parseOperationsProperty(operationsProperty))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.MapFileOperationsPropertyHasMissingOrUnknownProperty));
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => (MapFile as any).validateOperationsProperty(operationsProperty),
+        ErrorCode.InputValidatorInputContainsNowAllowedProperty,
+        'provisional operation references'
+      );
     });
 
     it('should throw if there is update property is not an array.', async () => {
@@ -87,26 +90,48 @@ describe('MapFile', async () => {
         update: 'not an array'
       };
 
-      await expectAsync((MapFile as any).parseOperationsProperty(operationsProperty))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.MapFileUpdateOperationsNotArray));
+      await expect(() => (MapFile as any).validateOperationsProperty(operationsProperty))
+        .toThrow(new SidetreeError(ErrorCode.MapFileUpdateOperationsNotArray));
     });
 
     it('should throw if there are multiple update operations for the same DID.', async () => {
-      const updateOperationData = await OperationGenerator.generateUpdateOperationRequest();
-      const updateOperationRequest = updateOperationData.request;
-
-      // Operation does not have `type` and `delta` property in map file.
-      delete updateOperationRequest.type;
-      delete updateOperationRequest.delta;
-
+      const didSuffix = OperationGenerator.generateRandomHash();
       const operationsProperty = {
         update: [
-          updateOperationRequest, updateOperationRequest // Intentionally having another update with the same DID.
+          { didSuffix, revealValue: 'unused1' },
+          { didSuffix, revealValue: 'unused2' } // Intentionally having another update reference with the same DID.
         ]
       };
 
-      await expectAsync((MapFile as any).parseOperationsProperty(operationsProperty))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.MapFileMultipleOperationsForTheSameDid));
+      expect(() => (MapFile as any).validateOperationsProperty(operationsProperty))
+        .toThrow(new SidetreeError(ErrorCode.MapFileMultipleOperationsForTheSameDid));
+    });
+
+    it('should throw if a update operation reference has an invalid `didSuffix`.', async () => {
+      const operationsProperty = {
+        update: [
+          { didSuffix: 123, revealValue: 'unused' } // Intentionally having invalid `didSuffix`.
+        ]
+      };
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => (MapFile as any).validateOperationsProperty(operationsProperty),
+        ErrorCode.UpdateReferenceDidSuffixIsNotAString
+      );
+    });
+
+    it('should throw if a update operation reference has an invalid `revealValue`.', async () => {
+      const didSuffix = OperationGenerator.generateRandomHash();
+      const operationsProperty = {
+        update: [
+          { didSuffix, revealValue: 123 } // Intentionally having invalid `revealValue`.
+        ]
+      };
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => (MapFile as any).validateOperationsProperty(operationsProperty),
+        ErrorCode.UpdateReferenceRevealValueIsNotAString
+      );
     });
   });
 

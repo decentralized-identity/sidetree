@@ -46,7 +46,7 @@ export default class Did {
     const didWithoutPrefix = did.split(didPrefix)[1];
 
     // split by : and ?, if there is 1 element, then it's short form. Long form has 2 elements
-    // TODO: SIP 2 #781 when the ? format is deprecated, `:` will be the only seperator.
+    // TODO: SIP 2 #781 when the ? format is deprecated, `:` will be the only separator.
     const didSplitLength = didWithoutPrefix.split(/:|\?/).length;
     if (didSplitLength === 1) {
       this.isShortForm = true;
