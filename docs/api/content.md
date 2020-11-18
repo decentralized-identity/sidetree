@@ -82,8 +82,8 @@ A valid Sidetree Operation Request is a JSON document composed as follows:
 Use the following process to generate a Sidetree create operation JSON document for the REST API, composed as follows:
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `create`.
-2. The object ****MUST**** contain a `suffix_data` property, and its value must be a `Base64URL` encoded _Suffix Data Object_(#core-index-file-create-entry).
-3. The object ****MUST**** contain an `delta` property, and its value must be a `Base64URL` encoded [_Create Operation Data Object_](#create-data-object).
+2. The object ****MUST**** contain a `suffix_data` property, and its value must be a _Suffix Data Object_(#core-index-file-create-entry).
+3. The object ****MUST**** contain an `delta` property, and its value must be a [_Create Operation Data Object_](#create-data-object).
 
 #### Update
 
@@ -102,8 +102,8 @@ Use the following process to generate a Sidetree update operation JSON document 
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `update`.
 1. The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-1. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be a `Base64URL` encoded [_Update Operation Delta Object_](#update-data-object).
-1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+1. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be an [_Update Operation Delta Object_](#update-data-object).
+1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be an [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
 as defined in [Provisional Index File](https://identity.foundation/sidetree/spec/#provisional-index-file) for Update operations.
 
 #### Recover
@@ -123,8 +123,8 @@ Use the following process to generate a Sidetree recovery operation JSON documen
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `recover`.
 1. The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-1. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be a `Base64URL` encoded [_Recovery Operation Delta Object_](#recover-delta-object).
-1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+1. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be a [_Recovery Operation Delta Object_](#recover-delta-object).
+1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be an [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
 as defined in [Core Index File](https://identity.foundation/sidetree/spec/#core-index-file) for Recovery operations.
 
 #### Deactivate
@@ -143,5 +143,5 @@ Use the following process to generate a Sidetree deactivate operation JSON docum
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `deactivate`.
 1. The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be an [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
 as defined in [Core Index File](https://identity.foundation/sidetree/spec/#core-index-file) for Deactivate operations.
