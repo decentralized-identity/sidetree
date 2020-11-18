@@ -30,23 +30,19 @@ export default class VersionManager {
   public async initialize (
     blockMetadataStore: IBlockMetadataStore
   ) {
-    try {
-      // NOTE: In principal each version of the interface implementations can have different constructors,
-      // but we currently keep the constructor signature the same as much as possible for simple instance construction,
-      // but it is not inherently "bad" if we have to have conditional constructions for each if we have to.
-      for (const versionModel of this.versionsReverseSorted) {
-        const version = versionModel.version;
-        const initialNormalizedFee = versionModel.protocolParameters.initialNormalizedFee;
+    // NOTE: In principal each version of the interface implementations can have different constructors,
+    // but we currently keep the constructor signature the same as much as possible for simple instance construction,
+    // but it is not inherently "bad" if we have to have conditional constructions for each if we have to.
+    for (const versionModel of this.versionsReverseSorted) {
+      const version = versionModel.version;
+      const initialNormalizedFee = versionModel.protocolParameters.initialNormalizedFee;
 
-        this.protocolParameters.set(version, versionModel.protocolParameters);
+      this.protocolParameters.set(version, versionModel.protocolParameters);
 
-        /* tslint:disable-next-line */
-        const FeeCalculator = await this.loadDefaultExportsForVersion(version, 'NormalizedFeeCalculator');
-        const feeCalculator = new FeeCalculator(blockMetadataStore, this.config.genesisBlockNumber, initialNormalizedFee);
-        this.feeCalculators.set(version, feeCalculator);
-      }
-    } catch (e) {
-      console.log(e);
+      /* tslint:disable-next-line */
+      const FeeCalculator = await this.loadDefaultExportsForVersion(version, 'NormalizedFeeCalculator');
+      const feeCalculator = new FeeCalculator(blockMetadataStore, this.config.genesisBlockNumber, initialNormalizedFee);
+      this.feeCalculators.set(version, feeCalculator);
     }
   }
 
