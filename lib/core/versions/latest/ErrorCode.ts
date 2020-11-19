@@ -126,7 +126,6 @@ export default {
   MapFileHasUnknownProperty: 'map_file_has_unknown_property',
   MapFileMultipleOperationsForTheSameDid: 'map_file_multiple_operations_for_the_same_did',
   MapFileNotJson: 'map_file_not_json',
-  MapFileOperationsPropertyHasMissingOrUnknownProperty: 'map_file_operations_property_has_missing_or_unknown_property',
   MapFileProvisionalProofFileUriNotAllowed: 'map_file_provisional_proof_file_uri_not_allowed',
   MapFileUpdateOperationsNotArray: 'map_file_update_operations_not_array',
   MultihashNotLatestSupportedHashAlgorithm: 'multihash_not_latest_supported_hash_algorithm',
@@ -161,6 +160,8 @@ export default {
   UpdateOperationMissingOrUnknownProperty: 'update_operation_missing_or_unknown_property',
   UpdateOperationSignedDataHasMissingOrUnknownProperty: 'update_operation_signed_data_has_missing_or_unknown_property',
   UpdateOperationTypeIncorrect: 'update_operation_type_incorrect',
+  UpdateReferenceDidSuffixIsNotAString: 'update_reference_did_suffix_is_not_a_string',
+  UpdateReferenceRevealValueIsNotAString: 'update_reference_reveal_value_is_not_a_string',
   ValueTimeLockVerifierInvalidNumberOfOperations: 'value_time_lock_verifier_invalid_number_of_operations',
   ValueTimeLockVerifierTransactionTimeOutsideLockRange: 'value_time_lock_verifier_transaction_time_outside_lock_range',
   ValueTimeLockVerifierTransactionWriterLockOwnerMismatch: 'value_time_lock_verifier_transaction_writer_lock_owner_mismatch'

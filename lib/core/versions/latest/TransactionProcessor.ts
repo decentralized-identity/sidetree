@@ -189,15 +189,17 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const operationCountInAnchorFile = anchorFile.didUniqueSuffixes.length;
       const maxPaidUpdateOperationCount = paidOperationCount - operationCountInAnchorFile;
 
-      // If the actual update operation count is greater than the max paid update operation count, the map file is invalid.
-      const updateOperationCount = mapFile.updateOperations ? mapFile.updateOperations.length : 0;
+      // If the actual update operation count is greater than the max paid update operation count,
+      // we will penalize the writer by not accepting any updates.
+      const updateOperationCount = mapFile.didUniqueSuffixes.length;
       if (updateOperationCount > maxPaidUpdateOperationCount) {
-        return undefined;
+        mapFile.removeAllUpdateOperationReferences();
       }
 
-      // If we find operations for the same DID between anchor and map files, the map file is invalid.
+      // If we find operations for the same DID between anchor and map files,
+      // we will penalize the writer by not accepting any updates.
       if (!ArrayMethods.areMutuallyExclusive(anchorFile.didUniqueSuffixes, mapFile.didUniqueSuffixes)) {
-        return undefined;
+        mapFile.removeAllUpdateOperationReferences();
       }
 
       return mapFile;
@@ -268,20 +270,17 @@ export default class TransactionProcessor implements ITransactionProcessor {
     chunkFile: ChunkFileModel | undefined
   ): Promise<AnchoredOperationModel[]> {
 
+    // TODO: #766 - Pending more PR for of remainder of the operation types.
     const createOperations = anchorFile.createOperations;
     const recoverOperations = anchorFile.recoverOperations;
     const deactivateOperations = anchorFile.deactivateOperations;
-    const updateOperations = (mapFile && mapFile.updateOperations) ? mapFile.updateOperations : [];
 
-    // Add the operations in the following order of types: create, recover, update, deactivate.
+    // NOTE: this version of the protocol uses only ONE chunk file,
+    // and operations must be ordered by types with the following order: create, recover, update, deactivate.
     const operations = [];
     operations.push(...createOperations);
     operations.push(...recoverOperations);
-    operations.push(...updateOperations);
     operations.push(...deactivateOperations);
-
-    // TODO: Issue 442 - https://github.com/decentralized-identity/sidetree/issues/442
-    // Use actual operation request object instead of buffer.
 
     // Prepare proofs to compose the original operation requests.
     const proofs: (string | undefined)[] = createOperations.map(() => undefined); // Creates do not have proofs.
@@ -290,10 +289,6 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const deactivateProofs = coreProofFile.deactivateProofs.map((proof) => proof.signedDataJws.toCompactJws());
       proofs.push(...recoverProofs);
       proofs.push(...deactivateProofs);
-    }
-    if (provisionalProofFile !== undefined) {
-      const updateProofs = provisionalProofFile.updateProofs.map((proof) => proof.signedDataJws.toCompactJws());
-      proofs.push(...updateProofs);
     }
 
     // NOTE: The last set of `operations` are deactivates, they don't have `delta` property.
@@ -322,6 +317,59 @@ export default class TransactionProcessor implements ITransactionProcessor {
         type: operation.type,
         operationBuffer: patchedOperationBuffer,
         operationIndex: i,
+        transactionNumber: transaction.transactionNumber,
+        transactionTime: transaction.transactionTime
+      };
+
+      anchoredOperationModels.push(anchoredOperationModel);
+    }
+
+    const anchoredUpdateOperationModels = TransactionProcessor.composeAnchoredUpdateOperationModels(
+      transaction, anchorFile, mapFile, provisionalProofFile, chunkFile
+    );
+
+    anchoredOperationModels.push(...anchoredUpdateOperationModels);
+    return anchoredOperationModels;
+  }
+
+  private static composeAnchoredUpdateOperationModels (
+    transaction: TransactionModel,
+    anchorFile: AnchorFile,
+    mapFile: MapFile | undefined,
+    provisionalProofFile: ProvisionalProofFile | undefined,
+    chunkFile: ChunkFileModel | undefined
+  ): AnchoredOperationModel[] {
+    // If map file is undefined (in the case of batch containing only deactivates) or
+    // if map file's update operation reference count is zero (in the case of batch containing creates and/or recovers).
+    if (mapFile === undefined ||
+        mapFile.didUniqueSuffixes.length === 0) {
+      return [];
+    }
+
+    const updateDidSuffixes = mapFile.didUniqueSuffixes;
+    const updateProofs = provisionalProofFile!.updateProofs.map((proof) => proof.signedDataJws.toCompactJws());
+    const updateDeltaStartIndex = anchorFile.createOperations.length + anchorFile.recoverOperations.length;
+    const updateDeltas = chunkFile!.deltas.slice(updateDeltaStartIndex);
+
+    const anchoredOperationModels = [];
+    for (let i = 0; i < updateDeltas.length; i++) {
+      // Compose the original operation request from the files.
+      const composedRequest = {
+        type: OperationType.Update,
+        didSuffix: updateDidSuffixes[i],
+        signedData: updateProofs[i],
+        delta: updateDeltas[i]
+      };
+
+      // TODO: Issue 442 - https://github.com/decentralized-identity/sidetree/issues/442
+      // Use actual operation request object instead of buffer.
+      const operationBuffer = Buffer.from(JSON.stringify(composedRequest));
+
+      const anchoredOperationModel: AnchoredOperationModel = {
+        didUniqueSuffix: updateDidSuffixes[i],
+        type: OperationType.Update,
+        operationBuffer,
+        operationIndex: updateDeltaStartIndex + i,
         transactionNumber: transaction.transactionNumber,
         transactionTime: transaction.transactionTime
       };

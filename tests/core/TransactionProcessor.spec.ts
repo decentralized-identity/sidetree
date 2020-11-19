@@ -353,7 +353,7 @@ describe('TransactionProcessor', () => {
       const fetchedMapFile = await transactionProcessor['downloadAndVerifyMapFile'](anchorFile, totalPaidOperationCount);
 
       expect(fetchedMapFile).toBeDefined();
-      expect(fetchedMapFile!.updateOperations.length).toEqual(0);
+      expect(fetchedMapFile!.didUniqueSuffixes.length).toEqual(0);
       expect(fetchedMapFile!.model.chunks[0].chunkFileUri).toEqual(chunkFileHash);
       done();
     });
@@ -381,7 +381,33 @@ describe('TransactionProcessor', () => {
       done();
     });
 
-    it('should return undefined if there are multiple operations for the same DID between anchor and map file.', async (done) => {
+    it('should remove update operation references if paid fee is not enough to cover all updates.', async (done) => {
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const mapFileHash = OperationGenerator.generateRandomHash();
+      const coreProofFileHash = undefined;
+      const anchorFileBuffer =
+      await AnchorFile.createBuffer('writerLockId', mapFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
+      const anchorFile = await AnchorFile.parse(anchorFileBuffer);
+
+      // Setting up a mock map file that has 1 update in it to be downloaded.
+      const updateDidSuffix = OperationGenerator.generateRandomHash();
+      const provisionalProofFileHash = OperationGenerator.generateRandomHash();
+      const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest(updateDidSuffix);
+      const chunkFileHash = OperationGenerator.generateRandomHash();
+      const mockMapFileBuffer = await MapFile.createBuffer(chunkFileHash, provisionalProofFileHash, [updateOperationRequestData.updateOperation]);
+      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockMapFileBuffer));
+
+      const totalPaidOperationCount = 1; // Simulating only 1 operation paid so the update operation referenced should be removed in map file.
+      const fetchedMapFile = await transactionProcessor['downloadAndVerifyMapFile'](anchorFile, totalPaidOperationCount);
+
+      expect(fetchedMapFile).toBeDefined();
+      expect(fetchedMapFile!.didUniqueSuffixes.length).toEqual(0);
+      expect(fetchedMapFile!.model.operations).toBeUndefined();
+      expect(fetchedMapFile!.model.provisionalProofFileUri).toBeUndefined();
+      done();
+    });
+
+    it('should remove update operation references if there is a duplicate DID between anchor and map file.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const mapFileHash = OperationGenerator.generateRandomHash();
       const coreProofFileHash = undefined;
@@ -399,7 +425,10 @@ describe('TransactionProcessor', () => {
       const totalPaidOperationCount = 10;
       const fetchedMapFile = await transactionProcessor['downloadAndVerifyMapFile'](anchorFile, totalPaidOperationCount);
 
-      expect(fetchedMapFile).toBeUndefined();
+      expect(fetchedMapFile).toBeDefined();
+      expect(fetchedMapFile!.didUniqueSuffixes.length).toEqual(0);
+      expect(fetchedMapFile!.model.operations).toBeUndefined();
+      expect(fetchedMapFile!.model.provisionalProofFileUri).toBeUndefined();
       done();
     });
 
@@ -663,8 +692,8 @@ describe('TransactionProcessor', () => {
       const coreProofFile = await FileGenerator.createCoreProofFile([recoverOperation], []);
       const provisionalProofFile = await FileGenerator.createProvisionalProofFile([updateOperation]);
 
-      // Create chunk file model with delta for the 2 operations created above.
-      const chunkFileBuffer = await ChunkFile.createBuffer([createOperation], [], [updateOperation]);
+      // Create chunk file model with delta for the 3 operations created above.
+      const chunkFileBuffer = await ChunkFile.createBuffer([createOperation], [recoverOperation], [updateOperation]);
       const chunkFileModel = await ChunkFile.parse(chunkFileBuffer);
 
       const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](
