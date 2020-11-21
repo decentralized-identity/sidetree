@@ -68,7 +68,7 @@ export default class UpdateOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<UpdateOperation> {
-    let expectedPropertyCount = 4;
+    const expectedPropertyCount = 4;
 
     const properties = Object.keys(operationObject);
     if (properties.length !== expectedPropertyCount) {

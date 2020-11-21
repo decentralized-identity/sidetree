@@ -1,9 +1,11 @@
 import * as crypto from 'crypto';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
+import AnchorFileModel from '../../lib/core/versions/latest/models/AnchorFileModel';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import SidetreeError from '../../lib/common/SidetreeError';
 
@@ -35,10 +37,10 @@ describe('AnchorFile', async () => {
 
       expect(parsedAnchorFile.createOperations.length).toEqual(1);
       expect(parsedAnchorFile.createOperations[0].encodedSuffixData).toEqual(createOperation.encodedSuffixData);
-      expect(parsedAnchorFile.recoverOperations.length).toEqual(1);
-      expect(parsedAnchorFile.recoverOperations[0].signedDataJws.toCompactJws()).toEqual(recoverOperation.signedDataJws.toCompactJws());
-      expect(parsedAnchorFile.deactivateOperations.length).toEqual(1);
-      expect(parsedAnchorFile.deactivateOperations[0].signedDataJws.toCompactJws()).toEqual(deactivateOperation.signedDataJws.toCompactJws());
+      expect(parsedAnchorFile.recoverDidSuffixes.length).toEqual(1);
+      expect(parsedAnchorFile.recoverDidSuffixes[0]).toEqual(recoverOperation.didUniqueSuffix);
+      expect(parsedAnchorFile.deactivateDidSuffixes.length).toEqual(1);
+      expect(parsedAnchorFile.deactivateDidSuffixes[0]).toEqual(deactivateOperation.didUniqueSuffix);
       expect(parsedAnchorFile.model.mapFileUri).toEqual(mapFileUri);
     });
 
@@ -259,18 +261,14 @@ describe('AnchorFile', async () => {
       delete createOperationRequest.type;
       delete createOperationRequest.delta;
 
-      const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
-        createOperationData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
-        createOperationData.recoveryPrivateKey
-      );
-
-      // Strip away properties not allowed in the deactivateOperations array elements.
-      delete deactivateOperationRequest.type;
-      const anchorFile = {
+      const anchorFile: AnchorFileModel = {
         mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           create: [createOperationRequest],
-          deactivate: [deactivateOperationRequest]
+          deactivate: [{
+            didSuffix: createOperationData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
+            revealValue: 'unused'
+          }]
         }
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -305,19 +303,30 @@ describe('AnchorFile', async () => {
       );
 
       expect(anchorFileModel.mapFileUri).toEqual(mapFileHash);
-      expect(anchorFileModel.operations.create![0].suffixData).toEqual({
+      expect(anchorFileModel.operations!.create![0].suffixData).toEqual({
         deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment, type: undefined
       });
 
       // Verify recover operation.
-      const recoveryOperationInAnchorFile = anchorFileModel.operations.recover![0];
+      const recoveryOperationInAnchorFile = anchorFileModel.operations!.recover![0];
+      const recoveryRevealValue = Multihash.canonicalizeThenHashThenEncode(recoverOperation.signedData.recoveryKey);
       expect(recoveryOperationInAnchorFile.didSuffix).toEqual(recoverOperation.didUniqueSuffix);
-      expect(recoveryOperationInAnchorFile.signedData).toEqual(recoverOperation.signedDataJws.toCompactJws());
+      expect(recoveryOperationInAnchorFile.revealValue).toEqual(recoveryRevealValue);
 
       // Verify deactivate operation.
-      const deactivateOperationInAnchorFile = anchorFileModel.operations.deactivate![0];
+      const deactivateOperationInAnchorFile = anchorFileModel.operations!.deactivate![0];
+      const deactivateRevealValue = Multihash.canonicalizeThenHashThenEncode(deactivateOperation.signedData.recoveryKey);
       expect(deactivateOperationInAnchorFile.didSuffix).toEqual(deactivateOperation.didUniqueSuffix);
-      expect(deactivateOperationInAnchorFile.signedData).toEqual(deactivateOperation.signedDataJws.toCompactJws());
+      expect(deactivateOperationInAnchorFile.revealValue).toEqual(deactivateRevealValue);
+    });
+
+    it('should not create `operations` property if there is no create, recover, and deactivates.', async () => {
+      const writerLockId = undefined;
+      const mapFileHash = OperationGenerator.generateRandomHash();
+      const coreProofFileHash = undefined;
+      const anchorFileModel = await AnchorFile.createModel(writerLockId, mapFileHash, coreProofFileHash, [], [], []);
+
+      expect(anchorFileModel.operations).toBeUndefined();
     });
   });
 
@@ -333,7 +342,7 @@ describe('AnchorFile', async () => {
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       expect(anchorFile.model.mapFileUri).toEqual(mapFileHash);
-      expect(anchorFile.model.operations.create![0].suffixData).toEqual({
+      expect(anchorFile.model.operations!.create![0].suffixData).toEqual({
         deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment
       });
     });

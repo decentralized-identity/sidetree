@@ -116,7 +116,8 @@ describe('MapFile', async () => {
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => (MapFile as any).validateOperationsProperty(operationsProperty),
-        ErrorCode.UpdateReferenceDidSuffixIsNotAString
+        ErrorCode.OperationReferenceDidSuffixIsNotAString,
+        'update'
       );
     });
 
@@ -130,7 +131,8 @@ describe('MapFile', async () => {
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => (MapFile as any).validateOperationsProperty(operationsProperty),
-        ErrorCode.UpdateReferenceRevealValueIsNotAString
+        ErrorCode.OperationReferenceRevealValueIsNotAString,
+        'update'
       );
     });
   });

@@ -45,21 +45,12 @@ export default class DeactivateOperation implements OperationModel {
   }
 
   /**
-   * Parses the given input as a deactivate operation entry in the anchor file.
-   */
-  public static async parseOperationFromAnchorFile (input: any): Promise<DeactivateOperation> {
-    const operationBuffer = Buffer.from(JSON.stringify(input));
-    const operation = await DeactivateOperation.parseObject(input, operationBuffer, true);
-    return operation;
-  }
-
-  /**
    * Parses the given buffer as a `UpdateOperation`.
    */
   public static async parse (operationBuffer: Buffer): Promise<DeactivateOperation> {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
-    const deactivateOperation = await DeactivateOperation.parseObject(operationObject, operationBuffer, false);
+    const deactivateOperation = await DeactivateOperation.parseObject(operationObject, operationBuffer);
     return deactivateOperation;
   }
 
@@ -68,13 +59,9 @@ export default class DeactivateOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
-   * @param anchorFileMode If set to true, then `type` is expected to be absent.
    */
-  public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<DeactivateOperation> {
-    let expectedPropertyCount = 3;
-    if (anchorFileMode) {
-      expectedPropertyCount = 2;
-    }
+  public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<DeactivateOperation> {
+    const expectedPropertyCount = 3;
 
     const properties = Object.keys(operationObject);
     if (properties.length !== expectedPropertyCount) {
@@ -89,11 +76,8 @@ export default class DeactivateOperation implements OperationModel {
     const signedData = await DeactivateOperation.parseSignedDataPayload(
       signedDataJws.payload, operationObject.didSuffix);
 
-    // If not in anchor file mode, we need to validate `type` property.
-    if (!anchorFileMode) {
-      if (operationObject.type !== OperationType.Deactivate) {
-        throw new SidetreeError(ErrorCode.DeactivateOperationTypeIncorrect);
-      }
+    if (operationObject.type !== OperationType.Deactivate) {
+      throw new SidetreeError(ErrorCode.DeactivateOperationTypeIncorrect);
     }
 
     return new DeactivateOperation(

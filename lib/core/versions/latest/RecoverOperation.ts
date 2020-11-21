@@ -53,21 +53,12 @@ export default class RecoverOperation implements OperationModel {
   }
 
   /**
-   * Parses the given input as a recover operation entry in the anchor file.
-   */
-  public static async parseOperationFromAnchorFile (input: any): Promise<RecoverOperation> {
-    const operationBuffer = Buffer.from(JSON.stringify(input));
-    const operation = await RecoverOperation.parseObject(input, operationBuffer, true);
-    return operation;
-  }
-
-  /**
-   * Parses the given buffer as a `UpdateOperation`.
+   * Parses the given buffer as a `RecoverOperation`.
    */
   public static async parse (operationBuffer: Buffer): Promise<RecoverOperation> {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
-    const recoverOperation = await RecoverOperation.parseObject(operationObject, operationBuffer, false);
+    const recoverOperation = await RecoverOperation.parseObject(operationObject, operationBuffer);
     return recoverOperation;
   }
 
@@ -76,13 +67,9 @@ export default class RecoverOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
-   * @param anchorFileMode If set to true, then `delta` and `type` properties are expected to be absent.
    */
-  public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<RecoverOperation> {
-    let expectedPropertyCount = 4;
-    if (anchorFileMode) {
-      expectedPropertyCount = 2;
-    }
+  public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<RecoverOperation> {
+    const expectedPropertyCount = 4;
 
     const properties = Object.keys(operationObject);
     if (properties.length !== expectedPropertyCount) {
@@ -96,24 +83,18 @@ export default class RecoverOperation implements OperationModel {
     const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
     const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
-    // If not in anchor file mode, we need to validate `type` and `delta` properties.
-    let delta;
-    if (!anchorFileMode) {
-      if (operationObject.type !== OperationType.Recover) {
-        throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);
-      }
+    if (operationObject.type !== OperationType.Recover) {
+      throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);
+    }
 
-      try {
-        Operation.validateDelta(operationObject.delta);
-        delta = {
-          patches: operationObject.delta.patches,
-          updateCommitment: operationObject.delta.updateCommitment
-        };
-      } catch {
-        // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
-        // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
-        // so here we let `delta` be `undefined`.
-      }
+    let delta;
+    try {
+      Operation.validateDelta(operationObject.delta);
+      delta = operationObject.delta;
+    } catch {
+      // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
+      // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
+      // so here we let `delta` be `undefined`.
     }
 
     return new RecoverOperation(
