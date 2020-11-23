@@ -871,7 +871,6 @@ describe('BitcoinProcessor', () => {
       });
 
       getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve(lastBlock));
-      /* tslint:disable-next-line */
       await bitcoinProcessor['periodicPoll']();
       // need to wait for the process call
       setTimeout(() => {
@@ -928,7 +927,6 @@ describe('BitcoinProcessor', () => {
 
       getStartingBlockForPeriodicPollSpy.and.returnValue(bitcoinProcessor['lastProcessedBlock']);
 
-      /* tslint:disable-next-line */
       bitcoinProcessor['periodicPoll']();
       // need to wait for the process call
       setTimeout(() => {
@@ -1545,7 +1543,6 @@ describe('BitcoinProcessor', () => {
       try {
         await bitcoinProcessor['processBlock'](block, blockData.previousHash);
         fail('Expected exception is not thrown');
-      // tslint:disable-next-line: no-empty
       } catch (e) { }
 
       expect(addTransaction).not.toHaveBeenCalled();

@@ -17,11 +17,9 @@ describe('VersionManager', async () => {
 
       // Setting up loading of mock fee calculators.
       const mockFeeCalculator1 = class {
-        /* tslint:disable-next-line */
         getNormalizedFee () { return 1000; }
       };
       const mockFeeCalculator2 = class {
-        /* tslint:disable-next-line */
         getNormalizedFee () { return 2000; }
       };
       spyOn(versionManager as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, _className: string) => {

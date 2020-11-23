@@ -41,7 +41,6 @@ export default class VersionManager {
 
       this.protocolParameters.set(version, versionModel.protocolParameters);
 
-      /* tslint:disable-next-line */
       const FeeCalculator = await this.loadDefaultExportsForVersion(version, 'NormalizedFeeCalculator');
       const feeCalculator = new FeeCalculator(
         blockMetadataStore,

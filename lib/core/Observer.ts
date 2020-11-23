@@ -56,7 +56,6 @@ export default class Observer {
     setImmediate(async () => {
       this.continuePeriodicProcessing = true;
 
-      // tslint:disable-next-line:no-floating-promises - this.processTransactions() never throws.
       this.processTransactions();
     });
   }
