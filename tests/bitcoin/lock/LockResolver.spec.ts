@@ -33,7 +33,7 @@ function createLockScriptVerifyResult (isScriptValid: boolean, owner: string | u
 }
 
 describe('LockResolver', () => {
-  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: 5, initialNormalizedFee: 1 } }];
+  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: 5, initialNormalizedFee: 1, lookBackWindowInterval: 1, fluctuationRate: 1 } }];
   const versionManager = new VersionManager(versionModels, { genesisBlockNumber: 0 } as any);
   versionManager.initialize(new MockBlockMetadataStore());
 

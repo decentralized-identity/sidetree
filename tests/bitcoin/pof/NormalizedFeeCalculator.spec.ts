@@ -8,7 +8,7 @@ describe('NormalizedFeeCalculaor', () => {
 
   beforeEach(() => {
     mockMetadataStore = new MockBlockMetadataStore();
-    normalizedFeeCalculator = new NormalizedFeeCalculator(mockMetadataStore, 1, 1);
+    normalizedFeeCalculator = new NormalizedFeeCalculator(mockMetadataStore, 1, 1, 100, 0.000002);
   });
 
   describe('initialize', () => {

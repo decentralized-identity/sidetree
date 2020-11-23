@@ -36,12 +36,20 @@ export default class VersionManager {
     for (const versionModel of this.versionsReverseSorted) {
       const version = versionModel.version;
       const initialNormalizedFee = versionModel.protocolParameters.initialNormalizedFee;
+      const lookBackWindowInterval = versionModel.protocolParameters.lookBackWindowInterval;
+      const fluctuationRate = versionModel.protocolParameters.fluctuationRate;
 
       this.protocolParameters.set(version, versionModel.protocolParameters);
 
       /* tslint:disable-next-line */
       const FeeCalculator = await this.loadDefaultExportsForVersion(version, 'NormalizedFeeCalculator');
-      const feeCalculator = new FeeCalculator(blockMetadataStore, this.config.genesisBlockNumber, initialNormalizedFee);
+      const feeCalculator = new FeeCalculator(
+        blockMetadataStore,
+        this.config.genesisBlockNumber,
+        initialNormalizedFee,
+        lookBackWindowInterval,
+        fluctuationRate
+      );
       this.feeCalculators.set(version, feeCalculator);
     }
   }

@@ -5,9 +5,13 @@ import IFeeCalculator from '../../interfaces/IFeeCalculator';
  * `IFeeCalculator` implementation.
  */
 export default class NormalizedFeeCalculator implements IFeeCalculator {
-  private lookBackWindowInterval = 100;
 
-  constructor (private blockMetadataStore: IBlockMetadataStore, private genesisBlockNumber: number, private initialNormalizedFee: number) {}
+  constructor (
+    private blockMetadataStore: IBlockMetadataStore,
+    private genesisBlockNumber: number,
+    private initialNormalizedFee: number,
+    private lookBackWindowInterval: number,
+    private fluctuationRate: number) {}
 
   /**
    * Initializes the Bitcoin processor.
@@ -21,12 +25,12 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
       // No normalized fee for blocks that exist before genesis
       return 0;
     } else if (block < this.genesisBlockNumber + this.lookBackWindowInterval) {
-      // if within 100 blocks of genesis, use the initial fee
+      // if within look back interval of genesis, use the initial fee
       return this.initialNormalizedFee;
     }
 
-    // look back 100 blocks
-    const blocksToAverage = await this.blockMetadataStore.get(block - 100, block);
+    // look back the interval
+    const blocksToAverage = await this.blockMetadataStore.get(block - this.lookBackWindowInterval, block);
 
     let totalFee = 0;
     let totalTransactionCount = 0;
@@ -46,9 +50,8 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
   }
 
   private limitTenPercentPerYear (unadjustedFee: number, previousFee: number): number {
-    const fluctuationRate = 0.000002;
-    const previousFeeAdjustedUp = Math.floor(previousFee * (1 + fluctuationRate));
-    const previousFeeAdjustedDown = Math.floor(previousFee * (1 - fluctuationRate));
+    const previousFeeAdjustedUp = Math.floor(previousFee * (1 + this.fluctuationRate));
+    const previousFeeAdjustedDown = Math.floor(previousFee * (1 - this.fluctuationRate));
 
     if (unadjustedFee > previousFeeAdjustedUp) {
       return previousFeeAdjustedUp;
