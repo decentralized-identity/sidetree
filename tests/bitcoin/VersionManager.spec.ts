@@ -1,8 +1,8 @@
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import MockBlockMetadataStore from '../mocks/MockBlockMetadataStore';
 import VersionManager from '../../lib/bitcoin/VersionManager';
 import VersionModel from '../../lib/bitcoin/models/BitcoinVersionModel';
-import MockBlockMetadataStore from '../mocks/MockBlockMetadataStore';
 
 describe('VersionManager', async () => {
   describe('getFeeCalculator()', async () => {

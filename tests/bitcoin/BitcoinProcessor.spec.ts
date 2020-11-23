@@ -120,7 +120,26 @@ describe('BitcoinProcessor', () => {
     upgradeDatabaseIfNeededSpy = spyOn(bitcoinProcessor as any, 'upgradeDatabaseIfNeeded');
   });
 
-  function createTransactions (count?: number, height?: number, incrementalHeight = false): TransactionModel[] {
+  function createBlockMetadata (inclusiveStartingHeight: number, exclusiveEndingHeight: number): BlockMetadata[] {
+    let height = inclusiveStartingHeight;
+    const blockMetadata: BlockMetadata[] = [];
+    const hash = randomString();
+    while (height < exclusiveEndingHeight) {
+      blockMetadata.push({
+        height,
+        hash: hash,
+        normalizedFee: height,
+        previousHash: hash,
+        transactionCount: height,
+        totalFee: height
+      });
+
+      height++;
+    }
+    return blockMetadata;
+  }
+
+  function createTransactions (count?: number, height?: number, incrementalHeight = false, deterministicNormalizedFee = false): TransactionModel[] {
     const transactions: TransactionModel[] = [];
     if (!count) {
       count = randomNumber(9) + 1;
@@ -129,16 +148,16 @@ describe('BitcoinProcessor', () => {
       height = randomNumber();
     }
     const hash = randomString();
-    const feePaidRandom = randomNumber();
 
     for (let i = 0; i < count; i++) {
+      const fee = deterministicNormalizedFee ? height + i : randomNumber();
       transactions.push({
         transactionNumber: TransactionNumber.construct(height, i),
         transactionTime: incrementalHeight ? height + i : height,
         transactionTimeHash: hash,
         anchorString: randomString(),
-        transactionFeePaid: feePaidRandom,
-        normalizedTransactionFee: feePaidRandom,
+        transactionFeePaid: fee,
+        normalizedTransactionFee: fee,
         writer: randomString()
       });
     }
@@ -328,7 +347,34 @@ describe('BitcoinProcessor', () => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
 
       // return as many as page size
-      const transactions: TransactionModel[] = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true);
+      const transactions: TransactionModel[] = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true, true);
+
+      const mockLastProcessedBlock = {
+        height: transactions[transactions.length - 1].transactionTime + 1,
+        hash: 'some hash',
+        previousHash: 'previous hash'
+      };
+      blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(mockLastProcessedBlock));
+      blockMetadataStoreGetSpy.and.returnValue(createBlockMetadata(bitcoinProcessor['genesisBlockNumber'], bitcoinProcessor['genesisBlockNumber'] + BitcoinProcessor['pageSizeInBlocks']));
+
+      const getTransactionsStartingFromSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake(() => {
+        return Promise.resolve(transactions);
+      });
+
+      const actual = await bitcoinProcessor.transactions();
+      expect(blockMetadataStoreGetSpy).toHaveBeenCalledWith(bitcoinProcessor['genesisBlockNumber'], bitcoinProcessor['genesisBlockNumber'] + BitcoinProcessor['pageSizeInBlocks']);
+      expect(verifyMock).toHaveBeenCalledTimes(1); // called after data was retrieved
+      expect(getTransactionsStartingFromSpy).toHaveBeenCalled();
+      expect(actual.moreTransactions).toBeTruthy(); // true because page size is reached
+      expect(actual.transactions).toEqual(transactions);
+      done();
+    });
+
+    it('should throw if block metadata does not match transaction requirements', async (done) => {
+      spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
+
+      // return as many as page size
+      const transactions: TransactionModel[] = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true, true);
 
       const mockLastProcessedBlock = {
         height: transactions[transactions.length - 1].transactionTime + 1,
@@ -337,21 +383,25 @@ describe('BitcoinProcessor', () => {
       };
       blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(mockLastProcessedBlock));
 
-      const getTransactionsStartingFromSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake(() => {
+      // This is not enough block meta data to calculate normalized fee for every transactions
+      blockMetadataStoreGetSpy.and.returnValue(createBlockMetadata(bitcoinProcessor['genesisBlockNumber'], bitcoinProcessor['genesisBlockNumber'] + 1));
+
+      spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake(() => {
         return Promise.resolve(transactions);
       });
 
-      const actual = await bitcoinProcessor.transactions();
-      expect(verifyMock).toHaveBeenCalledTimes(1); // called after data was retrieved
-      expect(getTransactionsStartingFromSpy).toHaveBeenCalled();
-      expect(actual.moreTransactions).toBeTruthy(); // true because page size is reached
-      expect(actual.transactions).toEqual(transactions);
+      try {
+        await bitcoinProcessor.transactions();
+        fail('expect to throw but did not');
+      } catch (e) {
+        expect(e).toEqual(new RequestError(ResponseStatus.ServerError, ErrorCode.BitcoinBlockMetadataNotFound));
+      };
       done();
     });
 
     it('should get transactions since genesis and handle mid block processing', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
-      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true);
+      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true, true);
       // This makes the last transaction in the array "processing"
       const lastProcessedBlockHeightLess = transactions[transactions.length - 1].transactionTime - 1;
       const mockLastProcessedBlock = {
@@ -360,6 +410,7 @@ describe('BitcoinProcessor', () => {
         previousHash: 'previous hash'
       };
       blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(mockLastProcessedBlock));
+      blockMetadataStoreGetSpy.and.returnValue(createBlockMetadata(bitcoinProcessor['genesisBlockNumber'], bitcoinProcessor['genesisBlockNumber'] + BitcoinProcessor['pageSizeInBlocks'] - 1));
 
       const getTransactionsStartingFromSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake(() => {
         return Promise.resolve(transactions);
@@ -368,6 +419,7 @@ describe('BitcoinProcessor', () => {
       const actual = await bitcoinProcessor.transactions();
       expect(verifyMock).toHaveBeenCalledTimes(1);
       expect(getTransactionsStartingFromSpy).toHaveBeenCalled();
+      expect(blockMetadataStoreGetSpy).toHaveBeenCalledWith(bitcoinProcessor['genesisBlockNumber'], bitcoinProcessor['genesisBlockNumber'] + BitcoinProcessor['pageSizeInBlocks'] - 1);
       expect(actual.moreTransactions).toBeFalsy(); // don't need more transactions because page size is not reached (last block reached)
       expect(actual.transactions).toEqual(transactions.slice(0, transactions.length - 1)); // the last one should be omitted because it is processing
       done();
@@ -386,7 +438,7 @@ describe('BitcoinProcessor', () => {
 
     it('should get transactions since genesis and handle complete last block', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
-      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true);
+      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true, true);
       // make the last transaction time to be the same as last processed block height
       const lastProcessedBlockHeight = transactions[transactions.length - 1].transactionTime;
       const mockLastProcessedBlock = {
@@ -395,12 +447,14 @@ describe('BitcoinProcessor', () => {
         previousHash: 'previous hash'
       };
       blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(mockLastProcessedBlock));
+      blockMetadataStoreGetSpy.and.returnValue(createBlockMetadata(bitcoinProcessor['genesisBlockNumber'], bitcoinProcessor['genesisBlockNumber'] + BitcoinProcessor['pageSizeInBlocks']));
 
       const getTransactionsStartingFromSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake(() => {
         return Promise.resolve(transactions);
       });
 
       const actual = await bitcoinProcessor.transactions();
+      expect(blockMetadataStoreGetSpy).toHaveBeenCalledWith(bitcoinProcessor['genesisBlockNumber'], bitcoinProcessor['genesisBlockNumber'] + BitcoinProcessor['pageSizeInBlocks']);
       expect(verifyMock).toHaveBeenCalledTimes(1);
       expect(getTransactionsStartingFromSpy).toHaveBeenCalled();
       expect(actual.moreTransactions).toBeFalsy(); // Looks at genesis to genesis + 100 but lastProcessedBlock is genesis + 99
@@ -442,15 +496,17 @@ describe('BitcoinProcessor', () => {
         previousHash: 'previous hash'
       };
       blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(mockLastProcessedBlock));
+      blockMetadataStoreGetSpy.and.returnValue(createBlockMetadata(bitcoinProcessor['genesisBlockNumber'] + 505, bitcoinProcessor['genesisBlockNumber'] + 506));
 
       const getTransactionsStartingFromSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake((begin) => {
         if (begin === bitcoinProcessor['genesisBlockNumber'] + 500) {
-          return Promise.resolve(createTransactions(1, begin + 5, false));
+          return Promise.resolve(createTransactions(1, begin + 5, false, true));
         }
         return Promise.resolve([]);
       });
 
       const actual = await bitcoinProcessor.transactions();
+      expect(blockMetadataStoreGetSpy).toHaveBeenCalledWith(bitcoinProcessor['genesisBlockNumber'] + 505, bitcoinProcessor['genesisBlockNumber'] + 506);
       expect(verifyMock).toHaveBeenCalledTimes(1);
       expect(getTransactionsStartingFromSpy).toHaveBeenCalledTimes(6);
       expect(actual.moreTransactions).toBeTruthy(); // more transactions because it didn't reach latestProcessedBlock
@@ -491,18 +547,21 @@ describe('BitcoinProcessor', () => {
         previousHash: 'previous hash'
       };
       blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(mockLastProcessedBlock));
+      blockMetadataStoreGetSpy.and.returnValue(createBlockMetadata(expectedHeight, expectedHeight + BitcoinProcessor['pageSizeInBlocks']));
 
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.callFake((height: number, hash: string) => {
         expect(height === expectedHeight || height === lastBlockHeight).toBeTruthy();
         expect(hash === expectedHash || hash === lastBlockHash).toBeTruthy();
         return Promise.resolve(true);
       });
-      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], expectedHeight, true);
+      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], expectedHeight, true, true);
       const getTransactionsStartingFromSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake(() => {
         return Promise.resolve(transactions);
       });
 
       const actual = await bitcoinProcessor.transactions(expectedTransactionNumber, expectedHash);
+      // starting 1 block later because of since
+      expect(blockMetadataStoreGetSpy).toHaveBeenCalledWith(expectedHeight + 1, expectedHeight + BitcoinProcessor['pageSizeInBlocks']);
       expect(verifyMock).toHaveBeenCalledTimes(2);
       expect(getTransactionsStartingFromSpy).toHaveBeenCalled();
       expect(actual.moreTransactions).toBeFalsy();
@@ -572,16 +631,19 @@ describe('BitcoinProcessor', () => {
         hash: 'some hash',
         previousHash: 'previous hash'
       };
-      blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(mockLastProcessedBlock));
-
       const expectedHeight = randomNumber();
       const expectedHash = randomString();
       const expectedTransactionNumber = TransactionNumber.construct(expectedHeight, 0);
+
+      blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(mockLastProcessedBlock));
+      blockMetadataStoreGetSpy.and.returnValue(createBlockMetadata(expectedHeight, expectedHeight + BitcoinProcessor['pageSizeInBlocks']));
+
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
-      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], expectedHeight, true);
+      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], expectedHeight, true, true);
       const getTransactionsStartingFromSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.returnValue(Promise.resolve(transactions));
       const actual = await bitcoinProcessor.transactions(expectedTransactionNumber, expectedHash);
       expect(verifyMock).toHaveBeenCalled();
+      expect(blockMetadataStoreGetSpy).toHaveBeenCalledWith(expectedHeight + 1, expectedHeight + BitcoinProcessor['pageSizeInBlocks']);
       expect(getTransactionsStartingFromSpy).toHaveBeenCalled();
       expect(actual.moreTransactions).toBeTruthy();
       done();
@@ -927,8 +989,7 @@ describe('BitcoinProcessor', () => {
         height: 2,
         previousHash: 'def',
         totalFee: 150, // all the outputs' satoshis added up minus the block reward
-        transactionCount: 1,
-        normalizedFee: -1
+        transactionCount: 1
       });
       expect(processSidetreeTransactionsInBlockSpy).toHaveBeenCalledTimes(1);
     });
@@ -994,7 +1055,6 @@ describe('BitcoinProcessor', () => {
         {
           height: 999999,
           hash: 'someHash1',
-          normalizedFee: -1,
           previousHash: 'prevHash',
           transactionCount: 123,
           totalFee: 123
@@ -1002,7 +1062,6 @@ describe('BitcoinProcessor', () => {
         {
           height: 1000000,
           hash: 'someHash2',
-          normalizedFee: -1,
           previousHash: 'prevHash',
           transactionCount: 123,
           totalFee: 123
@@ -1010,42 +1069,12 @@ describe('BitcoinProcessor', () => {
       ];
 
       const getNormalizedFeeSpy = spyOn(bitcoinProcessor, 'getNormalizedFee').and.returnValue(Promise.resolve({ normalizedTransactionFee: 111 }));
-      const getTransactionsStartingFromSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.returnValue(Promise.resolve([{
-        transactionNumber: 1,
-        transactionTime: 1,
-        transactionTimeHash: 'hash',
-        anchorString: 'string',
-        transactionFeePaid: 1,
-        normalizedTransactionFee: -1,
-        writer: 'writer'
-      }]));
-      const removeTransactionByTransactionTimeHashSpy = spyOn(bitcoinProcessor['transactionStore'], 'removeTransactionByTransactionTimeHash');
-      const addTransactionSpy = spyOn(bitcoinProcessor['transactionStore'], 'addTransaction');
 
       await bitcoinProcessor['writeBlocksToMetadataStoreWithFee'](blockMetadata);
 
       expect(getNormalizedFeeSpy).toHaveBeenCalledWith(999999);
       expect(getNormalizedFeeSpy).toHaveBeenCalledWith(1000000);
       expect(getNormalizedFeeSpy).toHaveBeenCalledTimes(2);
-
-      expect(getTransactionsStartingFromSpy).toHaveBeenCalledWith(999999, 1000000);
-      expect(getTransactionsStartingFromSpy).toHaveBeenCalledWith(1000000, 1000001);
-      expect(getTransactionsStartingFromSpy).toHaveBeenCalledTimes(2);
-
-      expect(removeTransactionByTransactionTimeHashSpy).toHaveBeenCalledWith('someHash1');
-      expect(removeTransactionByTransactionTimeHashSpy).toHaveBeenCalledWith('someHash2');
-      expect(removeTransactionByTransactionTimeHashSpy).toHaveBeenCalledTimes(2);
-
-      expect(addTransactionSpy).toHaveBeenCalledWith({
-        transactionNumber: 1,
-        transactionTime: 1,
-        transactionTimeHash: 'hash',
-        anchorString: 'string',
-        transactionFeePaid: 1,
-        normalizedTransactionFee: 111,
-        writer: 'writer'
-      });
-      expect(addTransactionSpy).toHaveBeenCalledTimes(2);
 
       expect(blockMetadataStoreAddSpy).toHaveBeenCalledWith([{
         height: 999999,
@@ -1554,7 +1583,6 @@ describe('BitcoinProcessor', () => {
       const mockTxnFee = 1000;
       const getTxnFeeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFeeInSatoshis').and.returnValue(Promise.resolve(mockTxnFee));
       const mockTxnNumber = 1000;
-      const mockNormalizedFee = 300;
       spyOn(TransactionNumber, 'construct').and.returnValue(1000);
 
       const mockTxnBlock = 20;
@@ -1568,7 +1596,6 @@ describe('BitcoinProcessor', () => {
 
       const mockOutputTxnModel: TransactionModel = {
         anchorString: mockSidetreeData.data,
-        normalizedTransactionFee: mockNormalizedFee,
         transactionFeePaid: mockTxnFee,
         transactionNumber: mockTxnNumber,
         transactionTime: mockTxnBlock,
@@ -1576,7 +1603,7 @@ describe('BitcoinProcessor', () => {
         writer: mockSidetreeData.writer
       };
 
-      const output = await bitcoinProcessor['getSidetreeTransactionModelIfExist'](mockTxn, 10, mockTxnBlock, mockNormalizedFee);
+      const output = await bitcoinProcessor['getSidetreeTransactionModelIfExist'](mockTxn, 10, mockTxnBlock);
       expect(output).toBeDefined();
       expect(output).toEqual(mockOutputTxnModel);
       expect(getTxnFeeSpy).toHaveBeenCalled();
@@ -1599,7 +1626,7 @@ describe('BitcoinProcessor', () => {
         inputs: []
       };
 
-      const output = await bitcoinProcessor['getSidetreeTransactionModelIfExist'](mockTxn, 10, 20, 300);
+      const output = await bitcoinProcessor['getSidetreeTransactionModelIfExist'](mockTxn, 10, 20);
       expect(output).not.toBeDefined();
       expect(getTxnFeeSpy).not.toHaveBeenCalled();
       expect(getNormalizedFeeSpy).not.toHaveBeenCalled();

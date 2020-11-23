@@ -40,7 +40,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const anchoredData = AnchoredDataSerializer.deserialize(transaction.anchorString);
 
       // Verify enough fee paid.
-      FeeManager.verifyTransactionFeeAndThrowOnError(transaction.transactionFeePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee);
+      FeeManager.verifyTransactionFeeAndThrowOnError(transaction.transactionFeePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee!);
 
       // Download and verify anchor file.
       const anchorFile = await this.downloadAndVerifyAnchorFile(transaction, anchoredData.anchorFileHash, anchoredData.numberOfOperations);

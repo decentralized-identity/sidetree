@@ -7,6 +7,10 @@ export default interface TransactionModel {
   transactionTimeHash: string;
   anchorString: string;
   transactionFeePaid: number;
-  normalizedTransactionFee: number;
+
+  // Normalized fee sohuld always be populated in core layer when core makes call to transactions endpoint.
+  // It may not be populated in blockchain service. This allows flexibility for the value to be computed on the spot or stored.
+  normalizedTransactionFee?: number;
+
   writer: string;
 }
