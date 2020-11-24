@@ -193,7 +193,7 @@ export default class AnchorFile {
       };
     });
 
-    // Only insert `recover` property if there are create operation references.
+    // Only insert `create` property if there are create operation references.
     if (createReferences.length > 0) {
       anchorFileModel.operations!.create = createReferences;
     }
@@ -215,7 +215,7 @@ export default class AnchorFile {
       return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 
-    // Only insert `recover` property if there are deactivate operation references.
+    // Only insert `deactivate` property if there are deactivate operation references.
     if (deactivateReferences.length > 0) {
       anchorFileModel.operations!.deactivate = deactivateReferences;
     }
