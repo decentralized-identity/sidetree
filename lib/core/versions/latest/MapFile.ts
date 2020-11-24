@@ -97,7 +97,7 @@ export default class MapFile {
     }
 
     // Validate all update operation references.
-    MapFile.validateUpdateOperationReferences(operations.update);
+    InputValidator.validateOperationReferences(operations.update, 'update');
 
     // Make sure no operation with same DID.
     const didSuffixes = (operations.update as OperationReferenceModel[]).map(operation => operation.didSuffix);
@@ -106,28 +106,6 @@ export default class MapFile {
     }
 
     return didSuffixes;
-  }
-
-  private static validateUpdateOperationReferences (updateReferences: any) {
-    for (const updateReference of updateReferences) {
-      InputValidator.validateObjectContainsOnlyAllowedProperties(updateReference, ['didSuffix', 'revealValue'], 'update operation reference');
-
-      const didSuffixType = typeof updateReference.didSuffix;
-      if (didSuffixType !== 'string') {
-        throw new SidetreeError(
-          ErrorCode.UpdateReferenceDidSuffixIsNotAString,
-          `Update reference property 'didSuffix' is of type ${didSuffixType}, but needs to be a string.`
-        );
-      }
-
-      const revealValueType = typeof updateReference.revealValue;
-      if (revealValueType !== 'string') {
-        throw new SidetreeError(
-          ErrorCode.UpdateReferenceRevealValueIsNotAString,
-          `Update reference property 'revealValue' is of type ${revealValueType}, but needs to be a string.`
-        );
-      }
-    }
   }
 
   /**
@@ -158,13 +136,10 @@ export default class MapFile {
   public static async createBuffer (
     chunkFileHash: string, provisionalProofFileHash: string | undefined, updateOperationArray: UpdateOperation[]
   ): Promise<Buffer> {
-    const updateOperations = updateOperationArray.map(operation => {
+    const updateReferences = updateOperationArray.map(operation => {
       const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.updateKey);
 
-      return {
-        didSuffix: operation.didUniqueSuffix,
-        revealValue
-      };
+      return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 
     const mapFileModel: MapFileModel = {
@@ -172,9 +147,9 @@ export default class MapFile {
     };
 
     // Only insert `operations` and `provisionalProofFileHash` properties if there are update operations.
-    if (updateOperations.length > 0) {
+    if (updateReferences.length > 0) {
       mapFileModel.operations = {
-        update: updateOperations
+        update: updateReferences
       };
 
       mapFileModel.provisionalProofFileUri = provisionalProofFileHash;

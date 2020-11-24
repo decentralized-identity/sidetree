@@ -6,6 +6,8 @@ import DeactivateOperation from './DeactivateOperation';
 import ErrorCode from './ErrorCode';
 import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
+import Multihash from './Multihash';
+import OperationReferenceModel from './models/OperationReferenceModel';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
@@ -24,8 +26,8 @@ export default class AnchorFile {
     public readonly model: AnchorFileModel,
     public readonly didUniqueSuffixes: string[],
     public readonly createOperations: CreateOperation[],
-    public readonly recoverOperations: RecoverOperation[],
-    public readonly deactivateOperations: DeactivateOperation[]) { }
+    public readonly recoverDidSuffixes: string[],
+    public readonly deactivateDidSuffixes: string[]) { }
 
   /**
    * Parses and validates the given anchor file buffer.
@@ -54,6 +56,9 @@ export default class AnchorFile {
         throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
       }
     }
+
+    // TODO: #631 - If `operations` does not exist, then `mapFileUri` MUST exist. ie. There must be at least one operation in a batch.
+    // TODO: #631 - If `mapFileUri` does not exist, then `operations` MUST have just deactivates. ie. non-deactivates have delta in chunk file.
 
     if (!('mapFileUri' in anchorFileModel)) {
       throw new SidetreeError(ErrorCode.AnchorFileMapFileUriMissing);
@@ -105,33 +110,29 @@ export default class AnchorFile {
     }
 
     // Validate `recover` if exists.
-    const recoverOperations: RecoverOperation[] = [];
+    let recoverDidSuffixes: string[] = [];
     if (operations.recover !== undefined) {
       if (!Array.isArray(operations.recover)) {
         throw new SidetreeError(ErrorCode.AnchorFileRecoverPropertyNotArray);
       }
 
-      // Validate every recover operation.
-      for (const operation of operations.recover) {
-        const recoverOperation = await RecoverOperation.parseOperationFromAnchorFile(operation);
-        recoverOperations.push(recoverOperation);
-        didUniqueSuffixes.push(recoverOperation.didUniqueSuffix);
-      }
+      // Validate every recover reference.
+      InputValidator.validateOperationReferences(operations.recover, 'recover');
+      recoverDidSuffixes = (operations.recover as OperationReferenceModel[]).map(operation => operation.didSuffix);
+      didUniqueSuffixes.push(...recoverDidSuffixes);
     }
 
     // Validate `deactivate` if exists.
-    const deactivateOperations: DeactivateOperation[] = [];
+    let deactivateDidSuffixes: string[] = [];
     if (operations.deactivate !== undefined) {
       if (!Array.isArray(operations.deactivate)) {
         throw new SidetreeError(ErrorCode.AnchorFileDeactivatePropertyNotArray);
       }
 
-      // Validate every operation.
-      for (const operation of operations.deactivate) {
-        const deactivateOperation = await DeactivateOperation.parseOperationFromAnchorFile(operation);
-        deactivateOperations.push(deactivateOperation);
-        didUniqueSuffixes.push(deactivateOperation.didUniqueSuffix);
-      }
+      // Validate every deactivate reference.
+      InputValidator.validateOperationReferences(operations.deactivate, 'deactivate');
+      deactivateDidSuffixes = (operations.deactivate as OperationReferenceModel[]).map(operation => operation.didSuffix);
+      didUniqueSuffixes.push(...deactivateDidSuffixes);
     }
 
     if (ArrayMethods.hasDuplicates(didUniqueSuffixes)) {
@@ -139,7 +140,7 @@ export default class AnchorFile {
     }
 
     // Validate core proof file URI.
-    if (recoverOperations.length > 0 || deactivateOperations.length > 0) {
+    if (recoverDidSuffixes.length > 0 || deactivateDidSuffixes.length > 0) {
       InputValidator.validateCasFileUri(anchorFileModel.coreProofFileUri, 'core proof file URI');
     } else {
       if (anchorFileModel.coreProofFileUri !== undefined) {
@@ -150,7 +151,7 @@ export default class AnchorFile {
       }
     }
 
-    const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes, createOperations, recoverOperations, deactivateOperations);
+    const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes, createOperations, recoverDidSuffixes, deactivateDidSuffixes);
     return anchorFile;
   }
 
@@ -159,7 +160,7 @@ export default class AnchorFile {
    */
   public static async createModel (
     writerLockId: string | undefined,
-    mapFileHash: string,
+    mapFileUri: string | undefined,
     coreProofFileHash: string | undefined,
     createOperationArray: CreateOperation[],
     recoverOperationArray: RecoverOperation[],
@@ -170,7 +171,19 @@ export default class AnchorFile {
       AnchorFile.validateWriterLockId(writerLockId);
     }
 
-    const createOperations = createOperationArray.map(operation => {
+    const anchorFileModel: AnchorFileModel = {
+      writerLockId,
+      mapFileUri
+    };
+
+    // Only insert `operations` property if there is at least one operation reference.
+    if (createOperationArray.length > 0 ||
+        recoverOperationArray.length > 0 ||
+        deactivateOperationArray.length > 0) {
+      anchorFileModel.operations = { };
+    }
+
+    const createReferences = createOperationArray.map(operation => {
       return {
         suffixData: {
           deltaHash: operation.suffixData.deltaHash,
@@ -180,30 +193,32 @@ export default class AnchorFile {
       };
     });
 
-    const recoverOperations = recoverOperationArray.map(operation => {
-      return {
-        didSuffix: operation.didUniqueSuffix,
-        signedData: operation.signedDataJws.toCompactJws()
-      };
+    // Only insert `create` property if there are create operation references.
+    if (createReferences.length > 0) {
+      anchorFileModel.operations!.create = createReferences;
+    }
+
+    const recoverReferences = recoverOperationArray.map(operation => {
+      const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.recoveryKey);
+
+      return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 
-    const deactivateOperations = deactivateOperationArray.map(operation => {
-      return {
-        didSuffix: operation.didUniqueSuffix,
-        signedData: operation.signedDataJws.toCompactJws()
-      };
+    // Only insert `recover` property if there are recover operation references.
+    if (recoverReferences.length > 0) {
+      anchorFileModel.operations!.recover = recoverReferences;
+    }
+
+    const deactivateReferences = deactivateOperationArray.map(operation => {
+      const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.recoveryKey);
+
+      return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 
-    const anchorFileModel = {
-      writerLockId,
-      mapFileUri: mapFileHash,
-      coreProofFileUri: coreProofFileHash,
-      operations: {
-        create: createOperations,
-        recover: recoverOperations,
-        deactivate: deactivateOperations
-      }
-    };
+    // Only insert `deactivate` property if there are deactivate operation references.
+    if (deactivateReferences.length > 0) {
+      anchorFileModel.operations!.deactivate = deactivateReferences;
+    }
 
     // Only insert `coreProofFileUri` property if a value is given.
     if (coreProofFileHash !== undefined) {
@@ -218,14 +233,14 @@ export default class AnchorFile {
    */
   public static async createBuffer (
     writerLockId: string | undefined,
-    mapFileHash: string,
+    mapFileUri: string | undefined,
     coreProofFileHash: string | undefined,
     createOperations: CreateOperation[],
     recoverOperations: RecoverOperation[],
     deactivateOperations: DeactivateOperation[]
   ): Promise<Buffer> {
     const anchorFileModel = await AnchorFile.createModel(
-      writerLockId, mapFileHash, coreProofFileHash, createOperations, recoverOperations, deactivateOperations
+      writerLockId, mapFileUri, coreProofFileHash, createOperations, recoverOperations, deactivateOperations
     );
     const anchorFileJson = JSON.stringify(anchorFileModel);
     const anchorFileBuffer = Buffer.from(anchorFileJson);

@@ -139,6 +139,8 @@ export default {
   OperationPayloadMissingOrIncorrectType: 'operation_payload_missing_or_incorrect_type',
   OperationProcessorCreateOperationDoesNotHaveRevealValue: 'operation_processor_create_operation_does_not_have_reveal_value',
   OperationProcessorUnknownOperationType: 'operation_processor_unknown_operation_type',
+  OperationReferenceDidSuffixIsNotAString: 'operation_reference_did_suffix_is_not_a_string',
+  OperationReferenceRevealValueIsNotAString: 'operation_reference_reveal_value_is_not_a_string',
   OperationTypeUnknownOrMissing: 'operation_type_unknown_or_missing',
   ProvisionalProofFileDecompressionFailure: 'provisional_proof_file_decompression_failure',
   ProvisionalProofFileHasNoProofs: 'provisional_proof_file_has_no_proofs',
@@ -160,8 +162,6 @@ export default {
   UpdateOperationMissingOrUnknownProperty: 'update_operation_missing_or_unknown_property',
   UpdateOperationSignedDataHasMissingOrUnknownProperty: 'update_operation_signed_data_has_missing_or_unknown_property',
   UpdateOperationTypeIncorrect: 'update_operation_type_incorrect',
-  UpdateReferenceDidSuffixIsNotAString: 'update_reference_did_suffix_is_not_a_string',
-  UpdateReferenceRevealValueIsNotAString: 'update_reference_reveal_value_is_not_a_string',
   ValueTimeLockVerifierInvalidNumberOfOperations: 'value_time_lock_verifier_invalid_number_of_operations',
   ValueTimeLockVerifierTransactionTimeOutsideLockRange: 'value_time_lock_verifier_transaction_time_outside_lock_range',
   ValueTimeLockVerifierTransactionWriterLockOwnerMismatch: 'value_time_lock_verifier_transaction_writer_lock_owner_mismatch'
