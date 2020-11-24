@@ -12,10 +12,10 @@ export default interface ProtocolParameters {
    * The look back window for normalized fee calculation
    * If this number is 10, then to calculate block X's normalized fee, it will look at blocks X - 10 to x - 1 to calculate.
    */
-  lookBackWindowInterval: number;
+  feeLookBackWindowInBlocks: number;
 
   /**
    * The fluctuation rate cap. The normalized fee fluctuation cannot exceed this percentage. 1 being 100%.
    */
-  fluctuationRate: number;
+  feeMaxFluctuationMultiplierPerBlock: number;
 }

@@ -355,7 +355,7 @@ export default class LockMonitor {
     const currentLockIdentifier = LockIdentifierSerializer.deserialize(currentValueTimeLock.identifier);
     const currentLockDuration = currentValueTimeLock.unlockTransactionTime - currentValueTimeLock.lockTransactionTime;
 
-    const newLockDuration = this.versionManager.getLockDurationInBlocks(currentValueTimeLock.unlockTransactionTime);
+    const newLockDuration = this.versionManager.getLockDurationInBlocks(await this.bitcoinClient.getCurrentBlockHeight());
     const relockTransaction =
       await this.bitcoinClient.createRelockTransaction(
         currentLockIdentifier.transactionId,

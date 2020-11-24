@@ -31,14 +31,14 @@ describe('LockMonitor', () => {
   const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
 
   const lockDuration = 2000;
-  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: lockDuration, initialNormalizedFee: 1, lookBackWindowInterval: 1, fluctuationRate: 1 } }];
-  const versionManager = new VersionManager(versionModels, { genesisBlockNumber: 1 } as any);
+  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: lockDuration, initialNormalizedFee: 1, feeLookBackWindowInBlocks: 1, feeMaxFluctuationMultiplierPerBlock: 1 } }];
+  const versionManager = new VersionManager();
   const lockResolver = new LockResolver(versionManager, bitcoinClient);
 
   let lockMonitor: LockMonitor;
 
   beforeAll(async () => {
-    await versionManager.initialize(new MockBlockMetadataStore());
+    await versionManager.initialize(versionModels, { genesisBlockNumber: 1 } as any, new MockBlockMetadataStore());
   });
 
   beforeEach(() => {
@@ -578,6 +578,7 @@ describe('LockMonitor', () => {
       // Make sure that there's enough wallet balance available
       const mockWalletBalance = 32430234 + lockMonitor['transactionFeesAmountInSatoshis'] + 200;
       spyOn(lockMonitor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(mockWalletBalance));
+      spyOn(lockMonitor['versionManager'], 'getLockDurationInBlocks').and.returnValue(lockDuration);
 
       const mockLockTxn: BitcoinLockTransactionModel = {
         redeemScriptAsHex: 'renew lock txn redeem script',
@@ -859,6 +860,8 @@ describe('LockMonitor', () => {
         transactionId: 'transaction id'
       };
 
+      spyOn(lockMonitor['versionManager'], 'getLockDurationInBlocks').and.returnValue(lockDuration);
+      spyOn(lockMonitor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(123));
       spyOn(LockIdentifierSerializer, 'deserialize').and.returnValue(mockCurrentLockId);
 
       const mockRenewLockTxn: BitcoinLockTransactionModel = {
@@ -908,6 +911,8 @@ describe('LockMonitor', () => {
       };
 
       spyOn(LockIdentifierSerializer, 'deserialize').and.returnValue(mockCurrentLockId);
+      spyOn(lockMonitor['versionManager'], 'getLockDurationInBlocks').and.returnValue(14);
+      spyOn(lockMonitor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(123));
 
       const mockRenewLockTxn: BitcoinLockTransactionModel = {
         redeemScriptAsHex: 'renew lock txn redeem script',

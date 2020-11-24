@@ -16,10 +16,8 @@ export default class VersionManager {
   private feeCalculators: Map<string, IFeeCalculator>;
   private protocolParameters: Map<string, ProtocolParameters>;
 
-  public constructor (versions: BitcoinVersionModel[], private config: IBitcoinConfig) {
-    // Reverse sort versions.
-    this.versionsReverseSorted = versions.sort((a, b) => b.startingBlockchainTime - a.startingBlockchainTime);
-
+  public constructor () {
+    this.versionsReverseSorted = [];
     this.feeCalculators = new Map();
     this.protocolParameters = new Map();
   }
@@ -28,26 +26,30 @@ export default class VersionManager {
    * Loads all the implementation versions.
    */
   public async initialize (
+    versions: BitcoinVersionModel[],
+    config: IBitcoinConfig,
     blockMetadataStore: IBlockMetadataStore
   ) {
+    // Reverse sort versions.
+    this.versionsReverseSorted = versions.sort((a, b) => b.startingBlockchainTime - a.startingBlockchainTime);
     // NOTE: In principal each version of the interface implementations can have different constructors,
     // but we currently keep the constructor signature the same as much as possible for simple instance construction,
     // but it is not inherently "bad" if we have to have conditional constructions for each if we have to.
     for (const versionModel of this.versionsReverseSorted) {
       const version = versionModel.version;
-      const initialNormalizedFee = versionModel.protocolParameters.initialNormalizedFee;
-      const lookBackWindowInterval = versionModel.protocolParameters.lookBackWindowInterval;
-      const fluctuationRate = versionModel.protocolParameters.fluctuationRate;
-
       this.protocolParameters.set(version, versionModel.protocolParameters);
+
+      const initialNormalizedFee = versionModel.protocolParameters.initialNormalizedFee;
+      const feeLookBackWindowInBlocks = versionModel.protocolParameters.feeLookBackWindowInBlocks;
+      const feeMaxFluctuationMultiplierPerBlock = versionModel.protocolParameters.feeMaxFluctuationMultiplierPerBlock;
 
       const FeeCalculator = await this.loadDefaultExportsForVersion(version, 'NormalizedFeeCalculator');
       const feeCalculator = new FeeCalculator(
         blockMetadataStore,
-        this.config.genesisBlockNumber,
+        config.genesisBlockNumber,
         initialNormalizedFee,
-        lookBackWindowInterval,
-        fluctuationRate
+        feeLookBackWindowInBlocks,
+        feeMaxFluctuationMultiplierPerBlock
       );
       this.feeCalculators.set(version, feeCalculator);
     }

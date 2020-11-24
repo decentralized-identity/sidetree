@@ -36,7 +36,7 @@ function randomBlock (above: number = 0): IBlockInfo {
 
 describe('BitcoinProcessor', () => {
   const versionModels: VersionModel[] = [
-    { startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: 1, initialNormalizedFee: 1, lookBackWindowInterval: 1, fluctuationRate: 1 } }
+    { startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: 1, initialNormalizedFee: 1, feeLookBackWindowInBlocks: 1, feeMaxFluctuationMultiplierPerBlock: 1 } }
   ];
 
   const testConfig: IBitcoinConfig = {
@@ -85,7 +85,7 @@ describe('BitcoinProcessor', () => {
 
   beforeEach(() => {
     const config = Object.assign({}, testConfig); // Clone the test config so that tests don't share the same object when it is being modified.
-    bitcoinProcessor = new BitcoinProcessor(config, versionModels);
+    bitcoinProcessor = new BitcoinProcessor(config);
 
     blockMetadataStoreInitializeSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'initialize');
     serviceStateStoreInitializeSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'initialize');
@@ -190,7 +190,7 @@ describe('BitcoinProcessor', () => {
         valueTimeLockTransactionFeesAmountInBitcoins: undefined
       };
 
-      const bitcoinProcessor = new BitcoinProcessor(config, versionModels);
+      const bitcoinProcessor = new BitcoinProcessor(config);
       expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
       expect((bitcoinProcessor as any).config.transactionPollPeriodInSeconds).toEqual(60);
@@ -216,7 +216,7 @@ describe('BitcoinProcessor', () => {
       expect(mongoLockTxnStoreSpy).not.toHaveBeenCalled();
       expect(lockMonitorSpy).not.toHaveBeenCalled();
 
-      await bitcoinProcessor.initialize();
+      await bitcoinProcessor.initialize(versionModels);
 
       expect(blockMetadataStoreInitializeSpy).toHaveBeenCalled();
       expect(serviceStateStoreInitializeSpy).toHaveBeenCalled();
@@ -232,14 +232,14 @@ describe('BitcoinProcessor', () => {
     it('should not start transaction observer polling if polling is turned off.', async () => {
       (bitcoinProcessor as any).config.transactionPollPeriodInSeconds = 0;
 
-      await bitcoinProcessor.initialize();
+      await bitcoinProcessor.initialize(versionModels);
       expect(periodicPollSpy).not.toHaveBeenCalled();
     });
 
     it('should skip initialization if unable to find a starting block.', async (done) => {
       getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve(undefined));
 
-      await bitcoinProcessor.initialize();
+      await bitcoinProcessor.initialize(versionModels);
       expect(processTransactionsSpy).not.toHaveBeenCalled();
       expect(fastProcessTransactionsSpy).not.toHaveBeenCalled();
 
@@ -267,7 +267,7 @@ describe('BitcoinProcessor', () => {
       });
       expect(getStartingBlockForPeriodicPollSpy).not.toHaveBeenCalled();
       expect(processTransactionsSpy).not.toHaveBeenCalled();
-      await bitcoinProcessor.initialize();
+      await bitcoinProcessor.initialize(versionModels);
       expect(getStartingBlockForPeriodicPollSpy).toHaveBeenCalled();
       expect(processTransactionsSpy).toHaveBeenCalled();
       expect(fastProcessTransactionsSpy).not.toHaveBeenCalled();
@@ -292,7 +292,7 @@ describe('BitcoinProcessor', () => {
       });
       expect(getStartingBlockForPeriodicPollSpy).not.toHaveBeenCalled();
       expect(fastProcessTransactionsSpy).not.toHaveBeenCalled();
-      await bitcoinProcessor.initialize();
+      await bitcoinProcessor.initialize(versionModels);
       expect(getStartingBlockForPeriodicPollSpy).toHaveBeenCalled();
       expect(fastProcessTransactionsSpy).toHaveBeenCalled();
       expect(processTransactionsSpy).not.toHaveBeenCalled();
@@ -301,7 +301,7 @@ describe('BitcoinProcessor', () => {
 
     it('should begin to periodically poll for updates', async (done) => {
       expect(periodicPollSpy).not.toHaveBeenCalled();
-      await bitcoinProcessor.initialize();
+      await bitcoinProcessor.initialize(versionModels);
       expect(periodicPollSpy).toHaveBeenCalled();
       done();
     });
@@ -718,7 +718,14 @@ describe('BitcoinProcessor', () => {
     const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;
 
     beforeEach(() => {
-      bitcoinProcessor['lastProcessedBlock'] = { height: randomNumber(), hash: randomString(), previousHash: randomString() };
+      bitcoinProcessor['lastProcessedBlock'] = { 
+        height: randomNumber(),
+        hash: randomString(), 
+        previousHash: randomString(),
+        normalizedFee: 123,
+        transactionCount: 1000,
+        totalFee: 1000 
+      };
     });
 
     it('should write a transaction if there are enough Satoshis', async (done) => {
@@ -857,7 +864,14 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should call processTransactions from its last known point', async (done) => {
-      const lastBlock = randomBlock();
+      const lastBlock = { 
+        height: randomNumber(),
+        hash: randomString(), 
+        previousHash: randomString(),
+        normalizedFee: randomNumber(),
+        transactionCount: randomNumber(),
+        totalFee: randomNumber() 
+      };
       const nextBlock = randomNumber();
       const nextHash = randomString();
       bitcoinProcessor['lastProcessedBlock'] = lastBlock;
@@ -1074,28 +1088,33 @@ describe('BitcoinProcessor', () => {
       expect(getNormalizedFeeSpy).toHaveBeenCalledWith(1000000);
       expect(getNormalizedFeeSpy).toHaveBeenCalledTimes(2);
 
-      expect(blockMetadataStoreAddSpy).toHaveBeenCalledWith([{
-        height: 999999,
-        hash: 'someHash1',
-        normalizedFee: 111,
-        previousHash: 'prevHash',
-        transactionCount: 123,
-        totalFee: 123
-      }]);
-      expect(blockMetadataStoreAddSpy).toHaveBeenCalledWith([{
-        height: 1000000,
-        hash: 'someHash2',
-        normalizedFee: 111,
-        previousHash: 'prevHash',
-        transactionCount: 123,
-        totalFee: 123
-      }]);
-      expect(blockMetadataStoreAddSpy).toHaveBeenCalledTimes(2);
+      expect(blockMetadataStoreAddSpy).toHaveBeenCalledWith([
+        {
+          height: 999999,
+          hash: 'someHash1',
+          normalizedFee: 111,
+          previousHash: 'prevHash',
+          transactionCount: 123,
+          totalFee: 123
+        },
+        {
+          height: 1000000,
+          hash: 'someHash2',
+          normalizedFee: 111,
+          previousHash: 'prevHash',
+          transactionCount: 123,
+          totalFee: 123
+        }
+      ]);
+      expect(blockMetadataStoreAddSpy).toHaveBeenCalledTimes(1);
 
       expect(bitcoinProcessor['lastProcessedBlock']).toEqual({
-        hash: 'someHash2',
         height: 1000000,
-        previousHash: 'prevHash'
+        hash: 'someHash2',
+        normalizedFee: 111,
+        previousHash: 'prevHash',
+        transactionCount: 123,
+        totalFee: 123
       });
     });
   });
@@ -1193,7 +1212,6 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor['lastProcessedBlock']!.hash).toEqual(mockProcessedBlockMetadata.hash);
       expect(getCurrentHeightMock).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledTimes(10);
-      expect(blockMetadataStoreAddSpy).toHaveBeenCalled();
       done();
     });
 
@@ -1237,7 +1255,14 @@ describe('BitcoinProcessor', () => {
       // Revert the spy call in parent beforeEach();
       getStartingBlockForPeriodicPollSpy.and.callThrough();
 
-      bitcoinProcessor['lastProcessedBlock'] = { height: randomNumber(), hash: randomString(), previousHash: randomString() };
+      bitcoinProcessor['lastProcessedBlock'] = { 
+        height: randomNumber(),
+        hash: randomString(),
+        previousHash: randomString(),
+        normalizedFee: randomNumber(),
+        transactionCount: randomNumber(),
+        totalFee: randomNumber()
+      };
       actualLastProcessedBlock = bitcoinProcessor['lastProcessedBlock'];
       getBlockInfoFromHeightSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight');
       getBlockInfoFromHeightSpy.and.callFake((height: number) => {
@@ -1387,7 +1412,10 @@ describe('BitcoinProcessor', () => {
       bitcoinProcessor['lastProcessedBlock'] = {
         height: 1234,
         hash: 'some hash',
-        previousHash: 'previous hash'
+        previousHash: 'previous hash',
+        normalizedFee: randomNumber(),
+        transactionCount: randomNumber(),
+        totalFee: randomNumber()
       };
       const heightMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(Number.MAX_SAFE_INTEGER));
       const hashMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(hash);
@@ -1404,7 +1432,10 @@ describe('BitcoinProcessor', () => {
       bitcoinProcessor['lastProcessedBlock'] = {
         height: 1234,
         hash: 'some hash',
-        previousHash: 'previous hash'
+        previousHash: 'previous hash',
+        normalizedFee: randomNumber(),
+        transactionCount: randomNumber(),
+        totalFee: randomNumber()
       };
       const heightMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(Number.MAX_SAFE_INTEGER));
       const hashMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(randomString());
@@ -1421,7 +1452,10 @@ describe('BitcoinProcessor', () => {
       bitcoinProcessor['lastProcessedBlock'] = {
         height: 1234,
         hash: 'some hash',
-        previousHash: 'previous hash'
+        previousHash: 'previous hash',
+        normalizedFee: 123,
+        transactionCount: 1000,
+        totalFee: 1000
       };
       const heightMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(1));
       const hashMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(randomString());
@@ -1487,6 +1521,7 @@ describe('BitcoinProcessor', () => {
       expect(actualBlock.hash).toEqual(blockData.hash);
       expect(addTransaction.calls.count()).toEqual(2);
       expect(addTxnCallIndex).toEqual(2);
+      expect(blockMetadataStoreAddSpy).toHaveBeenCalled();
 
       done();
     });

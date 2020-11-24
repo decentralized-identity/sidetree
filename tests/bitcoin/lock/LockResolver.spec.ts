@@ -33,9 +33,9 @@ function createLockScriptVerifyResult (isScriptValid: boolean, owner: string | u
 }
 
 describe('LockResolver', () => {
-  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: 5, initialNormalizedFee: 1, lookBackWindowInterval: 1, fluctuationRate: 1 } }];
-  const versionManager = new VersionManager(versionModels, { genesisBlockNumber: 0 } as any);
-  versionManager.initialize(new MockBlockMetadataStore());
+  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: 5, initialNormalizedFee: 1, feeLookBackWindowInBlocks: 1, feeMaxFluctuationMultiplierPerBlock: 1 } }];
+  const versionManager = new VersionManager();
+  versionManager.initialize(versionModels, { genesisBlockNumber: 0 } as any, new MockBlockMetadataStore());
 
   const validTestPrivateKey = new PrivateKey(undefined, Networks.testnet);
   const validTestWalletAddress = validTestPrivateKey.toAddress();
@@ -118,13 +118,12 @@ describe('LockResolver', () => {
       const mockLockStartBlock = 12345;
       spyOn(lockResolver as any, 'calculateLockStartingBlock').and.returnValue(Promise.resolve(mockLockStartBlock));
 
-      const lockDurationSpy = spyOn(lockResolver as any, 'isLockDurationValid').and.returnValue(true);
-
       const mockNormalizedFee = 87654;
       const mockFeeCalculator = {
         async getNormalizedFee () { return mockNormalizedFee; }
       };
       const getFeeCalculatorSpy = spyOn(lockResolver['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
+      spyOn(lockResolver['versionManager'], 'getLockDurationInBlocks').and.returnValue(lockDurationInput);
 
       const expectedUnlockTransactionTime = mockLockStartBlock + lockDurationInput;
 
@@ -144,7 +143,6 @@ describe('LockResolver', () => {
       expect(createScriptSpy).toHaveBeenCalledWith(mockLockIdentifier.redeemScriptAsHex);
       expect(checkLockScriptSpy).toHaveBeenCalled();
       expect(payToScriptSpy).toHaveBeenCalledWith(mockTransaction.outputs[0], validScript);
-      expect(lockDurationSpy).toHaveBeenCalledWith(mockLockStartBlock, expectedUnlockTransactionTime);
       expect(getFeeCalculatorSpy).toHaveBeenCalledWith(mockLockStartBlock);
     });
 
@@ -223,7 +221,7 @@ describe('LockResolver', () => {
       spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue(mockLockScriptVerifyResult);
       spyOn(LockResolver as any, 'isOutputPayingToTargetScript').and.returnValue(true);
       spyOn(lockResolver as any, 'calculateLockStartingBlock').and.returnValue(Promise.resolve(1234));
-      spyOn(lockResolver as any, 'isLockDurationValid').and.returnValue(false);
+      spyOn(lockResolver['versionManager'], 'getLockDurationInBlocks').and.returnValue(1);
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => lockResolver.resolveLockIdentifierAndThrowOnError(mockLockIdentifier),
@@ -369,33 +367,6 @@ describe('LockResolver', () => {
         ErrorCode.LockResolverTransactionNotConfirmed);
 
       done();
-    });
-  });
-
-  describe('isLockDurationValid', () => {
-    it('should return true if the lock duration is exactly on the limit.', () => {
-      const startBlock = 100;
-      const unlockBlock = startBlock + versionModels[0].protocolParameters.valueTimeLockDurationInBlocks;
-
-      const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
-      expect(actual).toBeTruthy();
-    });
-
-    it('should return false if the lock duration is greater than the limit.', () => {
-      const startBlock = 100;
-      const unlockBlock = startBlock + versionModels[0].protocolParameters.valueTimeLockDurationInBlocks + 1;
-
-      const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
-      expect(actual).toBeFalsy();
-    });
-
-    it('should return false if the lock duration is below the limit.', () => {
-      const intendedStartBlock = 100;
-      const unlockBlock = intendedStartBlock + versionModels[0].protocolParameters.valueTimeLockDurationInBlocks;
-      const actualStartBlock = intendedStartBlock + 1;
-
-      const actual = lockResolver['isLockDurationValid'](actualStartBlock, unlockBlock);
-      expect(actual).toBeFalsy();
     });
   });
 });

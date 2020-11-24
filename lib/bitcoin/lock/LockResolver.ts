@@ -87,11 +87,11 @@ export default class LockResolver {
 
     const lockDurationInBlocks = this.versionManager.getLockDurationInBlocks(lockStartBlock);
 
-    if (!this.isLockDurationValid(lockStartBlock, unlockAtBlock)) {
+    if (this.versionManager.getLockDurationInBlocks(lockStartBlock) !== scriptVerifyResult.lockDurationInBlocks!) {
       throw new SidetreeError(
         ErrorCode.LockResolverDurationIsInvalid,
         // eslint-disable-next-line max-len
-        `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}. Invalid duration: ${unlockAtBlock - lockStartBlock}. Allowed duration: ${lockDurationInBlocks}`
+        `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}. Invalid duration: ${scriptVerifyResult.lockDurationInBlocks!}. Allowed duration: ${lockDurationInBlocks}`
       );
     }
 
@@ -182,18 +182,5 @@ export default class LockResolver {
     const blockInfo = await this.bitcoinClient.getBlockInfo(transaction.blockHash);
 
     return blockInfo.height;
-  }
-
-  private isLockDurationValid (startBlock: number, unlockBlock: number): boolean {
-    // Example:
-    //  startBlock:  10
-    //  unlockBlock: 20 - no lock at this block
-    //
-    //  lock-duration: unlockBlock - startBlock = 10 blocks
-
-    const lockDuration = unlockBlock - startBlock;
-    const lockDurationInBlocks = this.versionManager.getLockDurationInBlocks(startBlock);
-
-    return lockDuration === lockDurationInBlocks;
   }
 }
