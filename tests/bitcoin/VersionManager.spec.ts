@@ -39,15 +39,34 @@ describe('VersionManager', async () => {
 
   describe('getVersionString()', () => {
     it('should throw if version given is not in the supported version list.', async () => {
-      // const versionModels: VersionModel[] = [
-      //   { startingBlockchainTime: 1000, version: '1000', protocolParameters: { valueTimeLockDurationInBlocks: 5, initialNormalizedFee: 1, feeLookBackWindowInBlocks: 1, feeMaxFluctuationMultiplierPerBlock: 1 } }
-      // ];
       const versionManager = new VersionManager();
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => (versionManager as any).getVersionString(1),
         ErrorCode.VersionManagerVersionStringNotFound
       );
+    });
+  });
+
+  describe('getLockDurationInBlocks', () => {
+    it('should get the correct lock duration', async () => {
+      const versionModels: VersionModel[] = [
+        { startingBlockchainTime: 1000, version: '1000', protocolParameters: { valueTimeLockDurationInBlocks: 123, initialNormalizedFee: 1, feeLookBackWindowInBlocks: 1, feeMaxFluctuationMultiplierPerBlock: 1 } },
+        { startingBlockchainTime: 2000, version: '2000', protocolParameters: { valueTimeLockDurationInBlocks: 456, initialNormalizedFee: 1, feeLookBackWindowInBlocks: 1, feeMaxFluctuationMultiplierPerBlock: 1 } }
+      ];
+      const versionManager = new VersionManager();
+      spyOn(versionManager as any, 'loadDefaultExportsForVersion').and.callFake(async (_version: string, _className: string) => {
+        return class {
+          getNormalizedFee () { return 1000; }
+        };
+      });
+      await versionManager.initialize(versionModels, { genesisBlockNumber: 1 } as any, new MockBlockMetadataStore());
+
+      const result = versionManager.getLockDurationInBlocks(1500);
+      expect(result).toEqual(123);
+
+      const result2 = versionManager.getLockDurationInBlocks(2500);
+      expect(result2).toEqual(456);
     });
   });
 });

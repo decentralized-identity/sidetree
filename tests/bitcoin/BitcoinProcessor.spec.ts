@@ -718,13 +718,13 @@ describe('BitcoinProcessor', () => {
     const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;
 
     beforeEach(() => {
-      bitcoinProcessor['lastProcessedBlock'] = { 
+      bitcoinProcessor['lastProcessedBlock'] = {
         height: randomNumber(),
-        hash: randomString(), 
+        hash: randomString(),
         previousHash: randomString(),
         normalizedFee: 123,
         transactionCount: 1000,
-        totalFee: 1000 
+        totalFee: 1000
       };
     });
 
@@ -864,13 +864,13 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should call processTransactions from its last known point', async (done) => {
-      const lastBlock = { 
+      const lastBlock = {
         height: randomNumber(),
-        hash: randomString(), 
+        hash: randomString(),
         previousHash: randomString(),
         normalizedFee: randomNumber(),
         transactionCount: randomNumber(),
-        totalFee: randomNumber() 
+        totalFee: randomNumber()
       };
       const nextBlock = randomNumber();
       const nextHash = randomString();
@@ -1255,7 +1255,7 @@ describe('BitcoinProcessor', () => {
       // Revert the spy call in parent beforeEach();
       getStartingBlockForPeriodicPollSpy.and.callThrough();
 
-      bitcoinProcessor['lastProcessedBlock'] = { 
+      bitcoinProcessor['lastProcessedBlock'] = {
         height: randomNumber(),
         hash: randomString(),
         previousHash: randomString(),

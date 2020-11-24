@@ -1,6 +1,6 @@
+import BlockMetadata from '../../models/BlockMetadata';
 import IBlockMetadataStore from '../../interfaces/IBlockMetadataStore';
 import IFeeCalculator from '../../interfaces/IFeeCalculator';
-import BlockMetadata from '../../models/BlockMetadata';
 
 /**
  * `IFeeCalculator` implementation.
@@ -32,16 +32,16 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
       return this.initialNormalizedFee;
     }
 
-    const blocksToAverage = await this.getLookBackBlocks(block)
+    const blocksToAverage = await this.getLookBackBlocks(block);
     return this.calculateNormalizedFee(blocksToAverage);
   }
 
-  private async getLookBackBlocks(block: number): Promise<BlockMetadata[]> {
+  private async getLookBackBlocks (block: number): Promise<BlockMetadata[]> {
     // look back the interval
     return await this.blockMetadataStore.get(block - this.feeLookBackWindowInBlocks, block);
   }
 
-  private calculateNormalizedFee(blocksToAverage: BlockMetadata[]): number {
+  private calculateNormalizedFee (blocksToAverage: BlockMetadata[]): number {
     let totalFee = 0;
     let totalTransactionCount = 0;
 

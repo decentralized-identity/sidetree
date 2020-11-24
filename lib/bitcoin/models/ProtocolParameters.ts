@@ -8,7 +8,7 @@ export default interface ProtocolParameters {
   /** The initial normalized fee */
   initialNormalizedFee: number;
 
-  /** 
+  /**
    * The look back window for normalized fee calculation
    * If this number is 10, then to calculate block X's normalized fee, it will look at blocks X - 10 to x - 1 to calculate.
    */

@@ -559,7 +559,7 @@ export default class BitcoinProcessor {
         previousHash: block.previousHash,
         transactionCount: block.transactionCount,
         totalFee: block.totalFee
-      }
+      };
 
       blocksToWrite.push(blockMetadata);
     }
