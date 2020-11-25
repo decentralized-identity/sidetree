@@ -66,17 +66,6 @@ export default class AnchorFile {
       }
     }
 
-    // TODO: #631 - If `operations` does not exist, then `mapFileUri` MUST exist. ie. There must be at least one operation in a batch.
-    // TODO: #631 - If `mapFileUri` does not exist, then `operations` MUST have just deactivates. ie. non-deactivates have delta in chunk file.
-
-    if (!('mapFileUri' in anchorFileModel)) {
-      throw new SidetreeError(ErrorCode.AnchorFileMapFileUriMissing);
-    }
-
-    if (!('operations' in anchorFileModel)) {
-      throw new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty);
-    }
-
     // `writerLockId` validations.
     if (('writerLockId' in anchorFileModel)) {
       if (typeof anchorFileModel.writerLockId !== 'string') {
@@ -86,14 +75,13 @@ export default class AnchorFile {
       AnchorFile.validateWriterLockId(anchorFileModel.writerLockId);
     }
 
-    // Map file URI validations.
-    const mapFileUri = anchorFileModel.mapFileUri;
-    InputValidator.validateCasFileUri(mapFileUri, 'map file URI');
-
     // `operations` validations.
+    let operations: any = { };
+    if ('operations' in anchorFileModel) {
+      operations = anchorFileModel.operations;
+    }
 
     const allowedOperationsProperties = new Set(['create', 'recover', 'deactivate']);
-    const operations = anchorFileModel.operations;
     for (const property in operations) {
       if (!allowedOperationsProperties.has(property)) {
         throw new SidetreeError(ErrorCode.AnchorFileUnexpectedPropertyInOperations, `Unexpected property ${property} in 'operations' property in anchor file.`);
@@ -144,6 +132,23 @@ export default class AnchorFile {
 
     if (ArrayMethods.hasDuplicates(didUniqueSuffixes)) {
       throw new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid);
+    }
+
+    // If there is no operation reference in this file, then `mapFileUri` MUST exist, because there must be at least one operation in a batch,
+    // so this would imply that the operation reference must be in the provisional index file.
+
+    // Map file URI validations.
+    if (!('mapFileUri' in anchorFileModel)) {
+      // If `mapFileUri` does not exist, then `operations` MUST have just deactivates. ie. only deactivates have no delta in chunk file.
+      const createPlusRecoverOperationCount = createDidSuffixes.length + recoverDidSuffixes.length;
+      if (createPlusRecoverOperationCount === 0) {
+        throw new SidetreeError(
+          ErrorCode.AnchorFileProvisionalIndexFileUriMissing,
+          `Provisional index file URI must exist since there are ${createDidSuffixes.length} creates and ${recoverDidSuffixes} recoveries.`
+        );
+      }
+    } else {
+      InputValidator.validateCasFileUri(anchorFileModel.mapFileUri, 'provisional index file URI');
     }
 
     // Validate core proof file URI.
