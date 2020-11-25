@@ -112,26 +112,37 @@ describe('AnchorFile', async () => {
       );
     });
 
-    it('should throw if missing map file hash.', async () => {
+    it('should throw if expected `provisionalIndexFileUri` is missing.', async () => {
       const anchorFile = {
         // mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what is missing.
-        operations: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
+        operations: {
+          deactivate: [{
+            didSuffix: OperationGenerator.generateRandomHash(),
+            revealValue: OperationGenerator.generateRandomHash()
+          }]
+        }
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMapFileUriMissing));
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => AnchorFile.parse(anchorFileCompressed),
+        ErrorCode.AnchorFileProvisionalIndexFileUriMissing
+      );
     });
 
-    it('should throw if missing operations property.', async () => {
-      const anchorFile = {
-        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+    it('should allow a valid core index file with out any operation references.', async () => {
+      const mapFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+      const anchorFileModel = {
+        mapFileUri
         // operations: {}, // Intentionally missing operations.
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty));
+      const anchorFile = await AnchorFile.parse(anchorFileCompressed);
+      expect(anchorFile.didUniqueSuffixes.length).toEqual(0);
+      expect(anchorFile.model.mapFileUri!).toEqual(mapFileUri);
     });
 
     it('should throw if any additional property.', async () => {
@@ -160,7 +171,7 @@ describe('AnchorFile', async () => {
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => AnchorFile.parse(anchorFileCompressed),
         ErrorCode.InputValidatorCasFileUriNotString,
-        'map file URI'
+        'provisional index file'
       );
     });
 
