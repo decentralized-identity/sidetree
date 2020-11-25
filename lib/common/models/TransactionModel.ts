@@ -12,7 +12,7 @@ export default interface TransactionModel {
    * Normalized fee sohuld always be populated in core layer when core makes call to transactions endpoint.
    * It may not be populated in blockchain service. This allows flexibility for the value to be computed on the spot or stored.
    * To remove potentially dangerous behavior. Make a seperate model
-   * https://github.com/decentralized-identity/sidetree/issues/937
+   * TODO: https://github.com/decentralized-identity/sidetree/issues/937
    */
 
   normalizedTransactionFee?: number;
