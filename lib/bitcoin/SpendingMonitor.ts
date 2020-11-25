@@ -16,7 +16,6 @@ export default class SpendingMonitor {
     private transactionStore: ITransactionStore) {
 
     if (bitcoinFeeSpendingCutoffPeriodInBlocks < 1) {
-      // tslint:disable-next-line: max-line-length
       throw new Error(`Bitcoin spending cutoff period: ${bitcoinFeeSpendingCutoffPeriodInBlocks} must be greater than 1`);
     }
 

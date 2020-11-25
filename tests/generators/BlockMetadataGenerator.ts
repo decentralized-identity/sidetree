@@ -15,6 +15,7 @@ export default class BlockMetadataGenerator {
         height: i,
         previousHash: 'anything',
         totalFee: i,
+        normalizedFee: i,
         transactionCount: i
       };
       blocks.push(block);

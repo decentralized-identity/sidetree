@@ -47,10 +47,12 @@ export default class JasmineSidetreeErrorValidator {
     expectedContainedStringInMessage?: string
   ): Promise<void> {
     let validated: boolean = false;
+    let actualError;
 
     try {
       await functionToExecute();
     } catch (e) {
+      actualError = e;
       if (e instanceof SidetreeError) {
         expect(e.code).toEqual(expectedErrorCode);
 
@@ -63,7 +65,7 @@ export default class JasmineSidetreeErrorValidator {
     }
 
     if (!validated) {
-      fail(`Expected error '${expectedErrorCode}' did not occur.`);
+      fail(`Expected error '${expectedErrorCode}' did not occur. Instead got '${actualError.code}'`);
     }
   }
 }

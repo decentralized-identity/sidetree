@@ -1,37 +1,56 @@
 import BitcoinErrorCode from './ErrorCode';
+import BitcoinVersionModel from './models/BitcoinVersionModel';
+import IBitcoinConfig from './IBitcoinConfig';
+import IBlockMetadataStore from './interfaces/IBlockMetadataStore';
 import IFeeCalculator from './interfaces/IFeeCalculator';
+import ProtocolParameters from './models/ProtocolParameters';
 import SidetreeError from '../common/SidetreeError';
-import VersionModel from '../common/models/VersionModel';
 
 /**
  * The class that handles code versioning.
  */
 export default class VersionManager {
   // Reverse sorted implementation versions. ie. latest version first.
-  private versionsReverseSorted: VersionModel[];
+  private versionsReverseSorted: BitcoinVersionModel[];
 
   private feeCalculators: Map<string, IFeeCalculator>;
+  private protocolParameters: Map<string, ProtocolParameters>;
 
-  public constructor (versions: VersionModel[]) {
-    // Reverse sort versions.
-    this.versionsReverseSorted = versions.sort((a, b) => b.startingBlockchainTime - a.startingBlockchainTime);
-
+  public constructor () {
+    this.versionsReverseSorted = [];
     this.feeCalculators = new Map();
+    this.protocolParameters = new Map();
   }
 
   /**
    * Loads all the implementation versions.
    */
-  public async initialize () {
+  public async initialize (
+    versions: BitcoinVersionModel[],
+    config: IBitcoinConfig,
+    blockMetadataStore: IBlockMetadataStore
+  ) {
+    // Reverse sort versions.
+    this.versionsReverseSorted = versions.sort((a, b) => b.startingBlockchainTime - a.startingBlockchainTime);
     // NOTE: In principal each version of the interface implementations can have different constructors,
     // but we currently keep the constructor signature the same as much as possible for simple instance construction,
     // but it is not inherently "bad" if we have to have conditional constructions for each if we have to.
     for (const versionModel of this.versionsReverseSorted) {
       const version = versionModel.version;
+      this.protocolParameters.set(version, versionModel.protocolParameters);
 
-      /* tslint:disable-next-line */
+      const initialNormalizedFee = versionModel.protocolParameters.initialNormalizedFee;
+      const feeLookBackWindowInBlocks = versionModel.protocolParameters.feeLookBackWindowInBlocks;
+      const feeMaxFluctuationMultiplierPerBlock = versionModel.protocolParameters.feeMaxFluctuationMultiplierPerBlock;
+
       const FeeCalculator = await this.loadDefaultExportsForVersion(version, 'NormalizedFeeCalculator');
-      const feeCalculator = new FeeCalculator();
+      const feeCalculator = new FeeCalculator(
+        blockMetadataStore,
+        config.genesisBlockNumber,
+        initialNormalizedFee,
+        feeLookBackWindowInBlocks,
+        feeMaxFluctuationMultiplierPerBlock
+      );
       this.feeCalculators.set(version, feeCalculator);
     }
   }
@@ -43,6 +62,15 @@ export default class VersionManager {
     const version = this.getVersionString(blockHeight);
     const feeCalculator = this.feeCalculators.get(version)!;
     return feeCalculator;
+  }
+
+  /**
+   * Gets the corresponding version of the lock duration based on the given block height.
+   */
+  public getLockDurationInBlocks (blockHeight: number): number {
+    const version = this.getVersionString(blockHeight);
+    const protocolParameter = this.protocolParameters.get(version)!;
+    return protocolParameter.valueTimeLockDurationInBlocks;
   }
 
   /**

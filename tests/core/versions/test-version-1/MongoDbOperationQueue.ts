@@ -14,7 +14,6 @@ export default class MongoDbOperationQueue extends MockOperationQueue {
   /**
    * Initialize.
    */
-  // tslint:disable-next-line: no-empty
   public initialize () { }
 
   async enqueue (didUniqueSuffix: string, operationBuffer: Buffer) {

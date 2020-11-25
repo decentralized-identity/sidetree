@@ -10,6 +10,7 @@ import SavedLockModel from '../models/SavedLockedModel';
 import SavedLockType from '../enums/SavedLockType';
 import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
+import VersionManager from '../VersionManager';
 
 /* global NodeJS */
 
@@ -38,8 +39,8 @@ export default class LockMonitor {
 
   /**
    * Constructor for LockMonitor.
-   * @param valueTimeLockUpdateEnabled When this parameter is set to `false`, parameters `lockPeriodInBlocks`,
-   *                                   `transactionFeesAmountInSatoshis` and `desiredLockAmountInSatoshis` will be ignored.
+   * @param valueTimeLockUpdateEnabled When this parameter is set to `false`, parameters `transactionFeesAmountInSatoshis`
+   *                                   and `desiredLockAmountInSatoshis` will be ignored.
    */
   constructor (
     private bitcoinClient: BitcoinClient,
@@ -49,7 +50,7 @@ export default class LockMonitor {
     private valueTimeLockUpdateEnabled: boolean,
     private desiredLockAmountInSatoshis: number,
     private transactionFeesAmountInSatoshis: number,
-    private lockPeriodInBlocks: number) {
+    private versionManager: VersionManager) {
 
     if (!Number.isInteger(desiredLockAmountInSatoshis)) {
       throw new SidetreeError(ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber, `${desiredLockAmountInSatoshis}`);
@@ -271,7 +272,8 @@ export default class LockMonitor {
     console.info(LogColor.lightBlue(`Current wallet balance: ${LogColor.green(walletBalance)}`));
     console.info(LogColor.lightBlue(`Creating a new lock for amount: ${LogColor.green(totalLockAmount)} satoshis.`));
 
-    const lockTransaction = await this.bitcoinClient.createLockTransaction(totalLockAmount, this.lockPeriodInBlocks);
+    const height = await this.bitcoinClient.getCurrentBlockHeight();
+    const lockTransaction = await this.bitcoinClient.createLockTransaction(totalLockAmount, this.versionManager.getLockDurationInBlocks(height));
 
     return this.saveThenBroadcastTransaction(lockTransaction, SavedLockType.Create, desiredLockAmountInSatoshis);
   }
@@ -353,11 +355,12 @@ export default class LockMonitor {
     const currentLockIdentifier = LockIdentifierSerializer.deserialize(currentValueTimeLock.identifier);
     const currentLockDuration = currentValueTimeLock.unlockTransactionTime - currentValueTimeLock.lockTransactionTime;
 
+    const newLockDuration = this.versionManager.getLockDurationInBlocks(await this.bitcoinClient.getCurrentBlockHeight());
     const relockTransaction =
       await this.bitcoinClient.createRelockTransaction(
         currentLockIdentifier.transactionId,
         currentLockDuration,
-        this.lockPeriodInBlocks);
+        newLockDuration);
 
     // If the transaction fee is making the relock amount less than the desired amount
     if (currentValueTimeLock.amountLocked - relockTransaction.transactionFee < desiredLockAmountInSatoshis) {

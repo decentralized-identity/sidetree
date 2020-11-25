@@ -5,10 +5,9 @@
 
 ### Protocol parameters
 
-| Protocol parameters                  | Description                              |
-| ------------------------------------ | ---------------------------------------- |
-| minimumValueTimeLockDurationInBlocks | TODO |
-| maximumValueTimeLockDurationInBlocks | TODO |
+| Protocol parameters                  | Description                                              |
+| ------------------------------------ | ---------------------------------------------------------|
+| valueTimeLockDurationInBlocks        | The duration which a value time lock is required to have |
 
 ### Configuration parameters
 * valueTimeLockUpdateEnabled

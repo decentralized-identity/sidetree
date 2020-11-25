@@ -11,7 +11,6 @@ export default class OperationProcessor implements IOperationProcessor {
     operation: AnchoredOperationModel,
     didState: DidState | undefined
   ): Promise<DidState | undefined> {
-    /* tslint:disable-next-line */
     throw new Error(`OperationProcessor: Not implemented. Version: TestVersion1. Inputs: ${operation}, ${didState}`);
   }
 
