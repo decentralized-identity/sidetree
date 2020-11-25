@@ -259,7 +259,7 @@ describe('TransactionProcessor', () => {
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(Buffer.from('value')));
 
       const mockAnchorFile: AnchorFile = {
-        createOperations: [],
+        createDidSuffixes: [],
         didUniqueSuffixes: ['abc', 'def'],
         model: { writerLockId: 'lock', mapFileUri: 'map_hash', operations: {} },
         recoverDidSuffixes: [],
@@ -728,7 +728,9 @@ describe('TransactionProcessor', () => {
       expect(anchoredOperationModels[0].operationIndex).toEqual(0);
       expect(anchoredOperationModels[0].transactionTime).toEqual(1);
       expect(anchoredOperationModels[1].didUniqueSuffix).toEqual(recoverOperation.didUniqueSuffix);
+      expect(anchoredOperationModels[1].operationIndex).toEqual(1);
       expect(anchoredOperationModels[2].didUniqueSuffix).toEqual(updateOperation.didUniqueSuffix);
+      expect(anchoredOperationModels[2].operationIndex).toEqual(2);
       done();
     });
 

@@ -4,6 +4,7 @@ import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DataGenerator from './DataGenerator';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
+import Did from '../../lib/core/versions/latest/Did';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import JsonCanonicalizer from '../../lib/core/versions/latest/util/JsonCanonicalizer';
@@ -155,7 +156,7 @@ export default class OperationGenerator {
       recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
-    const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
+    const didUniqueSuffix = Did['computeUniqueSuffix'](suffixData);
 
     const shortFormDid = network ? `did:sidetree:${network}:${didUniqueSuffix}` : `did:sidetree:${didUniqueSuffix}`;
 
@@ -196,7 +197,7 @@ export default class OperationGenerator {
       recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryKey)
     };
 
-    const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
+    const didUniqueSuffix = Did['computeUniqueSuffix'](suffixData);
 
     const shortFormDid = network ? `did:sidetree:${network}:${didUniqueSuffix}` : `did:sidetree:${didUniqueSuffix}`;
 
