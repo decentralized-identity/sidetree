@@ -27,10 +27,9 @@ export default class Operation {
     const operationJsonString = operationBuffer.toString();
     const operationObject = JSON.parse(operationJsonString);
     const operationType = operationObject.type;
-    const isAnchorFileMode = false;
 
     if (operationType === OperationType.Create) {
-      return CreateOperation.parseJcsObject(operationObject, operationBuffer, isAnchorFileMode);
+      return CreateOperation.parseJcsObject(operationObject, operationBuffer);
     } else if (operationType === OperationType.Update) {
       return UpdateOperation.parseObject(operationObject, operationBuffer);
     } else if (operationType === OperationType.Recover) {

@@ -3,6 +3,7 @@ import ArrayMethods from './util/ArrayMethods';
 import Compressor from './util/Compressor';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
+import Did from './Did';
 import ErrorCode from './ErrorCode';
 import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
@@ -11,6 +12,14 @@ import OperationReferenceModel from './models/OperationReferenceModel';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
+import SuffixDataModel from './models/SuffixDataModel';
+
+/**
+ * Create reference model internally used in a core index file.
+ */
+interface CreateReferenceModel {
+  suffixData: SuffixDataModel
+}
 
 /**
  * Class containing Anchor File related operations.
@@ -25,7 +34,7 @@ export default class AnchorFile {
   private constructor (
     public readonly model: AnchorFileModel,
     public readonly didUniqueSuffixes: string[],
-    public readonly createOperations: CreateOperation[],
+    public readonly createDidSuffixes: string[],
     public readonly recoverDidSuffixes: string[],
     public readonly deactivateDidSuffixes: string[]) { }
 
@@ -95,18 +104,16 @@ export default class AnchorFile {
     const didUniqueSuffixes: string[] = [];
 
     // Validate `create` if exists.
-    const createOperations: CreateOperation[] = [];
+    let createDidSuffixes: string[] = [];
     if (operations.create !== undefined) {
       if (!Array.isArray(operations.create)) {
         throw new SidetreeError(ErrorCode.AnchorFileCreatePropertyNotArray);
       }
 
-      // Validate every create operation.
-      for (const operation of operations.create) {
-        const createOperation = await CreateOperation.parseOperationFromAnchorFile(operation);
-        createOperations.push(createOperation);
-        didUniqueSuffixes.push(createOperation.didUniqueSuffix);
-      }
+      // Validate every create reference.
+      AnchorFile.validateCreateReferences(operations.create);
+      createDidSuffixes = (operations.create as CreateReferenceModel[]).map(operation => Did.computeUniqueSuffix(operation.suffixData));
+      didUniqueSuffixes.push(...createDidSuffixes);
     }
 
     // Validate `recover` if exists.
@@ -151,7 +158,7 @@ export default class AnchorFile {
       }
     }
 
-    const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes, createOperations, recoverDidSuffixes, deactivateDidSuffixes);
+    const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes, createDidSuffixes, recoverDidSuffixes, deactivateDidSuffixes);
     return anchorFile;
   }
 
@@ -256,6 +263,17 @@ export default class AnchorFile {
         ErrorCode.AnchorFileWriterLockIdExceededMaxSize,
         `Writer lock ID of ${writerLockIdSizeInBytes} bytes exceeded the maximum size of ${ProtocolParameters.maxWriterLockIdInBytes} bytes.`
       );
+    }
+  }
+
+  /**
+   * Validates the given create operation references.
+   */
+  private static validateCreateReferences (operationReferences: any[]) {
+    for (const operationReference of operationReferences) {
+      // Only `suffixData` is allowed.
+      InputValidator.validateObjectContainsOnlyAllowedProperties(operationReference, ['suffixData'], `create operation reference`);
+      InputValidator.validateSuffixData(operationReference.suffixData);
     }
   }
 }

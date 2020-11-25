@@ -118,6 +118,16 @@ export default class Did {
     return did;
   }
 
+  /**
+   * Computes the DID unique suffix given the suffix data object.
+   */
+  public static computeUniqueSuffix (suffixData: object): string {
+    const suffixDataBuffer = JsonCanonicalizer.canonicalizeAsBuffer(suffixData);
+    const multihash = Multihash.hash(suffixDataBuffer);
+    const encodedMultihash = Encoder.encode(multihash);
+    return encodedMultihash;
+  }
+
   private static getInitialStateFromDidStringWithQueryParameter (didString: string, methodNameWithNetworkId: string): string {
     let didStringUrl;
     try {
@@ -186,7 +196,7 @@ export default class Did {
       delta: initialStateObject.delta
     };
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
-    const createOperation = CreateOperation.parseJcsObject(createOperationRequest, createOperationBuffer, false);
+    const createOperation = CreateOperation.parseJcsObject(createOperationRequest, createOperationBuffer);
     return createOperation;
   }
 

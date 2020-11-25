@@ -13,7 +13,6 @@ import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
-import JsonAsync from './util/JsonAsync';
 import LogColor from '../../../common/LogColor';
 import MapFile from './MapFile';
 import OperationType from '../../enums/OperationType';
@@ -278,41 +277,9 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
     // TODO: #766 - Handle combinations of different availability of files here.
 
-    // TODO: #766 - Pending more PR for of remainder of the operation types.
-    const createOperations = anchorFile.createOperations;
-
-    // NOTE: this version of the protocol uses only ONE chunk file,
-    // and operations must be ordered by types with the following order: create, recover, deactivate, update.
-    const operations = [];
-    operations.push(...createOperations);
-
-    // NOTE: The last set of `operations` are deactivates, they don't have `delta` property.
-    const anchoredOperationModels = [];
-    for (let i = 0; i < operations.length; i++) {
-      const operation = operations[i];
-      const operationJsonString = operation.operationBuffer.toString();
-      const operationObject = await JsonAsync.parse(operationJsonString);
-      operationObject.type = operation.type;
-
-      // Add `delta` property read from chunk file to each operation if chunk file exists.
-      // NOTE: Deactivate operation does not have delta.
-      if (chunkFile !== undefined &&
-          operation.type !== OperationType.Deactivate) {
-        operationObject.delta = chunkFile.deltas[i];
-      }
-
-      const patchedOperationBuffer = Buffer.from(JSON.stringify(operationObject));
-      const anchoredOperationModel: AnchoredOperationModel = {
-        didUniqueSuffix: operation.didUniqueSuffix,
-        type: operation.type,
-        operationBuffer: patchedOperationBuffer,
-        operationIndex: i,
-        transactionNumber: transaction.transactionNumber,
-        transactionTime: transaction.transactionTime
-      };
-
-      anchoredOperationModels.push(anchoredOperationModel);
-    }
+    const anchoredCreateOperationModels = TransactionProcessor.composeAnchoredCreateOperationModels(
+      transaction, anchorFile, chunkFile
+    );
 
     const anchoredRecoverOperationModels = TransactionProcessor.composeAnchoredRecoverOperationModels(
       transaction, anchorFile, coreProofFile!, chunkFile
@@ -326,9 +293,57 @@ export default class TransactionProcessor implements ITransactionProcessor {
       transaction, anchorFile, mapFile, provisionalProofFile, chunkFile
     );
 
+    const anchoredOperationModels = [];
+    anchoredOperationModels.push(...anchoredCreateOperationModels);
     anchoredOperationModels.push(...anchoredRecoverOperationModels);
     anchoredOperationModels.push(...anchoredDeactivateOperationModels);
     anchoredOperationModels.push(...anchoredUpdateOperationModels);
+    return anchoredOperationModels;
+  }
+
+  private static composeAnchoredCreateOperationModels (
+    transaction: TransactionModel,
+    anchorFile: AnchorFile,
+    chunkFile: ChunkFileModel | undefined
+  ): AnchoredOperationModel[] {
+    if (anchorFile.createDidSuffixes.length === 0) {
+      return [];
+    }
+
+    let createDeltas;
+    if (chunkFile !== undefined) {
+      createDeltas = chunkFile.deltas.slice(0, anchorFile.createDidSuffixes.length);
+    }
+
+    const createDidSuffixes = anchorFile.createDidSuffixes;
+
+    const anchoredOperationModels = [];
+    for (let i = 0; i < createDidSuffixes.length; i++) {
+      const suffixData = anchorFile.model.operations!.create![i].suffixData;
+
+      // Compose the original operation request from the files.
+      const composedRequest = {
+        type: OperationType.Create,
+        suffixData: suffixData,
+        delta: createDeltas?.[i] // Add `delta` property if chunk file found.
+      };
+
+      // TODO: Issue 442 - https://github.com/decentralized-identity/sidetree/issues/442
+      // Use actual operation request object instead of buffer.
+      const operationBuffer = Buffer.from(JSON.stringify(composedRequest));
+
+      const anchoredOperationModel: AnchoredOperationModel = {
+        didUniqueSuffix: createDidSuffixes[i],
+        type: OperationType.Create,
+        operationBuffer,
+        operationIndex: i,
+        transactionNumber: transaction.transactionNumber,
+        transactionTime: transaction.transactionTime
+      };
+
+      anchoredOperationModels.push(anchoredOperationModel);
+    }
+
     return anchoredOperationModels;
   }
 
@@ -344,8 +359,9 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
     let recoverDeltas;
     if (chunkFile !== undefined) {
-      const recoverDeltaStartIndex = anchorFile.createOperations.length;
-      recoverDeltas = chunkFile.deltas.slice(recoverDeltaStartIndex);
+      const recoverDeltaStartIndex = anchorFile.createDidSuffixes.length;
+      const recoverDeltaEndIndexExclusive = recoverDeltaStartIndex + anchorFile.recoverDidSuffixes.length;
+      recoverDeltas = chunkFile.deltas.slice(recoverDeltaStartIndex, recoverDeltaEndIndexExclusive);
     }
 
     const recoverDidSuffixes = anchorFile.recoverDidSuffixes;
@@ -369,7 +385,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
         didUniqueSuffix: recoverDidSuffixes[i],
         type: OperationType.Recover,
         operationBuffer,
-        operationIndex: anchorFile.createOperations.length + i,
+        operationIndex: anchorFile.createDidSuffixes.length + i,
         transactionNumber: transaction.transactionNumber,
         transactionTime: transaction.transactionTime
       };
@@ -409,7 +425,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
         didUniqueSuffix: deactivateDidSuffixes[i],
         type: OperationType.Deactivate,
         operationBuffer,
-        operationIndex: anchorFile.createOperations.length + anchorFile.recoverDidSuffixes.length + i,
+        operationIndex: anchorFile.createDidSuffixes.length + anchorFile.recoverDidSuffixes.length + i,
         transactionNumber: transaction.transactionNumber,
         transactionTime: transaction.transactionTime
       };
@@ -436,7 +452,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
     let updateDeltas;
     if (chunkFile !== undefined) {
-      const updateDeltaStartIndex = anchorFile.createOperations.length + anchorFile.recoverDidSuffixes.length;
+      const updateDeltaStartIndex = anchorFile.createDidSuffixes.length + anchorFile.recoverDidSuffixes.length;
       updateDeltas = chunkFile!.deltas.slice(updateDeltaStartIndex);
     }
 

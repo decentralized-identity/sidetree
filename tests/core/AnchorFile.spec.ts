@@ -35,8 +35,8 @@ describe('AnchorFile', async () => {
 
       const parsedAnchorFile = await AnchorFile.parse(anchorFileBuffer);
 
-      expect(parsedAnchorFile.createOperations.length).toEqual(1);
-      expect(parsedAnchorFile.createOperations[0].encodedSuffixData).toEqual(createOperation.encodedSuffixData);
+      expect(parsedAnchorFile.createDidSuffixes.length).toEqual(1);
+      expect(parsedAnchorFile.createDidSuffixes[0]).toEqual(createOperation.didUniqueSuffix);
       expect(parsedAnchorFile.recoverDidSuffixes.length).toEqual(1);
       expect(parsedAnchorFile.recoverDidSuffixes[0]).toEqual(recoverOperation.didUniqueSuffix);
       expect(parsedAnchorFile.deactivateDidSuffixes.length).toEqual(1);
