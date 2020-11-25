@@ -819,8 +819,6 @@ export default class BitcoinProcessor {
 
     await this.blockMetadataStore.add([processedBlockMetadata]);
 
-    await this.blockMetadataStore.add([processedBlockMetadata]);
-
     return processedBlockMetadata;
   }
 
