@@ -59,7 +59,7 @@ export default class AnchorFile {
       throw SidetreeError.createFromError(ErrorCode.AnchorFileNotJson, e);
     }
 
-    const allowedProperties = new Set(['mapFileUri', 'coreProofFileUri', 'operations', 'writerLockId']);
+    const allowedProperties = new Set(['provisionalIndexFileUri', 'coreProofFileUri', 'operations', 'writerLockId']);
     for (const property in anchorFileModel) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
@@ -134,12 +134,12 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid);
     }
 
-    // If there is no operation reference in this file, then `mapFileUri` MUST exist, because there must be at least one operation in a batch,
+    // If there is no operation reference in this file, then `provisionalIndexFileUri` MUST exist, because there must be at least one operation in a batch,
     // so this would imply that the operation reference must be in the provisional index file.
 
     // Map file URI validations.
-    if (!('mapFileUri' in anchorFileModel)) {
-      // If `mapFileUri` does not exist, then `operations` MUST have just deactivates. ie. only deactivates have no delta in chunk file.
+    if (!('provisionalIndexFileUri' in anchorFileModel)) {
+      // If `provisionalIndexFileUri` does not exist, then `operations` MUST have just deactivates. ie. only deactivates have no delta in chunk file.
       const createPlusRecoverOperationCount = createDidSuffixes.length + recoverDidSuffixes.length;
       if (createPlusRecoverOperationCount === 0) {
         throw new SidetreeError(
@@ -148,7 +148,7 @@ export default class AnchorFile {
         );
       }
     } else {
-      InputValidator.validateCasFileUri(anchorFileModel.mapFileUri, 'provisional index file URI');
+      InputValidator.validateCasFileUri(anchorFileModel.provisionalIndexFileUri, 'provisional index file URI');
     }
 
     // Validate core proof file URI.
@@ -172,7 +172,7 @@ export default class AnchorFile {
    */
   public static async createModel (
     writerLockId: string | undefined,
-    mapFileUri: string | undefined,
+    provisionalIndexFileUri: string | undefined,
     coreProofFileHash: string | undefined,
     createOperationArray: CreateOperation[],
     recoverOperationArray: RecoverOperation[],
@@ -185,7 +185,7 @@ export default class AnchorFile {
 
     const anchorFileModel: AnchorFileModel = {
       writerLockId,
-      mapFileUri
+      provisionalIndexFileUri
     };
 
     // Only insert `operations` property if there is at least one operation reference.
@@ -245,14 +245,14 @@ export default class AnchorFile {
    */
   public static async createBuffer (
     writerLockId: string | undefined,
-    mapFileUri: string | undefined,
+    provisionalIndexFileUri: string | undefined,
     coreProofFileHash: string | undefined,
     createOperations: CreateOperation[],
     recoverOperations: RecoverOperation[],
     deactivateOperations: DeactivateOperation[]
   ): Promise<Buffer> {
     const anchorFileModel = await AnchorFile.createModel(
-      writerLockId, mapFileUri, coreProofFileHash, createOperations, recoverOperations, deactivateOperations
+      writerLockId, provisionalIndexFileUri, coreProofFileHash, createOperations, recoverOperations, deactivateOperations
     );
     const anchorFileJson = JSON.stringify(anchorFileModel);
     const anchorFileBuffer = Buffer.from(anchorFileJson);

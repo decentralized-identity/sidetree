@@ -181,13 +181,13 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const anchorFileModel = anchorFile.model;
 
       // If no map file URI is defined (legitimate case when there is only deactivates in the operation batch), then no map file to download.
-      if (anchorFileModel.mapFileUri === undefined) {
+      if (anchorFileModel.provisionalIndexFileUri === undefined) {
         return undefined;
       }
 
-      console.info(`Downloading map file '${anchorFileModel.mapFileUri}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
+      console.info(`Downloading map file '${anchorFileModel.provisionalIndexFileUri}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
 
-      const fileBuffer = await this.downloadFileFromCas(anchorFileModel.mapFileUri, ProtocolParameters.maxMapFileSizeInBytes);
+      const fileBuffer = await this.downloadFileFromCas(anchorFileModel.provisionalIndexFileUri, ProtocolParameters.maxMapFileSizeInBytes);
       const mapFile = await MapFile.parse(fileBuffer);
 
       // Calculate the max paid update operation count.
@@ -218,7 +218,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
         return undefined;
       } else {
-        console.error(`Unexpected error fetching map file ${anchorFile.model.mapFileUri}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
+        const errorString = SidetreeError.stringify(error);
+        console.error(`Unexpected error fetching provisional index file ${anchorFile.model.provisionalIndexFileUri}, MUST investigate and fix: ${errorString}`);
         return undefined;
       }
     }
