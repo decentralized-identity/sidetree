@@ -52,21 +52,12 @@ export default class UpdateOperation implements OperationModel {
   }
 
   /**
-   * Parses the given input as an update operation entry in the map file.
-   */
-  public static async parseOperationFromMapFile (input: any): Promise<UpdateOperation> {
-    const operationBuffer = Buffer.from(JSON.stringify(input));
-    const operation = await UpdateOperation.parseObject(input, operationBuffer, true);
-    return operation;
-  }
-
-  /**
    * Parses the given buffer as a `UpdateOperation`.
    */
   public static async parse (operationBuffer: Buffer): Promise<UpdateOperation> {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
-    const updateOperation = await UpdateOperation.parseObject(operationObject, operationBuffer, false);
+    const updateOperation = await UpdateOperation.parseObject(operationObject, operationBuffer);
     return updateOperation;
   }
 
@@ -75,13 +66,9 @@ export default class UpdateOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
-   * @param mapFileMode If set to true, then `delta` and `type` properties are expected to be absent.
    */
-  public static async parseObject (operationObject: any, operationBuffer: Buffer, mapFileMode: boolean): Promise<UpdateOperation> {
-    let expectedPropertyCount = 4;
-    if (mapFileMode) {
-      expectedPropertyCount = 2;
-    }
+  public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<UpdateOperation> {
+    const expectedPropertyCount = 4;
 
     const properties = Object.keys(operationObject);
     if (properties.length !== expectedPropertyCount) {
@@ -95,20 +82,13 @@ export default class UpdateOperation implements OperationModel {
     const signedData = Jws.parseCompactJws(operationObject.signedData);
     const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
 
-    // If not in map file mode, we need to validate `type` and `delta` properties.
-    let delta;
-    if (!mapFileMode) {
-      if (operationObject.type !== OperationType.Update) {
-        throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
-      }
-      Operation.validateDelta(operationObject.delta);
-      delta = {
-        patches: operationObject.delta.patches,
-        updateCommitment: operationObject.delta.updateCommitment
-      };
+    if (operationObject.type !== OperationType.Update) {
+      throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.didSuffix, signedData, signedDataModel, delta);
+    Operation.validateDelta(operationObject.delta);
+
+    return new UpdateOperation(operationBuffer, operationObject.didSuffix, signedData, signedDataModel, operationObject.delta);
   }
 
   /**

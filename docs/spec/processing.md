@@ -2,13 +2,13 @@
 
 ### Transaction Anchoring
 
-Once an Anchor File, Map File, and associated Chunk Files have been assembled for a given set of operations, a reference to the [Anchor File](#anchor-file) must be embedded within the target ledger to enter the set of operations into the Sidetree implementation's global state. The following process:
+Once an Core Index File, Provisional Index File, and associated Chunk Files have been assembled for a given set of operations, a reference to the [Core Index File](#core-index-file) must be embedded within the target ledger to enter the set of operations into the Sidetree implementation's global state. The following process:
 
 1. Generate a transaction for the underlying ledger
 2. Generate and include the following value, herein referred to as the [_Anchor String_](#anchor-string){id="anchor-string"}, within the transaction:
-    1. Generate a numerical string (`'732'`) that represents the total number of operations present in the [Anchor File](#anchor-file) and [Map File](#map-file), herein referred to as the _Operation Count_.
-    2. Using the [`CAS_URI_ALGORITHM`](#cas-uri-algorithm), generate a CID for the Anchor File, herein referred to as the _Anchor File CAS URI_.
-    3. Join the _Operation Count_ and _Anchor File CAS URI_ with a `.` as follows:
+    1. Generate a numerical string (`'732'`) that represents the total number of operations present in the [Core Index File](#core-index-file) and [Provisional Index File](#provisional-index-file), herein referred to as the _Operation Count_.
+    2. Using the [`CAS_URI_ALGORITHM`](#cas-uri-algorithm), generate a CID for the Core Index File, herein referred to as the _Core Index File CAS URI_.
+    3. Join the _Operation Count_ and _Core Index File CAS URI_ with a `.` as follows:
         ```js
         "10000" + "." + "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
         ```
@@ -40,27 +40,27 @@ Regardless of the ledger system an implementer chooses, the implementer ****MUST
     3. The [_Anchor String_](#anchor-string) ****MUST**** be formatted correctly - if it IS NOT, discard the transaction and continue iteration.
     4. If the implementation DOES NOT support enforcement of a [per-operation fee](#proof-of-fee), skip this step. If enforcement of a [per-operation fee](#proof-of-fee) is supported, ensure the transaction fee meets the [per-operation fee](#proof-of-fee) requirements for inclusion - if it DOES NOT, discard the transaction and continue iteration. 
     5. If the implementation DOES NOT support enforcement of [Value Locking](#value-locking), skip this step. If enforcement of [Value Locking](#value-locking) is supported, ensure the transaction's fee meets the [Value Locking](#value-locking) requirements for inclusion - if it does not, discard the transaction and continue iteration.
-    6. Parse the [_Anchor String_](#anchor-string) to derive the _Operation Count_ and _Anchor File CAS URI_.
-    7. Use the [`CAS_PROTOCOL`](#cas-protocol) to fetch the [Anchor File](#anchor-file) using the _Anchor File CAS URI_. If the file cannot be located, retain a reference that signifies the need to retry fetch of the file. If the file successfully retrieved, proceed to the next section on how to [process an Anchor File](#anchor-file-processing)
+    6. Parse the [_Anchor String_](#anchor-string) to derive the _Operation Count_ and _Core Index File CAS URI_.
+    7. Use the [`CAS_PROTOCOL`](#cas-protocol) to fetch the [Core Index File](#core-index-file) using the _Core Index File CAS URI_. If the file cannot be located, retain a reference that signifies the need to retry fetch of the file. If the file successfully retrieved, proceed to the next section on how to [process an Core Index File](#core-index-file-processing)
 
-### Anchor File Processing
+### Core Index File Processing
 
-This sequence of rules and processing steps ****must**** be followed to correctly process an [Anchor File](#anchor-file):
+This sequence of rules and processing steps ****must**** be followed to correctly process an [Core Index File](#core-index-file):
 
-1. The [Anchor File](#anchor-file) ****MUST NOT**** exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-anchor-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
-2. The [Anchor File](#anchor-file) ****MUST**** validate against the protocol-defined [Anchor File](#anchor-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
-    - While this rule is articulated in the [Anchor File](#anchor-file) section of the specification, it should be emphasized to ensure accurate processing: an [Anchor File](#anchor-file) ****MUST NOT**** include multiple operations in the `operations` section of the [Anchor File](#anchor-file) for the same [DID Suffix](#did-suffix) - if any duplicates are found, cease processing, discard the file data, and retain a reference that the file is to be ignored.
-3. If processing of rules 1 and 2 above resulted in successful validation of the Anchor File, initiate retrieval of the [Map File](#map-file) via the [`CAS_PROTOCOL`](#cas-protocol) using the [`mapFileUri`](#map-file-property) property's  _CAS URI_ value, if the [`mapFileUri`](#map-file-property) property is present. This is only a ****SUGGESTED**** point at which to begin retrieval of the Map File, not a blocking procedural step, so you may continue with processing before retrieval of the [Map File](#map-file) is complete.
-4. Decompress the [Anchor File](#anchor-file) in accordance with the implementation's [`COMPRESSION_ALGORITHM`](#compression-algorithm).
-5. Iterate the [_Anchor File Create Entries_](#anchor-file-create-entry), and for each entry, process as follows:
+1. The [Core Index File](#core-index-file) ****MUST NOT**** exceed the [`MAX_CORE_INDEX_FILE_SIZE`](#max-core-index-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+2. The [Core Index File](#core-index-file) ****MUST**** validate against the protocol-defined [Core Index File](#core-index-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+    - While this rule is articulated in the [Core Index File](#core-index-file) section of the specification, it should be emphasized to ensure accurate processing: an [Core Index File](#core-index-file) ****MUST NOT**** include multiple operations in the `operations` section of the [Core Index File](#core-index-file) for the same [DID Suffix](#did-suffix) - if any duplicates are found, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+3. If processing of rules 1 and 2 above resulted in successful validation of the Core Index File, initiate retrieval of the [Provisional Index File](#provisional-index-file) via the [`CAS_PROTOCOL`](#cas-protocol) using the [`provisionalIndexFileUri`](#provisional-index-file-property) property's  _CAS URI_ value, if the [`provisionalIndexFileUri`](#provisional-index-file-property) property is present. This is only a ****SUGGESTED**** point at which to begin retrieval of the Provisional Index File, not a blocking procedural step, so you may continue with processing before retrieval of the [Provisional Index File](#provisional-index-file) is complete.
+4. Decompress the [Core Index File](#core-index-file) in accordance with the implementation's [`COMPRESSION_ALGORITHM`](#compression-algorithm).
+5. Iterate the [_Core Index File Create Entries_](#core-index-file-create-entry), and for each entry, process as follows:
     1. Derive the [DID Suffix](#did-suffix) from the values present in the entry.
-    2. Ensure the [DID Suffix](#did-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of this Anchor File. If another previous, valid operation was already processed in the scope of this [Anchor File](#anchor-file) for the same DID, do not process the operation and move to the next operation in the array.
+    2. Ensure the [DID Suffix](#did-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of this Core Index File. If another previous, valid operation was already processed in the scope of this [Core Index File](#core-index-file) for the same DID, do not process the operation and move to the next operation in the array.
     3. Create an entry for the operation within the _Operation Storage_ area relative to the [DID Suffix](#did-suffix).
-6. Iterate the [_Anchor File Recovery Entries_](#anchor-file-recovery-entry), and for each entry, process as follows:
-    1. Ensure the [DID Suffix](#did-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of this Anchor File. If another previous, valid operation was already processed in the scope of this [Anchor File](#anchor-file) for the same DID, do not process the operation and move to the next operation in the array.
+6. Iterate the [_Core Index File Recovery Entries_](#core-index-file-recovery-entry), and for each entry, process as follows:
+    1. Ensure the [DID Suffix](#did-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of this Core Index File. If another previous, valid operation was already processed in the scope of this [Core Index File](#core-index-file) for the same DID, do not process the operation and move to the next operation in the array.
     2. Create an entry for the operation within the _Operation Storage_ area relative to the [DID Suffix](#did-suffix).
-7. Iterate the [Anchor File](#anchor-file) [_Deactivate Entries_](#anchor-file-deactivate-entry), and for each entry, process as follows:
-    1. Ensure the [DID Suffix](#did-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of this Anchor File. If another previous, valid operation was already processed in the scope of this [Anchor File](#anchor-file) for the same DID, do not process the operation and move to the next operation in the array.
+7. Iterate the [Core Index File](#core-index-file) [_Deactivate Entries_](#core-index-file-deactivate-entry), and for each entry, process as follows:
+    1. Ensure the [DID Suffix](#did-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of this Core Index File. If another previous, valid operation was already processed in the scope of this [Core Index File](#core-index-file) for the same DID, do not process the operation and move to the next operation in the array.
     2. Create an entry for the operation within the _Operation Storage_ area relative to the [DID Suffix](#did-suffix).
 
     <!-- 2. Concatenate the [DID Suffix](#did-suffix) and the _Recovery Reveal Value_ together and validate the signature present in the entry against the concatenated string value. If the signature is valid, update retained references to the DID to deactivate it. If the signature is invalid, do not process the operation and move to the next operation in the array. -->
@@ -69,16 +69,16 @@ This sequence of rules and processing steps ****must**** be followed to correctl
 Confirm how we handle ops where there was not a previous op found.
 :::
 
-### Map File Processing
+### Provisional Index File Processing
 
-This sequence of rules and processing steps ****must**** be followed to correctly process a Map File:
+This sequence of rules and processing steps ****must**** be followed to correctly process a Provisional Index File:
 
-1. The [Map File](#map-file) ****MUST NOT**** exceed the [`MAX_MAP_FILE_SIZE`](#max-map-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
-2. The [Map File](#map-file) ****MUST**** validate against the protocol-defined [Map File](#map-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
-3. If processing of rules 1 and 2 above resulted in successful validation of the Map File, begin retrieval of the Chunk Files by iterating the `chunks` array and using the [`CAS_PROTOCOL`](#cas-protocol) to fetch each entry's `chunkFileUri` (a _CAS URI_ based on the [`CAS_URI_ALGORITHM`](#cas-uri-algorithm)). This is only a ****SUGGESTED**** point at which to begin retrieval of the [Chunk Files](#chunk-files), not a blocking procedural step, so you may continue with processing before retrieval of the [Chunk Files](#chunk-files) is complete.
-4. Decompress the [Map File](#map-file) in accordance with the implementation's [`COMPRESSION_ALGORITHM`](#compression-algorithm).
-5. Iterate the [_Map File Update Entries_](#map-file-update-entry), and for each entry, process as follows:
-    1. Ensure the [DID Suffix](#did-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of the [Map File](#map-file) or its parent [Anchor File](#anchor-file). If another previous, valid operation was already processed in the scope of this [Anchor File](#anchor-file) for the same DID, do not process the operation and move to the next operation in the array.
+1. The [Provisional Index File](#provisional-index-file) ****MUST NOT**** exceed the [`MAX_PROVISIONAL_INDEX_FILE_SIZE`](#max-provisional-index-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+2. The [Provisional Index File](#provisional-index-file) ****MUST**** validate against the protocol-defined [Provisional Index File](#provisional-index-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+3. If processing of rules 1 and 2 above resulted in successful validation of the Provisional Index File, begin retrieval of the Chunk Files by iterating the `chunks` array and using the [`CAS_PROTOCOL`](#cas-protocol) to fetch each entry's `chunkFileUri` (a _CAS URI_ based on the [`CAS_URI_ALGORITHM`](#cas-uri-algorithm)). This is only a ****SUGGESTED**** point at which to begin retrieval of the [Chunk Files](#chunk-files), not a blocking procedural step, so you may continue with processing before retrieval of the [Chunk Files](#chunk-files) is complete.
+4. Decompress the [Provisional Index File](#provisional-index-file) in accordance with the implementation's [`COMPRESSION_ALGORITHM`](#compression-algorithm).
+5. Iterate the [_Provisional Index File Update Entries_](#provisional-index-file-update-entry), and for each entry, process as follows:
+    1. Ensure the [DID Suffix](#did-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of the [Provisional Index File](#provisional-index-file) or its parent [Core Index File](#core-index-file). If another previous, valid operation was already processed in the scope of this [Core Index File](#core-index-file) for the same DID, do not process the operation and move to the next operation in the array.
     2. Create an entry for the operation within the _Operation Storage_ area relative to the [DID Suffix](#did-suffix).
 6. If the node is in a [_Light Node_](#light-node) configuration, retain a reference to the [Chunk Files](#chunk-files) relative to the DIDs in the anchored batch for just-in-time fetch of the [Chunk Files](#chunk-files) during DID resolution.
 
@@ -90,7 +90,7 @@ This sequence of rules and processing steps ****must**** be followed to correctl
 2. The [Core Proof File](#core-proof-file) ****MUST**** validate against the protocol-defined [Core Proof File](#core-proof-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 3. Decompress the [Core Proof File](#core-proof-file) in accordance with the implementation's [`COMPRESSION_ALGORITHM`](#compression-algorithm).
 4. Iterate any [_Core Proof File Recovery Entries_](#core-proof-file-recovery-entry) and [_Core Proof File Deactivate Entries_](#core-proof-file-recovery-entry) that may be present, and for each entry, process as follows:
-    1. Ensure an operation for the related DID has not been included in another valid operation that was previously processed in the scope of the [Core Proof File](#core-proof-file) or its parent [Anchor File](#anchor-file). If another previous, valid operation was already processed in the scope of the [Core Proof File](#core-proof-file) or [Anchor File](#anchor-file) for the same DID, do not process the operation and move to the next operation in the array.
+    1. Ensure an operation for the related DID has not been included in another valid operation that was previously processed in the scope of the [Core Proof File](#core-proof-file) or its parent [Core Index File](#core-index-file). If another previous, valid operation was already processed in the scope of the [Core Proof File](#core-proof-file) or [Core Index File](#core-index-file) for the same DID, do not process the operation and move to the next operation in the array.
     2. Create an entry, or associate with an existing entry, the proof payload within the _Operation Storage_ area relative to the [DID Suffix](#did-suffix).
 
 ### Provisional Proof File Processing
@@ -101,7 +101,7 @@ This sequence of rules and processing steps ****must**** be followed to correctl
 2. The [_Provisional Proof File_](#provisional-proof-file) ****MUST**** validate against the protocol-defined [_Provisional Proof File_](#provisional-proof-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 3. Decompress the [Provisional Proof File](#provisional-proof-file) in accordance with the implementation's [`COMPRESSION_ALGORITHM`](#compression-algorithm).
 4. Iterate any [_Provisional Proof File Update Entries_](#provisional-proof-file-update-entry) that may be present, and for each entry, process as follows:
-    1. Ensure an operation for the related DID has not been included in another valid operation that was previously processed in the scope of the [_Provisional Proof File_](#provisional-proof-file) or its parent [Anchor File](#anchor-file). If another previous, valid operation was already processed in the scope of the [_Provisional Proof File_](#provisional-proof-file) or [Anchor File](#anchor-file) for the same DID, do not process the operation and move to the next operation in the array.
+    1. Ensure an operation for the related DID has not been included in another valid operation that was previously processed in the scope of the [_Provisional Proof File_](#provisional-proof-file) or its parent [Core Index File](#core-index-file). If another previous, valid operation was already processed in the scope of the [_Provisional Proof File_](#provisional-proof-file) or [Core Index File](#core-index-file) for the same DID, do not process the operation and move to the next operation in the array.
     2. Create an entry, or associate with an existing entry, the proof payload within the _Operation Storage_ area relative to the [DID Suffix](#did-suffix).
 
 ### Chunk File Processing
@@ -111,12 +111,12 @@ This sequence of rules and processing steps ****must**** be followed to correctl
 1. The [Chunk File](#chunk-file) chunk ****MUST NOT**** exceed the [`MAX_CHUNK_FILE_SIZE`](#max-chunk-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 2. The [Chunk File](#chunk-file) ****MUST**** validate against the protocol-defined [Chunk File](#chunk-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 3. Decompress the [Chunk File](#chunk-file) in accordance with the implementation's [`COMPRESSION_ALGORITHM`](#compression-algorithm).
-4. In order to process [_Chunk File Delta Entries_](#chunk-file-delta-entry) in relation to the DIDs they are bound to, they must be mapped back to the Create, Recovery, and Update operation entries present in the [Anchor File](#anchor-file) and [Map File](#map-file). To create this mapping, concatenate the [_Anchor File Create Entries_](#anchor-file-create-entry), [_Anchor File Recovery Entries_](#anchor-file-recovery-entry), [_Map File Update Entries_](#map-file-recovery-entry) into a single array, in that order, herein referred to as the [Operation Delta Mapping Array](#operation-delta-mapping-array){id="operation-delta-mapping-array"}. Pseudo-code example:
+4. In order to process [_Chunk File Delta Entries_](#chunk-file-delta-entry) in relation to the DIDs they are bound to, they must be mapped back to the Create, Recovery, and Update operation entries present in the [Core Index File](#core-index-file) and [Provisional Index File](#provisional-index-file). To create this mapping, concatenate the [_Core Index File Create Entries_](#core-index-file-create-entry), [_Core Index File Recovery Entries_](#core-index-file-recovery-entry), [_Provisional Index File Update Entries_](#provisional-index-file-recovery-entry) into a single array, in that order, herein referred to as the [Operation Delta Mapping Array](#operation-delta-mapping-array){id="operation-delta-mapping-array"}. Pseudo-code example:
     ```js
     let mappingArray = [].concat(CREATE_ENTRIES, RECOVERY_ENTRIES, UPDATE_ENTRIES);
     ```
 5. With the [Operation Delta Mapping Array](#operation-delta-mapping-array) assembled, iterate the [_Chunk File Delta Entries_](#chunk-file-delta-entry) from 0 index forward, processing each [_Chunk File Delta Entry_](#chunk-file-delta-entry) as follows:
-    1. Identify the operation entry from the [Operation Delta Mapping Array](#operation-delta-mapping-array) at the same index as the current iteration and determine its [DID Suffix](#did-suffix) (for [_Anchor File Create Entries_](#anchor-file-create-entry), you will need to compute the [DID Suffix](#did-suffix)). This is the DID the current iteration element maps to.
+    1. Identify the operation entry from the [Operation Delta Mapping Array](#operation-delta-mapping-array) at the same index as the current iteration and determine its [DID Suffix](#did-suffix) (for [_Core Index File Create Entries_](#core-index-file-create-entry), you will need to compute the [DID Suffix](#did-suffix)). This is the DID the current iteration element maps to.
     2. Store the current [_Chunk File Delta Entry_](#chunk-file-delta-entry) relative to its operation entry in the persistent storage area designated for the related [DID Suffix](#did-suffix).
 
 ::: note
