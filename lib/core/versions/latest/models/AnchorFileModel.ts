@@ -5,7 +5,7 @@ import OperationReferenceModel from './OperationReferenceModel';
  */
 export default interface AnchorFileModel {
   writerLockId?: string;
-  mapFileUri?: string;
+  provisionalIndexFileUri?: string;
   coreProofFileUri?: string;
   operations?: {
     create?: {
