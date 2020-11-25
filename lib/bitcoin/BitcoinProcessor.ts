@@ -551,15 +551,14 @@ export default class BitcoinProcessor {
   private async writeBlocksToMetadataStoreWithFee (blocks: BlockMetadataWithoutNormalizedFee[]) {
     const blocksToWrite = [];
     for (const block of blocks) {
-      const normalizedFee = (await this.getNormalizedFee(block.height)).normalizedTransactionFee;
-      const blockMetadata = {
-        normalizedFee,
+      const feeCalculator = await this.versionManager.getFeeCalculator(block.height);
+      const blockMetadata = await feeCalculator.addNormalizedFeeToBlockMetadata({
         height: block.height,
         hash: block.hash,
         previousHash: block.previousHash,
         transactionCount: block.transactionCount,
         totalFee: block.totalFee
-      };
+      });
 
       blocksToWrite.push(blockMetadata);
     }
@@ -809,16 +808,14 @@ export default class BitcoinProcessor {
     // Compute the total fee paid, total transaction count and normalized fee required for block metadata.
     const transactionCount = blockData.transactions.length;
     const totalFee = BitcoinProcessor.getBitcoinBlockTotalFee(blockData);
-    const normalizedFee = (await this.getNormalizedFee(blockHeight)).normalizedTransactionFee;
-
-    const processedBlockMetadata: BlockMetadata = {
+    const feeCalculator = this.versionManager.getFeeCalculator(blockHeight);
+    const processedBlockMetadata = await feeCalculator.addNormalizedFeeToBlockMetadata({
       hash: blockHash,
       height: blockHeight,
       previousHash: blockData.previousHash,
-      normalizedFee,
       totalFee,
       transactionCount
-    };
+    });
 
     await this.blockMetadataStore.add([processedBlockMetadata]);
 

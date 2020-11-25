@@ -1,4 +1,5 @@
 import BlockMetadata from '../../models/BlockMetadata';
+import BlockMetadataWithoutNormalizedFee from '../../models/BlockMetadataWithoutNormalizedFee';
 import IBlockMetadataStore from '../../interfaces/IBlockMetadataStore';
 import IFeeCalculator from '../../interfaces/IFeeCalculator';
 
@@ -7,12 +8,16 @@ import IFeeCalculator from '../../interfaces/IFeeCalculator';
  */
 export default class NormalizedFeeCalculator implements IFeeCalculator {
 
+  private blockMetadataCache: BlockMetadata[];
+  private expectedBlockHeight: number | undefined = undefined;
   constructor (
     private blockMetadataStore: IBlockMetadataStore,
     private genesisBlockNumber: number,
     private initialNormalizedFee: number,
     private feeLookBackWindowInBlocks: number,
-    private feeMaxFluctuationMultiplierPerBlock: number) {}
+    private feeMaxFluctuationMultiplierPerBlock: number) {
+    this.blockMetadataCache = [];
+  }
 
   /**
    * Initializes the Bitcoin processor.
@@ -21,22 +26,36 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
     console.log(`Initializing normalized fee calculator.`);
   }
 
+  /**
+   * This adds normalized fee to the block as it would calculate normalziedFee, but uses a cache to remeber previously seen blocks.
+   * Which reduces calls to the metadata store.
+   */
+  public async addNormalizedFeeToBlockMetadata (blockMetadata: BlockMetadataWithoutNormalizedFee): Promise<BlockMetadata> {
+    if (blockMetadata.height < this.genesisBlockNumber + this.feeLookBackWindowInBlocks) {
+      return Object.assign({ normalizedFee: this.initialNormalizedFee }, blockMetadata);
+    }
+    // the cache won't work if the block is not expected, refetch the blocks and store in cache
+    if (this.expectedBlockHeight !== blockMetadata.height) {
+      this.blockMetadataCache = await this.getBlocksInLookBackWindow(blockMetadata.height);
+      this.expectedBlockHeight = blockMetadata.height;
+    }
+    const newFee = this.calculateNormalizedFee(this.blockMetadataCache);
+    const newBlockWithFee = Object.assign({ normalizedFee: newFee }, blockMetadata);
+    this.blockMetadataCache.push(newBlockWithFee);
+    this.blockMetadataCache.shift();
+    this.expectedBlockHeight++;
+    return newBlockWithFee;
+  }
+
   public async getNormalizedFee (block: number): Promise<number> {
-    // DB call optimization
-    // https://github.com/decentralized-identity/sidetree/issues/936
-    if (block < this.genesisBlockNumber) {
-      // No normalized fee for blocks that exist before genesis
-      return 0;
-    } else if (block < this.genesisBlockNumber + this.feeLookBackWindowInBlocks) {
-      // if within look back interval of genesis, use the initial fee
+    if (block < this.genesisBlockNumber + this.feeLookBackWindowInBlocks) {
       return this.initialNormalizedFee;
     }
-
-    const blocksToAverage = await this.getLookBackBlocks(block);
+    const blocksToAverage = await this.getBlocksInLookBackWindow(block);
     return this.calculateNormalizedFee(blocksToAverage);
   }
 
-  private async getLookBackBlocks (block: number): Promise<BlockMetadata[]> {
+  private async getBlocksInLookBackWindow (block: number): Promise<BlockMetadata[]> {
     // look back the interval
     return await this.blockMetadataStore.get(block - this.feeLookBackWindowInBlocks, block);
   }

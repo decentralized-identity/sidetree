@@ -1,3 +1,4 @@
+import BlockMetadataWithoutNormalizedFee from '../../../lib/bitcoin/models/BlockMetadataWithoutNormalizedFee';
 import IBlockMetadataStore from '../../../lib/bitcoin/interfaces/IBlockMetadataStore';
 import MockBlockMetadataStore from '../../mocks/MockBlockMetadataStore';
 import NormalizedFeeCalculator from '../../../lib/bitcoin/versions/latest/NormalizedFeeCalculator';
@@ -18,13 +19,100 @@ describe('NormalizedFeeCalculaor', () => {
     });
   });
 
-  describe('getNormalizedFee', () => {
-    it('should return 0 if block is less than genesis.', async (done) => {
-      const actual = await normalizedFeeCalculator.getNormalizedFee(0);
-      expect(actual).toEqual(0);
-      done();
+  describe('addNormalizedFeeToBlock', () => {
+    let blockMetadataWithoutFee : BlockMetadataWithoutNormalizedFee;
+    beforeEach(() => {
+      blockMetadataWithoutFee = {
+        height: 0,
+        hash: 'hash',
+        previousHash: 'prevHash',
+        transactionCount: 100,
+        totalFee: 100
+      };
     });
 
+    it('should return initial fee for blocks within genesis + lookBackDuration', async () => {
+      blockMetadataWithoutFee.height = 100;
+      const actual = await normalizedFeeCalculator.addNormalizedFeeToBlockMetadata(blockMetadataWithoutFee);
+      expect(actual.normalizedFee).toEqual(1);
+    });
+
+    it('should calculate normalized fee and fetch for blocks when starting fresh', async () => {
+      blockMetadataWithoutFee.height = 101;
+      const getMetadataSpy = spyOn(mockMetadataStore, 'get').and.returnValue(Promise.resolve([
+        {
+          height: 98,
+          hash: 'string',
+          normalizedFee: 1000000,
+          previousHash: 'string',
+          transactionCount: 2,
+          totalFee: 1999994
+        },
+        {
+          height: 99,
+          hash: 'string',
+          normalizedFee: 1000000,
+          previousHash: 'string',
+          transactionCount: 1,
+          totalFee: 999997
+        },
+        {
+          height: 100,
+          hash: 'string',
+          normalizedFee: 1000000,
+          previousHash: 'string',
+          transactionCount: 10,
+          totalFee: 9999970
+        }
+      ]));
+      const actual = await normalizedFeeCalculator.addNormalizedFeeToBlockMetadata(blockMetadataWithoutFee);
+      expect(actual.normalizedFee).toBeDefined();
+      expect(getMetadataSpy).toHaveBeenCalled();
+      expect(normalizedFeeCalculator['blockMetadataCache'][0].height).toEqual(99);
+      expect(normalizedFeeCalculator['blockMetadataCache'][2].height).toEqual(101);
+      expect(normalizedFeeCalculator['expectedBlockHeight']).toEqual(102);
+    });
+
+    it('should calculate normalized feeand use cache', async () => {
+      blockMetadataWithoutFee.height = 101;
+      normalizedFeeCalculator['expectedBlockHeight'] = 101;
+      normalizedFeeCalculator['blockMetadataCache'] = [
+        {
+          height: 98,
+          hash: 'string',
+          normalizedFee: 1000000,
+          previousHash: 'string',
+          transactionCount: 2,
+          totalFee: 1999994
+        },
+        {
+          height: 99,
+          hash: 'string',
+          normalizedFee: 1000000,
+          previousHash: 'string',
+          transactionCount: 1,
+          totalFee: 999997
+        },
+        {
+          height: 100,
+          hash: 'string',
+          normalizedFee: 1000000,
+          previousHash: 'string',
+          transactionCount: 10,
+          totalFee: 9999970
+        }
+      ];
+      const getMetadataSpy = spyOn(mockMetadataStore, 'get').and.returnValue(Promise.resolve([]));
+      const actual = await normalizedFeeCalculator.addNormalizedFeeToBlockMetadata(blockMetadataWithoutFee);
+      expect(actual.normalizedFee).toBeDefined();
+      expect(normalizedFeeCalculator['blockMetadataCache'][0].height).toEqual(99);
+      expect(normalizedFeeCalculator['blockMetadataCache'][2].height).toEqual(101);
+      expect(getMetadataSpy).not.toHaveBeenCalled(); // not called because there's cached data
+      expect(normalizedFeeCalculator['expectedBlockHeight']).toEqual(102);
+    });
+  });
+
+  describe('getNormalizedFee', () => {
     it('should return initiail fee for blocks within genesis + 100 blocks.', async (done) => {
       const actual = await normalizedFeeCalculator.getNormalizedFee(100);
       expect(actual).toEqual(1);

@@ -8,6 +8,7 @@ import BitcoinRawDataParser from '../../lib/bitcoin/BitcoinRawDataParser';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import BlockMetadata from '../../lib/bitcoin/models/BlockMetadata';
 import BlockMetadataGenerator from '../generators/BlockMetadataGenerator';
+import BlockMetadataWithoutNormalizedFee from '../../lib/bitcoin/models/BlockMetadataWithoutNormalizedFee';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import IBitcoinConfig from '../../lib/bitcoin/IBitcoinConfig';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
@@ -848,7 +849,8 @@ describe('BitcoinProcessor', () => {
 
     it('should return the value from the normalized fee calculator.', async () => {
       const mockFeeCalculator = {
-        async getNormalizedFee () { return 509; }
+        async getNormalizedFee () { return 509; },
+        async addNormalizedFeeToBlockMetadata () { return {} as any; }
       };
       spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 
@@ -1080,13 +1082,18 @@ describe('BitcoinProcessor', () => {
         }
       ];
 
-      const getNormalizedFeeSpy = spyOn(bitcoinProcessor, 'getNormalizedFee').and.returnValue(Promise.resolve({ normalizedTransactionFee: 111 }));
+      const mockFeeCalculator = {
+        async getNormalizedFee () { return 509; },
+        async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
+      };
+      spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
+      const addNormalizedFeeSpy = spyOn(mockFeeCalculator, 'addNormalizedFeeToBlockMetadata').and.callThrough();
 
       await bitcoinProcessor['writeBlocksToMetadataStoreWithFee'](blockMetadata);
 
-      expect(getNormalizedFeeSpy).toHaveBeenCalledWith(999999);
-      expect(getNormalizedFeeSpy).toHaveBeenCalledWith(1000000);
-      expect(getNormalizedFeeSpy).toHaveBeenCalledTimes(2);
+      expect(addNormalizedFeeSpy).toHaveBeenCalledWith({ height: 999999, hash: 'someHash1', previousHash: 'prevHash', transactionCount: 123, totalFee: 123 });
+      expect(addNormalizedFeeSpy).toHaveBeenCalledWith({ height: 1000000, hash: 'someHash2', previousHash: 'prevHash', transactionCount: 123, totalFee: 123 });
+      expect(addNormalizedFeeSpy).toHaveBeenCalledTimes(2);
 
       expect(blockMetadataStoreAddSpy).toHaveBeenCalledWith([
         {
@@ -1162,7 +1169,8 @@ describe('BitcoinProcessor', () => {
         }
       ]);
       const mockFeeCalculator = {
-        async getNormalizedFee () { return 509; }
+        async getNormalizedFee () { return 509; },
+        async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
       };
       spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 
@@ -1482,7 +1490,9 @@ describe('BitcoinProcessor', () => {
         ]
       };
       const mockFeeCalculator = {
-        async getNormalizedFee () { return 509; }
+        async getNormalizedFee () { return 509; },
+        async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 300 }, block); }
+
       };
       spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 
@@ -1539,7 +1549,8 @@ describe('BitcoinProcessor', () => {
         ]
       };
       const mockFeeCalculator = {
-        async getNormalizedFee () { return 509; }
+        async getNormalizedFee () { return 509; },
+        async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
       };
       spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 

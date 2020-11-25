@@ -2,6 +2,7 @@ import { Address, Networks, PrivateKey, Script, crypto } from 'bitcore-lib';
 import BitcoinClient from '../../../lib/bitcoin/BitcoinClient';
 import BitcoinOutputModel from '../../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinTransactionModel from '../../../lib/bitcoin/models/BitcoinTransactionModel';
+import BlockMetadataWithoutNormalizedFee from '../../../lib/bitcoin/models/BlockMetadataWithoutNormalizedFee';
 import ErrorCode from '../../../lib/bitcoin/ErrorCode';
 import { IBlockInfo } from '../../../lib/bitcoin/BitcoinProcessor';
 import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
@@ -120,7 +121,8 @@ describe('LockResolver', () => {
 
       const mockNormalizedFee = 87654;
       const mockFeeCalculator = {
-        async getNormalizedFee () { return mockNormalizedFee; }
+        async getNormalizedFee () { return mockNormalizedFee; },
+        async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: mockNormalizedFee }, block); }
       };
       const getFeeCalculatorSpy = spyOn(lockResolver['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
       spyOn(lockResolver['versionManager'], 'getLockDurationInBlocks').and.returnValue(lockDurationInput);
