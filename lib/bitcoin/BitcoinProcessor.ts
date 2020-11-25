@@ -552,7 +552,7 @@ export default class BitcoinProcessor {
     const blocksToWrite = [];
     for (const block of blocks) {
       const feeCalculator = await this.versionManager.getFeeCalculator(block.height);
-      const blockMetadata = await feeCalculator.addNormalizedFeeToBlock({
+      const blockMetadata = await feeCalculator.addNormalizedFeeToBlockMetadata({
         height: block.height,
         hash: block.hash,
         previousHash: block.previousHash,
@@ -809,7 +809,7 @@ export default class BitcoinProcessor {
     const transactionCount = blockData.transactions.length;
     const totalFee = BitcoinProcessor.getBitcoinBlockTotalFee(blockData);
     const feeCalculator = this.versionManager.getFeeCalculator(blockHeight);
-    const processedBlockMetadata = await feeCalculator.addNormalizedFeeToBlock({
+    const processedBlockMetadata = await feeCalculator.addNormalizedFeeToBlockMetadata({
       hash: blockHash,
       height: blockHeight,
       previousHash: blockData.previousHash,

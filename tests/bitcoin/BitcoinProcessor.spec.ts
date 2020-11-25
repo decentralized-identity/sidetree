@@ -850,7 +850,7 @@ describe('BitcoinProcessor', () => {
     it('should return the value from the normalized fee calculator.', async () => {
       const mockFeeCalculator = {
         async getNormalizedFee () { return 509; },
-        async addNormalizedFeeToBlock () { return {} as any; }
+        async addNormalizedFeeToBlockMetadata () { return {} as any; }
       };
       spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 
@@ -1084,10 +1084,10 @@ describe('BitcoinProcessor', () => {
 
       const mockFeeCalculator = {
         async getNormalizedFee () { return 509; },
-        async addNormalizedFeeToBlock (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
+        async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
       };
       spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
-      const addNormalizedFeeSpy = spyOn(mockFeeCalculator, 'addNormalizedFeeToBlock').and.callThrough();
+      const addNormalizedFeeSpy = spyOn(mockFeeCalculator, 'addNormalizedFeeToBlockMetadata').and.callThrough();
 
       await bitcoinProcessor['writeBlocksToMetadataStoreWithFee'](blockMetadata);
 
@@ -1170,7 +1170,7 @@ describe('BitcoinProcessor', () => {
       ]);
       const mockFeeCalculator = {
         async getNormalizedFee () { return 509; },
-        async addNormalizedFeeToBlock (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
+        async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
       };
       spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 
@@ -1491,7 +1491,7 @@ describe('BitcoinProcessor', () => {
       };
       const mockFeeCalculator = {
         async getNormalizedFee () { return 509; },
-        async addNormalizedFeeToBlock (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 300 }, block); }
+        async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 300 }, block); }
 
       };
       spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
@@ -1550,7 +1550,7 @@ describe('BitcoinProcessor', () => {
       };
       const mockFeeCalculator = {
         async getNormalizedFee () { return 509; },
-        async addNormalizedFeeToBlock (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
+        async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
       };
       spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 

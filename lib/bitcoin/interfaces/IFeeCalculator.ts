@@ -13,5 +13,5 @@ export default interface IFeeCalculator {
   /**
    * Returns the block with normalized fee added
    */
-  addNormalizedFeeToBlock (blockMetadataWithoutFee: BlockMetadataWithoutNormalizedFee): Promise<BlockMetadata>;
+  addNormalizedFeeToBlockMetadata (blockMetadataWithoutFee: BlockMetadataWithoutNormalizedFee): Promise<BlockMetadata>;
 }

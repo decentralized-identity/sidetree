@@ -31,14 +31,9 @@ describe('NormalizedFeeCalculaor', () => {
       };
     });
 
-    it('should return 0 if block is less than genesis', async () => {
-      const actual = await normalizedFeeCalculator.addNormalizedFeeToBlock(blockMetadataWithoutFee);
-      expect(actual.normalizedFee).toEqual(0);
-    });
-
     it('should return initial fee for blocks within genesis + lookBackDuration', async () => {
       blockMetadataWithoutFee.height = 100;
-      const actual = await normalizedFeeCalculator.addNormalizedFeeToBlock(blockMetadataWithoutFee);
+      const actual = await normalizedFeeCalculator.addNormalizedFeeToBlockMetadata(blockMetadataWithoutFee);
       expect(actual.normalizedFee).toEqual(1);
     });
 
@@ -70,7 +65,7 @@ describe('NormalizedFeeCalculaor', () => {
           totalFee: 9999970
         }
       ]));
-      const actual = await normalizedFeeCalculator.addNormalizedFeeToBlock(blockMetadataWithoutFee);
+      const actual = await normalizedFeeCalculator.addNormalizedFeeToBlockMetadata(blockMetadataWithoutFee);
       expect(actual.normalizedFee).toBeDefined();
       expect(getMetadataSpy).toHaveBeenCalled();
       expect(normalizedFeeCalculator['blockMetadataCache'][0].height).toEqual(99);
@@ -108,7 +103,7 @@ describe('NormalizedFeeCalculaor', () => {
         }
       ];
       const getMetadataSpy = spyOn(mockMetadataStore, 'get').and.returnValue(Promise.resolve([]));
-      const actual = await normalizedFeeCalculator.addNormalizedFeeToBlock(blockMetadataWithoutFee);
+      const actual = await normalizedFeeCalculator.addNormalizedFeeToBlockMetadata(blockMetadataWithoutFee);
       expect(actual.normalizedFee).toBeDefined();
       expect(normalizedFeeCalculator['blockMetadataCache'][0].height).toEqual(99);
       expect(normalizedFeeCalculator['blockMetadataCache'][2].height).toEqual(101);
@@ -118,12 +113,6 @@ describe('NormalizedFeeCalculaor', () => {
   });
 
   describe('getNormalizedFee', () => {
-    it('should return 0 if block is less than genesis.', async (done) => {
-      const actual = await normalizedFeeCalculator.getNormalizedFee(0);
-      expect(actual).toEqual(0);
-      done();
-    });
-
     it('should return initiail fee for blocks within genesis + 100 blocks.', async (done) => {
       const actual = await normalizedFeeCalculator.getNormalizedFee(100);
       expect(actual).toEqual(1);

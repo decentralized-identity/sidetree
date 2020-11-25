@@ -122,7 +122,7 @@ describe('LockResolver', () => {
       const mockNormalizedFee = 87654;
       const mockFeeCalculator = {
         async getNormalizedFee () { return mockNormalizedFee; },
-        async addNormalizedFeeToBlock (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: mockNormalizedFee }, block); }
+        async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: mockNormalizedFee }, block); }
       };
       const getFeeCalculatorSpy = spyOn(lockResolver['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
       spyOn(lockResolver['versionManager'], 'getLockDurationInBlocks').and.returnValue(lockDurationInput);

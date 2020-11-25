@@ -30,14 +30,13 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
    * This adds normalized fee to the block as it would calculate normalziedFee, but uses a cache to remeber previously seen blocks.
    * Which reduces calls to the metadata store.
    */
-  public async addNormalizedFeeToBlock (blockMetadata: BlockMetadataWithoutNormalizedFee): Promise<BlockMetadata> {
-    const shouldCalculate = this.shouldCalculateNormalizedFee(blockMetadata.height);
-    if (!shouldCalculate.shouldCalculate) {
-      return Object.assign({ normalizedFee: shouldCalculate.fee! }, blockMetadata);
+  public async addNormalizedFeeToBlockMetadata (blockMetadata: BlockMetadataWithoutNormalizedFee): Promise<BlockMetadata> {
+    if (blockMetadata.height < this.genesisBlockNumber + this.feeLookBackWindowInBlocks) {
+      return Object.assign({ normalizedFee: this.initialNormalizedFee }, blockMetadata);
     }
     // the cache won't work if the block is not expected, refetch the blocks and store in cache
     if (this.expectedBlockHeight !== blockMetadata.height) {
-      this.blockMetadataCache = await this.getLookBackBlocks(blockMetadata.height);
+      this.blockMetadataCache = await this.getBlocksInLookBackWindow(blockMetadata.height);
       this.expectedBlockHeight = blockMetadata.height;
     }
     const newFee = this.calculateNormalizedFee(this.blockMetadataCache);
@@ -49,26 +48,14 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
   }
 
   public async getNormalizedFee (block: number): Promise<number> {
-    const shouldCalculate = this.shouldCalculateNormalizedFee(block);
-    if (!shouldCalculate.shouldCalculate) {
-      return shouldCalculate.fee!;
+    if (block < this.genesisBlockNumber + this.feeLookBackWindowInBlocks) {
+      return this.initialNormalizedFee;
     }
-    const blocksToAverage = await this.getLookBackBlocks(block);
+    const blocksToAverage = await this.getBlocksInLookBackWindow(block);
     return this.calculateNormalizedFee(blocksToAverage);
   }
 
-  private shouldCalculateNormalizedFee (block: number): { shouldCalculate: boolean, fee: number | undefined } {
-    if (block < this.genesisBlockNumber) {
-      // No normalized fee for blocks that exist before genesis
-      return { shouldCalculate: false, fee: 0 };
-    } else if (block < this.genesisBlockNumber + this.feeLookBackWindowInBlocks) {
-      // if within look back interval of genesis, use the initial fee
-      return { shouldCalculate: false, fee: this.initialNormalizedFee };
-    }
-    return { shouldCalculate: true, fee: undefined };
-  }
-
-  private async getLookBackBlocks (block: number): Promise<BlockMetadata[]> {
+  private async getBlocksInLookBackWindow (block: number): Promise<BlockMetadata[]> {
     // look back the interval
     return await this.blockMetadataStore.get(block - this.feeLookBackWindowInBlocks, block);
   }
