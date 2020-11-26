@@ -13,7 +13,7 @@ import ResponseModel from '../common/models/ResponseModel';
 import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import VersionManager from './VersionManager';
-import VersionModel from '../common/models/VersionModel';
+import VersionModel from './models/VersionModel';
 
 /**
  * The core class that is instantiated when running a Sidetree node.

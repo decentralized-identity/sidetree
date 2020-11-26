@@ -15,7 +15,7 @@ import OperationType from '../../lib/core/enums/OperationType';
 import Resolver from '../../lib/core/Resolver';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import VersionManager from '../../lib/core/VersionManager';
-import VersionModel from '../../lib/common/models/VersionModel';
+import VersionModel from '../../lib/core/models/VersionModel';
 
 describe('VersionManager', async () => {
 

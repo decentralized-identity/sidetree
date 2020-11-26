@@ -15,7 +15,7 @@ import IVersionManager from './interfaces/IVersionManager';
 import IVersionMetadataFetcher from './interfaces/IVersionMetadataFetcher';
 import Resolver from './Resolver';
 import SidetreeError from '../common/SidetreeError';
-import VersionModel from '../common/models/VersionModel';
+import VersionModel from './models/VersionModel';
 
 /**
  * The class that handles code versioning.
