@@ -36,16 +36,29 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
   }
 
   public async addNormalizedFeeToBlockMetadata (blockMetadata: BlockMetadataWithoutNormalizedFee): Promise<BlockMetadata> {
+
+    // If the height of the given block does not have large enough look-back window, just use initial fee.
     if (blockMetadata.height < this.genesisBlockNumber + this.feeLookBackWindowInBlocks) {
-      return Object.assign({ normalizedFee: this.initialNormalizedFeeInSatoshis }, blockMetadata);
+      const blockWithFee = Object.assign({ normalizedFee: this.initialNormalizedFeeInSatoshis }, blockMetadata);
+
+      // We need to push the block metadata into the look-back cache in preparation for when look-back window becomes large enough with the given block height.
+      this.cachedLookBackWindow.push(blockWithFee);
+      this.blockHeightOfCachedLookBackWindow = blockMetadata.height + 1;
+
+      return blockWithFee;
     }
-    // the cache won't work if the block is not expected, refetch the blocks and store in cache
+
+    // Code reaches here whn the look-back window is large enough.
+
+    // The cache won't work if the block is not the anticipated height, refetch the blocks and store in cache.
     if (this.blockHeightOfCachedLookBackWindow !== blockMetadata.height) {
       this.cachedLookBackWindow = await this.getBlocksInLookBackWindow(blockMetadata.height);
       this.blockHeightOfCachedLookBackWindow = blockMetadata.height;
     }
-    const newFee = this.calculateNormalizedFee(this.cachedLookBackWindow);
-    const newBlockWithFee = Object.assign({ normalizedFee: newFee }, blockMetadata);
+
+    const normalizedFee = this.calculateNormalizedFee(this.cachedLookBackWindow);
+    const newBlockWithFee = Object.assign({ normalizedFee }, blockMetadata);
+    console.log(normalizedFee);
     this.cachedLookBackWindow.push(newBlockWithFee);
     this.cachedLookBackWindow.shift();
     this.blockHeightOfCachedLookBackWindow++;
@@ -57,7 +70,11 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
       return this.initialNormalizedFeeInSatoshis;
     }
     const blocksToAverage = await this.getBlocksInLookBackWindow(block);
-    return this.calculateNormalizedFee(blocksToAverage);
+    
+    // TODO: @Isaac, why are we not getting the content fee from DB?
+    const rawNormalizedFee = this.calculateNormalizedFee(blocksToAverage);
+    const flooredNormalizedFee = Math.floor(rawNormalizedFee);
+    return flooredNormalizedFee;
   }
 
   private async getBlocksInLookBackWindow (block: number): Promise<BlockMetadata[]> {
@@ -81,8 +98,8 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
   }
 
   private adjustFeeToWithinFluctuationRate (unadjustedFee: number, previousFee: number): number {
-    const maxAllowedFee = Math.floor(previousFee * (1 + this.feeMaxFluctuationMultiplierPerBlock));
-    const minAllowedFee = Math.floor(previousFee * (1 - this.feeMaxFluctuationMultiplierPerBlock));
+    const maxAllowedFee = previousFee * (1 + this.feeMaxFluctuationMultiplierPerBlock);
+    const minAllowedFee = previousFee * (1 - this.feeMaxFluctuationMultiplierPerBlock);
 
     if (unadjustedFee > maxAllowedFee) {
       return maxAllowedFee;
