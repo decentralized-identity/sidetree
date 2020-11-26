@@ -31,7 +31,7 @@ describe('LockMonitor', () => {
   const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
 
   const lockDuration = 2000;
-  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: lockDuration, initialNormalizedFee: 1, feeLookBackWindowInBlocks: 1, feeMaxFluctuationMultiplierPerBlock: 1 } }];
+  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest', protocolParameters: { valueTimeLockDurationInBlocks: lockDuration, initialNormalizedFeeInSatoshis: 1, feeLookBackWindowInBlocks: 1, feeMaxFluctuationMultiplierPerBlock: 1 } }];
   const versionManager = new VersionManager();
   const lockResolver = new LockResolver(versionManager, bitcoinClient);
 

@@ -68,15 +68,15 @@ describe('NormalizedFeeCalculaor', () => {
       const actual = await normalizedFeeCalculator.addNormalizedFeeToBlockMetadata(blockMetadataWithoutFee);
       expect(actual.normalizedFee).toBeDefined();
       expect(getMetadataSpy).toHaveBeenCalled();
-      expect(normalizedFeeCalculator['blockMetadataCache'][0].height).toEqual(99);
-      expect(normalizedFeeCalculator['blockMetadataCache'][2].height).toEqual(101);
-      expect(normalizedFeeCalculator['expectedBlockHeight']).toEqual(102);
+      expect(normalizedFeeCalculator['cachedLookBackWindow'][0].height).toEqual(99);
+      expect(normalizedFeeCalculator['cachedLookBackWindow'][2].height).toEqual(101);
+      expect(normalizedFeeCalculator['blockHeightOfCachedLookBackWindow']).toEqual(102);
     });
 
     it('should calculate normalized feeand use cache', async () => {
       blockMetadataWithoutFee.height = 101;
-      normalizedFeeCalculator['expectedBlockHeight'] = 101;
-      normalizedFeeCalculator['blockMetadataCache'] = [
+      normalizedFeeCalculator['blockHeightOfCachedLookBackWindow'] = 101;
+      normalizedFeeCalculator['cachedLookBackWindow'] = [
         {
           height: 98,
           hash: 'string',
@@ -105,10 +105,10 @@ describe('NormalizedFeeCalculaor', () => {
       const getMetadataSpy = spyOn(mockMetadataStore, 'get').and.returnValue(Promise.resolve([]));
       const actual = await normalizedFeeCalculator.addNormalizedFeeToBlockMetadata(blockMetadataWithoutFee);
       expect(actual.normalizedFee).toBeDefined();
-      expect(normalizedFeeCalculator['blockMetadataCache'][0].height).toEqual(99);
-      expect(normalizedFeeCalculator['blockMetadataCache'][2].height).toEqual(101);
+      expect(normalizedFeeCalculator['cachedLookBackWindow'][0].height).toEqual(99);
+      expect(normalizedFeeCalculator['cachedLookBackWindow'][2].height).toEqual(101);
       expect(getMetadataSpy).not.toHaveBeenCalled(); // not called because there's cached data
-      expect(normalizedFeeCalculator['expectedBlockHeight']).toEqual(102);
+      expect(normalizedFeeCalculator['blockHeightOfCachedLookBackWindow']).toEqual(102);
     });
   });
 
