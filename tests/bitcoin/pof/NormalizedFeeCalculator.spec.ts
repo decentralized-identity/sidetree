@@ -112,6 +112,62 @@ describe('NormalizedFeeCalculaor', () => {
       expect(normalizedFeeCalculator['blockHeightOfCachedLookBackWindow']).toEqual(102);
     });
 
+    it('should calculate normalized fee using db if cache does not have the correct number of blocks', async () => {
+      blockMetadataWithoutFee.height = 101;
+      normalizedFeeCalculator['blockHeightOfCachedLookBackWindow'] = 101;
+      const getMetadataSpy = spyOn(mockMetadataStore, 'get').and.returnValue(Promise.resolve([
+        {
+          height: 98,
+          hash: 'string',
+          normalizedFee: 1000000,
+          previousHash: 'string',
+          transactionCount: 2,
+          totalFee: 1999994
+        },
+        {
+          height: 99,
+          hash: 'string',
+          normalizedFee: 1000000,
+          previousHash: 'string',
+          transactionCount: 1,
+          totalFee: 999997
+        },
+        {
+          height: 100,
+          hash: 'string',
+          normalizedFee: 1000000,
+          previousHash: 'string',
+          transactionCount: 10,
+          totalFee: 9999970
+        }
+      ]));
+
+      normalizedFeeCalculator['cachedLookBackWindow'] = [
+        {
+          height: 99,
+          hash: 'string',
+          normalizedFee: 1000000,
+          previousHash: 'string',
+          transactionCount: 1,
+          totalFee: 999997
+        },
+        {
+          height: 100,
+          hash: 'string',
+          normalizedFee: 1000000,
+          previousHash: 'string',
+          transactionCount: 10,
+          totalFee: 9999970
+        }
+      ];
+      const actual = await normalizedFeeCalculator.addNormalizedFeeToBlockMetadata(blockMetadataWithoutFee);
+      expect(actual.normalizedFee).toBeDefined();
+      expect(normalizedFeeCalculator['cachedLookBackWindow'][0].height).toEqual(99);
+      expect(normalizedFeeCalculator['cachedLookBackWindow'][2].height).toEqual(101);
+      expect(getMetadataSpy).toHaveBeenCalled(); // not called because there's cached data
+      expect(normalizedFeeCalculator['blockHeightOfCachedLookBackWindow']).toEqual(102);
+    });
+
     it('should return the correct fee above fluctuation for blocks after genesis + 100 blocks.', async (done) => {
       blockMetadataWithoutFee.height = 101;
       normalizedFeeCalculator['blockHeightOfCachedLookBackWindow'] = 101;
