@@ -570,12 +570,14 @@ export default class BitcoinProcessor {
    * @param block The block height to get normalized fee for
    */
   public async getNormalizedFee (block: number): Promise<TransactionFeeModel> {
-    if (block < this.genesisBlockNumber) {
+    // this is to protect the number type because it can be passed as a string through request path
+    const blockNumber = Number(block);
+    if (blockNumber < this.genesisBlockNumber) {
       const error = `The input block number must be greater than or equal to: ${this.genesisBlockNumber}`;
       console.error(error);
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
     }
-    const normalizedTransactionFee = await this.versionManager.getFeeCalculator(block).getNormalizedFee(block);
+    const normalizedTransactionFee = await this.versionManager.getFeeCalculator(blockNumber).getNormalizedFee(blockNumber);
 
     return { normalizedTransactionFee: normalizedTransactionFee };
   }

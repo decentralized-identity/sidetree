@@ -283,13 +283,13 @@ describe('NormalizedFeeCalculaor', () => {
         transactionCount: 100,
         totalFee: 100,
         normalizedFee: 1.1111111
-      }]
+      }];
       const blockMetadataGetSpy = spyOn(normalizedFeeCalculator['blockMetadataStore'], 'get').and.returnValue(Promise.resolve(blocks));
       const result = await normalizedFeeCalculator.getNormalizedFee(0);
-      expect(result).toEqual(1)
+      expect(result).toEqual(1);
       expect(blockMetadataGetSpy).toHaveBeenCalled();
-    })
-  })
+    });
+  });
 
   describe('calculateNormalizedTransactionFeeFromBlock', () => {
     it('should return the correct value', () => {
@@ -304,6 +304,6 @@ describe('NormalizedFeeCalculaor', () => {
 
       const result = normalizedFeeCalculator.calculateNormalizedTransactionFeeFromBlock(block);
       expect(result).toEqual(1);
-    })
-  })
+    });
+  });
 });

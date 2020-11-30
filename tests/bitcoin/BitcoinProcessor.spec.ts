@@ -349,9 +349,9 @@ describe('BitcoinProcessor', () => {
   describe('transactions()', () => {
     beforeEach(() => {
       spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue({
-        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) {​ return Math.floor(block.normalizedFee); }​,
-        async getNormalizedFee () {​ return 509; }​,
-        async addNormalizedFeeToBlockMetadata () {​ return {​}​ as any; }​
+        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) { return Math.floor(block.normalizedFee); },
+        async getNormalizedFee () { ​return 509; },
+        async addNormalizedFeeToBlockMetadata () { ​return {​}​ as any; }
       });
     });
 
@@ -867,6 +867,24 @@ describe('BitcoinProcessor', () => {
       spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 
       const response = await bitcoinProcessor.getNormalizedFee(validBlockHeight);
+      expect(response).toBeDefined();
+      expect(response.normalizedTransactionFee).toEqual(509);
+    });
+
+    it('should return the value from the normalized fee calculator when passed in a string representation of block number.', async () => {
+      const mockFeeCalculator = {
+        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) { return Math.floor(block.normalizedFee); },
+        async getNormalizedFee (block: number) {
+          // make sure block is converted
+          expect(typeof block).toEqual('number');
+          return 509;
+        },
+        async addNormalizedFeeToBlockMetadata () { return {} as any; }
+      };
+      spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
+
+      // turn into a string then cast to any to simulate a request with string
+      const response = await bitcoinProcessor.getNormalizedFee(String(validBlockHeight) as any);
       expect(response).toBeDefined();
       expect(response.normalizedTransactionFee).toEqual(509);
     });
