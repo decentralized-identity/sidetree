@@ -6,12 +6,12 @@ import BlockMetadataWithoutNormalizedFee from '../models/BlockMetadataWithoutNor
  */
 export default interface IFeeCalculator {
   /**
-   * Returns the fee for a particular block height.
+   * Returns the fee in satoshis for a particular block height.
    */
   getNormalizedFee (block: number): Promise<number>;
 
   /**
-   * Returns the block with normalized fee added
+   * Returns the block with normalized fee added.
    */
   addNormalizedFeeToBlockMetadata (blockMetadataWithoutFee: BlockMetadataWithoutNormalizedFee): Promise<BlockMetadata>;
 }

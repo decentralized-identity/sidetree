@@ -39,7 +39,7 @@ export default class VersionManager {
       const version = versionModel.version;
       this.protocolParameters.set(version, versionModel.protocolParameters);
 
-      const initialNormalizedFee = versionModel.protocolParameters.initialNormalizedFee;
+      const initialNormalizedFeeInSatoshis = versionModel.protocolParameters.initialNormalizedFeeInSatoshis;
       const feeLookBackWindowInBlocks = versionModel.protocolParameters.feeLookBackWindowInBlocks;
       const feeMaxFluctuationMultiplierPerBlock = versionModel.protocolParameters.feeMaxFluctuationMultiplierPerBlock;
 
@@ -47,7 +47,7 @@ export default class VersionManager {
       const feeCalculator = new FeeCalculator(
         blockMetadataStore,
         config.genesisBlockNumber,
-        initialNormalizedFee,
+        initialNormalizedFeeInSatoshis,
         feeLookBackWindowInBlocks,
         feeMaxFluctuationMultiplierPerBlock
       );

@@ -8,55 +8,74 @@ import IFeeCalculator from '../../interfaces/IFeeCalculator';
  */
 export default class NormalizedFeeCalculator implements IFeeCalculator {
 
-  private blockMetadataCache: BlockMetadata[];
-  private expectedBlockHeight: number | undefined = undefined;
+  /**
+   * A cache to remember blocks in the look-back window for a particular block height
+   * which reduces calls to the block metadata store under the most common usage pattern.
+   */
+  private cachedLookBackWindow: BlockMetadata[];
+
+  /**
+   * The block height that the cached look back window is for.
+   */
+  private blockHeightOfCachedLookBackWindow: number | undefined = undefined;
+
   constructor (
     private blockMetadataStore: IBlockMetadataStore,
     private genesisBlockNumber: number,
-    private initialNormalizedFee: number,
+    private initialNormalizedFeeInSatoshis: number,
     private feeLookBackWindowInBlocks: number,
     private feeMaxFluctuationMultiplierPerBlock: number) {
-    this.blockMetadataCache = [];
+    this.cachedLookBackWindow = [];
   }
 
   /**
-   * Initializes the Bitcoin processor.
+   * Initializes the normalized fee calculator.
    */
   public async initialize () {
     console.log(`Initializing normalized fee calculator.`);
   }
 
-  /**
-   * This adds normalized fee to the block as it would calculate normalziedFee, but uses a cache to remeber previously seen blocks.
-   * Which reduces calls to the metadata store.
-   */
   public async addNormalizedFeeToBlockMetadata (blockMetadata: BlockMetadataWithoutNormalizedFee): Promise<BlockMetadata> {
+
+    // If the height of the given block does not have large enough look-back window, just use initial fee.
     if (blockMetadata.height < this.genesisBlockNumber + this.feeLookBackWindowInBlocks) {
-      return Object.assign({ normalizedFee: this.initialNormalizedFee }, blockMetadata);
+      const blockWithFee = Object.assign({ normalizedFee: this.initialNormalizedFeeInSatoshis }, blockMetadata);
+
+      // We need to push the block metadata into the look-back cache in preparation for when look-back window becomes large enough with the given block height.
+      this.cachedLookBackWindow.push(blockWithFee);
+      this.blockHeightOfCachedLookBackWindow = blockMetadata.height + 1;
+
+      return blockWithFee;
     }
-    // the cache won't work if the block is not expected, refetch the blocks and store in cache
-    if (this.expectedBlockHeight !== blockMetadata.height) {
-      this.blockMetadataCache = await this.getBlocksInLookBackWindow(blockMetadata.height);
-      this.expectedBlockHeight = blockMetadata.height;
+
+    // Code reaches here whn the look-back window is large enough.
+
+    // The cache won't work if the block is not the anticipated height, refetch the blocks and store in cache.
+    if (this.blockHeightOfCachedLookBackWindow !== blockMetadata.height) {
+      this.cachedLookBackWindow = await this.getBlocksInLookBackWindow(blockMetadata.height);
+      this.blockHeightOfCachedLookBackWindow = blockMetadata.height;
     }
-    const newFee = this.calculateNormalizedFee(this.blockMetadataCache);
-    const newBlockWithFee = Object.assign({ normalizedFee: newFee }, blockMetadata);
-    this.blockMetadataCache.push(newBlockWithFee);
-    this.blockMetadataCache.shift();
-    this.expectedBlockHeight++;
+
+    const normalizedFee = this.calculateNormalizedFee(this.cachedLookBackWindow);
+    const newBlockWithFee = Object.assign({ normalizedFee }, blockMetadata);
+    this.cachedLookBackWindow.push(newBlockWithFee);
+    this.cachedLookBackWindow.shift();
+    this.blockHeightOfCachedLookBackWindow++;
     return newBlockWithFee;
   }
 
   public async getNormalizedFee (block: number): Promise<number> {
     if (block < this.genesisBlockNumber + this.feeLookBackWindowInBlocks) {
-      return this.initialNormalizedFee;
+      return this.initialNormalizedFeeInSatoshis;
     }
     const blocksToAverage = await this.getBlocksInLookBackWindow(block);
-    return this.calculateNormalizedFee(blocksToAverage);
+
+    const rawNormalizedFee = this.calculateNormalizedFee(blocksToAverage);
+    const flooredNormalizedFee = Math.floor(rawNormalizedFee);
+    return flooredNormalizedFee;
   }
 
   private async getBlocksInLookBackWindow (block: number): Promise<BlockMetadata[]> {
-    // look back the interval
     return await this.blockMetadataStore.get(block - this.feeLookBackWindowInBlocks, block);
   }
 
@@ -69,16 +88,16 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
       totalTransactionCount += blockToAverage.transactionCount;
     }
 
-    // TODO: #926 investigate potential rounding differences between languages and implemetations
+    // TODO: #926 investigate potential rounding differences between languages and implementations
     // https://github.com/decentralized-identity/sidetree/issues/926
-    const unadjustedFee = Math.floor(totalFee / totalTransactionCount);
+    const unadjustedFee = totalFee / totalTransactionCount;
     const previousFee = blocksToAverage[blocksToAverage.length - 1].normalizedFee;
     return this.adjustFeeToWithinFluctuationRate(unadjustedFee, previousFee);
   }
 
   private adjustFeeToWithinFluctuationRate (unadjustedFee: number, previousFee: number): number {
-    const maxAllowedFee = Math.floor(previousFee * (1 + this.feeMaxFluctuationMultiplierPerBlock));
-    const minAllowedFee = Math.floor(previousFee * (1 - this.feeMaxFluctuationMultiplierPerBlock));
+    const maxAllowedFee = previousFee * (1 + this.feeMaxFluctuationMultiplierPerBlock);
+    const minAllowedFee = previousFee * (1 - this.feeMaxFluctuationMultiplierPerBlock);
 
     if (unadjustedFee > maxAllowedFee) {
       return maxAllowedFee;

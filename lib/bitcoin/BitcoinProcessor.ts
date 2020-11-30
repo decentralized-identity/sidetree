@@ -449,7 +449,7 @@ export default class BitcoinProcessor {
       for (const transaction of transactions) {
         const block = blockMetaDataMap.get(transaction.transactionTime);
         if (block !== undefined) {
-          transaction.normalizedTransactionFee = block.normalizedFee;
+          transaction.normalizedTransactionFee = Math.floor(block.normalizedFee);
         } else {
           throw new RequestError(ResponseStatus.ServerError, ErrorCode.BitcoinBlockMetadataNotFound);
         }

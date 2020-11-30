@@ -5,8 +5,8 @@ export default interface ProtocolParameters {
   /** The duration for the value-time-lock */
   valueTimeLockDurationInBlocks: number;
 
-  /** The initial normalized fee */
-  initialNormalizedFee: number;
+  /** The initial normalized fee in satoshis. */
+  initialNormalizedFeeInSatoshis: number;
 
   /**
    * The look back window for normalized fee calculation
