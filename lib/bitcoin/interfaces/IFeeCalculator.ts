@@ -11,6 +11,12 @@ export default interface IFeeCalculator {
   getNormalizedFee (block: number): Promise<number>;
 
   /**
+   * Perform additional calculation to the raw normalized fee
+   * @param blockMetaData The block metadata to calculate fee for
+   */
+  calculateNormalizedTransactionFeeFromBlock (blockMetaData: BlockMetadata): number;
+
+  /**
    * Returns the block with normalized fee added.
    */
   addNormalizedFeeToBlockMetadata (blockMetadataWithoutFee: BlockMetadataWithoutNormalizedFee): Promise<BlockMetadata>;

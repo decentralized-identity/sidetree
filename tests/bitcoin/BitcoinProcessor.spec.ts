@@ -312,15 +312,18 @@ describe('BitcoinProcessor', () => {
     it('should get the current latest when given no hash', async (done) => {
       const height = randomNumber();
       const hash = randomString();
-      const tipSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
-      const hashSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
-      const spy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfo');
+      blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve({
+        height: height,
+        hash: hash,
+        normalizedFee: 123,
+        previousHash: 'prevHash',
+        transactionCount: 123,
+        totalFee: 123
+      }));
       const actual = await bitcoinProcessor.time();
       expect(actual.time).toEqual(height);
       expect(actual.hash).toEqual(hash);
-      expect(tipSpy).toHaveBeenCalled();
-      expect(hashSpy).toHaveBeenCalled();
-      expect(spy).not.toHaveBeenCalled();
+      expect(blockMetadataStoreGetLastSpy).toHaveBeenCalled();
       done();
     });
 
@@ -344,6 +347,14 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('transactions()', () => {
+    beforeEach(() => {
+      spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue({
+        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) {​ return Math.floor(block.normalizedFee); }​,
+        async getNormalizedFee () {​ return 509; }​,
+        async addNormalizedFeeToBlockMetadata () {​ return {​}​ as any; }​
+      });
+    });
+
     it('should get transactions since genesis capped by page size in blocks', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
 
@@ -849,6 +860,7 @@ describe('BitcoinProcessor', () => {
 
     it('should return the value from the normalized fee calculator.', async () => {
       const mockFeeCalculator = {
+        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) { return Math.floor(block.normalizedFee); },
         async getNormalizedFee () { return 509; },
         async addNormalizedFeeToBlockMetadata () { return {} as any; }
       };
@@ -1083,6 +1095,7 @@ describe('BitcoinProcessor', () => {
       ];
 
       const mockFeeCalculator = {
+        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) { return Math.floor(block.normalizedFee); },
         async getNormalizedFee () { return 509; },
         async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
       };
@@ -1169,6 +1182,7 @@ describe('BitcoinProcessor', () => {
         }
       ]);
       const mockFeeCalculator = {
+        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) { return Math.floor(block.normalizedFee); },
         async getNormalizedFee () { return 509; },
         async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
       };
@@ -1490,6 +1504,7 @@ describe('BitcoinProcessor', () => {
         ]
       };
       const mockFeeCalculator = {
+        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) { return Math.floor(block.normalizedFee); },
         async getNormalizedFee () { return 509; },
         async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 300 }, block); }
 
@@ -1549,6 +1564,7 @@ describe('BitcoinProcessor', () => {
         ]
       };
       const mockFeeCalculator = {
+        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) { return Math.floor(block.normalizedFee); },
         async getNormalizedFee () { return 509; },
         async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
       };

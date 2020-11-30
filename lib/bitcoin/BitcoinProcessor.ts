@@ -385,11 +385,10 @@ export default class BitcoinProcessor {
   public async time (hash?: string): Promise<IBlockchainTime> {
     console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
     if (!hash) {
-      const blockHeight = await this.bitcoinClient.getCurrentBlockHeight();
-      hash = await this.bitcoinClient.getBlockHash(blockHeight);
+      const block = await this.blockMetadataStore.getLast();
       return {
-        time: blockHeight,
-        hash
+        time: block!.height,
+        hash: block!.hash
       };
     }
 
@@ -449,7 +448,7 @@ export default class BitcoinProcessor {
       for (const transaction of transactions) {
         const block = blockMetaDataMap.get(transaction.transactionTime);
         if (block !== undefined) {
-          transaction.normalizedTransactionFee = Math.floor(block.normalizedFee);
+          transaction.normalizedTransactionFee = this.versionManager.getFeeCalculator(block.height).calculateNormalizedTransactionFeeFromBlock(block);
         } else {
           throw new RequestError(ResponseStatus.ServerError, ErrorCode.BitcoinBlockMetadataNotFound);
         }

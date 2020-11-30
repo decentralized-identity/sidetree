@@ -2,6 +2,7 @@ import { Address, Networks, PrivateKey, Script, crypto } from 'bitcore-lib';
 import BitcoinClient from '../../../lib/bitcoin/BitcoinClient';
 import BitcoinOutputModel from '../../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinTransactionModel from '../../../lib/bitcoin/models/BitcoinTransactionModel';
+import BlockMetadata from '../../../lib/bitcoin/models/BlockMetadata';
 import BlockMetadataWithoutNormalizedFee from '../../../lib/bitcoin/models/BlockMetadataWithoutNormalizedFee';
 import ErrorCode from '../../../lib/bitcoin/ErrorCode';
 import { IBlockInfo } from '../../../lib/bitcoin/BitcoinProcessor';
@@ -121,6 +122,7 @@ describe('LockResolver', () => {
 
       const mockNormalizedFee = 87654;
       const mockFeeCalculator = {
+        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) { return Math.floor(block.normalizedFee); },
         async getNormalizedFee () { return mockNormalizedFee; },
         async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: mockNormalizedFee }, block); }
       };
