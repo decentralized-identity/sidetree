@@ -348,11 +348,12 @@ describe('BitcoinProcessor', () => {
 
   describe('transactions()', () => {
     beforeEach(() => {
-      spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue({
-        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) { return Math.floor(block.normalizedFee); },
-        async getNormalizedFee () { ​return 509; },
-        async addNormalizedFeeToBlockMetadata () { ​return {​}​ as any; }
-      });
+      const mockFeeCalculator = {
+        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) { return Math.floor(block.normalizedFee); },
+        async getNormalizedFee () { return 509; },
+        async addNormalizedFeeToBlockMetadata () { return {} as any; }
+      };
+      spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
     });
 
     it('should get transactions since genesis capped by page size in blocks', async (done) => {
