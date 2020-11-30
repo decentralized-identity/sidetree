@@ -58,7 +58,6 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
 
     const normalizedFee = this.calculateNormalizedFee(this.cachedLookBackWindow);
     const newBlockWithFee = Object.assign({ normalizedFee }, blockMetadata);
-    console.log(normalizedFee);
     this.cachedLookBackWindow.push(newBlockWithFee);
     this.cachedLookBackWindow.shift();
     this.blockHeightOfCachedLookBackWindow++;
@@ -70,8 +69,7 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
       return this.initialNormalizedFeeInSatoshis;
     }
     const blocksToAverage = await this.getBlocksInLookBackWindow(block);
-    
-    // TODO: @Isaac, why are we not getting the content fee from DB?
+
     const rawNormalizedFee = this.calculateNormalizedFee(blocksToAverage);
     const flooredNormalizedFee = Math.floor(rawNormalizedFee);
     return flooredNormalizedFee;
@@ -92,7 +90,7 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
 
     // TODO: #926 investigate potential rounding differences between languages and implementations
     // https://github.com/decentralized-identity/sidetree/issues/926
-    const unadjustedFee = Math.floor(totalFee / totalTransactionCount);
+    const unadjustedFee = totalFee / totalTransactionCount;
     const previousFee = blocksToAverage[blocksToAverage.length - 1].normalizedFee;
     return this.adjustFeeToWithinFluctuationRate(unadjustedFee, previousFee);
   }
