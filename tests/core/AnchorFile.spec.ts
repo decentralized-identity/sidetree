@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
-import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
-import AnchorFileModel from '../../lib/core/versions/latest/models/AnchorFileModel';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
+import CoreIndexFile from '../../lib/core/versions/latest/CoreIndexFile';
+import CoreIndexFileModel from '../../lib/core/versions/latest/models/CoreIndexFileModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
@@ -9,9 +9,9 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import SidetreeError from '../../lib/common/SidetreeError';
 
-describe('AnchorFile', async () => {
+describe('CoreIndexFile', async () => {
   describe('parse()', async () => {
-    it('should parse an anchor file model correctly.', async () => {
+    it('should parse an core index file model correctly.', async () => {
       const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
       const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
 
@@ -29,19 +29,19 @@ describe('AnchorFile', async () => {
       const deactivateOperationData = await OperationGenerator.createDeactivateOperation('anyDid2', anyRecoveryPrivateKey);
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
-      const anchorFileBuffer = await AnchorFile.createBuffer(
+      const coreIndexFileBuffer = await CoreIndexFile.createBuffer(
         undefined, provisionalIndexFileUri, coreProofFileUri, [createOperation], [recoverOperation], [deactivateOperation]
       );
 
-      const parsedAnchorFile = await AnchorFile.parse(anchorFileBuffer);
+      const parsedCoreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
-      expect(parsedAnchorFile.createDidSuffixes.length).toEqual(1);
-      expect(parsedAnchorFile.createDidSuffixes[0]).toEqual(createOperation.didUniqueSuffix);
-      expect(parsedAnchorFile.recoverDidSuffixes.length).toEqual(1);
-      expect(parsedAnchorFile.recoverDidSuffixes[0]).toEqual(recoverOperation.didUniqueSuffix);
-      expect(parsedAnchorFile.deactivateDidSuffixes.length).toEqual(1);
-      expect(parsedAnchorFile.deactivateDidSuffixes[0]).toEqual(deactivateOperation.didUniqueSuffix);
-      expect(parsedAnchorFile.model.provisionalIndexFileUri).toEqual(provisionalIndexFileUri);
+      expect(parsedCoreIndexFile.createDidSuffixes.length).toEqual(1);
+      expect(parsedCoreIndexFile.createDidSuffixes[0]).toEqual(createOperation.didUniqueSuffix);
+      expect(parsedCoreIndexFile.recoverDidSuffixes.length).toEqual(1);
+      expect(parsedCoreIndexFile.recoverDidSuffixes[0]).toEqual(recoverOperation.didUniqueSuffix);
+      expect(parsedCoreIndexFile.deactivateDidSuffixes.length).toEqual(1);
+      expect(parsedCoreIndexFile.deactivateDidSuffixes[0]).toEqual(deactivateOperation.didUniqueSuffix);
+      expect(parsedCoreIndexFile.model.provisionalIndexFileUri).toEqual(provisionalIndexFileUri);
     });
 
     it('should throw error if core proof file is specified but there is no recover and no deactivate operation.', async () => {
@@ -52,68 +52,68 @@ describe('AnchorFile', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
 
-      const anchorFileBuffer =
-        await AnchorFile.createBuffer(undefined, provisionalIndexFileUri, coreProofFileUri, [createOperation], [], []);
+      const coreIndexFileBuffer =
+        await CoreIndexFile.createBuffer(undefined, provisionalIndexFileUri, coreProofFileUri, [createOperation], [], []);
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => AnchorFile.parse(anchorFileBuffer),
-        ErrorCode.AnchorFileCoreProofFileUriNotAllowed
+        () => CoreIndexFile.parse(coreIndexFileBuffer),
+        ErrorCode.CoreIndexFileCoreProofFileUriNotAllowed
       );
     });
 
     it('should throw if buffer given is not valid JSON.', async () => {
-      const anchorFileBuffer = Buffer.from('NotJsonString');
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from('NotJsonString');
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => AnchorFile.parse(anchorFileCompressed),
-        ErrorCode.AnchorFileNotJson);
+        () => CoreIndexFile.parse(coreIndexFileCompressed),
+        ErrorCode.CoreIndexFileNotJson);
     });
 
     it('should throw if the buffer is not compressed', async () => {
-      const anchorFile = {
+      const coreIndexFile = {
         provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => AnchorFile.parse(anchorFileBuffer),
-        ErrorCode.AnchorFileDecompressionFailure);
+        () => CoreIndexFile.parse(coreIndexFileBuffer),
+        ErrorCode.CoreIndexFileDecompressionFailure);
     });
 
     it('should throw if has an unknown property.', async () => {
-      const anchorFile = {
+      const coreIndexFile = {
         unknownProperty: 'Unknown property',
         writerLockId: 'writer lock',
         provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {}
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty));
+      await expectAsync(CoreIndexFile.parse(coreIndexFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.CoreIndexFileHasUnknownProperty));
     });
 
     it('should throw if `operations` property has an unknown property.', async () => {
-      const anchorFile = {
+      const coreIndexFile = {
         writerLockId: 'writer lock',
         provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           unexpectedProperty: 'any value'
         }
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => AnchorFile.parse(anchorFileCompressed),
-        ErrorCode.AnchorFileUnexpectedPropertyInOperations
+        () => CoreIndexFile.parse(coreIndexFileCompressed),
+        ErrorCode.CoreIndexFileUnexpectedPropertyInOperations
       );
     });
 
     it('should throw if expected `provisionalIndexFileUri` is missing.', async () => {
-      const anchorFile = {
+      const coreIndexFile = {
         // provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what is missing.
         operations: {
           deactivate: [{
@@ -122,70 +122,70 @@ describe('AnchorFile', async () => {
           }]
         }
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => AnchorFile.parse(anchorFileCompressed),
-        ErrorCode.AnchorFileProvisionalIndexFileUriMissing
+        () => CoreIndexFile.parse(coreIndexFileCompressed),
+        ErrorCode.CoreIndexFileProvisionalIndexFileUriMissing
       );
     });
 
     it('should allow a valid core index file with out any operation references.', async () => {
       const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
-      const anchorFileModel = {
+      const coreIndexFileModel = {
         provisionalIndexFileUri
         // operations: {}, // Intentionally missing operations.
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFileModel));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
-      const anchorFile = await AnchorFile.parse(anchorFileCompressed);
-      expect(anchorFile.didUniqueSuffixes.length).toEqual(0);
-      expect(anchorFile.model.provisionalIndexFileUri!).toEqual(provisionalIndexFileUri);
+      const coreIndexFile = await CoreIndexFile.parse(coreIndexFileCompressed);
+      expect(coreIndexFile.didUniqueSuffixes.length).toEqual(0);
+      expect(coreIndexFile.model.provisionalIndexFileUri!).toEqual(provisionalIndexFileUri);
     });
 
     it('should throw if any additional property.', async () => {
-      const anchorFile = {
+      const coreIndexFile = {
         invalidProperty: 'some property value',
         provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {}
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty));
+      await expectAsync(CoreIndexFile.parse(coreIndexFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.CoreIndexFileHasUnknownProperty));
     });
 
-    it('should throw if map file hash is not string.', async () => {
+    it('should throw if provisional index file hash is not string.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
       const coreProofFileHash = undefined;
-      const anchorFileModel = await AnchorFile.createModel('writerLock', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
+      const coreIndexFileModel = await CoreIndexFile.createModel('writerLock', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
 
-      (anchorFileModel as any).provisionalIndexFileUri = 1234; // Intentionally setting the provisionalIndexFileUri as an incorrect type.
+      (coreIndexFileModel as any).provisionalIndexFileUri = 1234; // Intentionally setting the provisionalIndexFileUri as an incorrect type.
 
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFileModel));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => AnchorFile.parse(anchorFileCompressed),
+        () => CoreIndexFile.parse(coreIndexFileCompressed),
         ErrorCode.InputValidatorCasFileUriNotString,
         'provisional index file'
       );
     });
 
-    it('should throw if map file hash is invalid.', async () => {
+    it('should throw if provisional index file hash is invalid.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
       const coreProofFileHash = undefined;
-      const anchorFileModel = await AnchorFile.createModel('writerLock', 'invalidMapFileHash', coreProofFileHash, [createOperation], [], []);
+      const coreIndexFileModel = await CoreIndexFile.createModel('writerLock', 'invalidProvisionalIndexFileHash', coreProofFileHash, [createOperation], [], []);
 
       try {
-        const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
-        const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+        const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFileModel));
+        const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
-        await AnchorFile.parse(anchorFileCompressed);
+        await CoreIndexFile.parse(coreIndexFileCompressed);
       } catch (error) {
         expect(error.code).toEqual(ErrorCode.InputValidatorCasFileUriUnsupported);
       }
@@ -195,73 +195,73 @@ describe('AnchorFile', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
       const coreProofFileHash = undefined;
-      const anchorFileModel = await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
+      const coreIndexFileModel = await CoreIndexFile.createModel('unusedWriterLockId', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
 
-      (anchorFileModel as any).writerLockId = {}; // intentionally set to invalid value
+      (coreIndexFileModel as any).writerLockId = {}; // intentionally set to invalid value
 
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFileModel));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileWriterLockIdPropertyNotString));
+      await expectAsync(CoreIndexFile.parse(coreIndexFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.CoreIndexFileWriterLockIdPropertyNotString));
     });
 
     it('should throw if writer lock ID exceeded max size.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
       const coreProofFileHash = undefined;
-      const anchorFileModel =
-        await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
+      const coreIndexFileModel =
+        await CoreIndexFile.createModel('unusedWriterLockId', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
 
-      (anchorFileModel as any).writerLockId = crypto.randomBytes(2000).toString('hex'); // Intentionally larger than maximum.
+      (coreIndexFileModel as any).writerLockId = crypto.randomBytes(2000).toString('hex'); // Intentionally larger than maximum.
 
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFileModel));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => AnchorFile.parse(anchorFileCompressed),
-        ErrorCode.AnchorFileWriterLockIdExceededMaxSize);
+        () => CoreIndexFile.parse(coreIndexFileCompressed),
+        ErrorCode.CoreIndexFileWriterLockIdExceededMaxSize);
     });
 
     it('should throw if `create` property is not an array.', async () => {
-      const anchorFile = {
+      const coreIndexFile = {
         provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           create: 'IncorrectType'
         }
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileCreatePropertyNotArray));
+      await expectAsync(CoreIndexFile.parse(coreIndexFileCompressed))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.CoreIndexFileCreatePropertyNotArray));
     });
 
     it('should throw if `recover` property is not an array.', async () => {
-      const anchorFile = {
+      const coreIndexFile = {
         provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           recover: 'IncorrectType'
         }
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileRecoverPropertyNotArray));
+      await expectAsync(CoreIndexFile.parse(coreIndexFileCompressed))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.CoreIndexFileRecoverPropertyNotArray));
     });
 
     it('should throw if `deactivate` property is not an array.', async () => {
-      const anchorFile = {
+      const coreIndexFile = {
         provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           deactivate: 'IncorrectType'
         }
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDeactivatePropertyNotArray));
+      await expectAsync(CoreIndexFile.parse(coreIndexFileCompressed))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.CoreIndexFileDeactivatePropertyNotArray));
     });
 
     it('should throw if there are multiple operations for the same DID.', async () => {
@@ -272,7 +272,7 @@ describe('AnchorFile', async () => {
       delete createOperationRequest.type;
       delete createOperationRequest.delta;
 
-      const anchorFile: AnchorFileModel = {
+      const coreIndexFile: CoreIndexFileModel = {
         provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           create: [createOperationRequest],
@@ -282,17 +282,17 @@ describe('AnchorFile', async () => {
           }]
         }
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid));
+      await expectAsync(CoreIndexFile.parse(coreIndexFileCompressed))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.CoreIndexFileMultipleOperationsForTheSameDid));
     });
   });
 
   describe('createModel()', async () => {
-    it('should created an anchor file model correctly.', async () => {
-      const mapFileHash = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+    it('should created an core index file model correctly.', async () => {
+      const provisionalIndexFileHash = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
       const coreProofFileHash = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
 
       // Create operation.
@@ -309,51 +309,51 @@ describe('AnchorFile', async () => {
       const deactivateOperationData = await OperationGenerator.createDeactivateOperation('anyDid2', anyRecoveryPrivateKey);
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
-      const anchorFileModel = await AnchorFile.createModel(
-        undefined, mapFileHash, coreProofFileHash, [createOperation], [recoverOperation], [deactivateOperation]
+      const coreIndexFileModel = await CoreIndexFile.createModel(
+        undefined, provisionalIndexFileHash, coreProofFileHash, [createOperation], [recoverOperation], [deactivateOperation]
       );
 
-      expect(anchorFileModel.provisionalIndexFileUri).toEqual(mapFileHash);
-      expect(anchorFileModel.operations!.create![0].suffixData).toEqual({
+      expect(coreIndexFileModel.provisionalIndexFileUri).toEqual(provisionalIndexFileHash);
+      expect(coreIndexFileModel.operations!.create![0].suffixData).toEqual({
         deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment, type: undefined
       });
 
       // Verify recover operation.
-      const recoveryOperationInAnchorFile = anchorFileModel.operations!.recover![0];
+      const recoveryOperationInCoreIndexFile = coreIndexFileModel.operations!.recover![0];
       const recoveryRevealValue = Multihash.canonicalizeThenHashThenEncode(recoverOperation.signedData.recoveryKey);
-      expect(recoveryOperationInAnchorFile.didSuffix).toEqual(recoverOperation.didUniqueSuffix);
-      expect(recoveryOperationInAnchorFile.revealValue).toEqual(recoveryRevealValue);
+      expect(recoveryOperationInCoreIndexFile.didSuffix).toEqual(recoverOperation.didUniqueSuffix);
+      expect(recoveryOperationInCoreIndexFile.revealValue).toEqual(recoveryRevealValue);
 
       // Verify deactivate operation.
-      const deactivateOperationInAnchorFile = anchorFileModel.operations!.deactivate![0];
+      const deactivateOperationInCoreIndexFile = coreIndexFileModel.operations!.deactivate![0];
       const deactivateRevealValue = Multihash.canonicalizeThenHashThenEncode(deactivateOperation.signedData.recoveryKey);
-      expect(deactivateOperationInAnchorFile.didSuffix).toEqual(deactivateOperation.didUniqueSuffix);
-      expect(deactivateOperationInAnchorFile.revealValue).toEqual(deactivateRevealValue);
+      expect(deactivateOperationInCoreIndexFile.didSuffix).toEqual(deactivateOperation.didUniqueSuffix);
+      expect(deactivateOperationInCoreIndexFile.revealValue).toEqual(deactivateRevealValue);
     });
 
     it('should not create `operations` property if there is no create, recover, and deactivates.', async () => {
       const writerLockId = undefined;
-      const mapFileHash = OperationGenerator.generateRandomHash();
+      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
       const coreProofFileHash = undefined;
-      const anchorFileModel = await AnchorFile.createModel(writerLockId, mapFileHash, coreProofFileHash, [], [], []);
+      const coreIndexFileModel = await CoreIndexFile.createModel(writerLockId, provisionalIndexFileHash, coreProofFileHash, [], [], []);
 
-      expect(anchorFileModel.operations).toBeUndefined();
+      expect(coreIndexFileModel.operations).toBeUndefined();
     });
   });
 
   describe('createBuffer()', async () => {
     it('should created a compressed buffer correctly.', async () => {
-      const mapFileHash = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+      const provisionalIndexFileHash = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
       const coreProofFileHash = undefined;
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
 
-      const anchorFileBuffer = await AnchorFile.createBuffer(undefined, mapFileHash, coreProofFileHash, [createOperation], [], []);
+      const coreIndexFileBuffer = await CoreIndexFile.createBuffer(undefined, provisionalIndexFileHash, coreProofFileHash, [createOperation], [], []);
 
-      const anchorFile = await AnchorFile.parse(anchorFileBuffer);
+      const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
-      expect(anchorFile.model.provisionalIndexFileUri).toEqual(mapFileHash);
-      expect(anchorFile.model.operations!.create![0].suffixData).toEqual({
+      expect(coreIndexFile.model.provisionalIndexFileUri).toEqual(provisionalIndexFileHash);
+      expect(coreIndexFile.model.operations!.create![0].suffixData).toEqual({
         deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment
       });
     });

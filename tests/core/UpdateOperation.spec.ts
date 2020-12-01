@@ -63,8 +63,8 @@ describe('UpdateOperation', async () => {
         extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
       };
 
-      const mapFileMode = true;
-      await expectAsync((UpdateOperation as any).parseObject(updateOperation, Buffer.from('anyValue'), mapFileMode))
+      const provisionalIndexFileMode = true;
+      await expectAsync((UpdateOperation as any).parseObject(updateOperation, Buffer.from('anyValue'), provisionalIndexFileMode))
         .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationMissingOrUnknownProperty));
       done();
     });

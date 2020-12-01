@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
-import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
+import CoreIndexFile from '../../lib/core/versions/latest/CoreIndexFile';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DataGenerator from './DataGenerator';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
@@ -668,9 +668,9 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates an anchor file.
+   * Generates an core index file.
    */
-  public static async generateAnchorFile (recoveryOperationCount: number): Promise<Buffer> {
+  public static async generateCoreIndexFile (recoveryOperationCount: number): Promise<Buffer> {
     const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
     const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
 
@@ -685,8 +685,8 @@ export default class OperationGenerator {
 
       recoverOperations.push(recoverOperation);
     }
-    const anchorFileBuffer = await AnchorFile.createBuffer(undefined, provisionalIndexFileUri, coreProofFileUri, [], recoverOperations, []);
+    const coreIndexFileBuffer = await CoreIndexFile.createBuffer(undefined, provisionalIndexFileUri, coreProofFileUri, [], recoverOperations, []);
 
-    return anchorFileBuffer;
+    return coreIndexFileBuffer;
   }
 }

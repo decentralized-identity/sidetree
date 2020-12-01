@@ -1,7 +1,7 @@
-import AnchorFile from './AnchorFile';
 import AnchoredData from './models/AnchoredData';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import ChunkFile from './ChunkFile';
+import CoreIndexFile from './CoreIndexFile';
 import CoreProofFile from './CoreProofFile';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
@@ -12,10 +12,10 @@ import ICas from '../../interfaces/ICas';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import LogColor from '../../../common/LogColor';
-import MapFile from './MapFile';
 import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
+import ProvisionalIndexFile from './ProvisionalIndexFile';
 import ProvisionalProofFile from './ProvisionalProofFile';
 import RecoverOperation from './RecoverOperation';
 import UpdateOperation from './UpdateOperation';
@@ -75,27 +75,27 @@ export default class BatchWriter implements IBatchWriter {
     const chunkFileHash = await this.cas.write(chunkFileBuffer);
     console.info(LogColor.lightBlue(`Wrote chunk file ${LogColor.green(chunkFileHash)} to content addressable store.`));
 
-    // Write the map file to content addressable store.
-    const mapFileBuffer = await MapFile.createBuffer(chunkFileHash, provisionalProofFileHash, updateOperations);
-    const mapFileHash = await this.cas.write(mapFileBuffer);
-    console.info(LogColor.lightBlue(`Wrote map file ${LogColor.green(mapFileHash)} to content addressable store.`));
+    // Write the provisional index file to content addressable store.
+    const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileHash, provisionalProofFileHash, updateOperations);
+    const provisionalIndexFileHash = await this.cas.write(provisionalIndexFileBuffer);
+    console.info(LogColor.lightBlue(`Wrote provisional index file ${LogColor.green(provisionalIndexFileHash)} to content addressable store.`));
 
-    // Write the anchor file to content addressable store.
+    // Write the core index file to content addressable store.
     const writerLockId = currentLock ? currentLock.identifier : undefined;
-    const anchorFileBuffer = await AnchorFile.createBuffer(
+    const coreIndexFileBuffer = await CoreIndexFile.createBuffer(
       writerLockId,
-      mapFileHash,
+      provisionalIndexFileHash,
       coreProofFileHash,
       createOperations,
       recoverOperations,
       deactivateOperations
     );
-    const anchorFileHash = await this.cas.write(anchorFileBuffer);
-    console.info(LogColor.lightBlue(`Wrote anchor file ${LogColor.green(anchorFileHash)} to content addressable store.`));
+    const coreIndexFileHash = await this.cas.write(coreIndexFileBuffer);
+    console.info(LogColor.lightBlue(`Wrote core index file ${LogColor.green(coreIndexFileHash)} to content addressable store.`));
 
     // Anchor the data to the blockchain
     const dataToBeAnchored: AnchoredData = {
-      anchorFileHash,
+      coreIndexFileHash,
       numberOfOperations
     };
 

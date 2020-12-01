@@ -2,6 +2,7 @@ import BlockMetadata from '../../models/BlockMetadata';
 import BlockMetadataWithoutNormalizedFee from '../../models/BlockMetadataWithoutNormalizedFee';
 import IBlockMetadataStore from '../../interfaces/IBlockMetadataStore';
 import IFeeCalculator from '../../interfaces/IFeeCalculator';
+import LogColor from '../../../common/LogColor';
 
 /**
  * `IFeeCalculator` implementation.
@@ -61,6 +62,8 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
     this.cachedLookBackWindow.push(newBlockWithFee);
     this.cachedLookBackWindow.shift();
     this.blockHeightOfCachedLookBackWindow!++;
+
+    console.info(LogColor.lightBlue(`Calculated raw normalized fee for block ${LogColor.green(blockMetadata.height)}: ${LogColor.green(normalizedFee)}`));
     return newBlockWithFee;
   }
 
@@ -76,7 +79,8 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
   }
 
   private async getBlocksInLookBackWindow (block: number): Promise<BlockMetadata[]> {
-    return await this.blockMetadataStore.get(block - this.feeLookBackWindowInBlocks, block);
+    const blockMetadataArray = await this.blockMetadataStore.get(block - this.feeLookBackWindowInBlocks, block);
+    return blockMetadataArray;
   }
 
   private calculateNormalizedFee (blocksToAverage: BlockMetadata[]): number {

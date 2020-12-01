@@ -1,9 +1,9 @@
 import OperationReferenceModel from './OperationReferenceModel';
 
 /**
- * Defines the external Anchor File structure.
+ * Defines the external Core Index File structure.
  */
-export default interface AnchorFileModel {
+export default interface CoreIndexFileModel {
   writerLockId?: string;
   provisionalIndexFileUri?: string;
   coreProofFileUri?: string;

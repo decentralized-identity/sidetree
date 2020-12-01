@@ -2,66 +2,67 @@ import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
-import MapFile from '../../lib/core/versions/latest/MapFile';
-import MapFileModel from '../../lib/core/versions/latest/models/MapFileModel';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
+import ProvisionalIndexFile from '../../lib/core/versions/latest/ProvisionalIndexFile';
+import ProvisionalIndexFileModel from '../../lib/core/versions/latest/models/ProvisionalIndexFileModel';
 import SidetreeError from '../../lib/common/SidetreeError';
 
-describe('MapFile', async () => {
+describe('ProvisionalIndexFile', async () => {
   describe('parse()', async () => {
     it('should throw if buffer given is not valid JSON.', async () => {
       const fileBuffer = Buffer.from('NotJsonString');
       const fileCompressed = await Compressor.compress(fileBuffer);
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => MapFile.parse(fileCompressed),
-        ErrorCode.MapFileNotJson);
+        () => ProvisionalIndexFile.parse(fileCompressed),
+        ErrorCode.ProvisionalIndexFileNotJson);
     });
 
     it('should throw if the buffer is not compressed', async () => {
-      const mapFileModel: MapFileModel = {
+      const provisionalIndexFileModel: ProvisionalIndexFileModel = {
         chunks: [{ chunkFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' }]
       };
-      const fileBuffer = Buffer.from(JSON.stringify(mapFileModel));
+      const fileBuffer = Buffer.from(JSON.stringify(provisionalIndexFileModel));
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => MapFile.parse(fileBuffer),
-        ErrorCode.MapFileDecompressionFailure);
+        () => ProvisionalIndexFile.parse(fileBuffer),
+        ErrorCode.ProvisionalIndexFileDecompressionFailure);
     });
 
     it('should throw if has an unknown property.', async () => {
-      const mapFile = {
+      const provisionalIndexFile = {
         unknownProperty: 'Unknown property',
         chunks: [{ chunkFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' }]
       };
-      const fileBuffer = Buffer.from(JSON.stringify(mapFile));
+      const fileBuffer = Buffer.from(JSON.stringify(provisionalIndexFile));
       const fileCompressed = await Compressor.compress(fileBuffer);
 
-      await expectAsync(MapFile.parse(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileHasUnknownProperty));
+      await expectAsync(ProvisionalIndexFile.parse(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.ProvisionalIndexFileHasUnknownProperty));
     });
 
     it('should throw if missing chunk file hash.', async () => {
-      const mapFile = {
+      const provisionalIndexFile = {
         // chunks: [{ chunkFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' }], // Intentionally kept to show what the expected property should be.
       };
-      const fileBuffer = Buffer.from(JSON.stringify(mapFile));
+      const fileBuffer = Buffer.from(JSON.stringify(provisionalIndexFile));
       const fileCompressed = await Compressor.compress(fileBuffer);
 
-      await expectAsync(MapFile.parse(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileChunksPropertyMissingOrIncorrectType));
+      await expectAsync(ProvisionalIndexFile.parse(fileCompressed))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.ProvisionalIndexFileChunksPropertyMissingOrIncorrectType));
     });
 
     it('should throw if there is no updates but a provisional proof file URI is given.', async () => {
-      const mapFile: MapFileModel = {
+      const provisionalIndexFile: ProvisionalIndexFileModel = {
         provisionalProofFileUri: 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
         chunks: [{ chunkFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' }]
       };
-      const fileBuffer = Buffer.from(JSON.stringify(mapFile));
+      const fileBuffer = Buffer.from(JSON.stringify(provisionalIndexFile));
       const fileCompressed = await Compressor.compress(fileBuffer);
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => MapFile.parse(fileCompressed),
-        ErrorCode.MapFileProvisionalProofFileUriNotAllowed
+        () => ProvisionalIndexFile.parse(fileCompressed),
+        ErrorCode.ProvisionalIndexFileProvisionalProofFileUriNotAllowed
       );
     });
   });
@@ -79,7 +80,7 @@ describe('MapFile', async () => {
       };
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => (MapFile as any).validateOperationsProperty(operationsProperty),
+        () => (ProvisionalIndexFile as any).validateOperationsProperty(operationsProperty),
         ErrorCode.InputValidatorInputContainsNowAllowedProperty,
         'provisional operation references'
       );
@@ -90,8 +91,8 @@ describe('MapFile', async () => {
         update: 'not an array'
       };
 
-      await expect(() => (MapFile as any).validateOperationsProperty(operationsProperty))
-        .toThrow(new SidetreeError(ErrorCode.MapFileUpdateOperationsNotArray));
+      await expect(() => (ProvisionalIndexFile as any).validateOperationsProperty(operationsProperty))
+        .toThrow(new SidetreeError(ErrorCode.ProvisionalIndexFileUpdateOperationsNotArray));
     });
 
     it('should throw if there are multiple update operations for the same DID.', async () => {
@@ -103,8 +104,8 @@ describe('MapFile', async () => {
         ]
       };
 
-      expect(() => (MapFile as any).validateOperationsProperty(operationsProperty))
-        .toThrow(new SidetreeError(ErrorCode.MapFileMultipleOperationsForTheSameDid));
+      expect(() => (ProvisionalIndexFile as any).validateOperationsProperty(operationsProperty))
+        .toThrow(new SidetreeError(ErrorCode.ProvisionalIndexFileMultipleOperationsForTheSameDid));
     });
 
     it('should throw if a update operation reference has an invalid `didSuffix`.', async () => {
@@ -115,7 +116,7 @@ describe('MapFile', async () => {
       };
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => (MapFile as any).validateOperationsProperty(operationsProperty),
+        () => (ProvisionalIndexFile as any).validateOperationsProperty(operationsProperty),
         ErrorCode.OperationReferenceDidSuffixIsNotAString,
         'update'
       );
@@ -130,7 +131,7 @@ describe('MapFile', async () => {
       };
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => (MapFile as any).validateOperationsProperty(operationsProperty),
+        () => (ProvisionalIndexFile as any).validateOperationsProperty(operationsProperty),
         ErrorCode.OperationReferenceRevealValueIsNotAString,
         'update'
       );
@@ -144,7 +145,8 @@ describe('MapFile', async () => {
         { chunkFileUri: Encoder.encode(Multihash.hash(Buffer.from('anyValue2'))) } // Intentionally adding more than one element.
       ];
 
-      expect(() => (MapFile as any).validateChunksProperty(chunks)).toThrow(new SidetreeError(ErrorCode.MapFileChunksPropertyDoesNotHaveExactlyOneElement));
+      expect(() => (ProvisionalIndexFile as any).validateChunksProperty(chunks))
+        .toThrow(new SidetreeError(ErrorCode.ProvisionalIndexFileChunksPropertyDoesNotHaveExactlyOneElement));
     });
 
     it('should throw if there is more than one property in a chunk element.', async () => {
@@ -155,7 +157,8 @@ describe('MapFile', async () => {
         }
       ];
 
-      expect(() => (MapFile as any).validateChunksProperty(chunks)).toThrow(new SidetreeError(ErrorCode.MapFileChunkHasMissingOrUnknownProperty));
+      expect(() => (ProvisionalIndexFile as any).validateChunksProperty(chunks))
+        .toThrow(new SidetreeError(ErrorCode.ProvisionalIndexFileChunkHasMissingOrUnknownProperty));
     });
   });
 });

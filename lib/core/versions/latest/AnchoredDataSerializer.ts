@@ -19,7 +19,7 @@ export default class AnchoredDataSerializer {
    */
   public static serialize (dataToBeAnchored: AnchoredData): string {
     // Concatenate the inputs w/ the delimiter and return
-    return `${dataToBeAnchored.numberOfOperations}${AnchoredDataSerializer.delimiter}${dataToBeAnchored.anchorFileHash}`;
+    return `${dataToBeAnchored.numberOfOperations}${AnchoredDataSerializer.delimiter}${dataToBeAnchored.coreIndexFileHash}`;
   }
 
   /**
@@ -45,7 +45,7 @@ export default class AnchoredDataSerializer {
     }
 
     return {
-      anchorFileHash: splitData[1],
+      coreIndexFileHash: splitData[1],
       numberOfOperations: numberOfOperations
     };
   }
