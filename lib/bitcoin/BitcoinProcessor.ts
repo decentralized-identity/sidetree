@@ -4,7 +4,9 @@ import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
 import BitcoinServiceStateModel from './models/BitcoinServiceStateModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
+import BitcoinVersionModel from './models/BitcoinVersionModel';
 import BlockMetadata from './models/BlockMetadata';
+import BlockMetadataWithoutNormalizedFee from './models/BlockMetadataWithoutNormalizedFee';
 import ErrorCode from './ErrorCode';
 import IBitcoinConfig from './IBitcoinConfig';
 import LockMonitor from './lock/LockMonitor';
@@ -14,7 +16,6 @@ import MongoDbBlockMetadataStore from './MongoDbBlockMetadataStore';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
 import MongoDbServiceStateStore from '../common/MongoDbServiceStateStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
-import ProtocolParameters from './ProtocolParameters';
 import RequestError from './RequestError';
 import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
@@ -28,7 +29,6 @@ import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import VersionManager from './VersionManager';
-import VersionModel from '../common/models/VersionModel';
 
 /**
  * Object representing a blockchain time and hash
@@ -69,7 +69,7 @@ export default class BitcoinProcessor {
   private versionManager: VersionManager;
 
   /** Last seen block */
-  private lastProcessedBlock: IBlockInfo | undefined;
+  private lastProcessedBlock: BlockMetadata | undefined;
 
   /** Poll timeout identifier */
   private pollTimeoutId: number | undefined;
@@ -95,8 +95,8 @@ export default class BitcoinProcessor {
   /** at least 100 blocks per page unless reaching the last block */
   private static readonly pageSizeInBlocks = 100;
 
-  public constructor (private config: IBitcoinConfig, versionModels: VersionModel[]) {
-    this.versionManager = new VersionManager(versionModels);
+  public constructor (private config: IBitcoinConfig) {
+    this.versionManager = new VersionManager();
 
     this.genesisBlockNumber = config.genesisBlockNumber;
 
@@ -127,9 +127,7 @@ export default class BitcoinProcessor {
     this.lockResolver =
       new LockResolver(
         this.versionManager,
-        this.bitcoinClient,
-        ProtocolParameters.minimumValueTimeLockDurationInBlocks,
-        ProtocolParameters.maximumValueTimeLockDurationInBlocks);
+        this.bitcoinClient);
 
     this.mongoDbLockTransactionStore = new MongoDbLockTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
@@ -144,15 +142,15 @@ export default class BitcoinProcessor {
       config.valueTimeLockUpdateEnabled,
       BitcoinClient.convertBtcToSatoshis(config.valueTimeLockAmountInBitcoins), // Desired lock amount in satoshis
       BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amount in satoshis
-      ProtocolParameters.maximumValueTimeLockDurationInBlocks                   // Desired lock duration in blocks
+      this.versionManager
     );
   }
 
   /**
    * Initializes the Bitcoin processor
    */
-  public async initialize () {
-    await this.versionManager.initialize();
+  public async initialize (versionModels: BitcoinVersionModel[]) {
+    await this.versionManager.initialize(versionModels, this.config, this.blockMetadataStore);
     await this.serviceStateStore.initialize();
     await this.blockMetadataStore.initialize();
     await this.transactionStore.initialize();
@@ -228,10 +226,11 @@ export default class BitcoinProcessor {
     const lastBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
     const lastBlockInfo = await this.bitcoinClient.getBlockInfoFromHeight(lastBlockHeight);
 
+    // Use the model without normalized fee here because fast processing cannot derive normalized fee until all blocks are gathered.
     // a map of all blocks mapped with their hash being the key
-    const notYetValidatedBlocks: Map<string, BlockMetadata> = new Map();
+    const notYetValidatedBlocks: Map<string, BlockMetadataWithoutNormalizedFee> = new Map();
     // An array of blocks representing the validated chain reverse sorted by height
-    const validatedBlocks: BlockMetadata[] = [];
+    const validatedBlocks: BlockMetadataWithoutNormalizedFee[] = [];
 
     console.log(`Begin fast processing block ${startingBlock.height} to ${lastBlockHeight}`);
     // Loop through files backwards and process blocks from the end/tip of the blockchain until we reach the starting block given.
@@ -256,16 +255,17 @@ export default class BitcoinProcessor {
 
     // Write the block metadata to DB.
     const timer = timeSpan(); // Start timer to measure time taken to write block metadata.
-    await this.blockMetadataStore.add(validatedBlocks);
-    console.info(`Inserted metadata of ${validatedBlocks.length} blocks to DB. Duration: ${timer.rounded()} ms.`);
 
-    this.lastProcessedBlock = lastBlockInfo;
+    // ValidatedBlocks are in descending order, this flips that and make it ascending by height for the purpose of normalized fee calculation
+    const validatedBlocksOrderedByHeight = validatedBlocks.reverse();
+    await this.writeBlocksToMetadataStoreWithFee(validatedBlocksOrderedByHeight);
+    console.info(`Inserted metadata of ${validatedBlocks.length} blocks to DB. Duration: ${timer.rounded()} ms.`);
     console.log('finished fast processing');
   }
 
   private async processBlocks (
     blocks: BitcoinBlockModel[],
-    notYetValidatedBlocks: Map<string, BlockMetadata>,
+    notYetValidatedBlocks: Map<string, BlockMetadataWithoutNormalizedFee>,
     startingBlockHeight: number,
     heightOfEarliestKnownValidBlock: number) {
 
@@ -291,8 +291,8 @@ export default class BitcoinProcessor {
    * add them to the validated list and delete them from the map.
    */
   private findEarliestValidBlockAndAddToValidBlocks (
-    validatedBlocks: BlockMetadata[],
-    notYetValidatedBlocks: Map<string, BlockMetadata>,
+    validatedBlocks: BlockMetadataWithoutNormalizedFee[],
+    notYetValidatedBlocks: Map<string, BlockMetadataWithoutNormalizedFee>,
     hashOfEarliestKnownValidBlock: string,
     startingBlockHeight: number) {
 
@@ -312,7 +312,7 @@ export default class BitcoinProcessor {
     console.log(LogColor.lightBlue(`Found ${LogColor.green(validBlockCount)} valid blocks.`));
   }
 
-  private async removeTransactionsInInvalidBlocks (invalidBlocks: Map<string, BlockMetadata>) {
+  private async removeTransactionsInInvalidBlocks (invalidBlocks: Map<string, BlockMetadataWithoutNormalizedFee>) {
     const hashes = invalidBlocks.keys();
     for (const hash of hashes) {
       await this.transactionStore.removeTransactionByTransactionTimeHash(hash);
@@ -385,11 +385,10 @@ export default class BitcoinProcessor {
   public async time (hash?: string): Promise<IBlockchainTime> {
     console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
     if (!hash) {
-      const blockHeight = await this.bitcoinClient.getCurrentBlockHeight();
-      hash = await this.bitcoinClient.getBlockHash(blockHeight);
+      const block = await this.blockMetadataStore.getLast();
       return {
-        time: blockHeight,
-        hash
+        time: block!.height,
+        hash: block!.hash
       };
     }
 
@@ -405,7 +404,7 @@ export default class BitcoinProcessor {
    * Fetches Sidetree transactions in chronological order from since or genesis.
    * @param since A transaction number
    * @param hash The associated transaction time hash
-   * @returns Transactions in complete blocks since given transaction number.
+   * @returns Transactions in complete blocks since given transaction number, with normalizedFee.
    */
   public async transactions (since?: number, hash?: string): Promise<{
     moreTransactions: boolean,
@@ -434,6 +433,27 @@ export default class BitcoinProcessor {
     }
 
     const [transactions, lastBlockSeen] = await this.getTransactionsSince(since, lastProcessedBlock.height);
+
+    // Add normalizedFee to transactions because internal to bitcoin, normalizedFee live in blockMetadata and have to be joined by block height
+    // with transactions to get per transaction normalizedFee.
+    if (transactions.length !== 0) {
+      const inclusiveFirstBlockHeight = transactions[0].transactionTime;
+      const exclusiveLastBlockHeight = transactions[transactions.length - 1].transactionTime + 1;
+      const blockMetaData = await this.blockMetadataStore.get(inclusiveFirstBlockHeight, exclusiveLastBlockHeight);
+      const blockMetaDataMap: Map<number, BlockMetadata> = new Map();
+      for (const block of blockMetaData) {
+        blockMetaDataMap.set(block.height, block);
+      }
+
+      for (const transaction of transactions) {
+        const block = blockMetaDataMap.get(transaction.transactionTime);
+        if (block !== undefined) {
+          transaction.normalizedTransactionFee = this.versionManager.getFeeCalculator(block.height).calculateNormalizedTransactionFeeFromBlock(block);
+        } else {
+          throw new RequestError(ResponseStatus.ServerError, ErrorCode.BitcoinBlockMetadataNotFound);
+        }
+      }
+    }
 
     // make sure the last processed block hasn't changed since before getting transactions
     // if changed, then a block reorg happened.
@@ -524,19 +544,42 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Return proof-of-fee value for a particular block.
+   * Modifies the given array and update the normalized fees, then write to block metadata store.
+   * @param blocks the ordered block metadata to set the normalized fee for.
    */
-  public async getNormalizedFee (block: number): Promise<TransactionFeeModel> {
+  private async writeBlocksToMetadataStoreWithFee (blocks: BlockMetadataWithoutNormalizedFee[]) {
+    const blocksToWrite = [];
+    for (const block of blocks) {
+      const feeCalculator = await this.versionManager.getFeeCalculator(block.height);
+      const blockMetadata = await feeCalculator.addNormalizedFeeToBlockMetadata({
+        height: block.height,
+        hash: block.hash,
+        previousHash: block.previousHash,
+        transactionCount: block.transactionCount,
+        totalFee: block.totalFee
+      });
 
-    if (block < this.genesisBlockNumber) {
+      blocksToWrite.push(blockMetadata);
+    }
+    this.blockMetadataStore.add(blocksToWrite);
+    this.lastProcessedBlock = blocksToWrite[blocksToWrite.length - 1];
+  }
+
+  /**
+   * Calculate and return proof-of-fee value for a particular block.
+   * @param block The block height to get normalized fee for
+   */
+  public async getNormalizedFee (block: number | string): Promise<TransactionFeeModel> {
+    // this is to protect the number type because it can be passed as a string through request path
+    const blockNumber = Number(block);
+    if (blockNumber < this.genesisBlockNumber) {
       const error = `The input block number must be greater than or equal to: ${this.genesisBlockNumber}`;
       console.error(error);
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
     }
+    const normalizedTransactionFee = await this.versionManager.getFeeCalculator(blockNumber).getNormalizedFee(blockNumber);
 
-    const normalizedTransactionFee = this.versionManager.getFeeCalculator(block).getNormalizedFee(block);
-
-    return { normalizedTransactionFee };
+    return { normalizedTransactionFee: normalizedTransactionFee };
   }
 
   /**
@@ -646,13 +689,7 @@ export default class BitcoinProcessor {
     while (blockHeight <= endBlockHeight) {
       const processedBlockMetadata = await this.processBlock(blockHeight, previousBlockHash);
 
-      await this.blockMetadataStore.add([processedBlockMetadata]);
-
-      this.lastProcessedBlock = {
-        hash: processedBlockMetadata.hash,
-        height: processedBlockMetadata.height,
-        previousHash: processedBlockMetadata.previousHash
-      };
+      this.lastProcessedBlock = processedBlockMetadata;
 
       blockHeight++;
       previousBlockHash = processedBlockMetadata.hash;
@@ -769,17 +806,19 @@ export default class BitcoinProcessor {
 
     await this.processSidetreeTransactionsInBlock(blockData);
 
-    // Compute the total fee paid and total transaction count.
+    // Compute the total fee paid, total transaction count and normalized fee required for block metadata.
     const transactionCount = blockData.transactions.length;
     const totalFee = BitcoinProcessor.getBitcoinBlockTotalFee(blockData);
-
-    const processedBlockMetadata: BlockMetadata = {
+    const feeCalculator = this.versionManager.getFeeCalculator(blockHeight);
+    const processedBlockMetadata = await feeCalculator.addNormalizedFeeToBlockMetadata({
       hash: blockHash,
       height: blockHeight,
       previousHash: blockData.previousHash,
       totalFee,
       transactionCount
-    };
+    });
+
+    await this.blockMetadataStore.add([processedBlockMetadata]);
 
     return processedBlockMetadata;
   }
@@ -793,7 +832,6 @@ export default class BitcoinProcessor {
 
     if (sidetreeData) {
       const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transaction.id);
-      const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
 
       return {
         transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
@@ -801,7 +839,6 @@ export default class BitcoinProcessor {
         transactionTimeHash: transaction.blockHash,
         anchorString: sidetreeData.data,
         transactionFeePaid: transactionFeePaid,
-        normalizedTransactionFee: normalizedFeeModel.normalizedTransactionFee,
         writer: sidetreeData.writer
       };
     }

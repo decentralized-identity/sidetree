@@ -1,11 +1,13 @@
+import OperationReferenceModel from './OperationReferenceModel';
+
 /**
  * Defines the external Anchor File structure.
  */
 export default interface AnchorFileModel {
-  writerLockId: string | undefined;
-  mapFileUri: string;
+  writerLockId?: string;
+  provisionalIndexFileUri?: string;
   coreProofFileUri?: string;
-  operations: {
+  operations?: {
     create?: {
       suffixData: {
         deltaHash: string;
@@ -13,13 +15,7 @@ export default interface AnchorFileModel {
         type?: string;
       };
     }[],
-    recover?: {
-      didSuffix: string;
-      signedData: string;
-    }[],
-    deactivate?: {
-      didSuffix: string;
-      signedData: string;
-    }[]
+    recover?: OperationReferenceModel[],
+    deactivate?: OperationReferenceModel[]
   };
 }

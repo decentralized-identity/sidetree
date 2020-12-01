@@ -1,16 +1,18 @@
 import * as crypto from 'crypto';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
+import AnchorFileModel from '../../lib/core/versions/latest/models/AnchorFileModel';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('AnchorFile', async () => {
   describe('parse()', async () => {
     it('should parse an anchor file model correctly.', async () => {
-      const mapFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+      const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
       const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
 
       // Create operation.
@@ -28,22 +30,22 @@ describe('AnchorFile', async () => {
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
       const anchorFileBuffer = await AnchorFile.createBuffer(
-        undefined, mapFileUri, coreProofFileUri, [createOperation], [recoverOperation], [deactivateOperation]
+        undefined, provisionalIndexFileUri, coreProofFileUri, [createOperation], [recoverOperation], [deactivateOperation]
       );
 
       const parsedAnchorFile = await AnchorFile.parse(anchorFileBuffer);
 
-      expect(parsedAnchorFile.createOperations.length).toEqual(1);
-      expect(parsedAnchorFile.createOperations[0].encodedSuffixData).toEqual(createOperation.encodedSuffixData);
-      expect(parsedAnchorFile.recoverOperations.length).toEqual(1);
-      expect(parsedAnchorFile.recoverOperations[0].signedDataJws.toCompactJws()).toEqual(recoverOperation.signedDataJws.toCompactJws());
-      expect(parsedAnchorFile.deactivateOperations.length).toEqual(1);
-      expect(parsedAnchorFile.deactivateOperations[0].signedDataJws.toCompactJws()).toEqual(deactivateOperation.signedDataJws.toCompactJws());
-      expect(parsedAnchorFile.model.mapFileUri).toEqual(mapFileUri);
+      expect(parsedAnchorFile.createDidSuffixes.length).toEqual(1);
+      expect(parsedAnchorFile.createDidSuffixes[0]).toEqual(createOperation.didUniqueSuffix);
+      expect(parsedAnchorFile.recoverDidSuffixes.length).toEqual(1);
+      expect(parsedAnchorFile.recoverDidSuffixes[0]).toEqual(recoverOperation.didUniqueSuffix);
+      expect(parsedAnchorFile.deactivateDidSuffixes.length).toEqual(1);
+      expect(parsedAnchorFile.deactivateDidSuffixes[0]).toEqual(deactivateOperation.didUniqueSuffix);
+      expect(parsedAnchorFile.model.provisionalIndexFileUri).toEqual(provisionalIndexFileUri);
     });
 
     it('should throw error if core proof file is specified but there is no recover and no deactivate operation.', async () => {
-      const mapFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+      const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
       const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'; // Should not be allowed with no recovers and deactivates.
 
       // Create operation.
@@ -51,7 +53,7 @@ describe('AnchorFile', async () => {
       const createOperation = createOperationData.createOperation;
 
       const anchorFileBuffer =
-        await AnchorFile.createBuffer(undefined, mapFileUri, coreProofFileUri, [createOperation], [], []);
+        await AnchorFile.createBuffer(undefined, provisionalIndexFileUri, coreProofFileUri, [createOperation], [], []);
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => AnchorFile.parse(anchorFileBuffer),
@@ -70,7 +72,7 @@ describe('AnchorFile', async () => {
 
     it('should throw if the buffer is not compressed', async () => {
       const anchorFile = {
-        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -84,7 +86,7 @@ describe('AnchorFile', async () => {
       const anchorFile = {
         unknownProperty: 'Unknown property',
         writerLockId: 'writer lock',
-        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {}
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -96,7 +98,7 @@ describe('AnchorFile', async () => {
     it('should throw if `operations` property has an unknown property.', async () => {
       const anchorFile = {
         writerLockId: 'writer lock',
-        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           unexpectedProperty: 'any value'
         }
@@ -110,32 +112,43 @@ describe('AnchorFile', async () => {
       );
     });
 
-    it('should throw if missing map file hash.', async () => {
+    it('should throw if expected `provisionalIndexFileUri` is missing.', async () => {
       const anchorFile = {
-        // mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what is missing.
-        operations: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
+        // provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what is missing.
+        operations: {
+          deactivate: [{
+            didSuffix: OperationGenerator.generateRandomHash(),
+            revealValue: OperationGenerator.generateRandomHash()
+          }]
+        }
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMapFileUriMissing));
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => AnchorFile.parse(anchorFileCompressed),
+        ErrorCode.AnchorFileProvisionalIndexFileUriMissing
+      );
     });
 
-    it('should throw if missing operations property.', async () => {
-      const anchorFile = {
-        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+    it('should allow a valid core index file with out any operation references.', async () => {
+      const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+      const anchorFileModel = {
+        provisionalIndexFileUri
         // operations: {}, // Intentionally missing operations.
       };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty));
+      const anchorFile = await AnchorFile.parse(anchorFileCompressed);
+      expect(anchorFile.didUniqueSuffixes.length).toEqual(0);
+      expect(anchorFile.model.provisionalIndexFileUri!).toEqual(provisionalIndexFileUri);
     });
 
     it('should throw if any additional property.', async () => {
       const anchorFile = {
         invalidProperty: 'some property value',
-        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {}
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -150,7 +163,7 @@ describe('AnchorFile', async () => {
       const coreProofFileHash = undefined;
       const anchorFileModel = await AnchorFile.createModel('writerLock', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
 
-      (anchorFileModel as any).mapFileUri = 1234; // Intentionally setting the mapFileUri as an incorrect type.
+      (anchorFileModel as any).provisionalIndexFileUri = 1234; // Intentionally setting the provisionalIndexFileUri as an incorrect type.
 
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -158,7 +171,7 @@ describe('AnchorFile', async () => {
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => AnchorFile.parse(anchorFileCompressed),
         ErrorCode.InputValidatorCasFileUriNotString,
-        'map file URI'
+        'provisional index file'
       );
     });
 
@@ -211,7 +224,7 @@ describe('AnchorFile', async () => {
 
     it('should throw if `create` property is not an array.', async () => {
       const anchorFile = {
-        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           create: 'IncorrectType'
         }
@@ -225,7 +238,7 @@ describe('AnchorFile', async () => {
 
     it('should throw if `recover` property is not an array.', async () => {
       const anchorFile = {
-        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           recover: 'IncorrectType'
         }
@@ -239,7 +252,7 @@ describe('AnchorFile', async () => {
 
     it('should throw if `deactivate` property is not an array.', async () => {
       const anchorFile = {
-        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           deactivate: 'IncorrectType'
         }
@@ -259,18 +272,14 @@ describe('AnchorFile', async () => {
       delete createOperationRequest.type;
       delete createOperationRequest.delta;
 
-      const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
-        createOperationData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
-        createOperationData.recoveryPrivateKey
-      );
-
-      // Strip away properties not allowed in the deactivateOperations array elements.
-      delete deactivateOperationRequest.type;
-      const anchorFile = {
-        mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+      const anchorFile: AnchorFileModel = {
+        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           create: [createOperationRequest],
-          deactivate: [deactivateOperationRequest]
+          deactivate: [{
+            didSuffix: createOperationData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
+            revealValue: 'unused'
+          }]
         }
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -304,20 +313,31 @@ describe('AnchorFile', async () => {
         undefined, mapFileHash, coreProofFileHash, [createOperation], [recoverOperation], [deactivateOperation]
       );
 
-      expect(anchorFileModel.mapFileUri).toEqual(mapFileHash);
-      expect(anchorFileModel.operations.create![0].suffixData).toEqual({
+      expect(anchorFileModel.provisionalIndexFileUri).toEqual(mapFileHash);
+      expect(anchorFileModel.operations!.create![0].suffixData).toEqual({
         deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment, type: undefined
       });
 
       // Verify recover operation.
-      const recoveryOperationInAnchorFile = anchorFileModel.operations.recover![0];
+      const recoveryOperationInAnchorFile = anchorFileModel.operations!.recover![0];
+      const recoveryRevealValue = Multihash.canonicalizeThenHashThenEncode(recoverOperation.signedData.recoveryKey);
       expect(recoveryOperationInAnchorFile.didSuffix).toEqual(recoverOperation.didUniqueSuffix);
-      expect(recoveryOperationInAnchorFile.signedData).toEqual(recoverOperation.signedDataJws.toCompactJws());
+      expect(recoveryOperationInAnchorFile.revealValue).toEqual(recoveryRevealValue);
 
       // Verify deactivate operation.
-      const deactivateOperationInAnchorFile = anchorFileModel.operations.deactivate![0];
+      const deactivateOperationInAnchorFile = anchorFileModel.operations!.deactivate![0];
+      const deactivateRevealValue = Multihash.canonicalizeThenHashThenEncode(deactivateOperation.signedData.recoveryKey);
       expect(deactivateOperationInAnchorFile.didSuffix).toEqual(deactivateOperation.didUniqueSuffix);
-      expect(deactivateOperationInAnchorFile.signedData).toEqual(deactivateOperation.signedDataJws.toCompactJws());
+      expect(deactivateOperationInAnchorFile.revealValue).toEqual(deactivateRevealValue);
+    });
+
+    it('should not create `operations` property if there is no create, recover, and deactivates.', async () => {
+      const writerLockId = undefined;
+      const mapFileHash = OperationGenerator.generateRandomHash();
+      const coreProofFileHash = undefined;
+      const anchorFileModel = await AnchorFile.createModel(writerLockId, mapFileHash, coreProofFileHash, [], [], []);
+
+      expect(anchorFileModel.operations).toBeUndefined();
     });
   });
 
@@ -332,8 +352,8 @@ describe('AnchorFile', async () => {
 
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
-      expect(anchorFile.model.mapFileUri).toEqual(mapFileHash);
-      expect(anchorFile.model.operations.create![0].suffixData).toEqual({
+      expect(anchorFile.model.provisionalIndexFileUri).toEqual(mapFileHash);
+      expect(anchorFile.model.operations!.create![0].suffixData).toEqual({
         deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment
       });
     });

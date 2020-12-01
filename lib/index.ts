@@ -4,11 +4,12 @@ import ISidetreeBitcoinConfig from './bitcoin/IBitcoinConfig';
 import ISidetreeBitcoinWallet from './bitcoin/interfaces/IBitcoinWallet';
 import ISidetreeCas from './core/interfaces/ICas';
 import SidetreeBitcoinProcessor from './bitcoin/BitcoinProcessor';
+import SidetreeBitcoinVersionModel from './bitcoin/models/BitcoinVersionModel';
 import SidetreeConfig from './core/models/Config';
 import SidetreeCore from './core/Core';
 import SidetreeResponse from './common/Response';
 import SidetreeResponseModel from './common/models/ResponseModel';
-import SidetreeVersionModel from './common/models/VersionModel';
+import SidetreeVersionModel from './core/models/VersionModel';
 
 // Core service exports.
 export {
@@ -24,5 +25,6 @@ export {
 export {
   ISidetreeBitcoinConfig,
   ISidetreeBitcoinWallet,
-  SidetreeBitcoinProcessor
+  SidetreeBitcoinProcessor,
+  SidetreeBitcoinVersionModel
 };

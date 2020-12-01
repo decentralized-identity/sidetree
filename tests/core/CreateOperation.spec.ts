@@ -1,6 +1,7 @@
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
@@ -13,37 +14,14 @@ describe('CreateOperation', async () => {
       const operationObject = {
         type: 'create',
         suffixData: {
-          deltaHash: 'something',
-          recoveryCommitment: 'something',
-          type: 'type'
+          deltaHash: OperationGenerator.generateRandomHash(),
+          recoveryCommitment: OperationGenerator.generateRandomHash()
         },
         delta: 'this is not a valid delta'
       };
 
-      spyOn(CreateOperation as any, 'validateSuffixData').and.callFake(() => {
-        // do nothing
-      });
-
-      const result = CreateOperation.parseJcsObject(operationObject, Buffer.from('something'), false);
+      const result = CreateOperation.parseJcsObject(operationObject, Buffer.from('something'));
       expect(result.delta).toBeUndefined();
-    });
-
-    it('should process as anchor file mode when anchorFileMode is true', () => {
-      const operationObject = {
-        suffixData: {
-          deltaHash: 'something',
-          recoveryCommitment: 'something',
-          type: 'type'
-        }
-      };
-
-      spyOn(CreateOperation as any, 'validateSuffixData').and.callFake(() => {
-        // do nothing
-      });
-
-      const result = CreateOperation.parseJcsObject(operationObject, Buffer.from('something'), true);
-      expect(result.delta).toBeUndefined();
-      expect(result.suffixData).toBeDefined();
     });
 
     it('should throw sidetree error if object contains more or less than 3 properties', () => {
@@ -51,57 +29,35 @@ describe('CreateOperation', async () => {
       const fourProperties = { one: 1, two: 2, three: 3, four: 4 };
 
       try {
-        CreateOperation.parseJcsObject(twoProperties, Buffer.from(JSON.stringify(twoProperties)), false);
+        CreateOperation.parseJcsObject(twoProperties, Buffer.from(JSON.stringify(twoProperties)));
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
       }
 
       try {
-        CreateOperation.parseJcsObject(fourProperties, Buffer.from(JSON.stringify(fourProperties)), false);
+        CreateOperation.parseJcsObject(fourProperties, Buffer.from(JSON.stringify(fourProperties)));
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
       }
     });
 
-    it('should throw sidetree error if type is not create', () => {
+    it('should throw sidetree error if operation type is not create.', () => {
       const testObject = {
         type: 'notCreate',
         suffixData: {
-          deltaHash: 'something',
-          recoveryCommitment: 'something',
-          type: 'type'
+          deltaHash: OperationGenerator.generateRandomHash(),
+          recoveryCommitment: OperationGenerator.generateRandomHash()
         },
         delta: 'something'
       };
 
-      spyOn(CreateOperation as any, 'validateSuffixData').and.callFake(() => {
-        // do nothing
-      });
-
       try {
-        CreateOperation.parseJcsObject(testObject, Buffer.from(JSON.stringify(testObject)), false);
+        CreateOperation.parseJcsObject(testObject, Buffer.from(JSON.stringify(testObject)));
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationTypeIncorrect));
-      }
-    });
-
-    it('should throw sidetree error if has more or less than 1 property when in anchor file mode', () => {
-      const testObject = {
-        type: 'this should not exist',
-        suffixData: {
-          deltaHash: 'something',
-          recoveryCommitment: 'something',
-          type: 'type'
-        }
-      };
-      try {
-        CreateOperation.parseJcsObject(testObject, Buffer.from(JSON.stringify(testObject)), true);
-        fail('expect to throw sidetree error but did not');
-      } catch (e) {
-        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
       }
     });
   });
@@ -154,19 +110,8 @@ describe('CreateOperation', async () => {
     });
   });
 
-  describe('validateSuffixData', () => {
-    it('should throw if the input is not an object', () => {
-      const input = 'this is not an object, this is a string';
-      try {
-        CreateOperation['validateSuffixData'](input);
-      } catch (e) {
-        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationSuffixDataIsNotObject));
-      }
-    });
-  });
-
   describe('parseSuffixData()', async () => {
-    // TODO: SIP 2 #781 deprecates this. These tests can be siwtched over to validateSuffixData
+    // TODO: SIP 2 #781 deprecates this. These tests can be switched over to validateSuffixData
     it('should function as expected with type', async () => {
       const suffixData = {
         deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
@@ -201,17 +146,25 @@ describe('CreateOperation', async () => {
         extraProperty: 'An unknown extra property'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-      await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty));
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => (CreateOperation as any).parseSuffixData(encodedSuffixData),
+        ErrorCode.InputValidatorInputContainsNowAllowedProperty,
+        'suffix data'
+      );
     });
 
-    it('should throw if suffix data is missing properties', async () => {
+    it('should throw if suffix data is missing `deltaHash`', async () => {
       const suffixData = {
-        onlyOneProperty: 'only 1 property'
+        // Intentionally missing `deltaHash`.
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-      await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty));
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => (CreateOperation as any).parseSuffixData(encodedSuffixData),
+        ErrorCode.EncoderValidateBase64UrlStringInputNotString
+      );
     });
 
     it('should throw if suffix data type is not string', async () => {
@@ -221,8 +174,11 @@ describe('CreateOperation', async () => {
         type: 123
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-      await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeIsNotString));
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => (CreateOperation as any).parseSuffixData(encodedSuffixData),
+        ErrorCode.SuffixDataTypeIsNotString
+      );
     });
 
     it('should throw if suffix data type length is greater than 4', async () => {
@@ -232,8 +188,11 @@ describe('CreateOperation', async () => {
         type: 'this is too long!!!!!'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-      await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeLengthGreaterThanFour));
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => (CreateOperation as any).parseSuffixData(encodedSuffixData),
+        ErrorCode.SuffixDataTypeLengthGreaterThanFour
+      );
     });
 
     it('should throw if suffix data type is not in base64url character set', async () => {
@@ -243,8 +202,11 @@ describe('CreateOperation', async () => {
         type: '/|='
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-      await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeInvalidCharacter));
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => (CreateOperation as any).parseSuffixData(encodedSuffixData),
+        ErrorCode.SuffixDataTypeInvalidCharacter
+      );
     });
   });
 });

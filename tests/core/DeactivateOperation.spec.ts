@@ -75,7 +75,7 @@ describe('DeactivateOperation', async () => {
       const recoveryRevealValue = 'anyUnusedRecoveryRevealValue';
       const signedData = {
         didSuffix: didUniqueSuffix,
-        recovery_reveal_value: recoveryRevealValue,
+        revealValue: recoveryRevealValue,
         extraProperty: 'An unknown extra property'
       };
       const encodedDelta = Encoder.encode(JSON.stringify(signedData));
@@ -98,7 +98,7 @@ describe('DeactivateOperation', async () => {
       const recoveryRevealValue = 'anyUnusedRecoveryRevealValue';
       const signedData = {
         didSuffix: didUniqueSuffix,
-        recovery_reveal_value: recoveryRevealValue
+        revealValue: recoveryRevealValue
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
       await expectAsync(DeactivateOperation.parseSignedDataPayload(encodedSignedData, 'mismatchingDidUniqueSuffix'))

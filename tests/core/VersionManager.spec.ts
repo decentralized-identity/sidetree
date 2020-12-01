@@ -15,7 +15,7 @@ import OperationType from '../../lib/core/enums/OperationType';
 import Resolver from '../../lib/core/Resolver';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import VersionManager from '../../lib/core/VersionManager';
-import VersionModel from '../../lib/common/models/VersionModel';
+import VersionModel from '../../lib/core/models/VersionModel';
 
 describe('VersionManager', async () => {
 
@@ -101,7 +101,6 @@ describe('VersionManager', async () => {
 
       const versionManager = new VersionManager(config, versionModels);
 
-      /* tslint:disable-next-line */
       const OperationProcessor = await (versionManager as any).loadDefaultExportsForVersion('latest', 'OperationProcessor');
       const operationProcessor = new OperationProcessor();
       expect(operationProcessor).toBeDefined();
@@ -120,12 +119,10 @@ describe('VersionManager', async () => {
 
       // Setting up loading of mock ITransactionSelector implementations.
       const mockTransactionSelector1 = class {
-        /* tslint:disable-next-line */
         selectQualifiedTransactions () { return []; }
       };
       const anyTransactionModel = OperationGenerator.generateTransactionModel();
       const mockTransactionSelector2 = class {
-        /* tslint:disable-next-line */
         selectQualifiedTransactions () { return [anyTransactionModel]; }
       };
       spyOn(versionManager as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
@@ -142,7 +139,6 @@ describe('VersionManager', async () => {
 
         // Override the `intialize()` call so no network call occurs, else the test the will fail in GitHub CICD.
         if (className === 'MongoDbOperationQueue') {
-          // tslint:disable-next-line:no-empty
           classObject.prototype.initialize = async () => {};
         }
 

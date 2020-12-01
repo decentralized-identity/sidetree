@@ -15,7 +15,7 @@ import IVersionManager from './interfaces/IVersionManager';
 import IVersionMetadataFetcher from './interfaces/IVersionMetadataFetcher';
 import Resolver from './Resolver';
 import SidetreeError from '../common/SidetreeError';
-import VersionModel from '../common/models/VersionModel';
+import VersionModel from './models/VersionModel';
 
 /**
  * The class that handles code versioning.
@@ -63,37 +63,30 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
     for (const versionModel of this.versionsReverseSorted) {
       const version = versionModel.version;
 
-      /* tslint:disable-next-line */
       const MongoDbOperationQueue = await this.loadDefaultExportsForVersion(version, 'MongoDbOperationQueue');
       const operationQueue = new MongoDbOperationQueue(this.config.mongoDbConnectionString, this.config.databaseName);
       await operationQueue.initialize();
 
-      /* tslint:disable-next-line */
       const TransactionProcessor = await this.loadDefaultExportsForVersion(version, 'TransactionProcessor');
       const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, this);
       this.transactionProcessors.set(version, transactionProcessor);
 
-      /* tslint:disable-next-line */
       const TransactionSelector = await this.loadDefaultExportsForVersion(version, 'TransactionSelector');
       const transactionSelector = new TransactionSelector(transactionStore);
       this.transactionSelectors.set(version, transactionSelector);
 
-      /* tslint:disable-next-line */
       const BatchWriter = await this.loadDefaultExportsForVersion(version, 'BatchWriter');
       const batchWriter = new BatchWriter(operationQueue, blockchain, cas, this);
       this.batchWriters.set(version, batchWriter);
 
-      /* tslint:disable-next-line */
       const OperationProcessor = await this.loadDefaultExportsForVersion(version, 'OperationProcessor');
       const operationProcessor = new OperationProcessor();
       this.operationProcessors.set(version, operationProcessor);
 
-      /* tslint:disable-next-line */
       const RequestHandler = await this.loadDefaultExportsForVersion(version, 'RequestHandler');
       const requestHandler = new RequestHandler(resolver, operationQueue, this.config.didMethodName);
       this.requestHandlers.set(version, requestHandler);
 
-      /* tslint:disable-next-line */
       const VersionMetadata = await this.loadDefaultExportsForVersion(version, 'VersionMetadata');
       const versionMetadata = new VersionMetadata();
       if (!(versionMetadata instanceof AbstractVersionMetadata)) {

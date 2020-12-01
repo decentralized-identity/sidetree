@@ -184,7 +184,7 @@ describe('Observer', async () => {
 
     // Generating anchor file data.
     const mockAnchorFileBuffer =
-      await AnchorFile.createBuffer('writerlock', mockMapFileHash, coreProofFileHash, createOperations, [], []);
+      await AnchorFile.createBuffer('writerLock', mockMapFileHash, coreProofFileHash, createOperations, [], []);
     const mockAnchoredFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: mockAnchorFileBuffer

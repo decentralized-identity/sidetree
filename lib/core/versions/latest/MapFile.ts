@@ -5,6 +5,7 @@ import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
 import MapFileModel from './models/MapFileModel';
 import Multihash from './Multihash';
+import OperationReferenceModel from './models/OperationReferenceModel';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
@@ -19,9 +20,8 @@ export default class MapFile {
    * to keep useful metadata so that repeated computation can be avoided.
    */
   private constructor (
-    public readonly model: MapFileModel,
-    public readonly didUniqueSuffixes: string[],
-    public readonly updateOperations: UpdateOperation[]) { }
+    public model: MapFileModel,
+    public didUniqueSuffixes: string[]) { }
 
   /**
    * Parses and validates the given map file buffer.
@@ -53,11 +53,10 @@ export default class MapFile {
 
     MapFile.validateChunksProperty(mapFileModel.chunks);
 
-    const updateOperations = await MapFile.parseOperationsProperty(mapFileModel.operations);
-    const didUniqueSuffixes = updateOperations.map(operation => operation.didUniqueSuffix);
+    const didSuffixes = await MapFile.validateOperationsProperty(mapFileModel.operations);
 
     // Validate provisional proof file URI.
-    if (updateOperations.length > 0) {
+    if (didSuffixes.length > 0) {
       InputValidator.validateCasFileUri(mapFileModel.provisionalProofFileUri, 'provisional proof file URI');
     } else {
       if (mapFileModel.provisionalProofFileUri !== undefined) {
@@ -68,41 +67,45 @@ export default class MapFile {
       }
     }
 
-    const mapFile = new MapFile(mapFileModel, didUniqueSuffixes, updateOperations);
+    const mapFile = new MapFile(mapFileModel, didSuffixes);
     return mapFile;
   }
 
   /**
-   * Validates the given `operations` property, throws error if the property fails validation.
+   * Removes all the update operation references from this map file.
    */
-  private static async parseOperationsProperty (operations: any): Promise<UpdateOperation[]> {
+  public removeAllUpdateOperationReferences () {
+    delete this.model.operations;
+    delete this.model.provisionalProofFileUri;
+    this.didUniqueSuffixes = [];
+  }
+
+  /**
+   * Validates the given `operations` property, throws error if the property fails validation.
+   *
+   * @returns The of array of unique DID suffixes if validation succeeds.
+   */
+  private static validateOperationsProperty (operations: any): string[] {
     if (operations === undefined) {
       return [];
     }
 
-    const properties = Object.keys(operations);
-    if (properties.length !== 1) {
-      throw new SidetreeError(ErrorCode.MapFileOperationsPropertyHasMissingOrUnknownProperty);
-    }
+    InputValidator.validateObjectContainsOnlyAllowedProperties(operations, ['update'], 'provisional operation references');
 
-    const updateOperations: UpdateOperation[] = [];
     if (!Array.isArray(operations.update)) {
       throw new SidetreeError(ErrorCode.MapFileUpdateOperationsNotArray);
     }
 
-    // Validate each update operation.
-    for (const operation of operations.update) {
-      const updateOperation = await UpdateOperation.parseOperationFromMapFile(operation);
-      updateOperations.push(updateOperation);
-    }
+    // Validate all update operation references.
+    InputValidator.validateOperationReferences(operations.update, 'update');
 
     // Make sure no operation with same DID.
-    const didUniqueSuffixes = updateOperations.map(operation => operation.didUniqueSuffix);
-    if (ArrayMethods.hasDuplicates(didUniqueSuffixes)) {
+    const didSuffixes = (operations.update as OperationReferenceModel[]).map(operation => operation.didSuffix);
+    if (ArrayMethods.hasDuplicates(didSuffixes)) {
       throw new SidetreeError(ErrorCode.MapFileMultipleOperationsForTheSameDid);
     }
 
-    return updateOperations;
+    return didSuffixes;
   }
 
   /**
@@ -133,11 +136,10 @@ export default class MapFile {
   public static async createBuffer (
     chunkFileHash: string, provisionalProofFileHash: string | undefined, updateOperationArray: UpdateOperation[]
   ): Promise<Buffer> {
-    const updateOperations = updateOperationArray.map(operation => {
-      return {
-        didSuffix: operation.didUniqueSuffix,
-        signedData: operation.signedDataJws.toCompactJws()
-      };
+    const updateReferences = updateOperationArray.map(operation => {
+      const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.updateKey);
+
+      return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 
     const mapFileModel: MapFileModel = {
@@ -145,9 +147,9 @@ export default class MapFile {
     };
 
     // Only insert `operations` and `provisionalProofFileHash` properties if there are update operations.
-    if (updateOperations.length > 0) {
+    if (updateReferences.length > 0) {
       mapFileModel.operations = {
-        update: updateOperations
+        update: updateReferences
       };
 
       mapFileModel.provisionalProofFileUri = provisionalProofFileHash;
