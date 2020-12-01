@@ -385,11 +385,10 @@ export default class BitcoinProcessor {
   public async time (hash?: string): Promise<IBlockchainTime> {
     console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
     if (!hash) {
-      const blockHeight = await this.bitcoinClient.getCurrentBlockHeight();
-      hash = await this.bitcoinClient.getBlockHash(blockHeight);
+      const block = await this.blockMetadataStore.getLast();
       return {
-        time: blockHeight,
-        hash
+        time: block!.height,
+        hash: block!.hash
       };
     }
 
@@ -449,7 +448,7 @@ export default class BitcoinProcessor {
       for (const transaction of transactions) {
         const block = blockMetaDataMap.get(transaction.transactionTime);
         if (block !== undefined) {
-          transaction.normalizedTransactionFee = Math.floor(block.normalizedFee);
+          transaction.normalizedTransactionFee = this.versionManager.getFeeCalculator(block.height).calculateNormalizedTransactionFeeFromBlock(block);
         } else {
           throw new RequestError(ResponseStatus.ServerError, ErrorCode.BitcoinBlockMetadataNotFound);
         }
@@ -570,13 +569,15 @@ export default class BitcoinProcessor {
    * Calculate and return proof-of-fee value for a particular block.
    * @param block The block height to get normalized fee for
    */
-  public async getNormalizedFee (block: number): Promise<TransactionFeeModel> {
-    if (block < this.genesisBlockNumber) {
+  public async getNormalizedFee (block: number | string): Promise<TransactionFeeModel> {
+    // this is to protect the number type because it can be passed as a string through request path
+    const blockNumber = Number(block);
+    if (blockNumber < this.genesisBlockNumber) {
       const error = `The input block number must be greater than or equal to: ${this.genesisBlockNumber}`;
       console.error(error);
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
     }
-    const normalizedTransactionFee = await this.versionManager.getFeeCalculator(block).getNormalizedFee(block);
+    const normalizedTransactionFee = await this.versionManager.getFeeCalculator(blockNumber).getNormalizedFee(blockNumber);
 
     return { normalizedTransactionFee: normalizedTransactionFee };
   }
