@@ -112,12 +112,13 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
 
   /**
    * Block height has to be the same as blockHeightOfCachedLookBackWindow
-   * because the cache remembers the blocks required to calculate the anticipated block
+   * because the cache remembers the blocks required to calculate fee for the anticipated block
    * This can fail if fees are asked out of order
    *
    * cachedLookBackWindow.length has to be the same as this.feeLookBackWindowInBlocks
    * because the cache needs the exact same number of blocks as the look back window
    * This can fail if the node dies during slow init before finishing processing through the look back window
+   * The cache will have partial data therefore not valid
    *
    * @param blockHeight The current bock height which the normalized fee is asked for
    */
