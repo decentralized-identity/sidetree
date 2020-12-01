@@ -1,8 +1,8 @@
 import * as retry from 'async-retry';
-import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import Blockchain from '../../lib/core/Blockchain';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
+import CoreIndexFile from '../../lib/core/versions/latest/CoreIndexFile';
 import DownloadManager from '../../lib/core/DownloadManager';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/common/SharedErrorCode';
@@ -11,7 +11,6 @@ import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Ipfs from '../../lib/ipfs/Ipfs';
-import MapFile from '../../lib/core/versions/latest/MapFile';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
@@ -19,6 +18,7 @@ import MockVersionManager from '../mocks/MockVersionManager';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import OperationGenerator from '../generators/OperationGenerator';
+import ProvisionalIndexFile from '../../lib/core/versions/latest/ProvisionalIndexFile';
 import SidetreeError from '../../lib/common/SidetreeError';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
@@ -173,30 +173,30 @@ describe('Observer', async () => {
     };
     const mockChunkFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockChunkFileHash')));
 
-    // Generating map file data.
+    // Generating provisional index file data.
     const mockProvisionalProofFileUri = undefined;
-    const mockMapFileBuffer = await MapFile.createBuffer(mockChunkFileHash, mockProvisionalProofFileUri, []);
-    const mockMapFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockMapFileHash')));
-    const mockMapFileFetchResult: FetchResult = {
+    const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(mockChunkFileHash, mockProvisionalProofFileUri, []);
+    const mockProvisionalIndexFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockProvisionalIndexFileHash')));
+    const mockProvisionalIndexFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
-      content: mockMapFileBuffer
+      content: mockProvisionalIndexFileBuffer
     };
 
-    // Generating anchor file data.
-    const mockAnchorFileBuffer =
-      await AnchorFile.createBuffer('writerLock', mockMapFileHash, coreProofFileHash, createOperations, [], []);
+    // Generating core index file data.
+    const mockCoreIndexFileBuffer =
+      await CoreIndexFile.createBuffer('writerLock', mockProvisionalIndexFileHash, coreProofFileHash, createOperations, [], []);
     const mockAnchoredFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
-      content: mockAnchorFileBuffer
+      content: mockCoreIndexFileBuffer
     };
-    const mockAnchorFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockAnchorFileHash')));
+    const mockCoreIndexFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockCoreIndexFileHash')));
 
     // Prepare the mock fetch results from the `DownloadManager.download()`.
     const mockDownloadFunction = async (hash: string) => {
-      if (hash === mockAnchorFileHash) {
+      if (hash === mockCoreIndexFileHash) {
         return mockAnchoredFileFetchResult;
-      } else if (hash === mockMapFileHash) {
-        return mockMapFileFetchResult;
+      } else if (hash === mockProvisionalIndexFileHash) {
+        return mockProvisionalIndexFileFetchResult;
       } else if (hash === mockChunkFileHash) {
         return mockChunkFileFetchResult;
       } else {
@@ -216,7 +216,7 @@ describe('Observer', async () => {
       1
     );
 
-    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: mockAnchorFileHash, numberOfOperations: createOperations.length });
+    const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: mockCoreIndexFileHash, numberOfOperations: createOperations.length });
     const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,
@@ -239,13 +239,13 @@ describe('Observer', async () => {
     }
   });
 
-  // Testing invalid anchor file scenarios:
-  const invalidAnchorFileTestsInput = [
+  // Testing invalid core index file scenarios:
+  const invalidCoreIndexFileTestsInput = [
     [FetchResultCode.MaxSizeExceeded, 'exceeded max size limit'],
     [FetchResultCode.NotAFile, 'is not a file'],
     [FetchResultCode.InvalidHash, 'is not a valid hash']
   ];
-  for (const tuple of invalidAnchorFileTestsInput) {
+  for (const tuple of invalidCoreIndexFileTestsInput) {
     const mockFetchReturnCode = tuple[0];
     const expectedConsoleLogSubstring = tuple[1];
 
@@ -273,7 +273,7 @@ describe('Observer', async () => {
       spyOn(transactionStore, 'removeUnresolvableTransaction');
       spyOn(transactionStore, 'recordUnresolvableTransactionFetchAttempt');
 
-      const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw', numberOfOperations: 1 });
+      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -438,7 +438,7 @@ describe('Observer', async () => {
   });
 
   it('should not rollback if blockchain time in bitcoin service is behind core service.', async () => {
-    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 });
+    const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: '1stTransaction', numberOfOperations: 1 });
     const transaction = {
       transactionNumber: 1,
       transactionTime: 1000,

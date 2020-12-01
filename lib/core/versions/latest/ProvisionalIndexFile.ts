@@ -3,76 +3,76 @@ import Compressor from './util/Compressor';
 import ErrorCode from './ErrorCode';
 import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
-import MapFileModel from './models/MapFileModel';
 import Multihash from './Multihash';
 import OperationReferenceModel from './models/OperationReferenceModel';
 import ProtocolParameters from './ProtocolParameters';
+import ProvisionalIndexFileModel from './models/ProvisionalIndexFileModel';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
 /**
  * Class containing Map File related operations.
  */
-export default class MapFile {
+export default class ProvisionalIndexFile {
   /**
-   * Class that represents a map file.
-   * NOTE: this class is introduced as an internal structure in replacement to `MapFileModel`
+   * Class that represents a provisional index file.
+   * NOTE: this class is introduced as an internal structure in replacement to `ProvisionalIndexFileModel`
    * to keep useful metadata so that repeated computation can be avoided.
    */
   private constructor (
-    public model: MapFileModel,
+    public model: ProvisionalIndexFileModel,
     public didUniqueSuffixes: string[]) { }
 
   /**
-   * Parses and validates the given map file buffer.
+   * Parses and validates the given provisional index file buffer.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static async parse (mapFileBuffer: Buffer): Promise<MapFile> {
+  public static async parse (provisionalIndexFileBuffer: Buffer): Promise<ProvisionalIndexFile> {
 
     let decompressedBuffer;
     try {
-      const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxMapFileSizeInBytes * Compressor.estimatedDecompressionMultiplier;
-      decompressedBuffer = await Compressor.decompress(mapFileBuffer, maxAllowedDecompressedSizeInBytes);
+      const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxProvisionalIndexFileSizeInBytes * Compressor.estimatedDecompressionMultiplier;
+      decompressedBuffer = await Compressor.decompress(provisionalIndexFileBuffer, maxAllowedDecompressedSizeInBytes);
     } catch (error) {
-      throw SidetreeError.createFromError(ErrorCode.MapFileDecompressionFailure, error);
+      throw SidetreeError.createFromError(ErrorCode.ProvisionalIndexFileDecompressionFailure, error);
     }
 
-    let mapFileModel;
+    let provisionalIndexFileModel;
     try {
-      mapFileModel = await JsonAsync.parse(decompressedBuffer);
+      provisionalIndexFileModel = await JsonAsync.parse(decompressedBuffer);
     } catch (error) {
-      throw SidetreeError.createFromError(ErrorCode.MapFileNotJson, error);
+      throw SidetreeError.createFromError(ErrorCode.ProvisionalIndexFileNotJson, error);
     }
 
     const allowedProperties = new Set(['chunks', 'operations', 'provisionalProofFileUri']);
-    for (const property in mapFileModel) {
+    for (const property in provisionalIndexFileModel) {
       if (!allowedProperties.has(property)) {
-        throw new SidetreeError(ErrorCode.MapFileHasUnknownProperty);
+        throw new SidetreeError(ErrorCode.ProvisionalIndexFileHasUnknownProperty);
       }
     }
 
-    MapFile.validateChunksProperty(mapFileModel.chunks);
+    ProvisionalIndexFile.validateChunksProperty(provisionalIndexFileModel.chunks);
 
-    const didSuffixes = await MapFile.validateOperationsProperty(mapFileModel.operations);
+    const didSuffixes = await ProvisionalIndexFile.validateOperationsProperty(provisionalIndexFileModel.operations);
 
     // Validate provisional proof file URI.
     if (didSuffixes.length > 0) {
-      InputValidator.validateCasFileUri(mapFileModel.provisionalProofFileUri, 'provisional proof file URI');
+      InputValidator.validateCasFileUri(provisionalIndexFileModel.provisionalProofFileUri, 'provisional proof file URI');
     } else {
-      if (mapFileModel.provisionalProofFileUri !== undefined) {
+      if (provisionalIndexFileModel.provisionalProofFileUri !== undefined) {
         throw new SidetreeError(
-          ErrorCode.MapFileProvisionalProofFileUriNotAllowed,
-          `Provisional proof file '${mapFileModel.provisionalProofFileUri}' not allowed in a map file with no updates.`
+          ErrorCode.ProvisionalIndexFileProvisionalProofFileUriNotAllowed,
+          `Provisional proof file '${provisionalIndexFileModel.provisionalProofFileUri}' not allowed in a provisional index file with no updates.`
         );
       }
     }
 
-    const mapFile = new MapFile(mapFileModel, didSuffixes);
-    return mapFile;
+    const provisionalIndexFile = new ProvisionalIndexFile(provisionalIndexFileModel, didSuffixes);
+    return provisionalIndexFile;
   }
 
   /**
-   * Removes all the update operation references from this map file.
+   * Removes all the update operation references from this provisional index file.
    */
   public removeAllUpdateOperationReferences () {
     delete this.model.operations;
@@ -93,7 +93,7 @@ export default class MapFile {
     InputValidator.validateObjectContainsOnlyAllowedProperties(operations, ['update'], 'provisional operation references');
 
     if (!Array.isArray(operations.update)) {
-      throw new SidetreeError(ErrorCode.MapFileUpdateOperationsNotArray);
+      throw new SidetreeError(ErrorCode.ProvisionalIndexFileUpdateOperationsNotArray);
     }
 
     // Validate all update operation references.
@@ -102,7 +102,7 @@ export default class MapFile {
     // Make sure no operation with same DID.
     const didSuffixes = (operations.update as OperationReferenceModel[]).map(operation => operation.didSuffix);
     if (ArrayMethods.hasDuplicates(didSuffixes)) {
-      throw new SidetreeError(ErrorCode.MapFileMultipleOperationsForTheSameDid);
+      throw new SidetreeError(ErrorCode.ProvisionalIndexFileMultipleOperationsForTheSameDid);
     }
 
     return didSuffixes;
@@ -113,18 +113,18 @@ export default class MapFile {
    */
   private static validateChunksProperty (chunks: any) {
     if (!Array.isArray(chunks)) {
-      throw new SidetreeError(ErrorCode.MapFileChunksPropertyMissingOrIncorrectType);
+      throw new SidetreeError(ErrorCode.ProvisionalIndexFileChunksPropertyMissingOrIncorrectType);
     }
 
     // This version expects only one hash.
     if (chunks.length !== 1) {
-      throw new SidetreeError(ErrorCode.MapFileChunksPropertyDoesNotHaveExactlyOneElement);
+      throw new SidetreeError(ErrorCode.ProvisionalIndexFileChunksPropertyDoesNotHaveExactlyOneElement);
     }
 
     const chunk = chunks[0];
     const properties = Object.keys(chunk);
     if (properties.length !== 1) {
-      throw new SidetreeError(ErrorCode.MapFileChunkHasMissingOrUnknownProperty);
+      throw new SidetreeError(ErrorCode.ProvisionalIndexFileChunkHasMissingOrUnknownProperty);
     }
 
     Multihash.verifyEncodedHashIsComputedUsingLastestAlgorithm(chunk.chunkFileUri);
@@ -142,20 +142,20 @@ export default class MapFile {
       return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 
-    const mapFileModel: MapFileModel = {
+    const provisionalIndexFileModel: ProvisionalIndexFileModel = {
       chunks: [{ chunkFileUri: chunkFileHash }]
     };
 
     // Only insert `operations` and `provisionalProofFileHash` properties if there are update operations.
     if (updateReferences.length > 0) {
-      mapFileModel.operations = {
+      provisionalIndexFileModel.operations = {
         update: updateReferences
       };
 
-      mapFileModel.provisionalProofFileUri = provisionalProofFileHash;
+      provisionalIndexFileModel.provisionalProofFileUri = provisionalProofFileHash;
     }
 
-    const rawData = JSON.stringify(mapFileModel);
+    const rawData = JSON.stringify(provisionalIndexFileModel);
     const compressedRawData = await Compressor.compress(Buffer.from(rawData));
 
     return compressedRawData;

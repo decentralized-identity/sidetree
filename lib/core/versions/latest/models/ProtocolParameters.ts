@@ -4,10 +4,10 @@
 export default interface ProtocolParameters {
   /** Hash algorithm in Multihash code in DEC (not in HEX). */
   hashAlgorithmInMultihashCode: number;
-  /** Maximum allowed size of anchor file stored in Content Addressable Storage. */
-  maxAnchorFileSizeInBytes: number;
-  /** Maximum allowed size of map file stored in Content Addressable Storage. */
-  maxMapFileSizeInBytes: number;
+  /** Maximum allowed size of core index file stored in Content Addressable Storage. */
+  maxCoreIndexFileSizeInBytes: number;
+  /** Maximum allowed size of provisional index file stored in Content Addressable Storage. */
+  maxProvisionalIndexFileSizeInBytes: number;
   /** Maximum allowed size of core/provisional proof file stored in Content Addressable Storage. */
   maxProofFileSizeInBytes: number;
   /** Maximum allowed size of chunk file stored in Content Addressable Storage. */

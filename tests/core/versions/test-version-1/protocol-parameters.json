@@ -1,6 +1,6 @@
 {
   "hashAlgorithmInMultihashCode": 18,
-  "maxAnchorFileSizeInBytes": 1000000,
+  "maxCoreIndexFileSizeInBytes": 1000000,
   "maxChunkFileSizeInBytes": 20000000,
   "maxDeltaSizeInBytes": 2000,
   "maxOperationsPerBatch": 10000,

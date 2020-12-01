@@ -1,6 +1,6 @@
-import AnchorFileModel from './models/AnchorFileModel';
 import ArrayMethods from './util/ArrayMethods';
 import Compressor from './util/Compressor';
+import CoreIndexFileModel from './models/CoreIndexFileModel';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import Did from './Did';
@@ -22,69 +22,72 @@ interface CreateReferenceModel {
 }
 
 /**
- * Class containing Anchor File related operations.
+ * Class containing Core Index File related operations.
  */
-export default class AnchorFile {
+export default class CoreIndexFile {
 
   /**
-   * Class that represents an anchor file.
-   * NOTE: this class is introduced as an internal structure in replacement to `AnchorFileModel`
+   * Class that represents an core index file.
+   * NOTE: this class is introduced as an internal structure in replacement to `CoreIndexFileModel`
    * to keep useful metadata so that repeated computation can be avoided.
    */
   private constructor (
-    public readonly model: AnchorFileModel,
+    public readonly model: CoreIndexFileModel,
     public readonly didUniqueSuffixes: string[],
     public readonly createDidSuffixes: string[],
     public readonly recoverDidSuffixes: string[],
     public readonly deactivateDidSuffixes: string[]) { }
 
   /**
-   * Parses and validates the given anchor file buffer.
+   * Parses and validates the given core index file buffer.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static async parse (anchorFileBuffer: Buffer): Promise<AnchorFile> {
+  public static async parse (coreIndexFileBuffer: Buffer): Promise<CoreIndexFile> {
 
-    let anchorFileDecompressedBuffer;
+    let coreIndexFileDecompressedBuffer;
     try {
-      const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxAnchorFileSizeInBytes * Compressor.estimatedDecompressionMultiplier;
-      anchorFileDecompressedBuffer = await Compressor.decompress(anchorFileBuffer, maxAllowedDecompressedSizeInBytes);
+      const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxCoreIndexFileSizeInBytes * Compressor.estimatedDecompressionMultiplier;
+      coreIndexFileDecompressedBuffer = await Compressor.decompress(coreIndexFileBuffer, maxAllowedDecompressedSizeInBytes);
     } catch (e) {
-      throw SidetreeError.createFromError(ErrorCode.AnchorFileDecompressionFailure, e);
+      throw SidetreeError.createFromError(ErrorCode.CoreIndexFileDecompressionFailure, e);
     }
 
-    let anchorFileModel;
+    let coreIndexFileModel;
     try {
-      anchorFileModel = await JsonAsync.parse(anchorFileDecompressedBuffer);
+      coreIndexFileModel = await JsonAsync.parse(coreIndexFileDecompressedBuffer);
     } catch (e) {
-      throw SidetreeError.createFromError(ErrorCode.AnchorFileNotJson, e);
+      throw SidetreeError.createFromError(ErrorCode.CoreIndexFileNotJson, e);
     }
 
     const allowedProperties = new Set(['provisionalIndexFileUri', 'coreProofFileUri', 'operations', 'writerLockId']);
-    for (const property in anchorFileModel) {
+    for (const property in coreIndexFileModel) {
       if (!allowedProperties.has(property)) {
-        throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
+        throw new SidetreeError(ErrorCode.CoreIndexFileHasUnknownProperty);
       }
     }
 
     // `writerLockId` validations.
-    if (('writerLockId' in anchorFileModel)) {
-      if (typeof anchorFileModel.writerLockId !== 'string') {
-        throw new SidetreeError(ErrorCode.AnchorFileWriterLockIdPropertyNotString);
+    if (('writerLockId' in coreIndexFileModel)) {
+      if (typeof coreIndexFileModel.writerLockId !== 'string') {
+        throw new SidetreeError(ErrorCode.CoreIndexFileWriterLockIdPropertyNotString);
       }
 
-      AnchorFile.validateWriterLockId(anchorFileModel.writerLockId);
+      CoreIndexFile.validateWriterLockId(coreIndexFileModel.writerLockId);
     }
 
     // `operations` validations.
     let operations: any = { };
-    if ('operations' in anchorFileModel) {
-      operations = anchorFileModel.operations;
+    if ('operations' in coreIndexFileModel) {
+      operations = coreIndexFileModel.operations;
     }
 
     const allowedOperationsProperties = new Set(['create', 'recover', 'deactivate']);
     for (const property in operations) {
       if (!allowedOperationsProperties.has(property)) {
-        throw new SidetreeError(ErrorCode.AnchorFileUnexpectedPropertyInOperations, `Unexpected property ${property} in 'operations' property in anchor file.`);
+        throw new SidetreeError(
+          ErrorCode.CoreIndexFileUnexpectedPropertyInOperations,
+          `Unexpected property ${property} in 'operations' property in core index file.`
+        );
       }
     }
 
@@ -95,11 +98,11 @@ export default class AnchorFile {
     let createDidSuffixes: string[] = [];
     if (operations.create !== undefined) {
       if (!Array.isArray(operations.create)) {
-        throw new SidetreeError(ErrorCode.AnchorFileCreatePropertyNotArray);
+        throw new SidetreeError(ErrorCode.CoreIndexFileCreatePropertyNotArray);
       }
 
       // Validate every create reference.
-      AnchorFile.validateCreateReferences(operations.create);
+      CoreIndexFile.validateCreateReferences(operations.create);
       createDidSuffixes = (operations.create as CreateReferenceModel[]).map(operation => Did.computeUniqueSuffix(operation.suffixData));
       didUniqueSuffixes.push(...createDidSuffixes);
     }
@@ -108,7 +111,7 @@ export default class AnchorFile {
     let recoverDidSuffixes: string[] = [];
     if (operations.recover !== undefined) {
       if (!Array.isArray(operations.recover)) {
-        throw new SidetreeError(ErrorCode.AnchorFileRecoverPropertyNotArray);
+        throw new SidetreeError(ErrorCode.CoreIndexFileRecoverPropertyNotArray);
       }
 
       // Validate every recover reference.
@@ -121,7 +124,7 @@ export default class AnchorFile {
     let deactivateDidSuffixes: string[] = [];
     if (operations.deactivate !== undefined) {
       if (!Array.isArray(operations.deactivate)) {
-        throw new SidetreeError(ErrorCode.AnchorFileDeactivatePropertyNotArray);
+        throw new SidetreeError(ErrorCode.CoreIndexFileDeactivatePropertyNotArray);
       }
 
       // Validate every deactivate reference.
@@ -131,44 +134,44 @@ export default class AnchorFile {
     }
 
     if (ArrayMethods.hasDuplicates(didUniqueSuffixes)) {
-      throw new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid);
+      throw new SidetreeError(ErrorCode.CoreIndexFileMultipleOperationsForTheSameDid);
     }
 
     // If there is no operation reference in this file, then `provisionalIndexFileUri` MUST exist, because there must be at least one operation in a batch,
     // so this would imply that the operation reference must be in the provisional index file.
 
     // Map file URI validations.
-    if (!('provisionalIndexFileUri' in anchorFileModel)) {
+    if (!('provisionalIndexFileUri' in coreIndexFileModel)) {
       // If `provisionalIndexFileUri` does not exist, then `operations` MUST have just deactivates. ie. only deactivates have no delta in chunk file.
       const createPlusRecoverOperationCount = createDidSuffixes.length + recoverDidSuffixes.length;
       if (createPlusRecoverOperationCount === 0) {
         throw new SidetreeError(
-          ErrorCode.AnchorFileProvisionalIndexFileUriMissing,
+          ErrorCode.CoreIndexFileProvisionalIndexFileUriMissing,
           `Provisional index file URI must exist since there are ${createDidSuffixes.length} creates and ${recoverDidSuffixes} recoveries.`
         );
       }
     } else {
-      InputValidator.validateCasFileUri(anchorFileModel.provisionalIndexFileUri, 'provisional index file URI');
+      InputValidator.validateCasFileUri(coreIndexFileModel.provisionalIndexFileUri, 'provisional index file URI');
     }
 
     // Validate core proof file URI.
     if (recoverDidSuffixes.length > 0 || deactivateDidSuffixes.length > 0) {
-      InputValidator.validateCasFileUri(anchorFileModel.coreProofFileUri, 'core proof file URI');
+      InputValidator.validateCasFileUri(coreIndexFileModel.coreProofFileUri, 'core proof file URI');
     } else {
-      if (anchorFileModel.coreProofFileUri !== undefined) {
+      if (coreIndexFileModel.coreProofFileUri !== undefined) {
         throw new SidetreeError(
-          ErrorCode.AnchorFileCoreProofFileUriNotAllowed,
-          `Core proof file '${anchorFileModel.coreProofFileUri}' not allowed in an anchor file with no recovers and deactivates.`
+          ErrorCode.CoreIndexFileCoreProofFileUriNotAllowed,
+          `Core proof file '${coreIndexFileModel.coreProofFileUri}' not allowed in an core index file with no recovers and deactivates.`
         );
       }
     }
 
-    const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes, createDidSuffixes, recoverDidSuffixes, deactivateDidSuffixes);
-    return anchorFile;
+    const coreIndexFile = new CoreIndexFile(coreIndexFileModel, didUniqueSuffixes, createDidSuffixes, recoverDidSuffixes, deactivateDidSuffixes);
+    return coreIndexFile;
   }
 
   /**
-   * Creates an `AnchorFileModel`.
+   * Creates an `CoreIndexFileModel`.
    */
   public static async createModel (
     writerLockId: string | undefined,
@@ -177,13 +180,13 @@ export default class AnchorFile {
     createOperationArray: CreateOperation[],
     recoverOperationArray: RecoverOperation[],
     deactivateOperationArray: DeactivateOperation[]
-  ): Promise<AnchorFileModel> {
+  ): Promise<CoreIndexFileModel> {
 
     if (writerLockId !== undefined) {
-      AnchorFile.validateWriterLockId(writerLockId);
+      CoreIndexFile.validateWriterLockId(writerLockId);
     }
 
-    const anchorFileModel: AnchorFileModel = {
+    const coreIndexFileModel: CoreIndexFileModel = {
       writerLockId,
       provisionalIndexFileUri
     };
@@ -192,7 +195,7 @@ export default class AnchorFile {
     if (createOperationArray.length > 0 ||
         recoverOperationArray.length > 0 ||
         deactivateOperationArray.length > 0) {
-      anchorFileModel.operations = { };
+      coreIndexFileModel.operations = { };
     }
 
     const createReferences = createOperationArray.map(operation => {
@@ -207,7 +210,7 @@ export default class AnchorFile {
 
     // Only insert `create` property if there are create operation references.
     if (createReferences.length > 0) {
-      anchorFileModel.operations!.create = createReferences;
+      coreIndexFileModel.operations!.create = createReferences;
     }
 
     const recoverReferences = recoverOperationArray.map(operation => {
@@ -218,7 +221,7 @@ export default class AnchorFile {
 
     // Only insert `recover` property if there are recover operation references.
     if (recoverReferences.length > 0) {
-      anchorFileModel.operations!.recover = recoverReferences;
+      coreIndexFileModel.operations!.recover = recoverReferences;
     }
 
     const deactivateReferences = deactivateOperationArray.map(operation => {
@@ -229,19 +232,19 @@ export default class AnchorFile {
 
     // Only insert `deactivate` property if there are deactivate operation references.
     if (deactivateReferences.length > 0) {
-      anchorFileModel.operations!.deactivate = deactivateReferences;
+      coreIndexFileModel.operations!.deactivate = deactivateReferences;
     }
 
     // Only insert `coreProofFileUri` property if a value is given.
     if (coreProofFileHash !== undefined) {
-      anchorFileModel.coreProofFileUri = coreProofFileHash;
+      coreIndexFileModel.coreProofFileUri = coreProofFileHash;
     }
 
-    return anchorFileModel;
+    return coreIndexFileModel;
   }
 
   /**
-   * Creates an anchor file buffer.
+   * Creates an core index file buffer.
    */
   public static async createBuffer (
     writerLockId: string | undefined,
@@ -251,13 +254,13 @@ export default class AnchorFile {
     recoverOperations: RecoverOperation[],
     deactivateOperations: DeactivateOperation[]
   ): Promise<Buffer> {
-    const anchorFileModel = await AnchorFile.createModel(
+    const coreIndexFileModel = await CoreIndexFile.createModel(
       writerLockId, provisionalIndexFileUri, coreProofFileHash, createOperations, recoverOperations, deactivateOperations
     );
-    const anchorFileJson = JSON.stringify(anchorFileModel);
-    const anchorFileBuffer = Buffer.from(anchorFileJson);
+    const coreIndexFileJson = JSON.stringify(coreIndexFileModel);
+    const coreIndexFileBuffer = Buffer.from(coreIndexFileJson);
 
-    return Compressor.compress(anchorFileBuffer);
+    return Compressor.compress(coreIndexFileBuffer);
   }
 
   private static validateWriterLockId (writerLockId: string) {
@@ -265,7 +268,7 @@ export default class AnchorFile {
     const writerLockIdSizeInBytes = Buffer.from(writerLockId).length;
     if (writerLockIdSizeInBytes > ProtocolParameters.maxWriterLockIdInBytes) {
       throw new SidetreeError(
-        ErrorCode.AnchorFileWriterLockIdExceededMaxSize,
+        ErrorCode.CoreIndexFileWriterLockIdExceededMaxSize,
         `Writer lock ID of ${writerLockIdSizeInBytes} bytes exceeded the maximum size of ${ProtocolParameters.maxWriterLockIdInBytes} bytes.`
       );
     }
