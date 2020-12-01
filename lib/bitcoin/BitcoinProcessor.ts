@@ -569,7 +569,7 @@ export default class BitcoinProcessor {
    * Calculate and return proof-of-fee value for a particular block.
    * @param block The block height to get normalized fee for
    */
-  public async getNormalizedFee (block: number): Promise<TransactionFeeModel> {
+  public async getNormalizedFee (block: number | string): Promise<TransactionFeeModel> {
     // this is to protect the number type because it can be passed as a string through request path
     const blockNumber = Number(block);
     if (blockNumber < this.genesisBlockNumber) {
