@@ -54,7 +54,7 @@ export default class InputValidator {
     if (casFileUri.length > ProtocolParameters.maxCasUriLength) {
       throw new SidetreeError(
         ErrorCode.InputValidatorCasFileUriExceedsMaxLength,
-        `Input ${inputContextForErrorLogging} CAS file URI '${casFileUri}' length needs to be less than ${ProtocolParameters.maxCasUriLength}`
+        `Input ${inputContextForErrorLogging} CAS file URI '${casFileUri}' length cannot exceed ${ProtocolParameters.maxCasUriLength}`
       );
     }
   }

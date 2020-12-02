@@ -195,22 +195,6 @@ describe('CoreIndexFile', async () => {
       );
     });
 
-    it('should throw if provisional index file hash is invalid.', async () => {
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const createOperation = createOperationData.createOperation;
-      const coreProofFileHash = undefined;
-      const coreIndexFileModel = await CoreIndexFile.createModel('writerLock', 'invalidProvisionalIndexFileHash', coreProofFileHash, [createOperation], [], []);
-
-      try {
-        const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFileModel));
-        const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
-
-        await CoreIndexFile.parse(coreIndexFileCompressed);
-      } catch (error) {
-        expect(error.code).toEqual(ErrorCode.InputValidatorCasFileUriUnsupported);
-      }
-    });
-
     it('should throw if writer lock id is not string.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
