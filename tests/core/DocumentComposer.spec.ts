@@ -374,23 +374,6 @@ describe('DocumentComposer', async () => {
     });
   });
 
-  describe('validateDocument', () => {
-    it('should throw DocumentComposerDocumentMissing if document is undefined', () => {
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerDocumentMissing);
-      expect(() => { DocumentComposer['validateDocument'](undefined); }).toThrow(expectedError);
-    });
-
-    it('should throw DocumentComposerServiceNotArray if `services` is not an array', () => {
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServicesNotArray);
-      const document = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
-        services: 'this is not an array'
-      };
-      spyOn(DocumentComposer as any, 'validatePublicKeys').and.returnValue(1);
-      expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
-    });
-  });
-
   describe('validateDocumentPatches()', async () => {
     it('should throw error if `patches` is not an array.', async () => {
       const patches = 'shouldNotBeAString';
@@ -564,7 +547,42 @@ describe('DocumentComposer', async () => {
   });
 
   describe('validateDocument()', async () => {
-    it('should throw if document contains 2 keys of with the same ID.', async () => {
+    it('should throw DocumentComposerDocumentMissing if document is undefined', () => {
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerDocumentMissing);
+      expect(() => { DocumentComposer['validateDocument'](undefined); }).toThrow(expectedError);
+    });
+
+    it('should throw DocumentComposerServiceNotArray if `services` is not an array', () => {
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServicesNotArray);
+      const document = {
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
+        services: 'this is not an array'
+      };
+      spyOn(DocumentComposer as any, 'validatePublicKeys').and.returnValue(1);
+      expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
+    });
+
+    it('should throw if document contains 2 services with the same ID.', async () => {
+      const document: DocumentModel = {
+        services: [
+          {
+            id: 'key1',
+            type: 'URL',
+            serviceEndpoint: 'https://ion.is.cool/'
+          },
+          {
+            id: 'key1', // duplicate to cause failure
+            type: 'URL',
+            serviceEndpoint: 'https://ion.is.still.cool/'
+          }
+        ]
+      };
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdNotUnique, 'Service id has to be unique');
+      expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
+    });
+
+    it('should throw if document contains 2 keys with the same ID.', async () => {
       const document = {
         publicKeys: [
           {
