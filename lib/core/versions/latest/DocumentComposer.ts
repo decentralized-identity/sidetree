@@ -296,6 +296,7 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchServicesNotArray);
     }
 
+    const serviceIdSet: Set<string> = new Set();
     for (const service of services) {
       const serviceProperties = Object.keys(service);
       if (serviceProperties.length !== 3) { // type, id, and serviceEndpoint
@@ -303,6 +304,10 @@ export default class DocumentComposer {
       }
 
       DocumentComposer.validateId(service.id);
+      if (serviceIdSet.has(service.id)) {
+        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdNotUnique);
+      }
+      serviceIdSet.add(service.id);
 
       if (typeof service.type !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceTypeNotString);
