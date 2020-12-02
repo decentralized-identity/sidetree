@@ -578,7 +578,7 @@ describe('DocumentComposer', async () => {
         ]
       };
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdNotUnique);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdNotUnique, 'Service id has to be unique');
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
