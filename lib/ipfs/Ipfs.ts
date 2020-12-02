@@ -11,7 +11,7 @@ import Timeout from './Util/Timeout';
 import nodeFetch from 'node-fetch';
 
 // this has to be require because it doesn't have a default export
-const Cids = require('cids')
+const Cids = require('cids');
 
 /**
  * Class that implements the `ICas` interface by communicating with IPFS.
@@ -69,8 +69,10 @@ export default class Ipfs implements ICas {
   }
 
   public async read (casUri: string, maxSizeInBytes: number): Promise<FetchResult> {
-    try{
-      new Cids(casUri)
+    try {
+      // if Cid construction fails, it is not a valid cid
+      /* eslint-disable no-new */
+      new Cids(casUri);
     } catch (error) {
       console.log(`'${casUri}' is not a valid CID: ${SidetreeError.stringify(error)}`);
       return { code: FetchResultCode.InvalidHash };
