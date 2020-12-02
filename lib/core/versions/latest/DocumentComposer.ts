@@ -305,7 +305,7 @@ export default class DocumentComposer {
 
       DocumentComposer.validateId(service.id);
       if (serviceIdSet.has(service.id)) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdNotUnique);
+        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdNotUnique, 'Service id has to be unique');
       }
       serviceIdSet.add(service.id);
 
