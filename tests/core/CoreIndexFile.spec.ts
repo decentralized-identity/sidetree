@@ -175,6 +175,26 @@ describe('CoreIndexFile', async () => {
       );
     });
 
+    it('should throw if provisional index file hash is exceeds max length.', async () => {
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
+      let coreProofFileHash = 'this will be too long';
+      for (let i = 1; i < 101; i++) {
+        coreProofFileHash += ' ';
+      }
+      const coreIndexFileModel = await CoreIndexFile.createModel('writerLock', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
+      (coreIndexFileModel as any).provisionalIndexFileUri = coreProofFileHash; // Intentionally setting the provisionalIndexFileUri too long.
+
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFileModel));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => CoreIndexFile.parse(coreIndexFileCompressed),
+        ErrorCode.InputValidatorCasFileUriExceedsMaxLength,
+        'provisional index file'
+      );
+    });
+
     it('should throw if provisional index file hash is invalid.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;

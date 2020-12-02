@@ -51,12 +51,10 @@ export default class InputValidator {
       );
     }
 
-    const casFileUriAsHashBuffer = Encoder.decodeAsBuffer(casFileUri);
-    const hashAlgorithmInMultihashCode = ProtocolParameters.hashAlgorithmInMultihashCode;
-    if (!Multihash.isComputedUsingHashAlgorithm(casFileUriAsHashBuffer, hashAlgorithmInMultihashCode)) {
+    if (casFileUri.length > ProtocolParameters.maxCasUriLength) {
       throw new SidetreeError(
-        ErrorCode.InputValidatorCasFileUriUnsupported,
-        `Input ${inputContextForErrorLogging} CAS file URI '${casFileUri}' is not computed using hash algorithm of code ${hashAlgorithmInMultihashCode}.`
+        ErrorCode.InputValidatorCasFileUriExceedsMaxLength,
+        `Input ${inputContextForErrorLogging} CAS file URI '${casFileUri}' length needs to be less than ${ProtocolParameters.maxCasUriLength}`
       );
     }
   }

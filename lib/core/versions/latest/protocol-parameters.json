@@ -1,5 +1,6 @@
 {
   "hashAlgorithmInMultihashCode": 18,
+  "maxCasUriLength": 100,
   "maxCoreIndexFileSizeInBytes": 1000000,
   "maxProvisionalIndexFileSizeInBytes": 1000000,
   "maxProofFileSizeInBytes": 2000000,
