@@ -6,12 +6,6 @@ import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import OperationGenerator from '../generators/OperationGenerator';
 
 describe('CoreProofFile', async () => {
-  xit('Relax logic when failed downloading of core proof files.', async () => {
-  });
-
-  xit('(Same as above) Should allow operations in Core index file to be constructed even if (map, provisional proof files are not downloadable).', async () => {
-  });
-
   describe('parse()', async () => {
     it('should parse a valid core proof file successfully.', async () => {
       const [, anyPrivateKey] = await Jwk.generateEs256kKeyPair(); // Used in multiple signed data for testing purposes.
