@@ -1,5 +1,8 @@
+import CoreIndexFile from '../../lib/core/versions/latest/CoreIndexFile';
 import CoreProofFile from '../../lib/core/versions/latest/CoreProofFile';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
+import OperationGenerator from './OperationGenerator';
+import ProvisionalIndexFile from '../../lib/core/versions/latest/ProvisionalIndexFile';
 import ProvisionalProofFile from '../../lib/core/versions/latest/ProvisionalProofFile';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
@@ -9,6 +12,33 @@ import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
  * Mainly useful for testing purposes.
  */
 export default class FileGenerator {
+
+  /**
+   * Generates a `CoreIndexFile`, mainly used for testing purposes.
+   */
+  public static async generateCoreIndexFile (): Promise<CoreIndexFile> {
+    const createOperationData = await OperationGenerator.generateCreateOperation();
+    const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
+    const coreProofFileHash = undefined;
+    const coreIndexFileBuffer =
+    await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
+    const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
+
+    return coreIndexFile;
+  }
+
+  /**
+   * Generates a `ProvisionalIndexFile`, mainly used for testing purposes.
+   */
+  public static async generateProvisionalIndexFile (): Promise<ProvisionalIndexFile> {
+    const updateRequestData = await OperationGenerator.generateUpdateOperationRequest();
+    const chunkFileHash = OperationGenerator.generateRandomHash();
+    const provisionalProofFileHash = OperationGenerator.generateRandomHash();
+    const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileHash, provisionalProofFileHash, [updateRequestData.updateOperation]);
+    const provisionalIndexFile = await ProvisionalIndexFile.parse(provisionalIndexFileBuffer);
+
+    return provisionalIndexFile;
+  }
 
   /**
    * Creates a `CoreProofFile`, mainly used for testing purposes.

@@ -1,3 +1,4 @@
+import AnchoredData from './models/AnchoredData';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import ArrayMethods from './util/ArrayMethods';
@@ -34,60 +35,106 @@ export default class TransactionProcessor implements ITransactionProcessor {
   }
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
+    
+    // Download the core (index and proof) files.
+    let anchoredData: AnchoredData;
+    let coreIndexFile: CoreIndexFile;
+    let coreProofFile: CoreProofFile | undefined;
     try {
       // Decode the anchor string.
-      const anchoredData = AnchoredDataSerializer.deserialize(transaction.anchorString);
-
+      anchoredData = AnchoredDataSerializer.deserialize(transaction.anchorString);
+      
       // Verify enough fee paid.
       FeeManager.verifyTransactionFeeAndThrowOnError(transaction.transactionFeePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee!);
-
+      
       // Download and verify core index file.
-      const coreIndexFile = await this.downloadAndVerifyCoreIndexFile(transaction, anchoredData.coreIndexFileHash, anchoredData.numberOfOperations);
-
-      // Download and verify provisional index file.
-      const provisionalIndexFile = await this.downloadAndVerifyProvisionalIndexFile(coreIndexFile, anchoredData.numberOfOperations);
-
+      coreIndexFile = await this.downloadAndVerifyCoreIndexFile(transaction, anchoredData.coreIndexFileUri, anchoredData.numberOfOperations);
+      
       // Download and verify core proof file.
-      const coreProofFile = await this.downloadAndVerifyCoreProofFile(coreIndexFile);
-
-      // Download and verify provisional proof file.
-      const provisionalProofFile = await this.downloadAndVerifyProvisionalProofFile(provisionalIndexFile);
-
-      // Download and verify chunk file.
-      const chunkFileModel = await this.downloadAndVerifyChunkFile(provisionalIndexFile);
-
-      // Compose into operations from all the files downloaded.
-      const operations = await this.composeAnchoredOperationModels(
-        transaction, coreIndexFile, provisionalIndexFile, coreProofFile, provisionalProofFile, chunkFileModel
-      );
-
-      // If the code reaches here, it means that the batch of operations is valid, store the operations.
-      await this.operationStore.put(operations);
-
-      console.log(LogColor.lightBlue(`Processed ${operations.length} operations.`));
-
-      return true;
+      coreProofFile = await this.downloadAndVerifyCoreProofFile(coreIndexFile);
     } catch (error) {
+      let retryNeeded = true;
       if (error instanceof SidetreeError) {
-        // If error is potentially related to CAS network connectivity issues, we need to return false to retry later.
+        // If error is related to CAS network connectivity issues, we need to retry later.
         if (error.code === ErrorCode.CasNotReachable ||
             error.code === ErrorCode.CasFileNotFound) {
-          return false;
+          retryNeeded = true;
+        } else {
+          // eslint-disable-next-line max-len
+          console.log(LogColor.lightBlue(`Invalid core file found for anchor string '${LogColor.green(transaction.anchorString)}', the entire batch is discarded. Error: ${LogColor.yellow(error.message)}`));
+          retryNeeded = false;
         }
-
-        console.info(`Ignoring error: ${error.message}`);
-        return true;
       } else {
-        console.error(`Unexpected error processing transaction, MUST investigate and fix: ${error.message}`);
-        return false;
+        console.error(LogColor.red(`Unexpected error while fetching and downloading core files, MUST investigate and fix: ${error.message}`));
+        retryNeeded = true;
+      }
+
+      const transactionProcessedCompletely = !retryNeeded;
+      return transactionProcessedCompletely;
+    }
+
+    // Once code reaches here, it means core files are valid. In order to be compatible with the future data-pruning feature,
+    // the operations referenced in core index file must be retained regardless of the validity of provisional and chunk files.
+
+    // Download provisional and chunk files.
+    let retryNeeded: boolean;
+    let provisionalIndexFile: ProvisionalIndexFile | undefined;
+    let provisionalProofFile: ProvisionalProofFile | undefined;
+    let chunkFileModel: ChunkFileModel | undefined;
+    try {
+      // Download and verify provisional index file.
+      provisionalIndexFile = await this.downloadAndVerifyProvisionalIndexFile(coreIndexFile, anchoredData.numberOfOperations);
+      
+      // Download and verify provisional proof file.
+      provisionalProofFile = await this.downloadAndVerifyProvisionalProofFile(provisionalIndexFile);
+
+      // Download and verify chunk file.
+      chunkFileModel = await this.downloadAndVerifyChunkFile(coreIndexFile, provisionalIndexFile);
+
+      retryNeeded = false;
+    } catch (error) {
+      // If we encounter any error, regardless of whether the transaction should be retried for processing,
+      // we set all the provisional/chunk files to be `undefined`,
+      // this is because chunk file would not be available or valid for its deltas to be used during resolutions,
+      // thus no need to store the operation references in the provisional index file.
+      provisionalIndexFile = undefined;
+      provisionalProofFile = undefined;
+      chunkFileModel = undefined;
+
+      // Now we decide if we should try to process this transaction again in the future.
+      if (error instanceof SidetreeError) {
+        // If error is related to CAS network connectivity issues, we need to retry later.
+        if (error.code === ErrorCode.CasNotReachable ||
+            error.code === ErrorCode.CasFileNotFound) {
+          retryNeeded = true;
+        } else {
+          // eslint-disable-next-line max-len
+          console.log(LogColor.lightBlue(`Invalid provisional/chunk file found for anchor string '${LogColor.green(transaction.anchorString)}', the entire batch is discarded. Error: ${LogColor.yellow(error.message)}`));
+          retryNeeded = false;
+        }
+      } else {
+        console.error(LogColor.red(`Unexpected error while fetching and downloading provisional files, MUST investigate and fix: ${error.message}`));
+        retryNeeded = true;
       }
     }
+
+    // Once code reaches here, it means all the files that are not `undefined` (and their relationships) are validated,
+    // there is no need to perform any more validations at this point, we just need to compose the anchored operations and store them.
+
+    // Compose using files downloaded into anchored operations.
+    const operations = await this.composeAnchoredOperationModels(
+      transaction, coreIndexFile, provisionalIndexFile, coreProofFile, provisionalProofFile, chunkFileModel
+    );
+
+    await this.operationStore.put(operations);
+
+    console.log(LogColor.lightBlue(`Processed ${LogColor.green(operations.length)} operations. Retry needed: ${LogColor.green(retryNeeded)}`));
+
+    const transactionProcessedCompletely = !retryNeeded;
+    return transactionProcessedCompletely;
   }
 
-  /**
-   * @param batchSize The size of the batch in number of operations.
-   */
-  private async downloadAndVerifyCoreIndexFile (transaction: TransactionModel, coreIndexFileHash: string, paidOperationCount: number): Promise<CoreIndexFile> {
+  private async downloadAndVerifyCoreIndexFile (transaction: TransactionModel, coreIndexFileUri: string, paidOperationCount: number): Promise<CoreIndexFile> {
     // Verify the number of paid operations does not exceed the maximum allowed limit.
     if (paidOperationCount > ProtocolParameters.maxOperationsPerBatch) {
       throw new SidetreeError(
@@ -96,9 +143,9 @@ export default class TransactionProcessor implements ITransactionProcessor {
       );
     }
 
-    console.info(`Downloading core index file '${coreIndexFileHash}', max file size limit ${ProtocolParameters.maxCoreIndexFileSizeInBytes} bytes...`);
+    console.info(`Downloading core index file '${coreIndexFileUri}', max file size limit ${ProtocolParameters.maxCoreIndexFileSizeInBytes} bytes...`);
 
-    const fileBuffer = await this.downloadFileFromCas(coreIndexFileHash, ProtocolParameters.maxCoreIndexFileSizeInBytes);
+    const fileBuffer = await this.downloadFileFromCas(coreIndexFileUri, ProtocolParameters.maxCoreIndexFileSizeInBytes);
     const coreIndexFile = await CoreIndexFile.parse(fileBuffer);
 
     const operationCountInCoreIndexFile = coreIndexFile.didUniqueSuffixes.length;
@@ -171,80 +218,45 @@ export default class TransactionProcessor implements ITransactionProcessor {
     return provisionalProofFile;
   }
 
-  /**
-   * NOTE: In order to be forward-compatible with data-pruning feature,
-   * we must continue to process the operations declared in the core index file even if the map/chunk file is invalid.
-   * This means that this method MUST ONLY throw errors that are retry-able (e.g. network or file not found errors),
-   * It is a design choice to hide the complexity of provisional index file downloading and construction within this method,
-   * instead of throwing errors and letting the caller handle them.
-   * @returns `ProvisionalIndexFile` if downloaded file is valid; `undefined` otherwise.
-   * @throws SidetreeErrors that are retry-able.
-   */
   private async downloadAndVerifyProvisionalIndexFile (coreIndexFile: CoreIndexFile, paidOperationCount: number): Promise<ProvisionalIndexFile | undefined> {
-    try {
-      const coreIndexFileModel = coreIndexFile.model;
+    const coreIndexFileModel = coreIndexFile.model;
 
-      // If no provisional index file URI is defined (legitimate case when there is only deactivates in the operation batch),
-      // then no provisional index file to download.
-      const provisionalIndexFileUri = coreIndexFileModel.provisionalIndexFileUri;
-      if (provisionalIndexFileUri === undefined) {
-        return undefined;
-      }
-
-      console.info(
-        `Downloading provisional index file '${provisionalIndexFileUri}', max file size limit ${ProtocolParameters.maxProvisionalIndexFileSizeInBytes}...`
-      );
-
-      const fileBuffer = await this.downloadFileFromCas(provisionalIndexFileUri, ProtocolParameters.maxProvisionalIndexFileSizeInBytes);
-      const provisionalIndexFile = await ProvisionalIndexFile.parse(fileBuffer);
-
-      // Calculate the max paid update operation count.
-      const operationCountInCoreIndexFile = coreIndexFile.didUniqueSuffixes.length;
-      const maxPaidUpdateOperationCount = paidOperationCount - operationCountInCoreIndexFile;
-
-      // If the actual update operation count is greater than the max paid update operation count,
-      // we will penalize the writer by not accepting any updates.
-      const updateOperationCount = provisionalIndexFile.didUniqueSuffixes.length;
-      if (updateOperationCount > maxPaidUpdateOperationCount) {
-        provisionalIndexFile.removeAllUpdateOperationReferences();
-      }
-
-      // If we find operations for the same DID between anchor and provisional index files,
-      // we will penalize the writer by not accepting any updates.
-      if (!ArrayMethods.areMutuallyExclusive(coreIndexFile.didUniqueSuffixes, provisionalIndexFile.didUniqueSuffixes)) {
-        provisionalIndexFile.removeAllUpdateOperationReferences();
-      }
-
-      return provisionalIndexFile;
-    } catch (error) {
-      if (error instanceof SidetreeError) {
-        // If error is related to CAS network issues, we will surface them so retry can happen.
-        if (error.code === ErrorCode.CasNotReachable ||
-            error.code === ErrorCode.CasFileNotFound) {
-          throw error;
-        }
-
-        return undefined;
-      } else {
-        const errorString = SidetreeError.stringify(error);
-        console.error(
-          `Unexpected error fetching provisional index file ${coreIndexFile.model.provisionalIndexFileUri}, MUST investigate and fix: ${errorString}`
-        );
-        return undefined;
-      }
+    // If no provisional index file URI is defined (legitimate case when there is only deactivates in the operation batch),
+    // then no provisional index file to download.
+    const provisionalIndexFileUri = coreIndexFileModel.provisionalIndexFileUri;
+    if (provisionalIndexFileUri === undefined) {
+      return undefined;
     }
+
+    console.info(
+      `Downloading provisional index file '${provisionalIndexFileUri}', max file size limit ${ProtocolParameters.maxProvisionalIndexFileSizeInBytes}...`
+    );
+
+    const fileBuffer = await this.downloadFileFromCas(provisionalIndexFileUri, ProtocolParameters.maxProvisionalIndexFileSizeInBytes);
+    const provisionalIndexFile = await ProvisionalIndexFile.parse(fileBuffer);
+
+    // Calculate the max paid update operation count.
+    const operationCountInCoreIndexFile = coreIndexFile.didUniqueSuffixes.length;
+    const maxPaidUpdateOperationCount = paidOperationCount - operationCountInCoreIndexFile;
+
+    // If the actual update operation count is greater than the max paid update operation count,
+    // we will penalize the writer by not accepting any updates.
+    const updateOperationCount = provisionalIndexFile.didUniqueSuffixes.length;
+    if (updateOperationCount > maxPaidUpdateOperationCount) {
+      provisionalIndexFile.removeAllUpdateOperationReferences();
+    }
+
+    // If we find operations for the same DID between anchor and provisional index files,
+    // we will penalize the writer by not accepting any updates.
+    if (!ArrayMethods.areMutuallyExclusive(coreIndexFile.didUniqueSuffixes, provisionalIndexFile.didUniqueSuffixes)) {
+      provisionalIndexFile.removeAllUpdateOperationReferences();
+    }
+
+    return provisionalIndexFile;
   }
 
-  /**
-   * NOTE: In order to be forward-compatible with data-pruning feature,
-   * we must continue to process the operations declared in the core index file even if the map/chunk file is invalid.
-   * This means that this method MUST ONLY throw errors that are retry-able (e.g. network or file not found errors),
-   * It is a design choice to hide the complexity of chunk file downloading and construction within this method,
-   * instead of throwing errors and letting the caller handle them.
-   * @returns `ChunkFileModel` if downloaded file is valid; `undefined` otherwise.
-   * @throws SidetreeErrors that are retry-able.
-   */
   private async downloadAndVerifyChunkFile (
+    coreIndexFile: CoreIndexFile,
     provisionalIndexFile: ProvisionalIndexFile | undefined
   ): Promise<ChunkFileModel | undefined> {
     // Can't download chunk file if provisional index file is not given.
@@ -252,29 +264,23 @@ export default class TransactionProcessor implements ITransactionProcessor {
       return undefined;
     }
 
-    let chunkFileHash;
-    try {
-      chunkFileHash = provisionalIndexFile.model.chunks[0].chunkFileUri;
-      console.info(`Downloading chunk file '${chunkFileHash}', max size limit ${ProtocolParameters.maxChunkFileSizeInBytes}...`);
+    const chunkFileHash = provisionalIndexFile.model.chunks[0].chunkFileUri;
+    console.info(`Downloading chunk file '${chunkFileHash}', max size limit ${ProtocolParameters.maxChunkFileSizeInBytes}...`);
 
-      const fileBuffer = await this.downloadFileFromCas(chunkFileHash, ProtocolParameters.maxChunkFileSizeInBytes);
-      const chunkFileModel = await ChunkFile.parse(fileBuffer);
+    const fileBuffer = await this.downloadFileFromCas(chunkFileHash, ProtocolParameters.maxChunkFileSizeInBytes);
+    const chunkFileModel = await ChunkFile.parse(fileBuffer);
 
-      return chunkFileModel;
-    } catch (error) {
-      if (error instanceof SidetreeError) {
-        // If error is related to CAS network issues, we will surface them so retry can happen.
-        if (error.code === ErrorCode.CasNotReachable ||
-            error.code === ErrorCode.CasFileNotFound) {
-          throw error;
-        }
+    const totalCountOfOperationsWithDelta
+      = coreIndexFile.createDidSuffixes.length + coreIndexFile.recoverDidSuffixes.length + provisionalIndexFile.didUniqueSuffixes.length;
 
-        return undefined;
-      } else {
-        console.error(`Unexpected error fetching chunk file ${chunkFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
-        return undefined;
-      }
+    if (chunkFileModel.deltas.length !== totalCountOfOperationsWithDelta) {
+      throw new SidetreeError(
+        ErrorCode.ChunkFileDeltaCountIncorrect,
+        `Delta array length ${chunkFileModel.deltas.length} is not the same as the count of ${totalCountOfOperationsWithDelta} operations with delta.`
+      );
     }
+
+    return chunkFileModel;
   }
 
   private async composeAnchoredOperationModels (
@@ -285,9 +291,6 @@ export default class TransactionProcessor implements ITransactionProcessor {
     provisionalProofFile: ProvisionalProofFile | undefined,
     chunkFile: ChunkFileModel | undefined
   ): Promise<AnchoredOperationModel[]> {
-
-    // TODO: #766 - Handle combinations of different availability of files here.
-
     const anchoredCreateOperationModels = TransactionProcessor.composeAnchoredCreateOperationModels(
       transaction, coreIndexFile, chunkFile
     );

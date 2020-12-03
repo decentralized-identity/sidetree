@@ -81,6 +81,23 @@ describe('BatchWriter', () => {
     });
   });
 
+  describe('createAndWriteProvisionalIndexFileIfNeeded()', () => {
+    it('should return `undefined` if no chunk file URI is given.', async () => {
+      const chunkFileUri = undefined;
+      const provisionalProofFileUri = OperationGenerator.generateRandomHash();
+      const updateOperations: any[] = [];
+      const provisionalIndexFileUri = await (batchWriter as any).createAndWriteProvisionalIndexFileIfNeeded(chunkFileUri, provisionalProofFileUri, updateOperations);
+      expect(provisionalIndexFileUri).toBeUndefined();
+    });
+  });
+
+  describe('createAndWriteChunkFileIfNeeded()', () => {
+    it('should return `undefined` if no operation is passed in.', async () => {
+      const chunkFileUri = await (batchWriter as any).createAndWriteChunkFileIfNeeded([], [], []);
+      expect(chunkFileUri).toBeUndefined();
+    });
+  });
+
   describe('getNumberOfOperationsAllowed', () => {
 
     it('should return the value from the lock verifier', () => {

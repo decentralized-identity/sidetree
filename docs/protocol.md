@@ -127,10 +127,14 @@ Where the first entry in ```receipt``` is the sibling of the operation hash in t
 
 
 ## FAQs
-* Why introduce the concept of an _core index file_? Why not just anchor the _chunk file hash_ directly on blockchain?
+* Why are we not checking signatures at observation time for all updates, recoveries, and deactivates?
+
+  Because it would mean we have to resolve all DIDs at observation time which is costly since signature checks are computationally expensive. So we defer such compute until resolution time.
+
+* Why have the concept of _index files_?
 
   It would be ideal to be able to fetch metadata about the batched operations efficiently,
-  without needing to download the entire chunk file.
+  without needing to download the entire batched operation.
   This design is needed for the implementation of "light nodes", it also opens up possibilities of other applications of the Sidetree specification.
 
 * Why assign a _transaction number_ to invalid transactions?

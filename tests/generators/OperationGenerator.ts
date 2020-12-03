@@ -20,6 +20,7 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import ServiceModel from '../../lib/core/versions/latest/models/ServiceModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
+import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -53,8 +54,9 @@ export default class OperationGenerator {
    * Generates a random `TransactionModel`.
    */
   public static generateTransactionModel (): TransactionModel {
+    const anchorString = AnchoredDataSerializer.serialize({ coreIndexFileUri: OperationGenerator.generateRandomHash(), numberOfOperations: 1 });
     return {
-      anchorString: OperationGenerator.generateRandomHash(),
+      anchorString,
       normalizedTransactionFee: DataGenerator.generateInteger(),
       transactionFeePaid: DataGenerator.generateInteger(),
       transactionNumber: DataGenerator.generateInteger(),

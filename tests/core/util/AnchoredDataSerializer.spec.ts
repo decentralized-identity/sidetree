@@ -10,7 +10,7 @@ describe('AnchoredDataSerializer', async () => {
   beforeEach(async () => {
 
     testDataToWrite = {
-      coreIndexFileHash: 'random data to write',
+      coreIndexFileUri: 'random data to write',
       numberOfOperations: 10000
     };
   });
@@ -20,7 +20,7 @@ describe('AnchoredDataSerializer', async () => {
     const serialized = AnchoredDataSerializer.serialize(testDataToWrite);
     const deserialized = AnchoredDataSerializer.deserialize(serialized);
 
-    expect(deserialized.coreIndexFileHash).toEqual(testDataToWrite.coreIndexFileHash);
+    expect(deserialized.coreIndexFileUri).toEqual(testDataToWrite.coreIndexFileUri);
     expect(deserialized.numberOfOperations).toEqual(testDataToWrite.numberOfOperations);
   });
 

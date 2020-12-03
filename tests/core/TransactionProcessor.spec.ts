@@ -6,6 +6,7 @@ import CoreIndexFileModel from '../../lib/core/versions/latest/models/CoreIndexF
 import CoreProofFile from '../../lib/core/versions/latest/CoreProofFile';
 import DownloadManager from '../../lib/core/DownloadManager';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import FeeManager from '../../lib/core/versions/latest/FeeManager';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import FileGenerator from '../generators/FileGenerator';
@@ -71,7 +72,7 @@ describe('TransactionProcessor', () => {
     });
 
     it('should ignore error and return true when FeeManager throws a sidetree error', async () => {
-      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: '1stTransaction', numberOfOperations: 0 });
+      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: '1stTransaction', numberOfOperations: 0 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -92,7 +93,7 @@ describe('TransactionProcessor', () => {
           resolve(result);
         });
       });
-      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: '1stTransaction', numberOfOperations: 1 });
+      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: '1stTransaction', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -113,7 +114,7 @@ describe('TransactionProcessor', () => {
           resolve(result);
         });
       });
-      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: '1stTransaction', numberOfOperations: 1 });
+      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: '1stTransaction', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -134,7 +135,7 @@ describe('TransactionProcessor', () => {
           resolve(result);
         });
       });
-      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: '1stTransaction', numberOfOperations: 1 });
+      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: '1stTransaction', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -155,7 +156,7 @@ describe('TransactionProcessor', () => {
           resolve(result);
         });
       });
-      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: '1stTransaction', numberOfOperations: 1 });
+      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: '1stTransaction', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -176,7 +177,7 @@ describe('TransactionProcessor', () => {
           resolve(result);
         });
       });
-      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: '1stTransaction', numberOfOperations: 1 });
+      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: '1stTransaction', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -191,7 +192,7 @@ describe('TransactionProcessor', () => {
     });
 
     it('should return false to allow retry if unexpected error is thrown', async () => {
-      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: '1stTransaction', numberOfOperations: 1 });
+      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: '1stTransaction', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -207,6 +208,51 @@ describe('TransactionProcessor', () => {
 
       const result = await transactionProcessor.processTransaction(mockTransaction);
       expect(result).toBeFalsy();
+    });
+
+    it('should continue to compose the operations and return false if unexpected error is thrown when downloading provisional index file.', async () => {
+      spyOn(FeeManager, 'verifyTransactionFeeAndThrowOnError');
+      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreIndexFile').and.returnValue('unused');
+      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile'); 
+      spyOn(transactionProcessor as any, 'downloadAndVerifyProvisionalIndexFile').and.throwError('any unexpected error');
+      const composeAnchoredOperationModelsSpy = spyOn(transactionProcessor as any, 'composeAnchoredOperationModels').and.returnValue([]);
+      const operationStoreSpy = spyOn(operationStore, 'put');
+      
+      const anyTransactionModel = OperationGenerator.generateTransactionModel();
+      const transactionProcessedCompletely = await transactionProcessor.processTransaction(anyTransactionModel);
+      expect(composeAnchoredOperationModelsSpy).toHaveBeenCalled();
+      expect(operationStoreSpy).toHaveBeenCalled();
+      expect(transactionProcessedCompletely).toBeFalsy();
+    });
+
+    it('should continue to compose the operations and return false if network error is thrown when downloading provisional index file.', async () => {
+      spyOn(FeeManager, 'verifyTransactionFeeAndThrowOnError');
+      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreIndexFile').and.returnValue('unused');
+      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile'); 
+      spyOn(transactionProcessor as any, 'downloadAndVerifyProvisionalIndexFile').and.callFake(() => { throw new SidetreeError(ErrorCode.CasFileNotFound); });
+      const composeAnchoredOperationModelsSpy = spyOn(transactionProcessor as any, 'composeAnchoredOperationModels').and.returnValue([]);
+      const operationStoreSpy = spyOn(operationStore, 'put');
+      
+      const anyTransactionModel = OperationGenerator.generateTransactionModel();
+      const transactionProcessedCompletely = await transactionProcessor.processTransaction(anyTransactionModel);
+      expect(composeAnchoredOperationModelsSpy).toHaveBeenCalled();
+      expect(operationStoreSpy).toHaveBeenCalled();
+      expect(transactionProcessedCompletely).toBeFalsy();
+    });
+
+    it('should continue to compose the operations and return true if non-network Sidetree error is thrown when downloading provisional index file.', async () => {
+      spyOn(FeeManager, 'verifyTransactionFeeAndThrowOnError');
+      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreIndexFile').and.returnValue('unused');
+      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile'); 
+      spyOn(transactionProcessor as any, 'downloadAndVerifyProvisionalIndexFile').and.callFake(() => { throw new SidetreeError(ErrorCode.ChunkFileDeltasNotArrayOfObjects); });
+      const composeAnchoredOperationModelsSpy = spyOn(transactionProcessor as any, 'composeAnchoredOperationModels').and.returnValue([]);
+      const operationStoreSpy = spyOn(operationStore, 'put');
+      
+      const anyTransactionModel = OperationGenerator.generateTransactionModel();
+      const transactionProcessedCompletely = await transactionProcessor.processTransaction(anyTransactionModel);
+      expect(composeAnchoredOperationModelsSpy).toHaveBeenCalled();
+      expect(operationStoreSpy).toHaveBeenCalled();
+      expect(transactionProcessedCompletely).toBeTruthy();
     });
   });
 
@@ -359,7 +405,7 @@ describe('TransactionProcessor', () => {
       done();
     });
 
-    it('should return undefined if update operation count is greater than the max paid update operation count.', async (done) => {
+    it('should return strip all update operations if update operation count is greater than the max paid update operation count.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
       const coreProofFileHash = undefined;
@@ -368,7 +414,7 @@ describe('TransactionProcessor', () => {
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
       // Setting up a mock provisional index file that has 1 update in it to be downloaded.
-      const provisionalProofFileHash = undefined;
+      const provisionalProofFileHash = OperationGenerator.generateRandomHash();
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest();
       const chunkFileHash = OperationGenerator.generateRandomHash();
       const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(
@@ -380,7 +426,7 @@ describe('TransactionProcessor', () => {
       const totalPaidOperationCount = 1;
       const fetchedProvisionalIndexFile = await transactionProcessor['downloadAndVerifyProvisionalIndexFile'](coreIndexFile, totalPaidOperationCount);
 
-      expect(fetchedProvisionalIndexFile).toBeUndefined();
+      expect(fetchedProvisionalIndexFile?.didUniqueSuffixes.length).toEqual(0);
       done();
     });
 
@@ -458,64 +504,6 @@ describe('TransactionProcessor', () => {
       expect(fetchedProvisionalIndexFile!.didUniqueSuffixes.length).toEqual(0);
       expect(fetchedProvisionalIndexFile!.model.operations).toBeUndefined();
       expect(fetchedProvisionalIndexFile!.model.provisionalProofFileUri).toBeUndefined();
-      done();
-    });
-
-    it('should return undefined if unexpected error caught.', async (done) => {
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = undefined;
-      const coreIndexFileBuffer =
-        await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
-      const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
-
-      // Mocking an unexpected error thrown.
-      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.throwError('Any unexpected error.');
-
-      const totalPaidOperationCount = 10;
-      const fetchedProvisionalIndexFile = await transactionProcessor['downloadAndVerifyProvisionalIndexFile'](coreIndexFile, totalPaidOperationCount);
-
-      expect(fetchedProvisionalIndexFile).toBeUndefined();
-      done();
-    });
-
-    it('should throw if a network related error is caught.', async (done) => {
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = undefined;
-      const coreIndexFileBuffer =
-        await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
-      const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
-
-      // Mocking a non-network related known error thrown.
-      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.callFake(
-        () => { throw new SidetreeError(ErrorCode.CasNotReachable); }
-      );
-
-      const totalPaidOperationCount = 10;
-      await expectAsync(transactionProcessor['downloadAndVerifyProvisionalIndexFile'](coreIndexFile, totalPaidOperationCount))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CasNotReachable));
-
-      done();
-    });
-
-    it('should return undefined if non-network related known error is caught.', async (done) => {
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = undefined;
-      const coreIndexFileBuffer =
-        await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
-      const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
-
-      // Mocking a non-network related known error thrown.
-      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.callFake(
-        () => { throw new SidetreeError(ErrorCode.CasFileTooLarge); }
-      );
-
-      const totalPaidOperationCount = 10;
-      const fetchedProvisionalIndexFile = await transactionProcessor['downloadAndVerifyProvisionalIndexFile'](coreIndexFile, totalPaidOperationCount);
-
-      expect(fetchedProvisionalIndexFile).toBeUndefined();
       done();
     });
   });
@@ -627,57 +615,27 @@ describe('TransactionProcessor', () => {
 
   describe('downloadAndVerifyChunkFile', () => {
     it('should return undefined if no provisional index file is given.', async (done) => {
-      const provisionalIndexFileModel = undefined;
-      const fetchedChunkFileModel = await transactionProcessor['downloadAndVerifyChunkFile'](provisionalIndexFileModel);
+      const coreIndexFile = await FileGenerator.generateCoreIndexFile();
+      const provisionalIndexFile = undefined;
+      const fetchedChunkFileModel = await transactionProcessor['downloadAndVerifyChunkFile'](coreIndexFile, provisionalIndexFile);
 
       expect(fetchedChunkFileModel).toBeUndefined();
       done();
     });
 
-    it('should return undefined if unexpected error caught.', async (done) => {
-      const anyHash = OperationGenerator.generateRandomHash();
-      const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(anyHash, anyHash, []);
-      const provisionalIndexFileModel = await ProvisionalIndexFile.parse(provisionalIndexFileBuffer);
+    it('should throw if the delta count is different to the count of operations with delta in core and provisional index file.', async () => {
+      // Combination of count of operations with delta in core and provisional index files will be greater than 1.
+      const coreIndexFile = await FileGenerator.generateCoreIndexFile();
+      const provisionalIndexFile = await FileGenerator.generateProvisionalIndexFile();
+      
+      const mockCreateOperationData = await OperationGenerator.generateCreateOperation();
+      const mockChunkFileBuffer = await ChunkFile.createBuffer([mockCreateOperationData.createOperation], [], []); // This creates delta array length of 1.
+      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockChunkFileBuffer));
 
-      // Mocking an unexpected error thrown.
-      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.throwError('Any unexpected error.');
-
-      const fetchedProvisionalIndexFile = await transactionProcessor['downloadAndVerifyChunkFile'](provisionalIndexFileModel);
-
-      expect(fetchedProvisionalIndexFile).toBeUndefined();
-      done();
-    });
-
-    it('should throw if a network related error is caught.', async (done) => {
-      const anyHash = OperationGenerator.generateRandomHash();
-      const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(anyHash, anyHash, []);
-      const provisionalIndexFileModel = await ProvisionalIndexFile.parse(provisionalIndexFileBuffer);
-
-      // Mocking a non-network related known error thrown.
-      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.callFake(
-        () => { throw new SidetreeError(ErrorCode.CasNotReachable); }
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => transactionProcessor['downloadAndVerifyChunkFile'](coreIndexFile, provisionalIndexFile),
+        ErrorCode.ChunkFileDeltaCountIncorrect
       );
-
-      await expectAsync(transactionProcessor['downloadAndVerifyChunkFile'](provisionalIndexFileModel))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CasNotReachable));
-
-      done();
-    });
-
-    it('should return undefined if non-network related known error is caught.', async (done) => {
-      const anyHash = OperationGenerator.generateRandomHash();
-      const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(anyHash, anyHash, []);
-      const provisionalIndexFileModel = await ProvisionalIndexFile.parse(provisionalIndexFileBuffer);
-
-      // Mocking a non-network related known error thrown.
-      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.callFake(
-        () => { throw new SidetreeError(ErrorCode.CasFileTooLarge); }
-      );
-
-      const fetchedProvisionalIndexFile = await transactionProcessor['downloadAndVerifyChunkFile'](provisionalIndexFileModel);
-
-      expect(fetchedProvisionalIndexFile).toBeUndefined();
-      done();
     });
   });
 
@@ -723,7 +681,7 @@ describe('TransactionProcessor', () => {
 
       // Create chunk file model with delta for the 3 operations created above.
       const chunkFileBuffer = await ChunkFile.createBuffer([createOperation], [recoverOperation], [updateOperation]);
-      const chunkFileModel = await ChunkFile.parse(chunkFileBuffer);
+      const chunkFileModel = await ChunkFile.parse(chunkFileBuffer!);
 
       const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](
         transactionModel, coreIndexFile, provisionalIndexFile, coreProofFile, provisionalProofFile, chunkFileModel

@@ -216,7 +216,7 @@ describe('Observer', async () => {
       1
     );
 
-    const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: mockCoreIndexFileHash, numberOfOperations: createOperations.length });
+    const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: mockCoreIndexFileHash, numberOfOperations: createOperations.length });
     const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,
@@ -249,7 +249,7 @@ describe('Observer', async () => {
     const mockFetchReturnCode = tuple[0];
     const expectedConsoleLogSubstring = tuple[1];
 
-    it(`should stop processing a transaction if ${mockFetchReturnCode}`, async () => {
+    it(`should stop processing a transaction if downloading core index files returns '${mockFetchReturnCode}'.`, async () => {
       const blockchainClient = new Blockchain(config.blockchainServiceUri);
       const observer = new Observer(
         versionManager,
@@ -264,7 +264,7 @@ describe('Observer', async () => {
       spyOn(downloadManager, 'download').and.returnValue(Promise.resolve({ code: mockFetchReturnCode as FetchResultCode }));
 
       let expectedConsoleLogDetected = false;
-      spyOn(global.console, 'info').and.callFake((message: string) => {
+      spyOn(global.console, 'log').and.callFake((message: string) => {
         if (message.includes(expectedConsoleLogSubstring)) {
           expectedConsoleLogDetected = true;
         }
@@ -273,7 +273,7 @@ describe('Observer', async () => {
       spyOn(transactionStore, 'removeUnresolvableTransaction');
       spyOn(transactionStore, 'recordUnresolvableTransactionFetchAttempt');
 
-      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw', numberOfOperations: 1 });
+      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -438,7 +438,7 @@ describe('Observer', async () => {
   });
 
   it('should not rollback if blockchain time in bitcoin service is behind core service.', async () => {
-    const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileHash: '1stTransaction', numberOfOperations: 1 });
+    const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: '1stTransaction', numberOfOperations: 1 });
     const transaction = {
       transactionNumber: 1,
       transactionTime: 1000,

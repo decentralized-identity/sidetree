@@ -46,7 +46,7 @@ describe('ChunkFile', async () => {
 
       const chunkFileBuffer = await ChunkFile.createBuffer([createOperation], [recoverOperation], []);
 
-      const decompressedChunkFileModel = await ChunkFile.parse(chunkFileBuffer);
+      const decompressedChunkFileModel = await ChunkFile.parse(chunkFileBuffer!);
 
       expect(decompressedChunkFileModel.deltas.length).toEqual(2);
       expect(decompressedChunkFileModel.deltas[0]).toEqual(createOperation.delta!);
