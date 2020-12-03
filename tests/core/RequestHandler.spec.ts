@@ -213,8 +213,8 @@ describe('RequestHandler', () => {
     // Verify that CAS was invoked to store the chunk file.
     const maxChunkFileSize = 20000000;
     const expectedBatchBuffer = await ChunkFile.createBuffer([createOperation], [recoverOperation], [updateOperation]);
-    const expectedChunkFileHash = MockCas.getAddress(expectedBatchBuffer);
-    const fetchResult = await cas.read(expectedChunkFileHash, maxChunkFileSize);
+    const expectedChunkFileUri = MockCas.getAddress(expectedBatchBuffer!);
+    const fetchResult = await cas.read(expectedChunkFileUri, maxChunkFileSize);
     const decompressedData = await Compressor.decompress(fetchResult.content!, maxChunkFileSize);
     const chunkFile = JSON.parse(decompressedData.toString());
     expect(chunkFile.deltas.length).toEqual(3); // Deactivates do not have `delta`.

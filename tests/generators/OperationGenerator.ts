@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CoreIndexFile from '../../lib/core/versions/latest/CoreIndexFile';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
@@ -53,8 +54,9 @@ export default class OperationGenerator {
    * Generates a random `TransactionModel`.
    */
   public static generateTransactionModel (): TransactionModel {
+    const anchorString = AnchoredDataSerializer.serialize({ coreIndexFileUri: OperationGenerator.generateRandomHash(), numberOfOperations: 1 });
     return {
-      anchorString: OperationGenerator.generateRandomHash(),
+      anchorString,
       normalizedTransactionFee: DataGenerator.generateInteger(),
       transactionFeePaid: DataGenerator.generateInteger(),
       transactionNumber: DataGenerator.generateInteger(),
