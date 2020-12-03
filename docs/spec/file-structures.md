@@ -104,8 +104,8 @@ A valid [Provisional Index File](#provisional-index-file) is a JSON document tha
     - If there are any [Update](#update) entries to be included:
       1. The `operations` object ****MUST**** include an `update` property, and its value ****MUST**** be an array.
       2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Provisional Index File Update Entries](#provisional-index-file-update-entry){id="provisional-index-file-update-entry"}, use the following process to compose and include entries:
-          - The object ****MUST**** contain an `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-          - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [hashed](#multihash) reveal value of the last update commitment.
+          - The object ****MUST**** contain an `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to, with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
+          - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [hashed](#multihash) reveal value of the last update commitment, with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
 
 ### Core Proof File
 

@@ -20,5 +20,6 @@ Each version of the protocol will define a set of protocol rules and parameters 
 | `MAX_PROOF_FILE_SIZE` { #max-proof-file-size }       | Maximum compressed map file size.                        |               2.5 MB |
 | `MAX_CHUNK_FILE_SIZE`  { #max-chunk-file-size }  | Maximum compressed chunk file size.                      |              10 MB |
 | `MAX_ENCODED_HASH_LENGTH`   | Maximum accepted string length of an encoded hash.                            |          100 bytes |
-| `MAX_OPERATION_SIZE`        | Maximum uncompressed operation size.                                          |               1 kb |
+| `MAX_DELTA_SIZE` { #max-delta-size }        | Maximum uncompressed operation delta size.                                          |               1 kb |
 | `MAX_OPERATION_COUNT`       | Maximum number of operations per batch.                                       |             10,000 |
+| `MAX_OPERATION_HASH_LENGTH` { #max-operation-hash-length }       | Maximum number of operations per batch.                                       |             50 bytes |
