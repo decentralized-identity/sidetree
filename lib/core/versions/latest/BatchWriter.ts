@@ -104,7 +104,7 @@ export default class BatchWriter implements IBatchWriter {
 
   /**
    * Create and write chunk file if needed.
-   * @returns CASE URI of the chunk file. `undefined` if there is no need to create and write the file.
+   * @returns CAS URI of the chunk file. `undefined` if there is no need to create and write the file.
    */
   private async createAndWriteChunkFileIfNeeded (
     createOperations: CreateOperation[], recoverOperations: RecoverOperation[], updateOperations: UpdateOperation[]
@@ -122,17 +122,17 @@ export default class BatchWriter implements IBatchWriter {
 
   /**
    * Create and write provisional index file if needed.
-   * @returns CASE URI of the chunk file. `undefined` if there is no need to create and write the file.
+   * @returns  URI of the provisional index file. `undefined` if there is no need to create and write the file.
    */
   private async createAndWriteProvisionalIndexFileIfNeeded (
-    chunkFileUri: string | undefined, provisionalProofFileHash: string | undefined, updateOperations: UpdateOperation[]
+    chunkFileUri: string | undefined, provisionalProofFileUri: string | undefined, updateOperations: UpdateOperation[]
   ): Promise<string | undefined> {
-    // If `chunkFileHash` is `undefined` it means there are only deactivates, and a batch with only deactivates does not reference a provisional index file.
+    // If `chunkFileUri` is `undefined` it means there are only deactivates, and a batch with only deactivates does not reference a provisional index file.
     if (chunkFileUri === undefined) {
       return undefined;
     }
 
-    const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileUri!, provisionalProofFileHash, updateOperations);
+    const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileUri!, provisionalProofFileUri, updateOperations);
     const provisionalIndexFileUri = await this.cas.write(provisionalIndexFileBuffer);
     console.info(LogColor.lightBlue(`Wrote provisional index file ${LogColor.green(provisionalIndexFileUri)} to content addressable store.`));
 

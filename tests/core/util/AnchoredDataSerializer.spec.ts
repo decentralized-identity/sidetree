@@ -35,7 +35,7 @@ describe('AnchoredDataSerializer', async () => {
 
     it('should throw if the number of operations is not a number.', async () => {
       // Set operation number portion to `abc`.
-      const anchorString = `abc${AnchoredDataSerializer.delimiter}unusedCoreIndexFileHash`;
+      const anchorString = `abc${AnchoredDataSerializer.delimiter}unusedCoreIndexFileUri`;
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => AnchoredDataSerializer.deserialize(anchorString),
         ErrorCode.AnchoredDataNumberOfOperationsNotPositiveInteger);
@@ -43,7 +43,7 @@ describe('AnchoredDataSerializer', async () => {
 
     it('should throw if the number of operations is not a positive integer.', async () => {
       // Set operation number portion to 0;
-      const anchorString = `0${AnchoredDataSerializer.delimiter}unusedCoreIndexFileHash`;
+      const anchorString = `0${AnchoredDataSerializer.delimiter}unusedCoreIndexFileUri`;
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => AnchoredDataSerializer.deserialize(anchorString),
         ErrorCode.AnchoredDataNumberOfOperationsNotPositiveInteger);
@@ -51,7 +51,7 @@ describe('AnchoredDataSerializer', async () => {
 
     it('should throw if the number of operations exceeds max allowed.', async () => {
       // Go over max allowed batch size by one.
-      const anchorString = `10001${AnchoredDataSerializer.delimiter}unusedCoreIndexFileHash`;
+      const anchorString = `10001${AnchoredDataSerializer.delimiter}unusedCoreIndexFileUri`;
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => AnchoredDataSerializer.deserialize(anchorString),
         ErrorCode.AnchoredDataNumberOfOperationsGreaterThanMax);

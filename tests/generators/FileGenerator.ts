@@ -18,10 +18,10 @@ export default class FileGenerator {
    */
   public static async generateCoreIndexFile (): Promise<CoreIndexFile> {
     const createOperationData = await OperationGenerator.generateCreateOperation();
-    const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-    const coreProofFileHash = undefined;
+    const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
+    const coreProofFileUri = undefined;
     const coreIndexFileBuffer =
-    await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
+    await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileUri, coreProofFileUri, [createOperationData.createOperation], [], []);
     const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
     return coreIndexFile;
@@ -32,9 +32,9 @@ export default class FileGenerator {
    */
   public static async generateProvisionalIndexFile (): Promise<ProvisionalIndexFile> {
     const updateRequestData = await OperationGenerator.generateUpdateOperationRequest();
-    const chunkFileHash = OperationGenerator.generateRandomHash();
-    const provisionalProofFileHash = OperationGenerator.generateRandomHash();
-    const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileHash, provisionalProofFileHash, [updateRequestData.updateOperation]);
+    const chunkFileUri = OperationGenerator.generateRandomHash();
+    const provisionalProofFileUri = OperationGenerator.generateRandomHash();
+    const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileUri, provisionalProofFileUri, [updateRequestData.updateOperation]);
     const provisionalIndexFile = await ProvisionalIndexFile.parse(provisionalIndexFileBuffer);
 
     return provisionalIndexFile;

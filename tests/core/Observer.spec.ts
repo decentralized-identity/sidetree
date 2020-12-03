@@ -163,7 +163,7 @@ describe('Observer', async () => {
     const operation2Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 2 });
     const createOperations = [operation1Data.createOperation, operation2Data.createOperation];
 
-    const coreProofFileHash = undefined;
+    const coreProofFileUri = undefined;
 
     // Generating chunk file data.
     const mockChunkFileBuffer = await ChunkFile.createBuffer(createOperations, [], []);
@@ -171,12 +171,12 @@ describe('Observer', async () => {
       code: FetchResultCode.Success,
       content: mockChunkFileBuffer
     };
-    const mockChunkFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockChunkFileHash')));
+    const mockChunkFileUri = Encoder.encode(Multihash.hash(Buffer.from('MockChunkFileUri')));
 
     // Generating provisional index file data.
     const mockProvisionalProofFileUri = undefined;
-    const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(mockChunkFileHash, mockProvisionalProofFileUri, []);
-    const mockProvisionalIndexFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockProvisionalIndexFileHash')));
+    const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(mockChunkFileUri, mockProvisionalProofFileUri, []);
+    const mockProvisionalIndexFileUri = Encoder.encode(Multihash.hash(Buffer.from('MockProvisionalIndexFileUri')));
     const mockProvisionalIndexFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: mockProvisionalIndexFileBuffer
@@ -184,20 +184,20 @@ describe('Observer', async () => {
 
     // Generating core index file data.
     const mockCoreIndexFileBuffer =
-      await CoreIndexFile.createBuffer('writerLock', mockProvisionalIndexFileHash, coreProofFileHash, createOperations, [], []);
+      await CoreIndexFile.createBuffer('writerLock', mockProvisionalIndexFileUri, coreProofFileUri, createOperations, [], []);
     const mockAnchoredFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: mockCoreIndexFileBuffer
     };
-    const mockCoreIndexFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockCoreIndexFileHash')));
+    const mockCoreIndexFileUri = Encoder.encode(Multihash.hash(Buffer.from('MockCoreIndexFileUri')));
 
     // Prepare the mock fetch results from the `DownloadManager.download()`.
     const mockDownloadFunction = async (hash: string) => {
-      if (hash === mockCoreIndexFileHash) {
+      if (hash === mockCoreIndexFileUri) {
         return mockAnchoredFileFetchResult;
-      } else if (hash === mockProvisionalIndexFileHash) {
+      } else if (hash === mockProvisionalIndexFileUri) {
         return mockProvisionalIndexFileFetchResult;
-      } else if (hash === mockChunkFileHash) {
+      } else if (hash === mockChunkFileUri) {
         return mockChunkFileFetchResult;
       } else {
         throw new Error('Test failed, unexpected hash given');
@@ -216,7 +216,7 @@ describe('Observer', async () => {
       1
     );
 
-    const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: mockCoreIndexFileHash, numberOfOperations: createOperations.length });
+    const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: mockCoreIndexFileUri, numberOfOperations: createOperations.length });
     const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,

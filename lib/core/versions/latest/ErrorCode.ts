@@ -6,7 +6,7 @@ export default {
   AnchoredDataNumberOfOperationsGreaterThanMax: 'anchored_data_number_of_operations_greater_than_max',
   AnchoredDataNumberOfOperationsNotPositiveInteger: 'anchored_data_number_of_operations_not_positive_integer',
   BatchWriterAlreadyHasOperationForDid: 'batch_writer_already_has_operation_for_did',
-  CasFileHashNotValid: 'cas_file_hash_not_valid',
+  CasFileUriNotValid: 'cas_file_hash_not_valid',
   CasFileNotAFile: 'cas_file_not_a_file',
   CasFileNotFound: 'cas_file_not_found',
   CasFileTooLarge: 'cas_file_too_large',

@@ -383,16 +383,16 @@ describe('TransactionProcessor', () => {
   describe('downloadAndVerifyProvisionalIndexFile', () => {
     it('should validate a valid provisional index file for the case that it does not have the `operations` property.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = undefined;
+      const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
+      const coreProofFileUri = undefined;
       const coreIndexFileBuffer =
-      await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
+      await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileUri, coreProofFileUri, [createOperationData.createOperation], [], []);
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
       // Setting up a mock provisional index file that has 1 update in it to be downloaded.
-      const provisionalProofFileHash = undefined;
-      const chunkFileHash = OperationGenerator.generateRandomHash();
-      const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileHash, provisionalProofFileHash, []);
+      const provisionalProofFileUri = undefined;
+      const chunkFileUri = OperationGenerator.generateRandomHash();
+      const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileUri, provisionalProofFileUri, []);
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockProvisionalIndexFileBuffer));
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
@@ -401,24 +401,24 @@ describe('TransactionProcessor', () => {
 
       expect(fetchedProvisionalIndexFile).toBeDefined();
       expect(fetchedProvisionalIndexFile!.didUniqueSuffixes.length).toEqual(0);
-      expect(fetchedProvisionalIndexFile!.model.chunks[0].chunkFileUri).toEqual(chunkFileHash);
+      expect(fetchedProvisionalIndexFile!.model.chunks[0].chunkFileUri).toEqual(chunkFileUri);
       done();
     });
 
     it('should throw if update operation count is greater than the max paid update operation count.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = undefined;
+      const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
+      const coreProofFileUri = undefined;
       const coreIndexFileBuffer =
-        await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
+        await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileUri, coreProofFileUri, [createOperationData.createOperation], [], []);
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
       // Setting up a mock provisional index file that has 1 update in it to be downloaded.
-      const provisionalProofFileHash = OperationGenerator.generateRandomHash();
+      const provisionalProofFileUri = OperationGenerator.generateRandomHash();
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest();
-      const chunkFileHash = OperationGenerator.generateRandomHash();
+      const chunkFileUri = OperationGenerator.generateRandomHash();
       const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(
-        chunkFileHash, provisionalProofFileHash, [updateOperationRequestData.updateOperation]
+        chunkFileUri, provisionalProofFileUri, [updateOperationRequestData.updateOperation]
       );
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockProvisionalIndexFileBuffer));
 
@@ -455,18 +455,18 @@ describe('TransactionProcessor', () => {
 
     it('should throw if there is a duplicate DID between core and provisional index file.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = undefined;
+      const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
+      const coreProofFileUri = undefined;
       const coreIndexFileBuffer =
-      await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
+      await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileUri, coreProofFileUri, [createOperationData.createOperation], [], []);
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
       // Setting up a mock provisional index file that has 1 update in it to be downloaded.
-      const provisionalProofFileHash = OperationGenerator.generateRandomHash();
+      const provisionalProofFileUri = OperationGenerator.generateRandomHash();
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest(createOperationData.createOperation.didUniqueSuffix);
-      const chunkFileHash = OperationGenerator.generateRandomHash();
+      const chunkFileUri = OperationGenerator.generateRandomHash();
       const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(
-        chunkFileHash, provisionalProofFileHash, [updateOperationRequestData.updateOperation]
+        chunkFileUri, provisionalProofFileUri, [updateOperationRequestData.updateOperation]
       );
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockProvisionalIndexFileBuffer));
 
@@ -493,10 +493,10 @@ describe('TransactionProcessor', () => {
       const deactivateOperationData = await OperationGenerator.createDeactivateOperation('EiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', anyPrivateKey);
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = OperationGenerator.generateRandomHash();
+      const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
+      const coreProofFileUri = OperationGenerator.generateRandomHash();
       const coreIndexFileBuffer = await CoreIndexFile.createBuffer(
-        'writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperation], [recoverOperation], [deactivateOperation]
+        'writerLockId', provisionalIndexFileUri, coreProofFileUri, [createOperation], [recoverOperation], [deactivateOperation]
       );
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
@@ -521,10 +521,10 @@ describe('TransactionProcessor', () => {
       const deactivateOperationData = await OperationGenerator.createDeactivateOperation('EiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', anyPrivateKey);
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = OperationGenerator.generateRandomHash();
+      const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
+      const coreProofFileUri = OperationGenerator.generateRandomHash();
       const coreIndexFileBuffer = await CoreIndexFile.createBuffer(
-        'writerLockId', provisionalIndexFileHash, coreProofFileHash, [], [recoverOperation], [deactivateOperation]
+        'writerLockId', provisionalIndexFileUri, coreProofFileUri, [], [recoverOperation], [deactivateOperation]
       );
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
@@ -546,10 +546,10 @@ describe('TransactionProcessor', () => {
       );
       const updateOperation = updateOperationData.updateOperation;
 
-      const chunkFileHash = OperationGenerator.generateRandomHash();
-      const provisionalProofFileHash = OperationGenerator.generateRandomHash();
+      const chunkFileUri = OperationGenerator.generateRandomHash();
+      const provisionalProofFileUri = OperationGenerator.generateRandomHash();
 
-      const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileHash, provisionalProofFileHash, [updateOperation]);
+      const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileUri, provisionalProofFileUri, [updateOperation]);
       const provisionalIndexFile = await ProvisionalIndexFile.parse(provisionalIndexFileBuffer);
 
       const mockProvisionalProofFileBuffer = await ProvisionalProofFile.createBuffer([updateOperation]);
@@ -568,10 +568,10 @@ describe('TransactionProcessor', () => {
       );
       const updateOperation = updateOperationData.updateOperation;
 
-      const chunkFileHash = OperationGenerator.generateRandomHash();
-      const provisionalProofFileHash = OperationGenerator.generateRandomHash();
+      const chunkFileUri = OperationGenerator.generateRandomHash();
+      const provisionalProofFileUri = OperationGenerator.generateRandomHash();
 
-      const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileHash, provisionalProofFileHash, [updateOperation]);
+      const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileUri, provisionalProofFileUri, [updateOperation]);
       const provisionalIndexFile = await ProvisionalIndexFile.parse(provisionalIndexFileBuffer);
 
       const mockProvisionalProofFileBuffer = await ProvisionalProofFile.createBuffer([updateOperation, updateOperation]); // Intentionally having 2 proofs.
@@ -632,18 +632,18 @@ describe('TransactionProcessor', () => {
         recoveryPrivateKey
       });
       const recoverOperation = recoverOperationData.recoverOperation;
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = OperationGenerator.generateRandomHash();
+      const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
+      const coreProofFileUri = OperationGenerator.generateRandomHash();
       const coreIndexFileBuffer =
-        await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperation], [recoverOperation], []);
+        await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileUri, coreProofFileUri, [createOperation], [recoverOperation], []);
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
       // Create provisional index file model with 1 update operation.
-      const provisionalProofFileHash = OperationGenerator.generateRandomHash();
+      const provisionalProofFileUri = OperationGenerator.generateRandomHash();
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest();
       const updateOperation = updateOperationRequestData.updateOperation;
-      const chunkFileHash = OperationGenerator.generateRandomHash();
-      const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileHash, provisionalProofFileHash, [updateOperation]);
+      const chunkFileUri = OperationGenerator.generateRandomHash();
+      const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileUri, provisionalProofFileUri, [updateOperation]);
       const provisionalIndexFile = await ProvisionalIndexFile.parse(provisionalIndexFileBuffer);
 
       // Create core and provisional proof file.
@@ -684,9 +684,9 @@ describe('TransactionProcessor', () => {
       // Create core index file with 1 create operation.
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = undefined;
-      const coreIndexFileBuffer = await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperation], [], []);
+      const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
+      const coreProofFileUri = undefined;
+      const coreIndexFileBuffer = await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileUri, coreProofFileUri, [createOperation], [], []);
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
       const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, coreIndexFile, undefined, undefined, undefined, undefined);
@@ -715,9 +715,9 @@ describe('TransactionProcessor', () => {
       const [, anyPrivateKey] = await OperationGenerator.generateKeyPair('anyKeyId');
       const deactivateOperationData = await OperationGenerator.createDeactivateOperation(anyDidUniqueSuffix, anyPrivateKey);
       const deactivateOperation = deactivateOperationData.deactivateOperation;
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = OperationGenerator.generateRandomHash();
-      const coreIndexFileBuffer = await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [], [], [deactivateOperation]);
+      const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
+      const coreProofFileUri = OperationGenerator.generateRandomHash();
+      const coreIndexFileBuffer = await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileUri, coreProofFileUri, [], [], [deactivateOperation]);
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
       // Construct the core proof file to go with the deactivate operation.
@@ -750,17 +750,17 @@ describe('TransactionProcessor', () => {
         { didUniqueSuffix: OperationGenerator.generateRandomHash(), recoveryPrivateKey: anyPrivateKey }
       );
       const recoverOperation = recoverOperationData.recoverOperation;
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = OperationGenerator.generateRandomHash();
-      const coreIndexFileBuffer = await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [], [recoverOperation], []);
+      const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
+      const coreProofFileUri = OperationGenerator.generateRandomHash();
+      const coreIndexFileBuffer = await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileUri, coreProofFileUri, [], [recoverOperation], []);
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
       // Mock a provisional index file with an update.
-      const provisionalProofFileHash = OperationGenerator.generateRandomHash();
+      const provisionalProofFileUri = OperationGenerator.generateRandomHash();
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest();
       const updateOperation = updateOperationRequestData.updateOperation;
-      const chunkFileHash = OperationGenerator.generateRandomHash();
-      const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileHash, provisionalProofFileHash, [updateOperation]);
+      const chunkFileUri = OperationGenerator.generateRandomHash();
+      const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileUri, provisionalProofFileUri, [updateOperation]);
       const provisionalIndexFile = await ProvisionalIndexFile.parse(provisionalIndexFileBuffer);
 
       // Create core and provisional proof file.

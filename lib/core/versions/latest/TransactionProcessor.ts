@@ -268,10 +268,10 @@ export default class TransactionProcessor implements ITransactionProcessor {
       return undefined;
     }
 
-    const chunkFileHash = provisionalIndexFile.model.chunks[0].chunkFileUri;
-    console.info(`Downloading chunk file '${chunkFileHash}', max size limit ${ProtocolParameters.maxChunkFileSizeInBytes}...`);
+    const chunkFileUri = provisionalIndexFile.model.chunks[0].chunkFileUri;
+    console.info(`Downloading chunk file '${chunkFileUri}', max size limit ${ProtocolParameters.maxChunkFileSizeInBytes}...`);
 
-    const fileBuffer = await this.downloadFileFromCas(chunkFileHash, ProtocolParameters.maxChunkFileSizeInBytes);
+    const fileBuffer = await this.downloadFileFromCas(chunkFileUri, ProtocolParameters.maxChunkFileSizeInBytes);
     const chunkFileModel = await ChunkFile.parse(fileBuffer);
 
     const totalCountOfOperationsWithDelta =
@@ -506,32 +506,32 @@ export default class TransactionProcessor implements ITransactionProcessor {
     return anchoredOperationModels;
   }
 
-  private async downloadFileFromCas (fileHash: string, maxFileSizeInBytes: number): Promise<Buffer> {
-    console.info(`Downloading file '${fileHash}', max size limit ${maxFileSizeInBytes}...`);
+  private async downloadFileFromCas (fileUri: string, maxFileSizeInBytes: number): Promise<Buffer> {
+    console.info(`Downloading file '${fileUri}', max size limit ${maxFileSizeInBytes}...`);
 
-    const fileFetchResult = await this.downloadManager.download(fileHash, maxFileSizeInBytes);
+    const fileFetchResult = await this.downloadManager.download(fileUri, maxFileSizeInBytes);
 
     if (fileFetchResult.code === FetchResultCode.InvalidHash) {
-      throw new SidetreeError(ErrorCode.CasFileHashNotValid, `File hash '${fileHash}' is not a valid hash.`);
+      throw new SidetreeError(ErrorCode.CasFileUriNotValid, `File hash '${fileUri}' is not a valid hash.`);
     }
 
     if (fileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
-      throw new SidetreeError(ErrorCode.CasFileTooLarge, `File '${fileHash}' exceeded max size limit of ${maxFileSizeInBytes} bytes.`);
+      throw new SidetreeError(ErrorCode.CasFileTooLarge, `File '${fileUri}' exceeded max size limit of ${maxFileSizeInBytes} bytes.`);
     }
 
     if (fileFetchResult.code === FetchResultCode.NotAFile) {
-      throw new SidetreeError(ErrorCode.CasFileNotAFile, `File hash '${fileHash}' points to a content that is not a file.`);
+      throw new SidetreeError(ErrorCode.CasFileNotAFile, `File hash '${fileUri}' points to a content that is not a file.`);
     }
 
     if (fileFetchResult.code === FetchResultCode.CasNotReachable) {
-      throw new SidetreeError(ErrorCode.CasNotReachable, `CAS not reachable for file '${fileHash}'.`);
+      throw new SidetreeError(ErrorCode.CasNotReachable, `CAS not reachable for file '${fileUri}'.`);
     }
 
     if (fileFetchResult.code === FetchResultCode.NotFound) {
-      throw new SidetreeError(ErrorCode.CasFileNotFound, `File '${fileHash}' not found.`);
+      throw new SidetreeError(ErrorCode.CasFileNotFound, `File '${fileUri}' not found.`);
     }
 
-    console.info(`File '${fileHash}' of size ${fileFetchResult.content!.length} downloaded.`);
+    console.info(`File '${fileUri}' of size ${fileFetchResult.content!.length} downloaded.`);
 
     return fileFetchResult.content!;
   }

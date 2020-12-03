@@ -60,7 +60,7 @@ export default class ChunkFile {
 
   /**
    * Creates chunk file buffer.
-   * @returns Chunk file buffer. Returns `undefined` arrays passed in contains no operations.
+   * @returns Chunk file buffer. Returns `undefined` if arrays passed in contains no operations.
    */
   public static async createBuffer (createOperations: CreateOperation[], recoverOperations: RecoverOperation[], updateOperations: UpdateOperation[])
     : Promise<Buffer | undefined> {

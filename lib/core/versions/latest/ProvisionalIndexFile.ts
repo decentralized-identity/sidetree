@@ -125,7 +125,7 @@ export default class ProvisionalIndexFile {
    * Creates the Map File buffer.
    */
   public static async createBuffer (
-    chunkFileHash: string, provisionalProofFileHash: string | undefined, updateOperationArray: UpdateOperation[]
+    chunkFileUri: string, provisionalProofFileUri: string | undefined, updateOperationArray: UpdateOperation[]
   ): Promise<Buffer> {
     const updateReferences = updateOperationArray.map(operation => {
       const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.updateKey);
@@ -134,16 +134,16 @@ export default class ProvisionalIndexFile {
     });
 
     const provisionalIndexFileModel: ProvisionalIndexFileModel = {
-      chunks: [{ chunkFileUri: chunkFileHash }]
+      chunks: [{ chunkFileUri }]
     };
 
-    // Only insert `operations` and `provisionalProofFileHash` properties if there are update operations.
+    // Only insert `operations` and `provisionalProofFileUri` properties if there are update operations.
     if (updateReferences.length > 0) {
       provisionalIndexFileModel.operations = {
         update: updateReferences
       };
 
-      provisionalIndexFileModel.provisionalProofFileUri = provisionalProofFileHash;
+      provisionalIndexFileModel.provisionalProofFileUri = provisionalProofFileUri;
     }
 
     const rawData = JSON.stringify(provisionalIndexFileModel);
