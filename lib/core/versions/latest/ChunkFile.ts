@@ -54,7 +54,7 @@ export default class ChunkFile {
       }
 
       // Verify size of each delta does not exceed the maximum allowed limit.
-      Delta.validateDeltaSize(delta);
+      Delta.validateDelta(delta);
     }
   }
 

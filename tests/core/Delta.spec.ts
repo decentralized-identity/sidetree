@@ -30,13 +30,13 @@ describe('Delta', () => {
     });
   });
 
-  describe('validateDeltaSize', () => {
+  describe('validateDelta', () => {
     it('should throw sidetree error if delta size exceeds max limit', () => {
       const mockDelta = {
         someKey: generateLongString(2000)
       };
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => { Delta.validateDeltaSize(mockDelta); },
+        () => { Delta.validateDelta(mockDelta); },
         ErrorCode.DeltaExceedsMaximumSize
       );
     });
@@ -44,7 +44,7 @@ describe('Delta', () => {
     it('should throw sidetree error if delta is null', () => {
       const mockDelta = null;
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => { Delta.validateDeltaSize(mockDelta); },
+        () => { Delta.validateDelta(mockDelta); },
         ErrorCode.DeltaIsNullOrUndefined
       );
     });
@@ -52,7 +52,7 @@ describe('Delta', () => {
     it('should throw sidetree error if delta is undefined', () => {
       const mockDelta = undefined;
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => { Delta.validateDeltaSize(mockDelta); },
+        () => { Delta.validateDelta(mockDelta); },
         ErrorCode.DeltaIsNullOrUndefined
       );
     });
@@ -63,7 +63,7 @@ describe('Delta', () => {
       };
 
       try {
-        Delta.validateDeltaSize(mockDelta);
+        Delta.validateDelta(mockDelta);
       } catch (e) {
         fail(`Expected no error but got ${e}`);
       }

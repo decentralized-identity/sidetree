@@ -34,7 +34,7 @@ export default class Delta {
   /**
    * Validates size of the delta object
    */
-  public static validateDeltaSize (delta: any) {
+  public static validateDelta (delta: any) {
     // null and undefined cannot be turned into buffer
     Delta.validateDeltaIsDefined(delta);
     const size = Buffer.byteLength(JsonCanonicalizer.canonicalizeAsBuffer(delta));
