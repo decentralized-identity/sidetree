@@ -213,11 +213,11 @@ describe('TransactionProcessor', () => {
     it('should continue to compose the operations and return false if unexpected error is thrown when downloading provisional index file.', async () => {
       spyOn(FeeManager, 'verifyTransactionFeeAndThrowOnError');
       spyOn(transactionProcessor as any, 'downloadAndVerifyCoreIndexFile').and.returnValue('unused');
-      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile'); 
+      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile');
       spyOn(transactionProcessor as any, 'downloadAndVerifyProvisionalIndexFile').and.throwError('any unexpected error');
       const composeAnchoredOperationModelsSpy = spyOn(transactionProcessor as any, 'composeAnchoredOperationModels').and.returnValue([]);
       const operationStoreSpy = spyOn(operationStore, 'put');
-      
+
       const anyTransactionModel = OperationGenerator.generateTransactionModel();
       const transactionProcessedCompletely = await transactionProcessor.processTransaction(anyTransactionModel);
       expect(composeAnchoredOperationModelsSpy).toHaveBeenCalled();
@@ -228,11 +228,11 @@ describe('TransactionProcessor', () => {
     it('should continue to compose the operations and return false if network error is thrown when downloading provisional index file.', async () => {
       spyOn(FeeManager, 'verifyTransactionFeeAndThrowOnError');
       spyOn(transactionProcessor as any, 'downloadAndVerifyCoreIndexFile').and.returnValue('unused');
-      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile'); 
+      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile');
       spyOn(transactionProcessor as any, 'downloadAndVerifyProvisionalIndexFile').and.callFake(() => { throw new SidetreeError(ErrorCode.CasFileNotFound); });
       const composeAnchoredOperationModelsSpy = spyOn(transactionProcessor as any, 'composeAnchoredOperationModels').and.returnValue([]);
       const operationStoreSpy = spyOn(operationStore, 'put');
-      
+
       const anyTransactionModel = OperationGenerator.generateTransactionModel();
       const transactionProcessedCompletely = await transactionProcessor.processTransaction(anyTransactionModel);
       expect(composeAnchoredOperationModelsSpy).toHaveBeenCalled();
@@ -243,11 +243,11 @@ describe('TransactionProcessor', () => {
     it('should continue to compose the operations and return true if non-network Sidetree error is thrown when downloading provisional index file.', async () => {
       spyOn(FeeManager, 'verifyTransactionFeeAndThrowOnError');
       spyOn(transactionProcessor as any, 'downloadAndVerifyCoreIndexFile').and.returnValue('unused');
-      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile'); 
+      spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile');
       spyOn(transactionProcessor as any, 'downloadAndVerifyProvisionalIndexFile').and.callFake(() => { throw new SidetreeError(ErrorCode.ChunkFileDeltasNotArrayOfObjects); });
       const composeAnchoredOperationModelsSpy = spyOn(transactionProcessor as any, 'composeAnchoredOperationModels').and.returnValue([]);
       const operationStoreSpy = spyOn(operationStore, 'put');
-      
+
       const anyTransactionModel = OperationGenerator.generateTransactionModel();
       const transactionProcessedCompletely = await transactionProcessor.processTransaction(anyTransactionModel);
       expect(composeAnchoredOperationModelsSpy).toHaveBeenCalled();
@@ -598,7 +598,7 @@ describe('TransactionProcessor', () => {
       // Combination of count of operations with delta in core and provisional index files will be greater than 1.
       const coreIndexFile = await FileGenerator.generateCoreIndexFile();
       const provisionalIndexFile = await FileGenerator.generateProvisionalIndexFile();
-      
+
       const mockCreateOperationData = await OperationGenerator.generateCreateOperation();
       const mockChunkFileBuffer = await ChunkFile.createBuffer([mockCreateOperationData.createOperation], [], []); // This creates delta array length of 1.
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockChunkFileBuffer));

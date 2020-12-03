@@ -35,7 +35,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
   }
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
-    
+
     // Download the core (index and proof) files.
     let anchoredData: AnchoredData;
     let coreIndexFile: CoreIndexFile;
@@ -43,13 +43,13 @@ export default class TransactionProcessor implements ITransactionProcessor {
     try {
       // Decode the anchor string.
       anchoredData = AnchoredDataSerializer.deserialize(transaction.anchorString);
-      
+
       // Verify enough fee paid.
       FeeManager.verifyTransactionFeeAndThrowOnError(transaction.transactionFeePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee!);
-      
+
       // Download and verify core index file.
       coreIndexFile = await this.downloadAndVerifyCoreIndexFile(transaction, anchoredData.coreIndexFileUri, anchoredData.numberOfOperations);
-      
+
       // Download and verify core proof file.
       coreProofFile = await this.downloadAndVerifyCoreProofFile(coreIndexFile);
     } catch (error) {
@@ -84,7 +84,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     try {
       // Download and verify provisional index file.
       provisionalIndexFile = await this.downloadAndVerifyProvisionalIndexFile(coreIndexFile, anchoredData.numberOfOperations);
-      
+
       // Download and verify provisional proof file.
       provisionalProofFile = await this.downloadAndVerifyProvisionalProofFile(provisionalIndexFile);
 
@@ -244,7 +244,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       throw new SidetreeError(
         ErrorCode.ProvisionalIndexFileUpdateOperationCountGreaterThanMaxPaidCount,
         `Update operation count of ${updateOperationCount} in provisional index file is greater than max paid count of ${maxPaidUpdateOperationCount}.`
-      )
+      );
     }
 
     // If we find operations for the same DID between anchor and provisional index files,
@@ -253,7 +253,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       throw new SidetreeError(
         ErrorCode.ProvisionalIndexFileDidReferenceDuplicatedWithCoreIndexFile,
         `Provisional index file has at least one DID reference duplicated with core index file.`
-      )
+      );
     }
 
     return provisionalIndexFile;
@@ -274,8 +274,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
     const fileBuffer = await this.downloadFileFromCas(chunkFileHash, ProtocolParameters.maxChunkFileSizeInBytes);
     const chunkFileModel = await ChunkFile.parse(fileBuffer);
 
-    const totalCountOfOperationsWithDelta
-      = coreIndexFile.createDidSuffixes.length + coreIndexFile.recoverDidSuffixes.length + provisionalIndexFile.didUniqueSuffixes.length;
+    const totalCountOfOperationsWithDelta =
+      coreIndexFile.createDidSuffixes.length + coreIndexFile.recoverDidSuffixes.length + provisionalIndexFile.didUniqueSuffixes.length;
 
     if (chunkFileModel.deltas.length !== totalCountOfOperationsWithDelta) {
       throw new SidetreeError(

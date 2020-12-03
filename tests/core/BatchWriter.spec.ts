@@ -86,7 +86,8 @@ describe('BatchWriter', () => {
       const chunkFileUri = undefined;
       const provisionalProofFileUri = OperationGenerator.generateRandomHash();
       const updateOperations: any[] = [];
-      const provisionalIndexFileUri = await (batchWriter as any).createAndWriteProvisionalIndexFileIfNeeded(chunkFileUri, provisionalProofFileUri, updateOperations);
+      const provisionalIndexFileUri =
+        await (batchWriter as any).createAndWriteProvisionalIndexFileIfNeeded(chunkFileUri, provisionalProofFileUri, updateOperations);
       expect(provisionalIndexFileUri).toBeUndefined();
     });
   });

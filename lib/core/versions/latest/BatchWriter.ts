@@ -124,7 +124,7 @@ export default class BatchWriter implements IBatchWriter {
    * Create and write provisional index file if needed.
    * @returns CASE URI of the chunk file. `undefined` if there is no need to create and write the file.
    */
-  private async createAndWriteProvisionalIndexFileIfNeeded(
+  private async createAndWriteProvisionalIndexFileIfNeeded (
     chunkFileUri: string | undefined, provisionalProofFileHash: string | undefined, updateOperations: UpdateOperation[]
   ): Promise<string | undefined> {
     // If `chunkFileHash` is `undefined` it means there are only deactivates, and a batch with only deactivates does not reference a provisional index file.
