@@ -239,17 +239,21 @@ export default class TransactionProcessor implements ITransactionProcessor {
     const operationCountInCoreIndexFile = coreIndexFile.didUniqueSuffixes.length;
     const maxPaidUpdateOperationCount = paidOperationCount - operationCountInCoreIndexFile;
 
-    // If the actual update operation count is greater than the max paid update operation count,
-    // we will penalize the writer by not accepting any updates.
     const updateOperationCount = provisionalIndexFile.didUniqueSuffixes.length;
     if (updateOperationCount > maxPaidUpdateOperationCount) {
-      provisionalIndexFile.removeAllUpdateOperationReferences();
+      throw new SidetreeError(
+        ErrorCode.ProvisionalIndexFileUpdateOperationCountGreaterThanMaxPaidCount,
+        `Update operation count of ${updateOperationCount} in provisional index file is greater than max paid count of ${maxPaidUpdateOperationCount}.`
+      )
     }
 
     // If we find operations for the same DID between anchor and provisional index files,
     // we will penalize the writer by not accepting any updates.
     if (!ArrayMethods.areMutuallyExclusive(coreIndexFile.didUniqueSuffixes, provisionalIndexFile.didUniqueSuffixes)) {
-      provisionalIndexFile.removeAllUpdateOperationReferences();
+      throw new SidetreeError(
+        ErrorCode.ProvisionalIndexFileDidReferenceDuplicatedWithCoreIndexFile,
+        `Provisional index file has at least one DID reference duplicated with core index file.`
+      )
     }
 
     return provisionalIndexFile;

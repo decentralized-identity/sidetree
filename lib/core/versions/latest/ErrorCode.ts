@@ -2,7 +2,6 @@
  * Error codes used ONLY by this version of the protocol.
  */
 export default {
-  ChunkFileDeltaCountIncorrect: '',
   AnchoredDataIncorrectFormat: 'anchored_data_incorrect_format',
   AnchoredDataNumberOfOperationsGreaterThanMax: 'anchored_data_number_of_operations_greater_than_max',
   AnchoredDataNumberOfOperationsNotPositiveInteger: 'anchored_data_number_of_operations_not_positive_integer',
@@ -12,6 +11,7 @@ export default {
   CasFileNotFound: 'cas_file_not_found',
   CasFileTooLarge: 'cas_file_too_large',
   CasNotReachable: 'cas_not_reachable',
+  ChunkFileDeltaCountIncorrect: 'chunk_file_delta_count_incorrect',
   ChunkFileDeltasNotArrayOfObjects: 'chunk_file_deltas_not_array_of_objects',
   ChunkFileDeltasPropertyNotArray: 'chunk_file_deltas_property_not_array',
   ChunkFileUnexpectedProperty: 'chunk_file_unexpected_property',
@@ -133,10 +133,12 @@ export default {
   ProvisionalIndexFileChunksPropertyDoesNotHaveExactlyOneElement: 'provisional_index_file_chunks_property_does_not_have_exactly_one_element',
   ProvisionalIndexFileChunksPropertyMissingOrIncorrectType: 'provisional_index_file_chunks_property_missing_or_incorrect_type',
   ProvisionalIndexFileDecompressionFailure: 'provisional_index_file_decompression_failure',
+  ProvisionalIndexFileDidReferenceDuplicatedWithCoreIndexFile: 'provisional_index_file_did_reference_duplicated_with_core_index_file',
   ProvisionalIndexFileHasUnknownProperty: 'provisional_index_file_has_unknown_property',
   ProvisionalIndexFileMultipleOperationsForTheSameDid: 'provisional_index_file_multiple_operations_for_the_same_did',
   ProvisionalIndexFileNotJson: 'provisional_index_file_not_json',
   ProvisionalIndexFileProvisionalProofFileUriNotAllowed: 'provisional_index_file_provisional_proof_file_uri_not_allowed',
+  ProvisionalIndexFileUpdateOperationCountGreaterThanMaxPaidCount: 'provisional_index_file_update_operation_count_greater_than_max_paid_count',
   ProvisionalIndexFileUpdateOperationsNotArray: 'provisional_index_file_update_operations_not_array',
   ProvisionalProofFileDecompressionFailure: 'provisional_proof_file_decompression_failure',
   ProvisionalProofFileHasNoProofs: 'provisional_proof_file_has_no_proofs',

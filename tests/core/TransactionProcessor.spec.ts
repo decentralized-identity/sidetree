@@ -405,12 +405,12 @@ describe('TransactionProcessor', () => {
       done();
     });
 
-    it('should return strip all update operations if update operation count is greater than the max paid update operation count.', async (done) => {
+    it('should throw if update operation count is greater than the max paid update operation count.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
       const coreProofFileHash = undefined;
       const coreIndexFileBuffer =
-      await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
+        await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
       // Setting up a mock provisional index file that has 1 update in it to be downloaded.
@@ -424,10 +424,11 @@ describe('TransactionProcessor', () => {
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
       const totalPaidOperationCount = 1;
-      const fetchedProvisionalIndexFile = await transactionProcessor['downloadAndVerifyProvisionalIndexFile'](coreIndexFile, totalPaidOperationCount);
 
-      expect(fetchedProvisionalIndexFile?.didUniqueSuffixes.length).toEqual(0);
-      done();
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => transactionProcessor['downloadAndVerifyProvisionalIndexFile'](coreIndexFile, totalPaidOperationCount),
+        ErrorCode.ProvisionalIndexFileUpdateOperationCountGreaterThanMaxPaidCount
+      );
     });
 
     it('should return undefined if core index file does not contain the provisional index file URI.', async () => {
@@ -452,35 +453,7 @@ describe('TransactionProcessor', () => {
       expect(fetchedProvisionalIndexFile).toBeUndefined();
     });
 
-    it('should remove update operation references if paid fee is not enough to cover all updates.', async (done) => {
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = undefined;
-      const coreIndexFileBuffer =
-      await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileHash, coreProofFileHash, [createOperationData.createOperation], [], []);
-      const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
-
-      // Setting up a mock provisional index file that has 1 update in it to be downloaded.
-      const updateDidSuffix = OperationGenerator.generateRandomHash();
-      const provisionalProofFileHash = OperationGenerator.generateRandomHash();
-      const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest(updateDidSuffix);
-      const chunkFileHash = OperationGenerator.generateRandomHash();
-      const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(
-        chunkFileHash, provisionalProofFileHash, [updateOperationRequestData.updateOperation]
-      );
-      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockProvisionalIndexFileBuffer));
-
-      const totalPaidOperationCount = 1; // Simulating only 1 operation paid so the update operation referenced should be removed in provisional index file.
-      const fetchedProvisionalIndexFile = await transactionProcessor['downloadAndVerifyProvisionalIndexFile'](coreIndexFile, totalPaidOperationCount);
-
-      expect(fetchedProvisionalIndexFile).toBeDefined();
-      expect(fetchedProvisionalIndexFile!.didUniqueSuffixes.length).toEqual(0);
-      expect(fetchedProvisionalIndexFile!.model.operations).toBeUndefined();
-      expect(fetchedProvisionalIndexFile!.model.provisionalProofFileUri).toBeUndefined();
-      done();
-    });
-
-    it('should remove update operation references if there is a duplicate DID between anchor and provisional index file.', async (done) => {
+    it('should throw if there is a duplicate DID between core and provisional index file.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
       const coreProofFileHash = undefined;
@@ -498,13 +471,11 @@ describe('TransactionProcessor', () => {
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockProvisionalIndexFileBuffer));
 
       const totalPaidOperationCount = 10;
-      const fetchedProvisionalIndexFile = await transactionProcessor['downloadAndVerifyProvisionalIndexFile'](coreIndexFile, totalPaidOperationCount);
 
-      expect(fetchedProvisionalIndexFile).toBeDefined();
-      expect(fetchedProvisionalIndexFile!.didUniqueSuffixes.length).toEqual(0);
-      expect(fetchedProvisionalIndexFile!.model.operations).toBeUndefined();
-      expect(fetchedProvisionalIndexFile!.model.provisionalProofFileUri).toBeUndefined();
-      done();
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => transactionProcessor['downloadAndVerifyProvisionalIndexFile'](coreIndexFile, totalPaidOperationCount),
+        ErrorCode.ProvisionalIndexFileDidReferenceDuplicatedWithCoreIndexFile
+      );
     });
   });
 
