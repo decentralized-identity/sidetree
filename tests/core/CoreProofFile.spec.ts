@@ -6,27 +6,6 @@ import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import OperationGenerator from '../generators/OperationGenerator';
 
 describe('CoreProofFile', async () => {
-  xit('Relax logic when failed downloading of core proof files.', async () => {
-  });
-
-  xit('(Same as above) Should allow operations in Core index file to be constructed even if (map, provisional proof files are not downloadable).', async () => {
-  });
-
-  xit('Batch writer should not write a proof file that is over the size limit.', async () => {
-  });
-
-  xit('Should we check signature on observation time for all updates, recoveries, and deactivates?', async () => {
-  });
-
-  xit('there maybe no provisional index file to write in batch writer if all are deactivates', async () => {
-  });
-
-  xit('if writer lock exceeds max size, it should be considered as an invalid lock, maybe we should write a small batch still?', async () => {
-  });
-
-  xit('Should we check reveal value is a multihash instead of just a string type check?', async () => {
-  });
-
   describe('parse()', async () => {
     it('should parse a valid core proof file successfully.', async () => {
       const [, anyPrivateKey] = await Jwk.generateEs256kKeyPair(); // Used in multiple signed data for testing purposes.

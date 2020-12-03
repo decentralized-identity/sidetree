@@ -60,12 +60,18 @@ export default class ChunkFile {
 
   /**
    * Creates chunk file buffer.
+   * @returns Chunk file buffer. Returns `undefined` if arrays passed in contains no operations.
    */
-  public static async createBuffer (createOperations: CreateOperation[], recoverOperations: RecoverOperation[], updateOperations: UpdateOperation[]) {
+  public static async createBuffer (createOperations: CreateOperation[], recoverOperations: RecoverOperation[], updateOperations: UpdateOperation[])
+    : Promise<Buffer | undefined> {
     const deltas = [];
     deltas.push(...createOperations.map(operation => operation.delta!));
     deltas.push(...recoverOperations.map(operation => operation.delta!));
     deltas.push(...updateOperations.map(operation => operation.delta!));
+
+    if (deltas.length === 0) {
+      return undefined;
+    }
 
     const chunkFileModel = {
       deltas

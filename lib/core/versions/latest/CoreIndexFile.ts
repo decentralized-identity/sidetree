@@ -176,7 +176,7 @@ export default class CoreIndexFile {
   public static async createModel (
     writerLockId: string | undefined,
     provisionalIndexFileUri: string | undefined,
-    coreProofFileHash: string | undefined,
+    coreProofFileUri: string | undefined,
     createOperationArray: CreateOperation[],
     recoverOperationArray: RecoverOperation[],
     deactivateOperationArray: DeactivateOperation[]
@@ -236,8 +236,8 @@ export default class CoreIndexFile {
     }
 
     // Only insert `coreProofFileUri` property if a value is given.
-    if (coreProofFileHash !== undefined) {
-      coreIndexFileModel.coreProofFileUri = coreProofFileHash;
+    if (coreProofFileUri !== undefined) {
+      coreIndexFileModel.coreProofFileUri = coreProofFileUri;
     }
 
     return coreIndexFileModel;
@@ -249,13 +249,13 @@ export default class CoreIndexFile {
   public static async createBuffer (
     writerLockId: string | undefined,
     provisionalIndexFileUri: string | undefined,
-    coreProofFileHash: string | undefined,
+    coreProofFileUri: string | undefined,
     createOperations: CreateOperation[],
     recoverOperations: RecoverOperation[],
     deactivateOperations: DeactivateOperation[]
   ): Promise<Buffer> {
     const coreIndexFileModel = await CoreIndexFile.createModel(
-      writerLockId, provisionalIndexFileUri, coreProofFileHash, createOperations, recoverOperations, deactivateOperations
+      writerLockId, provisionalIndexFileUri, coreProofFileUri, createOperations, recoverOperations, deactivateOperations
     );
     const coreIndexFileJson = JSON.stringify(coreIndexFileModel);
     const coreIndexFileBuffer = Buffer.from(coreIndexFileJson);

@@ -160,8 +160,8 @@ describe('CoreIndexFile', async () => {
     it('should throw if provisional index file hash is not string.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
-      const coreProofFileHash = undefined;
-      const coreIndexFileModel = await CoreIndexFile.createModel('writerLock', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
+      const coreProofFileUri = undefined;
+      const coreIndexFileModel = await CoreIndexFile.createModel('writerLock', 'unusedMockFileUri', coreProofFileUri, [createOperation], [], []);
 
       (coreIndexFileModel as any).provisionalIndexFileUri = 1234; // Intentionally setting the provisionalIndexFileUri as an incorrect type.
 
@@ -178,12 +178,12 @@ describe('CoreIndexFile', async () => {
     it('should throw if provisional index file hash is exceeds max length.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
-      let coreProofFileHash = 'this will be too long';
+      let coreProofFileUri = 'this will be too long';
       for (let i = 1; i < 101; i++) {
-        coreProofFileHash += ' ';
+        coreProofFileUri += ' ';
       }
-      const coreIndexFileModel = await CoreIndexFile.createModel('writerLock', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
-      (coreIndexFileModel as any).provisionalIndexFileUri = coreProofFileHash; // Intentionally setting the provisionalIndexFileUri too long.
+      const coreIndexFileModel = await CoreIndexFile.createModel('writerLock', 'unusedMockFileHash', coreProofFileUri, [createOperation], [], []);
+      (coreIndexFileModel as any).provisionalIndexFileUri = coreProofFileUri; // Intentionally setting the provisionalIndexFileUri too long.
 
       const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFileModel));
       const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
@@ -198,8 +198,8 @@ describe('CoreIndexFile', async () => {
     it('should throw if writer lock id is not string.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
-      const coreProofFileHash = undefined;
-      const coreIndexFileModel = await CoreIndexFile.createModel('unusedWriterLockId', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
+      const coreProofFileUri = undefined;
+      const coreIndexFileModel = await CoreIndexFile.createModel('unusedWriterLockId', 'unusedMockFileUri', coreProofFileUri, [createOperation], [], []);
 
       (coreIndexFileModel as any).writerLockId = {}; // intentionally set to invalid value
 
@@ -212,9 +212,9 @@ describe('CoreIndexFile', async () => {
     it('should throw if writer lock ID exceeded max size.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
-      const coreProofFileHash = undefined;
+      const coreProofFileUri = undefined;
       const coreIndexFileModel =
-        await CoreIndexFile.createModel('unusedWriterLockId', 'unusedMockFileHash', coreProofFileHash, [createOperation], [], []);
+        await CoreIndexFile.createModel('unusedWriterLockId', 'unusedMockFileUri', coreProofFileUri, [createOperation], [], []);
 
       (coreIndexFileModel as any).writerLockId = crypto.randomBytes(2000).toString('hex'); // Intentionally larger than maximum.
 
@@ -296,8 +296,8 @@ describe('CoreIndexFile', async () => {
 
   describe('createModel()', async () => {
     it('should created an core index file model correctly.', async () => {
-      const provisionalIndexFileHash = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
-      const coreProofFileHash = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557aaaa';
+      const provisionalIndexFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
+      const coreProofFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557aaaa';
 
       // Create operation.
       const createOperationData = await OperationGenerator.generateCreateOperation();
@@ -314,10 +314,10 @@ describe('CoreIndexFile', async () => {
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
       const coreIndexFileModel = await CoreIndexFile.createModel(
-        undefined, provisionalIndexFileHash, coreProofFileHash, [createOperation], [recoverOperation], [deactivateOperation]
+        undefined, provisionalIndexFileUri, coreProofFileUri, [createOperation], [recoverOperation], [deactivateOperation]
       );
 
-      expect(coreIndexFileModel.provisionalIndexFileUri).toEqual(provisionalIndexFileHash);
+      expect(coreIndexFileModel.provisionalIndexFileUri).toEqual(provisionalIndexFileUri);
       expect(coreIndexFileModel.operations!.create![0].suffixData).toEqual({
         deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment, type: undefined
       });
@@ -337,9 +337,9 @@ describe('CoreIndexFile', async () => {
 
     it('should not create `operations` property if there is no create, recover, and deactivates.', async () => {
       const writerLockId = undefined;
-      const provisionalIndexFileHash = OperationGenerator.generateRandomHash();
-      const coreProofFileHash = undefined;
-      const coreIndexFileModel = await CoreIndexFile.createModel(writerLockId, provisionalIndexFileHash, coreProofFileHash, [], [], []);
+      const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
+      const coreProofFileUri = undefined;
+      const coreIndexFileModel = await CoreIndexFile.createModel(writerLockId, provisionalIndexFileUri, coreProofFileUri, [], [], []);
 
       expect(coreIndexFileModel.operations).toBeUndefined();
     });
@@ -347,16 +347,16 @@ describe('CoreIndexFile', async () => {
 
   describe('createBuffer()', async () => {
     it('should created a compressed buffer correctly.', async () => {
-      const provisionalIndexFileHash = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
-      const coreProofFileHash = undefined;
+      const provisionalIndexFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
+      const coreProofFileUri = undefined;
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
 
-      const coreIndexFileBuffer = await CoreIndexFile.createBuffer(undefined, provisionalIndexFileHash, coreProofFileHash, [createOperation], [], []);
+      const coreIndexFileBuffer = await CoreIndexFile.createBuffer(undefined, provisionalIndexFileUri, coreProofFileUri, [createOperation], [], []);
 
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
-      expect(coreIndexFile.model.provisionalIndexFileUri).toEqual(provisionalIndexFileHash);
+      expect(coreIndexFile.model.provisionalIndexFileUri).toEqual(provisionalIndexFileUri);
       expect(coreIndexFile.model.operations!.create![0].suffixData).toEqual({
         deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment
       });

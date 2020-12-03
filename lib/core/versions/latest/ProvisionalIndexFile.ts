@@ -20,8 +20,8 @@ export default class ProvisionalIndexFile {
    * to keep useful metadata so that repeated computation can be avoided.
    */
   private constructor (
-    public model: ProvisionalIndexFileModel,
-    public didUniqueSuffixes: string[]) { }
+    public readonly model: ProvisionalIndexFileModel,
+    public readonly didUniqueSuffixes: string[]) { }
 
   /**
    * Parses and validates the given provisional index file buffer.
@@ -69,15 +69,6 @@ export default class ProvisionalIndexFile {
 
     const provisionalIndexFile = new ProvisionalIndexFile(provisionalIndexFileModel, didSuffixes);
     return provisionalIndexFile;
-  }
-
-  /**
-   * Removes all the update operation references from this provisional index file.
-   */
-  public removeAllUpdateOperationReferences () {
-    delete this.model.operations;
-    delete this.model.provisionalProofFileUri;
-    this.didUniqueSuffixes = [];
   }
 
   /**
@@ -134,7 +125,7 @@ export default class ProvisionalIndexFile {
    * Creates the Map File buffer.
    */
   public static async createBuffer (
-    chunkFileHash: string, provisionalProofFileHash: string | undefined, updateOperationArray: UpdateOperation[]
+    chunkFileUri: string, provisionalProofFileUri: string | undefined, updateOperationArray: UpdateOperation[]
   ): Promise<Buffer> {
     const updateReferences = updateOperationArray.map(operation => {
       const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.updateKey);
@@ -143,16 +134,16 @@ export default class ProvisionalIndexFile {
     });
 
     const provisionalIndexFileModel: ProvisionalIndexFileModel = {
-      chunks: [{ chunkFileUri: chunkFileHash }]
+      chunks: [{ chunkFileUri }]
     };
 
-    // Only insert `operations` and `provisionalProofFileHash` properties if there are update operations.
+    // Only insert `operations` and `provisionalProofFileUri` properties if there are update operations.
     if (updateReferences.length > 0) {
       provisionalIndexFileModel.operations = {
         update: updateReferences
       };
 
-      provisionalIndexFileModel.provisionalProofFileUri = provisionalProofFileHash;
+      provisionalIndexFileModel.provisionalProofFileUri = provisionalProofFileUri;
     }
 
     const rawData = JSON.stringify(provisionalIndexFileModel);
