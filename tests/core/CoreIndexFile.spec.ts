@@ -12,8 +12,8 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('CoreIndexFile', async () => {
   describe('parse()', async () => {
     it('should parse an core index file model correctly.', async () => {
-      const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
-      const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
+      const provisionalIndexFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
+      const coreProofFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34baaaaaaaa';
 
       // Create operation.
       const createOperationData = await OperationGenerator.generateCreateOperation();
@@ -45,8 +45,8 @@ describe('CoreIndexFile', async () => {
     });
 
     it('should throw error if core proof file is specified but there is no recover and no deactivate operation.', async () => {
-      const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
-      const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'; // Should not be allowed with no recovers and deactivates.
+      const provisionalIndexFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
+      const coreProofFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34baaaaaaaa'; // Should not be allowed with no recovers and deactivates.
 
       // Create operation.
       const createOperationData = await OperationGenerator.generateCreateOperation();
@@ -72,7 +72,7 @@ describe('CoreIndexFile', async () => {
 
     it('should throw if the buffer is not compressed', async () => {
       const coreIndexFile = {
-        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i',
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
@@ -86,7 +86,7 @@ describe('CoreIndexFile', async () => {
       const coreIndexFile = {
         unknownProperty: 'Unknown property',
         writerLockId: 'writer lock',
-        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i',
         operations: {}
       };
       const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
@@ -98,7 +98,7 @@ describe('CoreIndexFile', async () => {
     it('should throw if `operations` property has an unknown property.', async () => {
       const coreIndexFile = {
         writerLockId: 'writer lock',
-        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i',
         operations: {
           unexpectedProperty: 'any value'
         }
@@ -114,7 +114,7 @@ describe('CoreIndexFile', async () => {
 
     it('should throw if expected `provisionalIndexFileUri` is missing.', async () => {
       const coreIndexFile = {
-        // provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what is missing.
+        // provisionalIndexFileUri: 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i', // Intentionally kept to show what is missing.
         operations: {
           deactivate: [{
             didSuffix: OperationGenerator.generateRandomHash(),
@@ -132,7 +132,7 @@ describe('CoreIndexFile', async () => {
     });
 
     it('should allow a valid core index file with out any operation references.', async () => {
-      const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+      const provisionalIndexFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
       const coreIndexFileModel = {
         provisionalIndexFileUri
         // operations: {}, // Intentionally missing operations.
@@ -148,7 +148,7 @@ describe('CoreIndexFile', async () => {
     it('should throw if any additional property.', async () => {
       const coreIndexFile = {
         invalidProperty: 'some property value',
-        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i',
         operations: {}
       };
       const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
@@ -175,20 +175,24 @@ describe('CoreIndexFile', async () => {
       );
     });
 
-    it('should throw if provisional index file hash is invalid.', async () => {
+    it('should throw if provisional index file hash is exceeds max length.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
-      const coreProofFileUri = undefined;
-      const coreIndexFileModel = await CoreIndexFile.createModel('writerLock', 'invalidProvisionalIndexFileUri', coreProofFileUri, [createOperation], [], []);
-
-      try {
-        const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFileModel));
-        const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
-
-        await CoreIndexFile.parse(coreIndexFileCompressed);
-      } catch (error) {
-        expect(error.code).toEqual(ErrorCode.InputValidatorCasFileUriUnsupported);
+      let coreProofFileUri = 'this will be too long';
+      for (let i = 1; i < 101; i++) {
+        coreProofFileUri += ' ';
       }
+      const coreIndexFileModel = await CoreIndexFile.createModel('writerLock', 'unusedMockFileHash', coreProofFileUri, [createOperation], [], []);
+      (coreIndexFileModel as any).provisionalIndexFileUri = coreProofFileUri; // Intentionally setting the provisionalIndexFileUri too long.
+
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFileModel));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => CoreIndexFile.parse(coreIndexFileCompressed),
+        ErrorCode.InputValidatorCasFileUriExceedsMaxLength,
+        'provisional index file'
+      );
     });
 
     it('should throw if writer lock id is not string.', async () => {
@@ -224,7 +228,7 @@ describe('CoreIndexFile', async () => {
 
     it('should throw if `create` property is not an array.', async () => {
       const coreIndexFile = {
-        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i',
         operations: {
           create: 'IncorrectType'
         }
@@ -238,7 +242,7 @@ describe('CoreIndexFile', async () => {
 
     it('should throw if `recover` property is not an array.', async () => {
       const coreIndexFile = {
-        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i',
         operations: {
           recover: 'IncorrectType'
         }
@@ -252,7 +256,7 @@ describe('CoreIndexFile', async () => {
 
     it('should throw if `deactivate` property is not an array.', async () => {
       const coreIndexFile = {
-        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i',
         operations: {
           deactivate: 'IncorrectType'
         }
@@ -273,7 +277,7 @@ describe('CoreIndexFile', async () => {
       delete createOperationRequest.delta;
 
       const coreIndexFile: CoreIndexFileModel = {
-        provisionalIndexFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        provisionalIndexFileUri: 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i',
         operations: {
           create: [createOperationRequest],
           deactivate: [{
@@ -292,8 +296,8 @@ describe('CoreIndexFile', async () => {
 
   describe('createModel()', async () => {
     it('should created an core index file model correctly.', async () => {
-      const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
-      const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
+      const provisionalIndexFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
+      const coreProofFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557aaaa';
 
       // Create operation.
       const createOperationData = await OperationGenerator.generateCreateOperation();
@@ -343,7 +347,7 @@ describe('CoreIndexFile', async () => {
 
   describe('createBuffer()', async () => {
     it('should created a compressed buffer correctly.', async () => {
-      const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+      const provisionalIndexFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
       const coreProofFileUri = undefined;
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;

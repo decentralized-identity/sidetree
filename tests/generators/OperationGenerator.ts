@@ -673,8 +673,8 @@ export default class OperationGenerator {
    * Generates an core index file.
    */
   public static async generateCoreIndexFile (recoveryOperationCount: number): Promise<Buffer> {
-    const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
-    const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
+    const provisionalIndexFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
+    const coreProofFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557aaaa';
 
     const recoverOperations = [];
 

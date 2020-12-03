@@ -25,7 +25,7 @@ describe('Ipfs', async () => {
 
       expect(fetchSpy).toHaveBeenCalled();
       expect(readAllSpy).toHaveBeenCalled();
-      expect(hash).toEqual('EiB0zm8TToaK5Z97V43iIwfJJzgx25SgMOhLwOerD3KgJA'); // hash here is based64 encoded string. `readAll()` returns base58 encoded string.
+      expect(hash).toEqual('QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko'); // hash here is based64 encoded string. `readAll()` returns base58 encoded string.
     });
 
     it('should throw if content writing IPFS HTTP API returned a non-OK status with or without body', async () => {
@@ -50,10 +50,21 @@ describe('Ipfs', async () => {
   });
 
   describe('read()', async () => {
-    it('should set fetch result as success when fetch is successful.', async () => {
+    it('should set fetch CIDv0 result as success when fetch is successful.', async () => {
       const fetchSpy = spyOn(casClient as any, 'fetch').and.returnValue(Promise.resolve({ status: 200, body: 'unused' }));
       const readAllSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from('abc')));
-      const fetchResult = await casClient.read('EiCGEBPkUOwS6vKY0NXkrhSFj1obfNhlWfFcIUFhczR02w', 1);
+      const fetchResult = await casClient.read('QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko', 1);
+
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readAllSpy).toHaveBeenCalled();
+      expect(fetchResult.code).toEqual(FetchResultCode.Success);
+      expect(fetchResult.content!.toString()).toEqual('abc');
+    });
+
+    it('should set fetch CIDv1 result as success when fetch is successful.', async () => {
+      const fetchSpy = spyOn(casClient as any, 'fetch').and.returnValue(Promise.resolve({ status: 200, body: 'unused' }));
+      const readAllSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from('abc')));
+      const fetchResult = await casClient.read('bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i', 1);
 
       expect(fetchSpy).toHaveBeenCalled();
       expect(readAllSpy).toHaveBeenCalled();
@@ -66,7 +77,7 @@ describe('Ipfs', async () => {
       const readAllSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(JSON.stringify({
         code: 'unused'
       }))));
-      const fetchResult = await casClient.read('EiCGEBPkUOwS6vKY0NXkrhSFj1obfNhlWfFcIUFhczR02w', 1);
+      const fetchResult = await casClient.read('QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko', 1);
 
       expect(fetchSpy).toHaveBeenCalled();
       expect(readAllSpy).toHaveBeenCalled();
@@ -76,7 +87,7 @@ describe('Ipfs', async () => {
     it('should set fetch result as not-found when `timeout()` throws an unexpected error.', async () => {
       const fetchContentSpy = spyOn(casClient as any, 'fetchContent');
       const timeoutSpy = spyOn(Timeout, 'timeout').and.throwError('any unexpected error');
-      const fetchResult = await casClient.read('EiCGEBPkUOwS6vKY0NXkrhSFj1obfNhlWfFcIUFhczR02w', 1);
+      const fetchResult = await casClient.read('QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko', 1);
 
       expect(fetchContentSpy).toHaveBeenCalled();
       expect(timeoutSpy).toHaveBeenCalled();
@@ -86,7 +97,7 @@ describe('Ipfs', async () => {
     it('should set fetch result as not-found when `timeout()` throws a timeout error.', async () => {
       const fetchContentSpy = spyOn(casClient as any, 'fetchContent');
       const timeoutSpy = spyOn(Timeout, 'timeout').and.callFake(() => { throw new SidetreeError(IpfsErrorCode.TimeoutPromiseTimedOut); });
-      const fetchResult = await casClient.read('EiCGEBPkUOwS6vKY0NXkrhSFj1obfNhlWfFcIUFhczR02X', 1);
+      const fetchResult = await casClient.read('QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko', 1);
 
       expect(fetchContentSpy).toHaveBeenCalled();
       expect(timeoutSpy).toHaveBeenCalled();
@@ -105,7 +116,7 @@ describe('Ipfs', async () => {
         (error as any).code = 'ECONNREFUSED';
         throw error;
       });
-      const fetchResult = await casClient.read('EiBIRxuYXzo1wChnyefwXx5TCSIBKjvHDi9eG20iDzp_Vw', 1);
+      const fetchResult = await casClient.read('QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko', 1);
 
       expect(fetchContentSpy).toHaveBeenCalled();
       expect(fetchResult.code).toEqual(FetchResultCode.CasNotReachable);
@@ -114,7 +125,7 @@ describe('Ipfs', async () => {
     it('should return as content not found if `fetch()` throws unexpected error.', async () => {
       // Simulate IPFS not reachable.
       const fetchContentSpy = spyOn(casClient as any, 'fetch').and.throwError('any unexpected error');
-      const fetchResult = await casClient.read('EiBIRxuYXzo1wChnyefwXx5TCSIBKjvHDi9eG20iDzp_Vw', 1);
+      const fetchResult = await casClient.read('QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko', 1);
 
       expect(fetchContentSpy).toHaveBeenCalled();
       expect(fetchResult.code).toEqual(FetchResultCode.NotFound);
@@ -126,7 +137,7 @@ describe('Ipfs', async () => {
 
       spyOn(ReadableStream, 'readAll').and.throwError('any unexpected error');
 
-      const fetchResult = await casClient.read('EiBIRxuYXzo1wChnyefwXx5TCSIBKjvHDi9eG20iDzp_Vw', 1);
+      const fetchResult = await casClient.read('QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko', 1);
       expect(fetchResult.code).toEqual(FetchResultCode.NotFound);
     });
 
@@ -137,7 +148,7 @@ describe('Ipfs', async () => {
       const readAllSpy = spyOn(ReadableStream, 'readAll')
         .and.returnValue(Promise.resolve(Buffer.from(JSON.stringify({ Message: 'this dag node is a directory' }))));
 
-      const fetchResult = await casClient.read('EiCGEBPkUOwS6vKY0NXkrhSFj1obfNhlWfFcIUFhczR02w', 1);
+      const fetchResult = await casClient.read('QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko', 1);
 
       expect(fetchSpy).toHaveBeenCalled();
       expect(readAllSpy).toHaveBeenCalled();
@@ -152,7 +163,7 @@ describe('Ipfs', async () => {
         throw new SidetreeError(SharedErrorCode.ReadableStreamMaxAllowedDataSizeExceeded);
       });
 
-      const fetchResult = await casClient.read('EiCGEBPkUOwS6vKY0NXkrhSFj1obfNhlWfFcIUFhczR02w', 1);
+      const fetchResult = await casClient.read('QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko', 1);
 
       expect(fetchSpy).toHaveBeenCalled();
       expect(readAllSpy).toHaveBeenCalled();
