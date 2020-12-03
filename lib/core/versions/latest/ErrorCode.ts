@@ -46,7 +46,7 @@ export default {
   DeactivateOperationTypeIncorrect: 'deactivate_operation_type_incorrect',
   DeltaExceedsMaximumSize: 'delta_exceeds_maximum_size',
   DeltaIsNotObject: 'delta_is_not_object',
-  DeltaIsNullOrUndefined : 'delta_is_null_or_undefined',
+  DeltaIsNullOrUndefined: 'delta_is_null_or_undefined',
   DeltaMissingOrNotString: 'delta_missing_or_not_string',
   DeltaMissingOrUnknownProperty: 'delta_missing_or_unknown_property',
   DidIncorrectPrefix: 'did_incorrect_prefix',
