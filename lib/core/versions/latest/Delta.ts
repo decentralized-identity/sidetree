@@ -25,7 +25,7 @@ export default class Delta {
   /**
    * Validates that delta is not null or undefined
    */
-  private static validateDeltaIsDefined (delta: object) {
+  private static validateDeltaIsDefined (delta: any) {
     if (delta === undefined || delta === null) {
       throw new SidetreeError(ErrorCode.DeltaIsNullOrUndefined, `Delta is ${delta}`);
     }

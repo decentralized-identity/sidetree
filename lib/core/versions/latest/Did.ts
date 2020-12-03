@@ -187,7 +187,7 @@ export default class Did {
       throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJson, 'Long form initial state should be encoded jcs.');
     }
 
-    Did.validateInitialState(initialStateEncodedJcs, initialStateObject);
+    Did.validateInitialStateJcs(initialStateEncodedJcs, initialStateObject);
     Delta.validateDeltaSize(initialStateObject.delta);
 
     const createOperationRequest = {
@@ -203,7 +203,7 @@ export default class Did {
   /**
    * Make sure initial state is JCS
    */
-  private static validateInitialState (initialStateEncodedJcs: string, initialStateObject: any): void {
+  private static validateInitialStateJcs (initialStateEncodedJcs: string, initialStateObject: any): void {
     const expectedInitialState = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(initialStateObject));
     if (expectedInitialState !== initialStateEncodedJcs) {
       throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJcs, 'Initial state object and JCS string mismatch.');
