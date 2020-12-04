@@ -552,7 +552,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](undefined); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerServiceNotArray if `services` is not an array', () => {
+    it('should throw DocumentComposerPatchServiceIdNotUnique if `services` is not an array', () => {
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServicesNotArray);
       const document = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],

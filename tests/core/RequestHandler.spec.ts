@@ -136,14 +136,6 @@ describe('RequestHandler', () => {
     await batchScheduler.writeOperationBatch();
   });
 
-  it('should resolve LEGACY long form did from test vectors correctly', async () => {
-    // TODO: SIP2 #781 delete this test when legacy format is deprecated
-    // NOTE: this test was not implemented correctly, and I am not implementing support
-    // for deprecated features in this PR.
-    const response = await requestHandler.handleResolveRequest(generatedFixture.create.longFormDid);
-    expect(response.status).toEqual(ResponseStatus.Succeeded);
-  });
-
   it('should resolve long form did from test vectors correctly', async () => {
     const response = await requestHandler.handleResolveRequest(generatedFixture.create.longFormDid);
     expect(response.status).toEqual(ResponseStatus.Succeeded);

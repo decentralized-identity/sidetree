@@ -6,7 +6,7 @@ import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('CreateOperation', async () => {
-  describe('parseJcsObject', () => {
+  describe('parseObject', () => {
     it('should leave delta as empty if it is not valid', () => {
       const operationObject = {
         type: 'create',
@@ -17,7 +17,7 @@ describe('CreateOperation', async () => {
         delta: 'this is not a valid delta'
       };
 
-      const result = CreateOperation.parseJcsObject(operationObject, Buffer.from('something'));
+      const result = CreateOperation.parseObject(operationObject, Buffer.from('something'));
       expect(result.delta).toBeUndefined();
     });
 
@@ -26,14 +26,14 @@ describe('CreateOperation', async () => {
       const fourProperties = { one: 1, two: 2, three: 3, four: 4 };
 
       try {
-        CreateOperation.parseJcsObject(twoProperties, Buffer.from(JSON.stringify(twoProperties)));
+        CreateOperation.parseObject(twoProperties, Buffer.from(JSON.stringify(twoProperties)));
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
       }
 
       try {
-        CreateOperation.parseJcsObject(fourProperties, Buffer.from(JSON.stringify(fourProperties)));
+        CreateOperation.parseObject(fourProperties, Buffer.from(JSON.stringify(fourProperties)));
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
@@ -51,7 +51,7 @@ describe('CreateOperation', async () => {
       };
 
       try {
-        CreateOperation.parseJcsObject(testObject, Buffer.from(JSON.stringify(testObject)));
+        CreateOperation.parseObject(testObject, Buffer.from(JSON.stringify(testObject)));
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationTypeIncorrect));

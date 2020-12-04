@@ -27,7 +27,7 @@ export default class Operation {
     const operationType = operationObject.type;
 
     if (operationType === OperationType.Create) {
-      return CreateOperation.parseJcsObject(operationObject, operationBuffer);
+      return CreateOperation.parseObject(operationObject, operationBuffer);
     } else if (operationType === OperationType.Update) {
       return UpdateOperation.parseObject(operationObject, operationBuffer);
     } else if (operationType === OperationType.Recover) {

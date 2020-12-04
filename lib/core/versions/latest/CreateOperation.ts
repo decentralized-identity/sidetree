@@ -52,7 +52,7 @@ export default class CreateOperation implements OperationModel {
   public static async parse (operationBuffer: Buffer): Promise<CreateOperation> {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
-    const createOperation = CreateOperation.parseJcsObject(operationObject, operationBuffer);
+    const createOperation = CreateOperation.parseObject(operationObject, operationBuffer);
     return createOperation;
   }
 
@@ -64,7 +64,7 @@ export default class CreateOperation implements OperationModel {
    * @param operationObject The operationObject is a json object with no encoding
    * @param operationBuffer The buffer format of the operationObject
    */
-  public static parseJcsObject (operationObject: any, operationBuffer: Buffer): CreateOperation {
+  public static parseObject (operationObject: any, operationBuffer: Buffer): CreateOperation {
     const expectedPropertyCount = 3;
 
     const properties = Object.keys(operationObject);
