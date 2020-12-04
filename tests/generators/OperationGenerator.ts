@@ -422,12 +422,14 @@ export default class OperationGenerator {
    * Creates an update operation request.
    */
   public static async createUpdateOperationRequest (
-    didUniqueSuffix: string,
+    didSuffix: string,
     updatePublicKey: JwkEs256k,
     updatePrivateKey: JwkEs256k,
     nextUpdateCommitmentHash: string,
     patches: any
   ) {
+    const revealValue = Multihash.canonicalizeThenHashThenEncode(updatePublicKey);
+
     const delta = {
       patches,
       updateCommitment: nextUpdateCommitmentHash
@@ -442,9 +444,10 @@ export default class OperationGenerator {
 
     const updateOperationRequest = {
       type: OperationType.Update,
-      didSuffix: didUniqueSuffix,
-      delta: delta,
-      signedData: signedData
+      didSuffix,
+      revealValue,
+      delta,
+      signedData
     };
 
     return updateOperationRequest;

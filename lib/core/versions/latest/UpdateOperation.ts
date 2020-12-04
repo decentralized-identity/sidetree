@@ -10,6 +10,7 @@ import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 import SignedDataModel from './models/UpdateSignedDataModel';
+import InputValidator from './InputValidator';
 
 /**
  * A class that represents an update operation.
@@ -68,16 +69,13 @@ export default class UpdateOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<UpdateOperation> {
-    const expectedPropertyCount = 4;
-
-    const properties = Object.keys(operationObject);
-    if (properties.length !== expectedPropertyCount) {
-      throw new SidetreeError(ErrorCode.UpdateOperationMissingOrUnknownProperty);
-    }
+    InputValidator.validateObjectContainsOnlyAllowedProperties(operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], 'update request');
 
     if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
+
+    InputValidator.validateRevealValue(operationObject.revealValue, 'update request');
 
     const signedData = Jws.parseCompactJws(operationObject.signedData);
     const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);

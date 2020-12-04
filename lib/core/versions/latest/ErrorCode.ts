@@ -161,7 +161,6 @@ export default {
   TransactionProcessorPaidOperationCountExceedsLimit: 'transaction_processor_paid_operation_count_exceeds_limit',
   TransactionsNotInSameBlock: 'transactions_not_in_same_block',
   UpdateOperationMissingDidUniqueSuffix: 'update_operation_missing_did_unique_suffix',
-  UpdateOperationMissingOrUnknownProperty: 'update_operation_missing_or_unknown_property',
   UpdateOperationSignedDataHasMissingOrUnknownProperty: 'update_operation_signed_data_has_missing_or_unknown_property',
   UpdateOperationTypeIncorrect: 'update_operation_type_incorrect',
   ValueTimeLockVerifierInvalidNumberOfOperations: 'value_time_lock_verifier_invalid_number_of_operations',

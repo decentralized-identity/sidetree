@@ -88,7 +88,7 @@ export default class ProvisionalIndexFile {
     }
 
     // Validate all update operation references.
-    InputValidator.validateOperationReferences(operations.update, 'update');
+    InputValidator.validateOperationReferences(operations.update, 'update reference');
 
     // Make sure no operation with same DID.
     const didSuffixes = (operations.update as OperationReferenceModel[]).map(operation => operation.didSuffix);

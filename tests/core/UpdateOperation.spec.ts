@@ -4,6 +4,7 @@ import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 
 describe('UpdateOperation', async () => {
   describe('parse()', async () => {
@@ -56,17 +57,18 @@ describe('UpdateOperation', async () => {
   });
 
   describe('parseObject()', async () => {
-    it('should throw if operation contains an additional unknown property.', async (done) => {
+    it('should throw if operation contains an additional unknown property.', async () => {
       const updateOperation = {
         didSuffix: 'unusedSuffix',
         signedData: 'unusedSignedData',
         extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
       };
 
-      const provisionalIndexFileMode = true;
-      await expectAsync((UpdateOperation as any).parseObject(updateOperation, Buffer.from('anyValue'), provisionalIndexFileMode))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationMissingOrUnknownProperty));
-      done();
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => UpdateOperation.parseObject(updateOperation, Buffer.from('anyValue')),
+        ErrorCode.InputValidatorInputContainsNowAllowedProperty,
+        'update request'
+      );
     });
   });
 

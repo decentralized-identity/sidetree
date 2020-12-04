@@ -115,7 +115,7 @@ export default class CoreIndexFile {
       }
 
       // Validate every recover reference.
-      InputValidator.validateOperationReferences(operations.recover, 'recover');
+      InputValidator.validateOperationReferences(operations.recover, 'recover reference');
       recoverDidSuffixes = (operations.recover as OperationReferenceModel[]).map(operation => operation.didSuffix);
       didUniqueSuffixes.push(...recoverDidSuffixes);
     }
@@ -128,7 +128,7 @@ export default class CoreIndexFile {
       }
 
       // Validate every deactivate reference.
-      InputValidator.validateOperationReferences(operations.deactivate, 'deactivate');
+      InputValidator.validateOperationReferences(operations.deactivate, 'deactivate reference');
       deactivateDidSuffixes = (operations.deactivate as OperationReferenceModel[]).map(operation => operation.didSuffix);
       didUniqueSuffixes.push(...deactivateDidSuffixes);
     }
@@ -214,6 +214,7 @@ export default class CoreIndexFile {
     }
 
     const recoverReferences = recoverOperationArray.map(operation => {
+      // TODO:
       const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.recoveryKey);
 
       return { didSuffix: operation.didUniqueSuffix, revealValue };
