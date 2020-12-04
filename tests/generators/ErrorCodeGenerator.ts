@@ -4,8 +4,8 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 
 // Auto-generates error code messages based on the enum value and overwrites the original error code file.
 
-const errorCodeFileName = 'ErrorCode.ts'
-const latestVersionPath = '../../../lib/core/versions/latest'
+const errorCodeFileName = 'ErrorCode.ts';
+const latestVersionPath = '../../../lib/core/versions/latest';
 const latestVersionDirectory = path.resolve(__dirname, latestVersionPath);
 const saveLocation = path.resolve(__dirname, `${latestVersionPath}/${errorCodeFileName}`);
 
@@ -25,14 +25,14 @@ function findErrorCodeInDicrectory (errorCode: string, path: string): boolean {
     } else if (!fileOrSubDirectory.includes('.')) {
       try {
         if (findErrorCodeInDicrectory(errorCode, `${path}/${fileOrSubDirectory}`)) {
-          return true
+          return true;
         }
-      } catch (e){
+      } catch (e) {
         // this means it is not a directory
       }
     }
   }
-  return false
+  return false;
 }
 
 function isTsFile (fileName: string): boolean {
@@ -40,7 +40,7 @@ function isTsFile (fileName: string): boolean {
 }
 
 function isErrorCodeFile (fileName: string): boolean {
-  return fileName === 'ErrorCode.ts'
+  return fileName === 'ErrorCode.ts';
 }
 
 (async () => {
@@ -71,7 +71,7 @@ export default {
         errorCodeFileContent += `  ${errorCodeNames[i]}: '${camelCaseErrorMessage}',\n`;
       }
     } else {
-      console.log(`${errorCodeNames[i]} is removed from ErrorCode because it is not used.`)
+      console.log(`${errorCodeNames[i]} is removed from ErrorCode because it is not used.`);
     };
   }
 
