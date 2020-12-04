@@ -161,8 +161,8 @@ export default class Ipfs implements ICas {
   }
 
   private async pinContent (hash: string) {
-    // e.g. 'http://127.0.0.1:5001/api/v0/pin?arg=QmPPsg8BeJdqK2TnRHx5L2BFyjmFr9FK6giyznNjdL93NL'
-    const pinUrl = new URL(`/api/v0/pin?arg=${hash}`, this.uri).toString();
+    // e.g. 'http://127.0.0.1:5001/api/v0/pin/add?arg=QmPPsg8BeJdqK2TnRHx5L2BFyjmFr9FK6giyznNjdL93NL'
+    const pinUrl = new URL(`/api/v0/pin/add?arg=${hash}`, this.uri).toString();
     await this.fetch(pinUrl, { method: 'POST' });
   }
 }
