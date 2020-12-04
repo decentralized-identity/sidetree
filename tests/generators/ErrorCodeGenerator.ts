@@ -12,7 +12,7 @@ const saveLocation = path.resolve(__dirname, `${latestVersionPath}/${errorCodeFi
 /**
  * Returns true if ErrorCode is used in ts files
  */
-function findErrorCodeInDicrectory (errorCode: string, path: string): boolean {
+function isErrorCodeReferencedInDicrectory (errorCode: string, path: string): boolean {
   const directory = fs.readdirSync(path);
   for (const fileOrSubDirectory of directory) {
     if (isErrorCodeFile(fileOrSubDirectory)) {
