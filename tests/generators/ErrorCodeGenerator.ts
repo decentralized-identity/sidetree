@@ -24,7 +24,7 @@ function isErrorCodeReferencedInDicrectory (errorCode: string, path: string): bo
       }
     } else if (!fileOrSubDirectory.includes('.')) {
       try {
-        if (findErrorCodeInDicrectory(errorCode, `${path}/${fileOrSubDirectory}`)) {
+        if (isErrorCodeReferencedInDicrectory(errorCode, `${path}/${fileOrSubDirectory}`)) {
           return true;
         }
       } catch (e) {
@@ -63,7 +63,7 @@ export default {
 
   for (let i = 0; i < errorCodeNames.length; i++) {
     // only add to the error code file if usage is found in code
-    if (findErrorCodeInDicrectory(errorCodeNames[i], latestVersionDirectory)) {
+    if (isErrorCodeReferencedInDicrectory(errorCodeNames[i], latestVersionDirectory)) {
       const camelCaseErrorMessage = errorCodeNames[i].replace(/\.?([A-Z])/g, function (_x, y) { return '_' + y.toLowerCase(); }).replace(/^_/, '');
       if (i === errorCodeNames.length - 1) {
         errorCodeFileContent += `  ${errorCodeNames[i]}: '${camelCaseErrorMessage}'\n`;
