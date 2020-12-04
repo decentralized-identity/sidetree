@@ -85,7 +85,8 @@ export default class Did {
       // because a given long-form DID may have been created long ago,
       // thus this version of `CreateOperation.parse()` maybe using a different hashing algorithm than that of the unique DID suffix (short-form).
       // So we compute the suffix data hash again using the hashing algorithm used by the given unique DID suffix (short-form).
-      const suffixDataHashMatchesUniqueSuffix = Multihash.isValidHash(createOperation.encodedSuffixData, did.uniqueSuffix);
+      const suffixDataJcsBuffer = JsonCanonicalizer.canonicalizeAsBuffer(createOperation.suffixData);
+      const suffixDataHashMatchesUniqueSuffix = Multihash.verifyEncodedMultihashForContent(suffixDataJcsBuffer, did.uniqueSuffix);
 
       // If the computed suffix data hash is not the same as the unique suffix given in the DID string, the DID is not valid.
       if (!suffixDataHashMatchesUniqueSuffix) {

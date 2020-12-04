@@ -1,10 +1,8 @@
 import DeltaModel from './models/DeltaModel';
 import Did from './Did';
-import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
-import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
@@ -32,7 +30,6 @@ export default class CreateOperation implements OperationModel {
   public readonly delta: DeltaModel | undefined;
 
   /** Encoded string of the suffix data. */
-  public readonly encodedSuffixData: string;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
@@ -40,13 +37,11 @@ export default class CreateOperation implements OperationModel {
   private constructor (
     operationBuffer: Buffer,
     didUniqueSuffix: string,
-    encodedSuffixData: string,
     suffixData: SuffixDataModel,
     delta: DeltaModel | undefined) {
     this.didUniqueSuffix = didUniqueSuffix;
     this.type = OperationType.Create;
     this.operationBuffer = operationBuffer;
-    this.encodedSuffixData = encodedSuffixData;
     this.suffixData = suffixData;
     this.delta = delta;
   }
@@ -97,7 +92,6 @@ export default class CreateOperation implements OperationModel {
 
     const didUniqueSuffix = Did.computeUniqueSuffix(suffixData);
 
-    const encodedSuffixData = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(suffixData));
-    return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, suffixData, delta);
+    return new CreateOperation(operationBuffer, didUniqueSuffix, suffixData, delta);
   }
 }
