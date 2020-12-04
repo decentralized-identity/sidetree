@@ -6,14 +6,11 @@ import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
-import { URL } from 'url';
 
 /**
  * Class containing reusable Sidetree DID related operations.
  */
 export default class Did {
-
-  private static readonly initialStateParameterSuffix = 'initial-state';
 
   /** `true` if DID is short form; `false` if DID is long-form. */
   public isShortForm: boolean;
@@ -45,9 +42,8 @@ export default class Did {
 
     const didWithoutPrefix = did.split(didPrefix)[1];
 
-    // split by : and ?, if there is 1 element, then it's short form. Long form has 2 elements
-    // TODO: SIP 2 #781 when the ? format is deprecated, `:` will be the only separator.
-    const didSplitLength = didWithoutPrefix.split(/:|\?/).length;
+    // split by : and if there is 1 element, then it's short form. Long form has 2 elements
+    const didSplitLength = didWithoutPrefix.split(':').length;
     if (didSplitLength === 1) {
       this.isShortForm = true;
     } else {
@@ -57,17 +53,10 @@ export default class Did {
     if (this.isShortForm) {
       this.uniqueSuffix = did.substring(didPrefix.length);
     } else {
-      // Long-form can be in the form of:
-      // 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
+      // Long-form DID looks like:
       // 'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
 
-      const indexOfQuestionMarkChar = did.indexOf('?');
-      if (indexOfQuestionMarkChar > 0) {
-        this.uniqueSuffix = did.substring(didPrefix.length, indexOfQuestionMarkChar);
-      } else {
-        this.uniqueSuffix = did.substring(didPrefix.length, did.lastIndexOf(':'));
-      }
-
+      this.uniqueSuffix = did.substring(didPrefix.length, did.lastIndexOf(':'));
       this.longForm = did;
     }
 
@@ -87,19 +76,10 @@ export default class Did {
 
     // If DID is long-form, ensure the unique suffix constructed from the suffix data matches the short-form DID and populate the `createOperation` property.
     if (!did.isShortForm) {
-      // Long-form can be in the form of:
-      // 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
-      // 'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
-
-      const indexOfQuestionMarkChar = didString.indexOf('?');
       let createOperation;
-      if (indexOfQuestionMarkChar > 0) {
-        const initialState = Did.getInitialStateFromDidStringWithQueryParameter(didString, didMethodName);
-        createOperation = await Did.constructCreateOperationFromInitialState(initialState);
-      } else {
-        const initialStateEncodedJcs = Did.getInitialStateFromDidStringWithExtraColon(didString);
-        createOperation = Did.constructCreateOperationFromEncodedJcs(initialStateEncodedJcs);
-      }
+
+      const initialStateEncodedJcs = Did.getInitialStateFromDidStringWithExtraColon(didString);
+      createOperation = Did.constructCreateOperationFromEncodedJcs(initialStateEncodedJcs);
 
       // NOTE: we cannot use the unique suffix directly from `createOperation.didUniqueSuffix` for comparison,
       // because a given long-form DID may have been created long ago,
@@ -126,45 +106,6 @@ export default class Did {
     const multihash = Multihash.hash(suffixDataBuffer);
     const encodedMultihash = Encoder.encode(multihash);
     return encodedMultihash;
-  }
-
-  private static getInitialStateFromDidStringWithQueryParameter (didString: string, methodNameWithNetworkId: string): string {
-    let didStringUrl;
-    try {
-      didStringUrl = new URL(didString);
-    } catch {
-      throw new SidetreeError(ErrorCode.DidInvalidDidString);
-    }
-
-    // TODO: #470 - Support/disambiguate "network ID" in method name.
-
-    // Stripping away the potential network ID portion. e.g. 'sidetree:test' -> 'sidetree'
-    const methodName = methodNameWithNetworkId.split(':')[0];
-
-    let queryParamCounter = 0;
-    let initialStateValue;
-
-    // Verify that `-<method-name>-initial-state` is the one and only parameter.
-    for (const [key, value] of didStringUrl.searchParams) {
-      queryParamCounter += 1;
-      if (queryParamCounter > 1) {
-        throw new SidetreeError(ErrorCode.DidLongFormOnlyOneQueryParamAllowed);
-      }
-
-      // expect key to be -<method-name>-initial-state
-      const expectedKey = `-${methodName}-${Did.initialStateParameterSuffix}`;
-      if (key !== expectedKey) {
-        throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
-      }
-
-      initialStateValue = value;
-    }
-
-    if (initialStateValue === undefined) {
-      throw new SidetreeError(ErrorCode.DidLongFormNoInitialStateFound);
-    }
-
-    return initialStateValue;
   }
 
   private static getInitialStateFromDidStringWithExtraColon (didString: string): string {
@@ -208,40 +149,5 @@ export default class Did {
     if (expectedInitialState !== initialStateEncodedJcs) {
       throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJcs, 'Initial state object and JCS string mismatch.');
     }
-  }
-
-  private static async constructCreateOperationFromInitialState (initialState: string): Promise<CreateOperation> {
-    // TODO: SIP 2 #781 deprecates this. Should be deleted when fully switched over
-    // Initial state should be in the format: <suffix-data>.<delta>
-    const firstIndexOfDot = initialState.indexOf('.');
-    if (firstIndexOfDot === -1) {
-      throw new SidetreeError(ErrorCode.DidInitialStateValueContainsNoDot);
-    }
-
-    const lastIndexOfDot = initialState.lastIndexOf('.');
-    if (lastIndexOfDot !== firstIndexOfDot) {
-      throw new SidetreeError(ErrorCode.DidInitialStateValueContainsMoreThanOneDot);
-    }
-
-    if (firstIndexOfDot === (initialState.length - 1) ||
-        firstIndexOfDot === 0) {
-      throw new SidetreeError(ErrorCode.DidInitialStateValueDoesNotContainTwoParts);
-    }
-
-    const initialStateParts = initialState.split('.');
-    const suffixData = initialStateParts[0];
-    const delta = initialStateParts[1];
-
-    Delta.validateEncodedDeltaSize(delta);
-
-    const createOperationRequest = {
-      type: OperationType.Create,
-      suffixData: suffixData,
-      delta
-    };
-    const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
-    const createOperation = await CreateOperation.parseObject(createOperationRequest, createOperationBuffer, false);
-
-    return createOperation;
   }
 }

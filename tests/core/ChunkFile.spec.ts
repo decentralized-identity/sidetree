@@ -16,7 +16,7 @@ describe('ChunkFile', async () => {
 
       const chunkFileModel = {
         deltas: [
-          createOperation.encodedDelta
+          createOperation.delta
         ],
         unexpectedProperty: 'any value'
       };

@@ -9,20 +9,6 @@ import SidetreeError from '../../../common/SidetreeError';
 export default class Delta {
 
   /**
-   * Validates size of the encoded delta string.
-   * TODO: SIP 2 #781 delete this when long form is fully switched over
-   * @throws `SidetreeError` if fails validation.
-   */
-  public static validateEncodedDeltaSize (encodedDelta: string) {
-    const deltaBuffer = Buffer.from(encodedDelta);
-    if (deltaBuffer.length > ProtocolParameters.maxDeltaSizeInBytes) {
-      const errorMessage = `${deltaBuffer.length} bytes of 'delta' exceeded limit of ${ProtocolParameters.maxDeltaSizeInBytes} bytes.`;
-      console.info(errorMessage);
-      throw new SidetreeError(ErrorCode.DeltaExceedsMaximumSize, errorMessage);
-    }
-  }
-
-  /**
    * Validates that delta is not null or undefined
    */
   private static validateDeltaIsDefined (delta: any) {

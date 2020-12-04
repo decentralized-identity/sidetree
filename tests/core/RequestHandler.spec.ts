@@ -266,26 +266,7 @@ describe('RequestHandler', () => {
     validateDidReferencesInDidDocument(response.body.didDocument, did);
   });
 
-  it('should return a resolved DID Document given a valid long-form DID with query param initial state format.', async () => {
-    // Create a long-form DID string.
-    const createOperationData = await OperationGenerator.generateCreateOperation();
-    const didMethodName = 'sidetree';
-    const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
-    const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
-    const encodedDelta = createOperationData.createOperation.encodedDelta;
-    const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-    const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
-
-    const response = await requestHandler.handleResolveRequest(longFormDid);
-    const httpStatus = Response.toHttpStatus(response.status);
-
-    expect(httpStatus).toEqual(200);
-    expect(response.body).toBeDefined();
-
-    validateDidReferencesInDidDocument(response.body.didDocument, longFormDid);
-  });
-
-  it('should return a resolved DID Document given a valid long-form DID with JCS format.', async () => {
+  it('should return a resolved DID Document given a valid long-form DID.', async () => {
     // Create a long-form DID string.
     const longFormDid = (await OperationGenerator.generateLongFormDid()).longFormDid;
 

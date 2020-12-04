@@ -1,9 +1,6 @@
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
-import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
@@ -62,18 +59,6 @@ describe('CreateOperation', async () => {
     });
   });
 
-  describe('computeDidUniqueSuffix()', async () => {
-    it('should return expected did unique suffix', async (done) => {
-      const suffixDataString = 'AStringActingAsTheSuffixData';
-      const encodedSuffixDataString = Encoder.encode(suffixDataString);
-      const didUniqueSuffix = (CreateOperation as any).computeDidUniqueSuffix(encodedSuffixDataString);
-
-      const expectedDidUniqueSuffix = 'EiDv9forvDUZq4OQICV5EaU549i1kMxM9Fzczubtd1de2Q';
-      expect(didUniqueSuffix).toEqual(expectedDidUniqueSuffix);
-      done();
-    });
-  });
-
   describe('parse()', async () => {
     it('should throw if create operation request has more than 3 properties.', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
@@ -107,106 +92,6 @@ describe('CreateOperation', async () => {
 
       const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
       await expectAsync(CreateOperation.parse(createOperationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationTypeIncorrect));
-    });
-  });
-
-  describe('parseSuffixData()', async () => {
-    // TODO: SIP 2 #781 deprecates this. These tests can be switched over to validateSuffixData
-    it('should function as expected with type', async () => {
-      const suffixData = {
-        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        type: 'type'
-      };
-      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-      const result = (CreateOperation as any).parseSuffixData(encodedSuffixData);
-      expect(result).toBeDefined();
-    });
-
-    it('should function as expected without type', async () => {
-      const suffixData = {
-        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
-      };
-      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-      const result = (CreateOperation as any).parseSuffixData(encodedSuffixData);
-      expect(result).toBeDefined();
-    });
-
-    it('should throw if suffix data is not string', async () => {
-      await expectAsync((CreateOperation as any).parseSuffixData(123))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrNotString));
-    });
-
-    it('should throw if suffix data contains an additional unknown property.', async () => {
-      const suffixData = {
-        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        type: 'type',
-        extraProperty: 'An unknown extra property'
-      };
-      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-
-      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => (CreateOperation as any).parseSuffixData(encodedSuffixData),
-        ErrorCode.InputValidatorInputContainsNowAllowedProperty,
-        'suffix data'
-      );
-    });
-
-    it('should throw if suffix data is missing `deltaHash`', async () => {
-      const suffixData = {
-        // Intentionally missing `deltaHash`.
-        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
-      };
-      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-
-      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => (CreateOperation as any).parseSuffixData(encodedSuffixData),
-        ErrorCode.EncoderValidateBase64UrlStringInputNotString
-      );
-    });
-
-    it('should throw if suffix data type is not string', async () => {
-      const suffixData = {
-        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        type: 123
-      };
-      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-
-      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => (CreateOperation as any).parseSuffixData(encodedSuffixData),
-        ErrorCode.SuffixDataTypeIsNotString
-      );
-    });
-
-    it('should throw if suffix data type length is greater than 4', async () => {
-      const suffixData = {
-        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        type: 'this is too long!!!!!'
-      };
-      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-
-      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => (CreateOperation as any).parseSuffixData(encodedSuffixData),
-        ErrorCode.SuffixDataTypeLengthGreaterThanFour
-      );
-    });
-
-    it('should throw if suffix data type is not in base64url character set', async () => {
-      const suffixData = {
-        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        type: '/|='
-      };
-      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-
-      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => (CreateOperation as any).parseSuffixData(encodedSuffixData),
-        ErrorCode.SuffixDataTypeInvalidCharacter
-      );
     });
   });
 });
