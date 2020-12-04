@@ -74,6 +74,23 @@ describe('DeactivateOperation', async () => {
     });
   });
 
+  describe('parseObject()', async () => {
+    it('should throw if hash of `recoveryKey` does not match the revealValue.', async () => {
+      const didSuffix = OperationGenerator.generateRandomHash();
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const deactivateRequest = await OperationGenerator.createDeactivateOperationRequest(didSuffix, recoveryPrivateKey);
+
+      // Intentionally have a mismatching reveal value.
+      deactivateRequest.revealValue = OperationGenerator.generateRandomHash();
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => DeactivateOperation.parseObject(deactivateRequest, Buffer.from('unused')),
+        ErrorCode.CanonicalizedObjectHashMismatch,
+        'deactivate request'
+      );
+    });
+  });
+
   describe('parseSignedDataPayload()', async () => {
     it('should throw if signedData contains an additional unknown property.', async (done) => {
       const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';

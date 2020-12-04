@@ -7,7 +7,6 @@ import Did from './Did';
 import ErrorCode from './ErrorCode';
 import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
-import Multihash from './Multihash';
 import OperationReferenceModel from './models/OperationReferenceModel';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
@@ -214,9 +213,7 @@ export default class CoreIndexFile {
     }
 
     const recoverReferences = recoverOperationArray.map(operation => {
-      // TODO:
-      const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.recoveryKey);
-
+      const revealValue = operation.revealValue;
       return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 
@@ -226,8 +223,7 @@ export default class CoreIndexFile {
     }
 
     const deactivateReferences = deactivateOperationArray.map(operation => {
-      const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.recoveryKey);
-
+      const revealValue = operation.revealValue;
       return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 

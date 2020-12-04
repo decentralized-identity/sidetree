@@ -16,41 +16,20 @@ import SignedDataModel from './models/UpdateSignedDataModel';
  * A class that represents an update operation.
  */
 export default class UpdateOperation implements OperationModel {
-
-  /** The original request buffer sent by the requester. */
-  public readonly operationBuffer: Buffer;
-
-  /** The unique suffix of the DID. */
-  public readonly didUniqueSuffix: string;
-
   /** The type of operation. */
-  public readonly type: OperationType;
-
-  /** Signed data for the operation. */
-  public readonly signedDataJws: Jws;
-
-  /** Decoded signed data payload. */
-  public readonly signedData: SignedDataModel;
-
-  /** Patch data. */
-  public readonly delta: DeltaModel | undefined;
+  public readonly type: OperationType = OperationType.Update;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
    */
   private constructor (
-    operationBuffer: Buffer,
-    didUniqueSuffix: string,
-    signedDataJws: Jws,
-    signedData: SignedDataModel,
-    delta: DeltaModel | undefined) {
-    this.operationBuffer = operationBuffer;
-    this.type = OperationType.Update;
-    this.didUniqueSuffix = didUniqueSuffix;
-    this.signedDataJws = signedDataJws;
-    this.signedData = signedData;
-    this.delta = delta;
-  }
+    public readonly operationBuffer: Buffer,
+    public readonly didUniqueSuffix: string,
+    public readonly revealValue: string,
+    public readonly signedDataJws: Jws,
+    public readonly signedData: SignedDataModel,
+    public readonly delta: DeltaModel | undefined
+  ) { }
 
   /**
    * Parses the given buffer as a `UpdateOperation`.
@@ -69,24 +48,30 @@ export default class UpdateOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<UpdateOperation> {
-    InputValidator.validateObjectContainsOnlyAllowedProperties(operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], 'update request');
-
-    if (typeof operationObject.didSuffix !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
-    }
-
-    InputValidator.validateRevealValue(operationObject.revealValue, 'update request');
-
-    const signedData = Jws.parseCompactJws(operationObject.signedData);
-    const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
+    const errorLoggingContext = 'update request';
+    InputValidator.validateObjectContainsOnlyAllowedProperties(
+      operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], errorLoggingContext
+    );
 
     if (operationObject.type !== OperationType.Update) {
       throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
     }
 
+    if (typeof operationObject.didSuffix !== 'string') {
+      throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
+    }
+
+    InputValidator.validateRevealValue(operationObject.revealValue, errorLoggingContext);
+
+    const signedData = Jws.parseCompactJws(operationObject.signedData);
+    const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
+
+    // Validate that the canonicalized update key hash is the same as `revealValue`.
+    Multihash.validateCanonicalizeObjectHash(signedDataModel.updateKey, operationObject.revealValue, errorLoggingContext);
+
     Operation.validateDelta(operationObject.delta);
 
-    return new UpdateOperation(operationBuffer, operationObject.didSuffix, signedData, signedDataModel, operationObject.delta);
+    return new UpdateOperation(operationBuffer, operationObject.didSuffix, operationObject.revealValue, signedData, signedDataModel, operationObject.delta);
   }
 
   /**

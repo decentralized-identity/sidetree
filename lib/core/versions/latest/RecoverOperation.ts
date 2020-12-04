@@ -16,42 +16,20 @@ import SignedDataModel from './models/RecoverSignedDataModel';
  * A class that represents a recover operation.
  */
 export default class RecoverOperation implements OperationModel {
-
-  /** The original request buffer sent by the requester. */
-  public readonly operationBuffer: Buffer;
-
-  /** The unique suffix of the DID. */
-  public readonly didUniqueSuffix: string;
-
   /** The type of operation. */
-  public readonly type: OperationType;
-
-  /** Signed data. */
-  public readonly signedDataJws: Jws;
-
-  /** Decoded signed data payload. */
-  public readonly signedData: SignedDataModel;
-
-  /** Patch data. */
-  public readonly delta: DeltaModel | undefined;
+  public readonly type: OperationType = OperationType.Recover;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
    */
   private constructor (
-    operationBuffer: Buffer,
-    didUniqueSuffix: string,
-    signedDataJws: Jws,
-    signedData: SignedDataModel,
-    delta: DeltaModel | undefined
-  ) {
-    this.operationBuffer = operationBuffer;
-    this.type = OperationType.Recover;
-    this.didUniqueSuffix = didUniqueSuffix;
-    this.signedDataJws = signedDataJws;
-    this.signedData = signedData;
-    this.delta = delta;
-  }
+    public readonly operationBuffer: Buffer,
+    public readonly didUniqueSuffix: string,
+    public readonly revealValue: string,
+    public readonly signedDataJws: Jws,
+    public readonly signedData: SignedDataModel,
+    public readonly delta: DeltaModel | undefined
+  ) { }
 
   /**
    * Parses the given buffer as a `RecoverOperation`.
@@ -70,20 +48,26 @@ export default class RecoverOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<RecoverOperation> {
-    InputValidator.validateObjectContainsOnlyAllowedProperties(operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], 'recover request');
+    const errorLoggingContext = 'recover request';
+    InputValidator.validateObjectContainsOnlyAllowedProperties(
+      operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], errorLoggingContext
+    );
+
+    if (operationObject.type !== OperationType.Recover) {
+      throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);
+    }
 
     if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    InputValidator.validateRevealValue(operationObject.revealValue, 'recover request');
+    InputValidator.validateRevealValue(operationObject.revealValue, errorLoggingContext);
 
     const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
-    const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
+    const signedDataModel = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
-    if (operationObject.type !== OperationType.Recover) {
-      throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);
-    }
+    // Validate that the canonicalized recovery public key hash is the same as `revealValue`.
+    Multihash.validateCanonicalizeObjectHash(signedDataModel.recoveryKey, operationObject.revealValue, errorLoggingContext);
 
     let delta;
     try {
@@ -98,8 +82,9 @@ export default class RecoverOperation implements OperationModel {
     return new RecoverOperation(
       operationBuffer,
       operationObject.didSuffix,
+      operationObject.revealValue,
       signedDataJws,
-      signedData,
+      signedDataModel,
       delta
     );
   }

@@ -72,6 +72,20 @@ describe('UpdateOperation', async () => {
         'update request'
       );
     });
+
+    it('should throw if hash of `updateKey` does not match the revealValue.', async () => {
+      const updateRequestData = await OperationGenerator.generateUpdateOperationRequest();
+      const updateRequest = updateRequestData.request;
+
+      // Intentionally have a mismatching reveal value.
+      updateRequest.revealValue = OperationGenerator.generateRandomHash();
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => UpdateOperation.parseObject(updateRequest, Buffer.from('unused')),
+        ErrorCode.CanonicalizedObjectHashMismatch,
+        'update request'
+      );
+    });
   });
 
   describe('parseSignedDataPayload()', async () => {

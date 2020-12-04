@@ -128,8 +128,7 @@ export default class ProvisionalIndexFile {
     chunkFileUri: string, provisionalProofFileUri: string | undefined, updateOperationArray: UpdateOperation[]
   ): Promise<Buffer> {
     const updateReferences = updateOperationArray.map(operation => {
-      const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.updateKey);
-
+      const revealValue = operation.revealValue;
       return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 

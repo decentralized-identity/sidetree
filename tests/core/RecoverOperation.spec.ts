@@ -85,6 +85,22 @@ describe('RecoverOperation', async () => {
         'recover request'
       );
     });
+
+    it('should throw if hash of `recoveryKey` does not match the revealValue.', async () => {
+      const didUniqueSuffix = OperationGenerator.generateRandomHash();
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const recoverOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryPrivateKey });
+      const recoverRequest = JSON.parse(recoverOperationData.operationBuffer.toString());
+
+      // Intentionally have a mismatching reveal value.
+      recoverRequest.revealValue = OperationGenerator.generateRandomHash();
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => RecoverOperation.parseObject(recoverRequest, Buffer.from('unused')),
+        ErrorCode.CanonicalizedObjectHashMismatch,
+        'recover request'
+      );
+    });
   });
 
   describe('parseSignedDataPayload()', async () => {
