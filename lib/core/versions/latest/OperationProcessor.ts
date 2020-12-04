@@ -9,10 +9,10 @@ import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
-import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
+import Encoder from './Encoder';
 
 /**
  * Implementation of IOperationProcessor.
@@ -68,30 +68,8 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await Operation.parse(anchoredOperationModel.operationBuffer);
 
-    let canonicalizedKeyBuffer;
-    switch (operation.type) {
-      case OperationType.Recover: {
-        const recoverOperation = (operation as RecoverOperation);
-        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(recoverOperation.signedData.recoveryKey);
-        break;
-      }
-      case OperationType.Update: {
-        const updateOperation = (operation as UpdateOperation);
-        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(updateOperation.signedData.updateKey);
-        break;
-      }
-      default: {
-        // This is a deactivate.
-        const deactivateOperation = (operation as DeactivateOperation);
-        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(deactivateOperation.signedData.recoveryKey);
-        break;
-      }
-    }
-
-    // TODO: Issue #766 - Remove temporary assumption on reveal value being calculated using the same hash algorithm
-    // as the algorithm used by the protocol version when the operation is anchored.
-    const revealValueHashAlgorithm = ProtocolParameters.hashAlgorithmInMultihashCode;
-    const multihashRevealValueBuffer = Multihash.hash(canonicalizedKeyBuffer, revealValueHashAlgorithm);
+    const multihashRevealValue = (operation as RecoverOperation | UpdateOperation | DeactivateOperation).revealValue;
+    const multihashRevealValueBuffer = Encoder.decodeAsBuffer(multihashRevealValue);
     return multihashRevealValueBuffer;
   }
 

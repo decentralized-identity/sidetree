@@ -608,7 +608,16 @@ describe('OperationProcessor', async () => {
         );
         const recoverOperation = await RecoverOperation.parse(Buffer.from(JSON.stringify(recoverOperationRequest)));
         const anchoredRecoverOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
-        verifyEncodedMultihashForContentSpy.and.returnValue(false);
+
+        verifyEncodedMultihashForContentSpy.and.callFake((_content, expectedHash) => {
+          if (expectedHash === recoverOperation.signedData.deltaHash) {
+            // Intentionally failing recovery delta operation hash check.
+            return false;
+          } else {
+            return true;
+          }
+        });
+
         const newDidState = await operationProcessor.apply(anchoredRecoverOperationModel, didState);
         expect(newDidState!.lastOperationTransactionNumber).toEqual(2);
         expect(newDidState!.document).toEqual({ });
