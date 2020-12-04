@@ -11,25 +11,6 @@ function generateLongString (length: number): string {
 }
 
 describe('Delta', () => {
-  describe('validateEncodedDeltaSize', () => {
-    it('should throw sidetree if encoded size exceeds max limit', () => {
-      const mockEncodedDelta = generateLongString(2000);
-      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => { Delta.validateEncodedDeltaSize(mockEncodedDelta); },
-        ErrorCode.DeltaExceedsMaximumSize
-      );
-    });
-
-    it('should not throw if encoded size does not exceed max limit', () => {
-      const mockEncodedDelta = generateLongString(1);
-      try {
-        Delta.validateEncodedDeltaSize(mockEncodedDelta);
-      } catch (e) {
-        fail(`Expected no error but got ${e}`);
-      }
-    });
-  });
-
   describe('validateDelta', () => {
     it('should throw sidetree error if delta size exceeds max limit', () => {
       const mockDelta = {

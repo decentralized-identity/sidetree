@@ -80,9 +80,9 @@ export default class DeactivateOperation implements OperationModel {
    * Parses the signed data payload of a deactivate operation.
    */
   public static async parseSignedDataPayload (
-    deltaEncodedString: string, expectedDidUniqueSuffix: string): Promise<SignedDataModel> {
+    signedDataEncodedString: string, expectedDidUniqueSuffix: string): Promise<SignedDataModel> {
 
-    const signedDataJsonString = Encoder.decodeAsString(deltaEncodedString);
+    const signedDataJsonString = Encoder.decodeAsString(signedDataEncodedString);
     const signedData = await JsonAsync.parse(signedDataJsonString);
 
     const properties = Object.keys(signedData);

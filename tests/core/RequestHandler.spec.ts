@@ -136,14 +136,6 @@ describe('RequestHandler', () => {
     await batchScheduler.writeOperationBatch();
   });
 
-  it('should resolve LEGACY long form did from test vectors correctly', async () => {
-    // TODO: SIP2 #781 delete this test when legacy format is deprecated
-    // NOTE: this test was not implemented correctly, and I am not implementing support
-    // for deprecated features in this PR.
-    const response = await requestHandler.handleResolveRequest(generatedFixture.create.longFormDid);
-    expect(response.status).toEqual(ResponseStatus.Succeeded);
-  });
-
   it('should resolve long form did from test vectors correctly', async () => {
     const response = await requestHandler.handleResolveRequest(generatedFixture.create.longFormDid);
     expect(response.status).toEqual(ResponseStatus.Succeeded);
@@ -266,26 +258,7 @@ describe('RequestHandler', () => {
     validateDidReferencesInDidDocument(response.body.didDocument, did);
   });
 
-  it('should return a resolved DID Document given a valid long-form DID with query param initial state format.', async () => {
-    // Create a long-form DID string.
-    const createOperationData = await OperationGenerator.generateCreateOperation();
-    const didMethodName = 'sidetree';
-    const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
-    const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
-    const encodedDelta = createOperationData.createOperation.encodedDelta;
-    const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-    const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
-
-    const response = await requestHandler.handleResolveRequest(longFormDid);
-    const httpStatus = Response.toHttpStatus(response.status);
-
-    expect(httpStatus).toEqual(200);
-    expect(response.body).toBeDefined();
-
-    validateDidReferencesInDidDocument(response.body.didDocument, longFormDid);
-  });
-
-  it('should return a resolved DID Document given a valid long-form DID with JCS format.', async () => {
+  it('should return a resolved DID Document given a valid long-form DID.', async () => {
     // Create a long-form DID string.
     const longFormDid = (await OperationGenerator.generateLongFormDid()).longFormDid;
 
