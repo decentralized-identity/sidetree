@@ -212,12 +212,12 @@ export default class Resolver {
       const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
       const multihashRevealValueBuffer = await operationProcessor.getMultihashRevealValue(operation);
       const multihashRevealValue = Multihash.decode(multihashRevealValueBuffer);
-      const multihashOfRevealValue = Multihash.hashThenEncode(multihashRevealValue.hash, multihashRevealValue.algorithm);
+      const commitValue = Multihash.hashThenEncode(multihashRevealValue.hash, multihashRevealValue.algorithm);
 
-      if (commitValueToOperationMap.has(multihashOfRevealValue)) {
-        commitValueToOperationMap.get(multihashOfRevealValue)!.push(operation);
+      if (commitValueToOperationMap.has(commitValue)) {
+        commitValueToOperationMap.get(commitValue)!.push(operation);
       } else {
-        commitValueToOperationMap.set(multihashOfRevealValue, [operation]);
+        commitValueToOperationMap.set(commitValue, [operation]);
       }
     }
 

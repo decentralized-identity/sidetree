@@ -152,6 +152,22 @@ export default class Multihash {
   }
 
   /**
+   * Canonicalizes the given content object, then validates the multihash of the canonicalized UTF8 object buffer against the expected multihash.
+   * @param inputContextForErrorLogging This string is used for error logging purposes only. e.g. 'document', or 'suffix data'.
+   */
+  public static validateCanonicalizeObjectHash (content: object, expectedEncodedMultihash: string, inputContextForErrorLogging: string) {
+    const contentBuffer = JsonCanonicalizer.canonicalizeAsBuffer(content);
+    const validHash = Multihash.verifyEncodedMultihashForContent(contentBuffer, expectedEncodedMultihash);
+
+    if (!validHash) {
+      throw new SidetreeError(
+        ErrorCode.CanonicalizedObjectHashMismatch,
+        `Canonicalized ${inputContextForErrorLogging} object hash does not match expected hash '${expectedEncodedMultihash}'.`
+      );
+    }
+  }
+
+  /**
    * Canonicalizes the given content object, then verifies the multihash as a "double hash"
    * (ie. the given multihash is the hash of a hash) against the canonicalized string as a UTF8 buffer.
    */

@@ -118,7 +118,7 @@ describe('ProvisionalIndexFile', async () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => (ProvisionalIndexFile as any).validateOperationsProperty(operationsProperty),
         ErrorCode.OperationReferenceDidSuffixIsNotAString,
-        'update'
+        'update reference'
       );
     });
 
@@ -133,7 +133,7 @@ describe('ProvisionalIndexFile', async () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => (ProvisionalIndexFile as any).validateOperationsProperty(operationsProperty),
         ErrorCode.OperationReferenceRevealValueIsNotAString,
-        'update'
+        'update reference'
       );
     });
   });

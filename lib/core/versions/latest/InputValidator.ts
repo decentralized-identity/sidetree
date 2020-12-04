@@ -64,23 +64,17 @@ export default class InputValidator {
    */
   public static validateOperationReferences (operationReferences: any[], inputContextForErrorLogging: string) {
     for (const operationReference of operationReferences) {
-      InputValidator.validateObjectContainsOnlyAllowedProperties(operationReference, ['didSuffix', 'revealValue'], `${inputContextForErrorLogging} operation reference`);
+      InputValidator.validateObjectContainsOnlyAllowedProperties(operationReference, ['didSuffix', 'revealValue'], inputContextForErrorLogging);
 
       const didSuffixType = typeof operationReference.didSuffix;
       if (didSuffixType !== 'string') {
         throw new SidetreeError(
           ErrorCode.OperationReferenceDidSuffixIsNotAString,
-          `Property 'didSuffix' in ${inputContextForErrorLogging} operation reference is of type ${didSuffixType}, but needs to be a string.`
+          `Property 'didSuffix' in ${inputContextForErrorLogging} is of type ${didSuffixType}, but needs to be a string.`
         );
       }
 
-      const revealValueType = typeof operationReference.revealValue;
-      if (revealValueType !== 'string') {
-        throw new SidetreeError(
-          ErrorCode.OperationReferenceRevealValueIsNotAString,
-          `Property 'revealValue' in ${inputContextForErrorLogging} operation reference is of type ${revealValueType}, but needs to be a string.`
-        );
-      }
+      InputValidator.validateRevealValue(operationReference.revealValue, inputContextForErrorLogging);
     }
   }
 
@@ -97,6 +91,20 @@ export default class InputValidator {
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitment);
 
     InputValidator.validateDidType(suffixData.type);
+  }
+
+  /**
+   * Validates the given reveal value.
+   * @param inputContextForErrorLogging This string is used for error logging purposes only. e.g. 'document', or 'suffix data'.
+   */
+  public static validateRevealValue (revealValue: any, inputContextForErrorLogging: string) {
+    const revealValueType = typeof revealValue;
+    if (revealValueType !== 'string') {
+      throw new SidetreeError(
+        ErrorCode.OperationReferenceRevealValueIsNotAString,
+        `Property 'revealValue' in ${inputContextForErrorLogging} is of type ${revealValueType}, but needs to be a string.`
+      );
+    }
   }
 
   private static validateDidType (type: string | undefined): void {
