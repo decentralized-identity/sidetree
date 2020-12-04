@@ -23,8 +23,8 @@
         "publicKeyJwk": {
           "kty": "EC",
           "crv": "secp256k1",
-          "x": "uSKj9sHL1Z_bWjPEGBdtFMk-LJX1YPYIOlZOnldVPOo",
-          "y": "88_9gBiPiM_qH5NpAJ5T40kwhdi1RkixH5Rn3pV8pB8"
+          "x": "JUWp0pAMGevNLhqq_Qmd48izuLYfO5XWpjSmy5btkjc",
+          "y": "QYaSu1NHYnxR4qfk-RkXb4NQnQf1X3XQCpDYuibvlNc"
         }
       }
     ],
@@ -46,7 +46,7 @@
   },
   "methodMetadata": {
     "published": true,
-    "recoveryCommitment": "EiCzY6xQ-urqovNsZPT7ipTuLq79A2dt1Esc-tIIDyypxg",
-    "updateCommitment": "EiAjFLljgnw8ZpeFNS_VKy7D7IQyK6MoiBeE1zRjeov_cA"
+    "recoveryCommitment": "EiCsA7SGLNeda5InloqnokUcJFz6vKT4HS5dcKrmnlJhpA",
+    "updateCommitment": "EiD6_csybTfxELBoMgkE9O2BTCmhScG_RW_qaZQkIkJ_aQ"
   }
 }

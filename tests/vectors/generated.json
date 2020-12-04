@@ -50,8 +50,8 @@
       "didUniqueSuffix": "EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
       "signedDataJws": {
         "protected": "eyJhbGciOiJFUzI1NksifQ",
-        "payload": "eyJ1cGRhdGVLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4Ijoid2Z3UUNKM09ScVZkbkhYa1Q4UC1MZ19HdHhCRWhYM3R5OU5VbnduSHJtdyIsInkiOiJ1aWU4cUxfVnVBblJEZHVwaFp1eExPNnFUOWtQcDNLUkdFSVJsVHBXcmZVIn0sImRlbHRhSGFzaCI6IkVpQ1c1WTBYQTg0SVA2WWhzaHpaVlRXc2VWVGdfV0o2SXdqUFk4enFiWjhxU0EifQ",
-        "signature": "W--DMCXzl7-xxLx8_nhJ4AJp-J5CadHxkVFOwjSlpQhZaQ06K0MRGi2swgbDLV8YRCNHtZUnzMZxGRLDmiEMMg"
+        "payload": "eyJ1cGRhdGVLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4Ijoid2Z3UUNKM09ScVZkbkhYa1Q4UC1MZ19HdHhCRWhYM3R5OU5VbnduSHJtdyIsInkiOiJ1aWU4cUxfVnVBblJEZHVwaFp1eExPNnFUOWtQcDNLUkdFSVJsVHBXcmZVIn0sImRlbHRhSGFzaCI6IkVpQ3BqTjQ3ZjBNcTZ4RE5VS240aFNlZ01FcW9EU19ycFEyOVd5MVY3M1ZEYncifQ",
+        "signature": "RwZK1DG5zcr4EsrRImzStb0VX5j2ZqApXZnuoAkA3IoRdErUscNG8RuxNZ0FjlJtjMJ0a-kn-_MdtR0wwvWVgg"
       },
       "signedData": {
         "updateKey": {
@@ -60,7 +60,7 @@
           "x": "wfwQCJ3ORqVdnHXkT8P-Lg_GtxBEhX3ty9NUnwnHrmw",
           "y": "uie8qL_VuAnRDduphZuxLO6qT9kPp3KRGEIRlTpWrfU"
         },
-        "deltaHash": "EiCW5Y0XA84IP6YhshzZVTWseVTg_WJ6IwjPY8zqbZ8qSA"
+        "deltaHash": "EiCpjN47f0Mq6xDNUKn4hSegMEqoDS_rpQ29Wy1V73VDbw"
       },
       "delta": {
         "patches": [
@@ -73,8 +73,8 @@
                 "publicKeyJwk": {
                   "kty": "EC",
                   "crv": "secp256k1",
-                  "x": "6RrDIYDuGXPP8q0qFBBzE75o_3UioVVzQHsukgBpxNc",
-                  "y": "i8ZDQ6gYc-czHuVBLTyA3cNxH63fpbitEarS7gGefvI"
+                  "x": "aN75CTjy3VCgGAJDNJHbcb55hO8CobEKzgCNrUeOwAY",
+                  "y": "K9FhCEpa_jG09pB6qriXrgSvKzXm6xtxBvZzIoXXWm4"
                 },
                 "purposes": [
                   "authentication",
@@ -87,7 +87,7 @@
             ]
           }
         ],
-        "updateCommitment": "EiBCuDMeytiQ3EfxHBP5olMicP4_PnbM30WfcPECXlvGYw"
+        "updateCommitment": "EiDOrcmPtfMHuwIWN6YoihdeIPxOKDHy3D6sdMXu_7CN0w"
       }
     },
     "additionalKeyId": "additional-key",
@@ -97,8 +97,8 @@
       "publicKeyJwk": {
         "kty": "EC",
         "crv": "secp256k1",
-        "x": "6RrDIYDuGXPP8q0qFBBzE75o_3UioVVzQHsukgBpxNc",
-        "y": "i8ZDQ6gYc-czHuVBLTyA3cNxH63fpbitEarS7gGefvI"
+        "x": "aN75CTjy3VCgGAJDNJHbcb55hO8CobEKzgCNrUeOwAY",
+        "y": "K9FhCEpa_jG09pB6qriXrgSvKzXm6xtxBvZzIoXXWm4"
       },
       "purposes": [
         "authentication",
@@ -109,17 +109,17 @@
       ]
     },
     "additionalPrivateKey": {
-      "d": "TAH9F83PTOMMIpnazwi9zuXguriELyURiAzlmOzcl9E",
+      "d": "SGPE-rvJizuVQd2_dnRTLdOfQfrIid9Rl-s685Mh4PU",
       "kty": "EC",
       "crv": "secp256k1",
-      "x": "6RrDIYDuGXPP8q0qFBBzE75o_3UioVVzQHsukgBpxNc",
-      "y": "i8ZDQ6gYc-czHuVBLTyA3cNxH63fpbitEarS7gGefvI"
+      "x": "aN75CTjy3VCgGAJDNJHbcb55hO8CobEKzgCNrUeOwAY",
+      "y": "K9FhCEpa_jG09pB6qriXrgSvKzXm6xtxBvZzIoXXWm4"
     },
     "nextUpdateKey": {
       "kty": "EC",
       "crv": "secp256k1",
-      "x": "6RrDIYDuGXPP8q0qFBBzE75o_3UioVVzQHsukgBpxNc",
-      "y": "i8ZDQ6gYc-czHuVBLTyA3cNxH63fpbitEarS7gGefvI"
+      "x": "aN75CTjy3VCgGAJDNJHbcb55hO8CobEKzgCNrUeOwAY",
+      "y": "K9FhCEpa_jG09pB6qriXrgSvKzXm6xtxBvZzIoXXWm4"
     },
     "operationRequest": {
       "type": "update",
@@ -136,8 +136,8 @@
                 "publicKeyJwk": {
                   "kty": "EC",
                   "crv": "secp256k1",
-                  "x": "6RrDIYDuGXPP8q0qFBBzE75o_3UioVVzQHsukgBpxNc",
-                  "y": "i8ZDQ6gYc-czHuVBLTyA3cNxH63fpbitEarS7gGefvI"
+                  "x": "aN75CTjy3VCgGAJDNJHbcb55hO8CobEKzgCNrUeOwAY",
+                  "y": "K9FhCEpa_jG09pB6qriXrgSvKzXm6xtxBvZzIoXXWm4"
                 },
                 "purposes": [
                   "authentication",
@@ -150,9 +150,9 @@
             ]
           }
         ],
-        "updateCommitment": "EiBCuDMeytiQ3EfxHBP5olMicP4_PnbM30WfcPECXlvGYw"
+        "updateCommitment": "EiDOrcmPtfMHuwIWN6YoihdeIPxOKDHy3D6sdMXu_7CN0w"
       },
-      "signedData": "eyJhbGciOiJFUzI1NksifQ.eyJ1cGRhdGVLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4Ijoid2Z3UUNKM09ScVZkbkhYa1Q4UC1MZ19HdHhCRWhYM3R5OU5VbnduSHJtdyIsInkiOiJ1aWU4cUxfVnVBblJEZHVwaFp1eExPNnFUOWtQcDNLUkdFSVJsVHBXcmZVIn0sImRlbHRhSGFzaCI6IkVpQ1c1WTBYQTg0SVA2WWhzaHpaVlRXc2VWVGdfV0o2SXdqUFk4enFiWjhxU0EifQ.W--DMCXzl7-xxLx8_nhJ4AJp-J5CadHxkVFOwjSlpQhZaQ06K0MRGi2swgbDLV8YRCNHtZUnzMZxGRLDmiEMMg"
+      "signedData": "eyJhbGciOiJFUzI1NksifQ.eyJ1cGRhdGVLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4Ijoid2Z3UUNKM09ScVZkbkhYa1Q4UC1MZ19HdHhCRWhYM3R5OU5VbnduSHJtdyIsInkiOiJ1aWU4cUxfVnVBblJEZHVwaFp1eExPNnFUOWtQcDNLUkdFSVJsVHBXcmZVIn0sImRlbHRhSGFzaCI6IkVpQ3BqTjQ3ZjBNcTZ4RE5VS240aFNlZ01FcW9EU19ycFEyOVd5MVY3M1ZEYncifQ.RwZK1DG5zcr4EsrRImzStb0VX5j2ZqApXZnuoAkA3IoRdErUscNG8RuxNZ0FjlJtjMJ0a-kn-_MdtR0wwvWVgg"
     }
   },
   "recover": {
@@ -161,18 +161,18 @@
       "didUniqueSuffix": "EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
       "signedDataJws": {
         "protected": "eyJhbGciOiJFUzI1NksifQ",
-        "payload": "eyJkZWx0YUhhc2giOiJFaUNGaDBIeWNtdEdDZFBiNEVsdklIR2Z0cU9wX3BZYW1tZG0tYnVrMlpOSXFRIiwicmVjb3ZlcnlLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4IjoibklxbFJDeDBleUJTWGNRbnFEcFJlU3Y0enVXaHdDUldzc29jOUxfbmo2QSIsInkiOiJpRzI5Vks2bDJVNXNLQlpVU0plUHZ5RnVzWGdTbEsyZERGbFdhQ004RjdrIn0sInJlY292ZXJ5Q29tbWl0bWVudCI6IkVpQ3pZNnhRLXVycW92TnNaUFQ3aXBUdUxxNzlBMmR0MUVzYy10SUlEeXlweGcifQ",
-        "signature": "YpCPvmN9txIEC6iIXXABZdQe7aH-sZ3vfIlDgQTsuFKqISxqRH1tp-8Dd3QsjgaTATWsWiOVLtbdSAXw21aOQg"
+        "payload": "eyJkZWx0YUhhc2giOiJFaUNTem1ZSk0yWGpaWE00a1Q0bGpKcEVGTjVmVkM1QVNWZ3hSekVtMEF2OWp3IiwicmVjb3ZlcnlLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4IjoibklxbFJDeDBleUJTWGNRbnFEcFJlU3Y0enVXaHdDUldzc29jOUxfbmo2QSIsInkiOiJpRzI5Vks2bDJVNXNLQlpVU0plUHZ5RnVzWGdTbEsyZERGbFdhQ004RjdrIn0sInJlY292ZXJ5Q29tbWl0bWVudCI6IkVpQ3NBN1NHTE5lZGE1SW5sb3Fub2tVY0pGejZ2S1Q0SFM1ZGNLcm1ubEpocEEifQ",
+        "signature": "lxWnrg5jaeCAhYuz1fPhidKw6Z2cScNlEc6SWcs15DtJbrHZFxl5IezGJ3cWdOSS2DlzDl4M1ZF8dDE9kRwFeQ"
       },
       "signedData": {
-        "deltaHash": "EiCFh0HycmtGCdPb4ElvIHGftqOp_pYammdm-buk2ZNIqQ",
+        "deltaHash": "EiCSzmYJM2XjZXM4kT4ljJpEFN5fVC5ASVgxRzEm0Av9jw",
         "recoveryKey": {
           "kty": "EC",
           "crv": "secp256k1",
           "x": "nIqlRCx0eyBSXcQnqDpReSv4zuWhwCRWssoc9L_nj6A",
           "y": "iG29VK6l2U5sKBZUSJePvyFusXgSlK2dDFlWaCM8F7k"
         },
-        "recoveryCommitment": "EiCzY6xQ-urqovNsZPT7ipTuLq79A2dt1Esc-tIIDyypxg"
+        "recoveryCommitment": "EiCsA7SGLNeda5InloqnokUcJFz6vKT4HS5dcKrmnlJhpA"
       },
       "delta": {
         "patches": [
@@ -186,8 +186,8 @@
                   "publicKeyJwk": {
                     "kty": "EC",
                     "crv": "secp256k1",
-                    "x": "uSKj9sHL1Z_bWjPEGBdtFMk-LJX1YPYIOlZOnldVPOo",
-                    "y": "88_9gBiPiM_qH5NpAJ5T40kwhdi1RkixH5Rn3pV8pB8"
+                    "x": "JUWp0pAMGevNLhqq_Qmd48izuLYfO5XWpjSmy5btkjc",
+                    "y": "QYaSu1NHYnxR4qfk-RkXb4NQnQf1X3XQCpDYuibvlNc"
                   },
                   "purposes": [
                     "authentication",
@@ -208,21 +208,21 @@
             }
           }
         ],
-        "updateCommitment": "EiAjFLljgnw8ZpeFNS_VKy7D7IQyK6MoiBeE1zRjeov_cA"
+        "updateCommitment": "EiD6_csybTfxELBoMgkE9O2BTCmhScG_RW_qaZQkIkJ_aQ"
       }
     },
     "recoveryPublicKey": {
       "kty": "EC",
       "crv": "secp256k1",
-      "x": "HS7wW8GC7nC0_D-QPA4y-XMbOUC3ko6dR8D1KwzFWX0",
-      "y": "63cDNAEy2qXW9Szsxv-6gpCaysrVyZ9EWGsMgmE40No"
+      "x": "JMnp_J9nAHadLjI6b_5U73UpHFjHFSTwmsVTPoEM5l0",
+      "y": "wsT1-stQboJWOxBrRuH4t0U_s_YRC-xYt2FADUCGGc8"
     },
     "recoveryPrivateKey": {
-      "d": "poYg9dTcie23GO4PPLEHz0dTllMVn7AJFt-c3lsGqxY",
+      "d": "-TkJnaI62sK52gGh3TPfn7CMQ-gS-R4rztEt7uMBJRI",
       "kty": "EC",
       "crv": "secp256k1",
-      "x": "HS7wW8GC7nC0_D-QPA4y-XMbOUC3ko6dR8D1KwzFWX0",
-      "y": "63cDNAEy2qXW9Szsxv-6gpCaysrVyZ9EWGsMgmE40No"
+      "x": "JMnp_J9nAHadLjI6b_5U73UpHFjHFSTwmsVTPoEM5l0",
+      "y": "wsT1-stQboJWOxBrRuH4t0U_s_YRC-xYt2FADUCGGc8"
     },
     "signingPublicKey": {
       "id": "newSigningKey",
@@ -230,8 +230,8 @@
       "publicKeyJwk": {
         "kty": "EC",
         "crv": "secp256k1",
-        "x": "-f3Z8O65-TN4AcEFzbhLJ7oGBFZPJgqDXre91-jBYxg",
-        "y": "RfGE3wrAGXk8qZ4XOjkzpWe9a4-fYL7jbKGOppO1HdE"
+        "x": "o6i1YC8pJgLeXAo65tbsDbOqlkugsEBdp0F20ztOMr8",
+        "y": "L0G_F5L6Gt603NFMFtFmWoG_gjVgxRw6ERJQxe8JNLs"
       },
       "purposes": [
         "authentication",
@@ -242,11 +242,11 @@
       ]
     },
     "signingPrivateKey": {
-      "d": "oZfzVgMbhoaBKffYyhzCTYfCDN-C32RM08MZnaoXDj0",
+      "d": "Den2vRSA74DDhNf0kSZWeMYt0oDbDfMJcp65lxRxvwI",
       "kty": "EC",
       "crv": "secp256k1",
-      "x": "-f3Z8O65-TN4AcEFzbhLJ7oGBFZPJgqDXre91-jBYxg",
-      "y": "RfGE3wrAGXk8qZ4XOjkzpWe9a4-fYL7jbKGOppO1HdE"
+      "x": "o6i1YC8pJgLeXAo65tbsDbOqlkugsEBdp0F20ztOMr8",
+      "y": "L0G_F5L6Gt603NFMFtFmWoG_gjVgxRw6ERJQxe8JNLs"
     },
     "updateKey": {
       "id": "updateKey",
@@ -254,8 +254,8 @@
       "publicKeyJwk": {
         "kty": "EC",
         "crv": "secp256k1",
-        "x": "_rXHTvHROwwUzEtLzHtoEYDOVqHw7m7EfMJOqSv26aI",
-        "y": "TCt8UFcGx8dQKpuUa9o0CPlBBFOXXL7oAKR81AwSJPg"
+        "x": "X5swBhP16QQptKHcAiFns2d0NbtTI0kAPAGCNsJPSKM",
+        "y": "4GBy9Gs_KEoUTrRXqEDYiQQ7DlyWEaLQ8Ao4NX2R_CM"
       },
       "purposes": [
         "authentication",
@@ -266,16 +266,17 @@
       ]
     },
     "updatePrivateKey": {
-      "d": "24z6gSTp9EoFT63rOaObchIebzOh5rsXXhY9eh73ZsQ",
+      "d": "O0h6mYKTP1PBy2CN7fI_7Ulsi9lgB6To5jEMdPbDMTA",
       "kty": "EC",
       "crv": "secp256k1",
-      "x": "_rXHTvHROwwUzEtLzHtoEYDOVqHw7m7EfMJOqSv26aI",
-      "y": "TCt8UFcGx8dQKpuUa9o0CPlBBFOXXL7oAKR81AwSJPg"
+      "x": "X5swBhP16QQptKHcAiFns2d0NbtTI0kAPAGCNsJPSKM",
+      "y": "4GBy9Gs_KEoUTrRXqEDYiQQ7DlyWEaLQ8Ao4NX2R_CM"
     },
     "operationRequest": {
       "type": "recover",
       "didSuffix": "EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
-      "signedData": "eyJhbGciOiJFUzI1NksifQ.eyJkZWx0YUhhc2giOiJFaUNGaDBIeWNtdEdDZFBiNEVsdklIR2Z0cU9wX3BZYW1tZG0tYnVrMlpOSXFRIiwicmVjb3ZlcnlLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4IjoibklxbFJDeDBleUJTWGNRbnFEcFJlU3Y0enVXaHdDUldzc29jOUxfbmo2QSIsInkiOiJpRzI5Vks2bDJVNXNLQlpVU0plUHZ5RnVzWGdTbEsyZERGbFdhQ004RjdrIn0sInJlY292ZXJ5Q29tbWl0bWVudCI6IkVpQ3pZNnhRLXVycW92TnNaUFQ3aXBUdUxxNzlBMmR0MUVzYy10SUlEeXlweGcifQ.YpCPvmN9txIEC6iIXXABZdQe7aH-sZ3vfIlDgQTsuFKqISxqRH1tp-8Dd3QsjgaTATWsWiOVLtbdSAXw21aOQg",
+      "revealValue": "EiAJ-97Is59is6FKAProwDo870nmwCeP8n5nRRFwPpUZVQ",
+      "signedData": "eyJhbGciOiJFUzI1NksifQ.eyJkZWx0YUhhc2giOiJFaUNTem1ZSk0yWGpaWE00a1Q0bGpKcEVGTjVmVkM1QVNWZ3hSekVtMEF2OWp3IiwicmVjb3ZlcnlLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4IjoibklxbFJDeDBleUJTWGNRbnFEcFJlU3Y0enVXaHdDUldzc29jOUxfbmo2QSIsInkiOiJpRzI5Vks2bDJVNXNLQlpVU0plUHZ5RnVzWGdTbEsyZERGbFdhQ004RjdrIn0sInJlY292ZXJ5Q29tbWl0bWVudCI6IkVpQ3NBN1NHTE5lZGE1SW5sb3Fub2tVY0pGejZ2S1Q0SFM1ZGNLcm1ubEpocEEifQ.lxWnrg5jaeCAhYuz1fPhidKw6Z2cScNlEc6SWcs15DtJbrHZFxl5IezGJ3cWdOSS2DlzDl4M1ZF8dDE9kRwFeQ",
       "delta": {
         "patches": [
           {
@@ -288,8 +289,8 @@
                   "publicKeyJwk": {
                     "kty": "EC",
                     "crv": "secp256k1",
-                    "x": "uSKj9sHL1Z_bWjPEGBdtFMk-LJX1YPYIOlZOnldVPOo",
-                    "y": "88_9gBiPiM_qH5NpAJ5T40kwhdi1RkixH5Rn3pV8pB8"
+                    "x": "JUWp0pAMGevNLhqq_Qmd48izuLYfO5XWpjSmy5btkjc",
+                    "y": "QYaSu1NHYnxR4qfk-RkXb4NQnQf1X3XQCpDYuibvlNc"
                   },
                   "purposes": [
                     "authentication",
@@ -310,7 +311,7 @@
             }
           }
         ],
-        "updateCommitment": "EiAjFLljgnw8ZpeFNS_VKy7D7IQyK6MoiBeE1zRjeov_cA"
+        "updateCommitment": "EiD6_csybTfxELBoMgkE9O2BTCmhScG_RW_qaZQkIkJ_aQ"
       }
     }
   },
@@ -318,23 +319,24 @@
     "operationRequest": {
       "type": "deactivate",
       "didSuffix": "EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
-      "signedData": "eyJhbGciOiJFUzI1NksifQ.eyJkaWRTdWZmaXgiOiJFaUR5T1FiYlpBYTNhaVJ6ZUNrVjdMT3gzU0VSampIOTNFWG9JTTNVb040b1dnIiwicmVjb3ZlcnlLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4IjoiSFM3d1c4R0M3bkMwX0QtUVBBNHktWE1iT1VDM2tvNmRSOEQxS3d6RldYMCIsInkiOiI2M2NETkFFeTJxWFc5U3pzeHYtNmdwQ2F5c3JWeVo5RVdHc01nbUU0ME5vIn19.RJJjsone9QIUxOWTm1kC3uV524k5fH3N7Sh63hOMgk1PHqeLlVvb9brTJF7soLvHosZhTEMiRHEO3rXY6BY2ZQ"
+      "revealValue": "EiB-dib5oumdaDGH47TB17Qg1nHza036bTIGibQOKFUY2A",
+      "signedData": "eyJhbGciOiJFUzI1NksifQ.eyJkaWRTdWZmaXgiOiJFaUR5T1FiYlpBYTNhaVJ6ZUNrVjdMT3gzU0VSampIOTNFWG9JTTNVb040b1dnIiwicmVjb3ZlcnlLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4IjoiSk1ucF9KOW5BSGFkTGpJNmJfNVU3M1VwSEZqSEZTVHdtc1ZUUG9FTTVsMCIsInkiOiJ3c1QxLXN0UWJvSldPeEJyUnVINHQwVV9zX1lSQy14WXQyRkFEVUNHR2M4In19.ARTZrvupKdShOFNAJ4EWnsuaONKBgXUiwY5Ct10a9IXIp1uFsg0UyDnZGZtJT2v2bgtmYsQBmT6L9kKaaDcvUQ"
     },
     "deactivateOperation": {
       "type": "deactivate",
       "didUniqueSuffix": "EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
       "signedDataJws": {
         "protected": "eyJhbGciOiJFUzI1NksifQ",
-        "payload": "eyJkaWRTdWZmaXgiOiJFaUR5T1FiYlpBYTNhaVJ6ZUNrVjdMT3gzU0VSampIOTNFWG9JTTNVb040b1dnIiwicmVjb3ZlcnlLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4IjoiSFM3d1c4R0M3bkMwX0QtUVBBNHktWE1iT1VDM2tvNmRSOEQxS3d6RldYMCIsInkiOiI2M2NETkFFeTJxWFc5U3pzeHYtNmdwQ2F5c3JWeVo5RVdHc01nbUU0ME5vIn19",
-        "signature": "RJJjsone9QIUxOWTm1kC3uV524k5fH3N7Sh63hOMgk1PHqeLlVvb9brTJF7soLvHosZhTEMiRHEO3rXY6BY2ZQ"
+        "payload": "eyJkaWRTdWZmaXgiOiJFaUR5T1FiYlpBYTNhaVJ6ZUNrVjdMT3gzU0VSampIOTNFWG9JTTNVb040b1dnIiwicmVjb3ZlcnlLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4IjoiSk1ucF9KOW5BSGFkTGpJNmJfNVU3M1VwSEZqSEZTVHdtc1ZUUG9FTTVsMCIsInkiOiJ3c1QxLXN0UWJvSldPeEJyUnVINHQwVV9zX1lSQy14WXQyRkFEVUNHR2M4In19",
+        "signature": "ARTZrvupKdShOFNAJ4EWnsuaONKBgXUiwY5Ct10a9IXIp1uFsg0UyDnZGZtJT2v2bgtmYsQBmT6L9kKaaDcvUQ"
       },
       "signedData": {
         "didSuffix": "EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
         "recoveryKey": {
           "kty": "EC",
           "crv": "secp256k1",
-          "x": "HS7wW8GC7nC0_D-QPA4y-XMbOUC3ko6dR8D1KwzFWX0",
-          "y": "63cDNAEy2qXW9Szsxv-6gpCaysrVyZ9EWGsMgmE40No"
+          "x": "JMnp_J9nAHadLjI6b_5U73UpHFjHFSTwmsVTPoEM5l0",
+          "y": "wsT1-stQboJWOxBrRuH4t0U_s_YRC-xYt2FADUCGGc8"
         }
       }
     }

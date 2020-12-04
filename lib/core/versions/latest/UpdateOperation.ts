@@ -1,6 +1,7 @@
 import DeltaModel from './models/DeltaModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
 import Jwk from './util/Jwk';
 import Jws from './util/Jws';
@@ -10,7 +11,6 @@ import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 import SignedDataModel from './models/UpdateSignedDataModel';
-import InputValidator from './InputValidator';
 
 /**
  * A class that represents an update operation.

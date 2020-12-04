@@ -1,5 +1,6 @@
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
 import Jwk from './util/Jwk';
 import Jws from './util/Jws';
@@ -61,16 +62,13 @@ export default class DeactivateOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<DeactivateOperation> {
-    const expectedPropertyCount = 3;
-
-    const properties = Object.keys(operationObject);
-    if (properties.length !== expectedPropertyCount) {
-      throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrUnknownProperty);
-    }
+    InputValidator.validateObjectContainsOnlyAllowedProperties(operationObject, ['type', 'didSuffix', 'revealValue', 'signedData'], 'deactivate request');
 
     if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrInvalidDidUniqueSuffix);
     }
+
+    InputValidator.validateRevealValue(operationObject.revealValue, 'deactivate request');
 
     const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
     const signedData = await DeactivateOperation.parseSignedDataPayload(

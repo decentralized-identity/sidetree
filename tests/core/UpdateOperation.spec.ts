@@ -1,10 +1,10 @@
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
-import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 
 describe('UpdateOperation', async () => {
   describe('parse()', async () => {
@@ -59,8 +59,10 @@ describe('UpdateOperation', async () => {
   describe('parseObject()', async () => {
     it('should throw if operation contains an additional unknown property.', async () => {
       const updateOperation = {
+        type: OperationType.Update,
         didSuffix: 'unusedSuffix',
         signedData: 'unusedSignedData',
+        delta: 'unusedDelta',
         extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
       };
 

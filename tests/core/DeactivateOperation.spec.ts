@@ -1,6 +1,7 @@
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -22,7 +23,7 @@ describe('DeactivateOperation', async () => {
       done();
     });
 
-    it('should throw if operation contains unknown property', async (done) => {
+    it('should throw if operation contains unknown property', async () => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
       const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
@@ -33,8 +34,12 @@ describe('DeactivateOperation', async () => {
       (deactivateOperationRequest as any).unknownProperty = 'unknown property value'; // Intentionally creating an unknown property.
 
       const operationBuffer = Buffer.from(JSON.stringify(deactivateOperationRequest));
-      await expectAsync(DeactivateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationMissingOrUnknownProperty));
-      done();
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => DeactivateOperation.parse(operationBuffer),
+        ErrorCode.InputValidatorInputContainsNowAllowedProperty,
+        'deactivate request'
+      );
     });
 
     it('should throw if operation type is incorrect.', async (done) => {

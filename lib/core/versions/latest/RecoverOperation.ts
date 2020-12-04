@@ -1,6 +1,7 @@
 import DeltaModel from './models/DeltaModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
 import Jwk from './util/Jwk';
 import Jws from './util/Jws';
@@ -69,16 +70,13 @@ export default class RecoverOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<RecoverOperation> {
-    const expectedPropertyCount = 4;
-
-    const properties = Object.keys(operationObject);
-    if (properties.length !== expectedPropertyCount) {
-      throw new SidetreeError(ErrorCode.RecoverOperationMissingOrUnknownProperty);
-    }
+    InputValidator.validateObjectContainsOnlyAllowedProperties(operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], 'recover request');
 
     if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
     }
+
+    InputValidator.validateRevealValue(operationObject.revealValue, 'recover request');
 
     const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
     const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);

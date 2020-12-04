@@ -1,5 +1,6 @@
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
@@ -68,18 +69,21 @@ describe('RecoverOperation', async () => {
   });
 
   describe('parseObject()', async () => {
-    it('should throw if operation contains an additional unknown property.', async (done) => {
+    it('should throw if operation contains an additional unknown property.', async () => {
       const recoverOperation = {
         type: OperationType.Recover,
         didSuffix: 'unusedSuffix',
         revealValue: 'unusedReveal',
         signedData: 'unusedSignedData',
+        delta: 'unusedDelta',
         extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
       };
 
-      await expectAsync(RecoverOperation.parseObject(recoverOperation, Buffer.from('anyValue')))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationMissingOrUnknownProperty));
-      done();
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => RecoverOperation.parseObject(recoverOperation, Buffer.from('unused')),
+        ErrorCode.InputValidatorInputContainsNowAllowedProperty,
+        'recover request'
+      );
     });
   });
 
