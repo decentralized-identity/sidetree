@@ -93,24 +93,17 @@ describe('DID', async () => {
     });
 
     it('should throw if encoded DID document in long-form DID given results in a mismatching short-form DID.', async () => {
-      // const createOperationData = await OperationGenerator.generateCreateOperation();
-      // const didMethodName = 'sidetree';
-      // const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
-      // const encodedDelta = createOperationData.createOperation.encodedDelta;
-      // const mismatchingShortFormDid = `did:${didMethodName}:EiA_MismatchingDID_AAAAAAAAAAAAAAAAAAAAAAAAAAA`;
-      // const longFormDid = `${mismatchingShortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
-
       let longFormDid = (await OperationGenerator.generateLongFormDid()).longFormDid;
 
       // [did, method, suffix, inistalState]
       const longFormDidParts = longFormDid.split(':');
       longFormDidParts[2] = 'EiA_MismatchingDID_AAAAAAAAAAAAAAAAAAAAAAAAAAA';
       longFormDid = longFormDidParts.join(':');
-      
+
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         async () => Did.create(longFormDid, 'sidetree'),
         ErrorCode.DidUniqueSuffixFromInitialStateMismatch
-        );
-      });
+      );
+    });
   });
 });

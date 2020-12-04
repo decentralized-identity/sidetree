@@ -119,11 +119,11 @@ describe('MongoDbTransactionStore', async () => {
   it('should return [] if error is thrown when fetching transactions later than a given transaction number', async () => {
     const transactionCount = 3;
     await generateAndStoreTransactions(transactionStore, transactionCount);
-    
+
     spyOn(transactionStore['transactionCollection'] as any, 'find').and.throwError('expected test error');
     const transactions = await transactionStore.getTransactionsLaterThan(1, 100);
     expect(transactions.length).toEqual(0);
-  })
+  });
 
   it('should fetch transactions from the start if transaction number is not given.', async () => {
     const transactionCount = 3;

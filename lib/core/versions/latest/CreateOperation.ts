@@ -52,8 +52,7 @@ export default class CreateOperation implements OperationModel {
   public static async parse (operationBuffer: Buffer): Promise<CreateOperation> {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
-    let createOperation;
-    createOperation = CreateOperation.parseJcsObject(operationObject, operationBuffer);
+    const createOperation = CreateOperation.parseJcsObject(operationObject, operationBuffer);
     return createOperation;
   }
 

@@ -35,13 +35,13 @@ describe('InputValidator', async () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(() => {
         InputValidator['validateDidType']('12345');
       }, ErrorCode.SuffixDataTypeLengthGreaterThanFour);
-    })
+    });
 
     it('should throw sidetree error if type is not base64url', () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(() => {
         InputValidator['validateDidType']('?=');
       }, ErrorCode.SuffixDataTypeInvalidCharacter);
-    })
+    });
 
     it('should not throw if type is valid', () => {
       try {
@@ -49,6 +49,6 @@ describe('InputValidator', async () => {
       } catch (e) {
         fail(`Expect not to throw but got ${e}`);
       }
-    })
-  })
+    });
+  });
 });

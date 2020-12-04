@@ -76,10 +76,8 @@ export default class Did {
 
     // If DID is long-form, ensure the unique suffix constructed from the suffix data matches the short-form DID and populate the `createOperation` property.
     if (!did.isShortForm) {
-      let createOperation;
-
       const initialStateEncodedJcs = Did.getInitialStateFromDidStringWithExtraColon(didString);
-      createOperation = Did.constructCreateOperationFromEncodedJcs(initialStateEncodedJcs);
+      const createOperation = Did.constructCreateOperationFromEncodedJcs(initialStateEncodedJcs);
 
       // NOTE: we cannot use the unique suffix directly from `createOperation.didUniqueSuffix` for comparison,
       // because a given long-form DID may have been created long ago,
