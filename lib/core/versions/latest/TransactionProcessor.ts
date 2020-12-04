@@ -391,6 +391,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const composedRequest = {
         type: OperationType.Recover,
         didSuffix: recoverDidSuffixes[i],
+        revealValue: coreIndexFile.model!.operations!.recover![i].revealValue,
         signedData: recoverProofs[i],
         delta: recoverDeltas?.[i] // Add `delta` property if chunk file found.
       };
@@ -432,6 +433,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const composedRequest = {
         type: OperationType.Deactivate,
         didSuffix: deactivateDidSuffixes[i],
+        revealValue: coreIndexFile.model!.operations!.deactivate![i].revealValue,
         signedData: deactivateProofs[i]
       };
 
@@ -483,6 +485,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const composedRequest = {
         type: OperationType.Update,
         didSuffix: updateDidSuffixes[i],
+        revealValue: provisionalIndexFile.model!.operations!.update[i].revealValue,
         signedData: updateProofs[i],
         delta: updateDeltas?.[i] // Add `delta` property if chunk file found.
       };

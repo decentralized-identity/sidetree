@@ -1,5 +1,6 @@
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
@@ -56,17 +57,34 @@ describe('UpdateOperation', async () => {
   });
 
   describe('parseObject()', async () => {
-    it('should throw if operation contains an additional unknown property.', async (done) => {
+    it('should throw if operation contains an additional unknown property.', async () => {
       const updateOperation = {
+        type: OperationType.Update,
         didSuffix: 'unusedSuffix',
         signedData: 'unusedSignedData',
+        delta: 'unusedDelta',
         extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
       };
 
-      const provisionalIndexFileMode = true;
-      await expectAsync((UpdateOperation as any).parseObject(updateOperation, Buffer.from('anyValue'), provisionalIndexFileMode))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationMissingOrUnknownProperty));
-      done();
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => UpdateOperation.parseObject(updateOperation, Buffer.from('anyValue')),
+        ErrorCode.InputValidatorInputContainsNowAllowedProperty,
+        'update request'
+      );
+    });
+
+    it('should throw if hash of `updateKey` does not match the revealValue.', async () => {
+      const updateRequestData = await OperationGenerator.generateUpdateOperationRequest();
+      const updateRequest = updateRequestData.request;
+
+      // Intentionally have a mismatching reveal value.
+      updateRequest.revealValue = OperationGenerator.generateRandomHash();
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => UpdateOperation.parseObject(updateRequest, Buffer.from('unused')),
+        ErrorCode.CanonicalizedObjectHashMismatch,
+        'update request'
+      );
     });
   });
 

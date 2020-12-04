@@ -88,7 +88,7 @@ export default class ProvisionalIndexFile {
     }
 
     // Validate all update operation references.
-    InputValidator.validateOperationReferences(operations.update, 'update');
+    InputValidator.validateOperationReferences(operations.update, 'update reference');
 
     // Make sure no operation with same DID.
     const didSuffixes = (operations.update as OperationReferenceModel[]).map(operation => operation.didSuffix);
@@ -128,8 +128,7 @@ export default class ProvisionalIndexFile {
     chunkFileUri: string, provisionalProofFileUri: string | undefined, updateOperationArray: UpdateOperation[]
   ): Promise<Buffer> {
     const updateReferences = updateOperationArray.map(operation => {
-      const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.updateKey);
-
+      const revealValue = operation.revealValue;
       return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 

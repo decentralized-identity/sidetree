@@ -422,12 +422,14 @@ export default class OperationGenerator {
    * Creates an update operation request.
    */
   public static async createUpdateOperationRequest (
-    didUniqueSuffix: string,
+    didSuffix: string,
     updatePublicKey: JwkEs256k,
     updatePrivateKey: JwkEs256k,
     nextUpdateCommitmentHash: string,
     patches: any
   ) {
+    const revealValue = Multihash.canonicalizeThenHashThenEncode(updatePublicKey);
+
     const delta = {
       patches,
       updateCommitment: nextUpdateCommitmentHash
@@ -442,9 +444,10 @@ export default class OperationGenerator {
 
     const updateOperationRequest = {
       type: OperationType.Update,
-      didSuffix: didUniqueSuffix,
-      delta: delta,
-      signedData: signedData
+      didSuffix,
+      revealValue,
+      delta,
+      signedData
     };
 
     return updateOperationRequest;
@@ -474,11 +477,14 @@ export default class OperationGenerator {
    * Creates a recover operation request.
    */
   public static async createRecoverOperationRequest (
-    didUniqueSuffix: string,
+    didSuffix: string,
     recoveryPrivateKey: JwkEs256k,
     newRecoveryPublicKey: JwkEs256k,
     nextUpdateCommitmentHash: string,
-    document: any) {
+    document: any
+  ) {
+    const recoveryPublicKey = Jwk.getEs256kPublicKey(recoveryPrivateKey);
+    const revealValue = Multihash.canonicalizeThenHashThenEncode(recoveryPublicKey);
 
     const patches = [{
       action: 'replace',
@@ -493,17 +499,18 @@ export default class OperationGenerator {
     const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const signedDataPayloadObject = {
-      deltaHash: deltaHash,
-      recoveryKey: Jwk.getEs256kPublicKey(recoveryPrivateKey),
+      deltaHash,
+      recoveryKey: recoveryPublicKey,
       recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(newRecoveryPublicKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Recover,
-      didSuffix: didUniqueSuffix,
-      signedData: signedData,
-      delta: delta
+      didSuffix,
+      revealValue,
+      signedData,
+      delta
     };
 
     return operation;
@@ -513,19 +520,23 @@ export default class OperationGenerator {
    * Generates a deactivate operation request.
    */
   public static async createDeactivateOperationRequest (
-    didUniqueSuffix: string,
-    recoveryPrivateKey: JwkEs256k) {
+    didSuffix: string,
+    recoveryPrivateKey: JwkEs256k
+  ) {
+    const recoveryPublicKey = Jwk.getEs256kPublicKey(recoveryPrivateKey);
+    const revealValue = Multihash.canonicalizeThenHashThenEncode(recoveryPublicKey);
 
     const signedDataPayloadObject = {
-      didSuffix: didUniqueSuffix,
-      recoveryKey: Jwk.getEs256kPublicKey(recoveryPrivateKey)
+      didSuffix,
+      recoveryKey: recoveryPublicKey
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Deactivate,
-      didSuffix: didUniqueSuffix,
-      signedData: signedData
+      didSuffix,
+      revealValue,
+      signedData
     };
 
     return operation;

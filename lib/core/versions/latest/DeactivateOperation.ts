@@ -1,8 +1,10 @@
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
 import Jwk from './util/Jwk';
 import Jws from './util/Jws';
+import Multihash from './Multihash';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
@@ -12,37 +14,19 @@ import SignedDataModel from './models/DeactivateSignedDataModel';
  * A class that represents a deactivate operation.
  */
 export default class DeactivateOperation implements OperationModel {
-
-  /** The original request buffer sent by the requester. */
-  public readonly operationBuffer: Buffer;
-
-  /** The unique suffix of the DID. */
-  public readonly didUniqueSuffix: string;
-
   /** The type of operation. */
-  public readonly type: OperationType;
-
-  /** Signed data. */
-  public readonly signedDataJws: Jws;
-
-  /** Decoded signed data payload. */
-  public readonly signedData: SignedDataModel;
+  public readonly type: OperationType = OperationType.Deactivate;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
    */
   private constructor (
-    operationBuffer: Buffer,
-    didUniqueSuffix: string,
-    signedDataJws: Jws,
-    signedData: SignedDataModel
-  ) {
-    this.operationBuffer = operationBuffer;
-    this.type = OperationType.Deactivate;
-    this.didUniqueSuffix = didUniqueSuffix;
-    this.signedDataJws = signedDataJws;
-    this.signedData = signedData;
-  }
+    public readonly operationBuffer: Buffer,
+    public readonly didUniqueSuffix: string,
+    public readonly revealValue: string,
+    public readonly signedDataJws: Jws,
+    public readonly signedData: SignedDataModel
+  ) { }
 
   /**
    * Parses the given buffer as a `UpdateOperation`.
@@ -61,30 +45,34 @@ export default class DeactivateOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<DeactivateOperation> {
-    const expectedPropertyCount = 3;
+    const errorLoggingContext = 'deactivate request';
+    InputValidator.validateObjectContainsOnlyAllowedProperties(
+      operationObject, ['type', 'didSuffix', 'revealValue', 'signedData'], errorLoggingContext
+    );
 
-    const properties = Object.keys(operationObject);
-    if (properties.length !== expectedPropertyCount) {
-      throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrUnknownProperty);
+    if (operationObject.type !== OperationType.Deactivate) {
+      throw new SidetreeError(ErrorCode.DeactivateOperationTypeIncorrect);
     }
 
     if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrInvalidDidUniqueSuffix);
     }
 
+    InputValidator.validateRevealValue(operationObject.revealValue, errorLoggingContext);
+
     const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
-    const signedData = await DeactivateOperation.parseSignedDataPayload(
+    const signedDataModel = await DeactivateOperation.parseSignedDataPayload(
       signedDataJws.payload, operationObject.didSuffix);
 
-    if (operationObject.type !== OperationType.Deactivate) {
-      throw new SidetreeError(ErrorCode.DeactivateOperationTypeIncorrect);
-    }
+    // Validate that the canonicalized recovery public key hash is the same as `revealValue`.
+    Multihash.validateCanonicalizeObjectHash(signedDataModel.recoveryKey, operationObject.revealValue, errorLoggingContext);
 
     return new DeactivateOperation(
       operationBuffer,
       operationObject.didSuffix,
+      operationObject.revealValue,
       signedDataJws,
-      signedData
+      signedDataModel
     );
   }
 

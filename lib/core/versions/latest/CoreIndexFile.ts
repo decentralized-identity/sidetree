@@ -7,7 +7,6 @@ import Did from './Did';
 import ErrorCode from './ErrorCode';
 import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
-import Multihash from './Multihash';
 import OperationReferenceModel from './models/OperationReferenceModel';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
@@ -115,7 +114,7 @@ export default class CoreIndexFile {
       }
 
       // Validate every recover reference.
-      InputValidator.validateOperationReferences(operations.recover, 'recover');
+      InputValidator.validateOperationReferences(operations.recover, 'recover reference');
       recoverDidSuffixes = (operations.recover as OperationReferenceModel[]).map(operation => operation.didSuffix);
       didUniqueSuffixes.push(...recoverDidSuffixes);
     }
@@ -128,7 +127,7 @@ export default class CoreIndexFile {
       }
 
       // Validate every deactivate reference.
-      InputValidator.validateOperationReferences(operations.deactivate, 'deactivate');
+      InputValidator.validateOperationReferences(operations.deactivate, 'deactivate reference');
       deactivateDidSuffixes = (operations.deactivate as OperationReferenceModel[]).map(operation => operation.didSuffix);
       didUniqueSuffixes.push(...deactivateDidSuffixes);
     }
@@ -214,8 +213,7 @@ export default class CoreIndexFile {
     }
 
     const recoverReferences = recoverOperationArray.map(operation => {
-      const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.recoveryKey);
-
+      const revealValue = operation.revealValue;
       return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 
@@ -225,8 +223,7 @@ export default class CoreIndexFile {
     }
 
     const deactivateReferences = deactivateOperationArray.map(operation => {
-      const revealValue = Multihash.canonicalizeThenHashThenEncode(operation.signedData.recoveryKey);
-
+      const revealValue = operation.revealValue;
       return { didSuffix: operation.didUniqueSuffix, revealValue };
     });
 
