@@ -20,6 +20,6 @@ Each version of the protocol will define a set of protocol rules and parameters 
 | `MAX_PROOF_FILE_SIZE` { #max-proof-file-size }       | Maximum compressed map file size.                        |               2.5 MB |
 | `MAX_CHUNK_FILE_SIZE`  { #max-chunk-file-size }  | Maximum compressed chunk file size.                      |              10 MB |
 | `MAX_CAS_URI_LENGTH` { #max-cas-uri-length }        | Maximum length of CAS URIs.                                          |               60 bytes |
-| `MAX_DELTA_SIZE` { #max-delta-size }        | Maximum uncompressed operation delta size.                                          |               1 kb |
+| `MAX_DELTA_SIZE` { #max-delta-size }        | Maximum uncompressed operation delta size.                                          |               1 kilobyte |
 | `MAX_OPERATION_COUNT`       | Maximum number of operations per batch.                                       |             10,000 |
-| `MAX_OPERATION_HASH_LENGTH` { #max-operation-hash-length }       | Maximum length of all hashes in CAS URI files.                                       |             60 bytes |
+| `MAX_OPERATION_HASH_LENGTH` { #max-operation-hash-length }       | Maximum length of all hashes in CAS URI files.                                       |             50 bytes |

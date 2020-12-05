@@ -43,6 +43,7 @@ Use the following process to generate a Sidetree-based DID:
       "recoveryCommitment": COMMITMENT_HASH
     }
     ```
+    - The object ****MAY**** contain a `type` property, and if present, its value ****MUST**** be a type string, of a length and composition defined by the implementation, that signifies the type of entity a DID represents. The value ****MUST NOT**** be anything that represents humans, groups of humans, or any human-identifying classification - an implementation ****SHALL NOT**** override this directive, and any attempt to do so shall render the implementation non-conformant to this specification.
     - The object ****MUST**** contain a `deltaHash` property, and its value ****MUST**** be a hash of the canonicalized [_Create Operation Delta Object_](#create-delta-object) (detailed above), generated via the [`HASH_PROTOCOL`](#hash-protocol).
     - The object ****MUST**** contain a `recoveryCommitment` property, and its value ****MUST**** be the [recovery commitment](#recovery-commitment) as generated in step 2.
 
