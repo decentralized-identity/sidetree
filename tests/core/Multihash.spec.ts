@@ -1,24 +1,10 @@
-import * as crypto from 'crypto';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import JsonCanonicalizer from '../../lib/core/versions/latest/util/JsonCanonicalizer';
 import Multihash from '../../lib/core/versions/latest/Multihash';
-const multihashes = require('multihashes');
 
 describe('Multihash', async () => {
-  describe('decode()', async () => {
-    it('should throws if multihash buffer given used an unsupported hash algorithm.', async () => {
-      const content = 'any content';
-      const hash = crypto.createHash('sha512').update(content).digest();
-      const multihash = multihashes.encode(hash, 19); // SHA2-512
-
-      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => Multihash.decode(multihash),
-        ErrorCode.MultihashUnsupportedHashAlgorithm
-      );
-    });
-  });
 
   describe('isValidHash()', async () => {
     it('should return false if content is undefined', async () => {

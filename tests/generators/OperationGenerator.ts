@@ -295,7 +295,9 @@ export default class OperationGenerator {
   public static async generateUpdateOperation (
     didUniqueSuffix: string,
     updatePublicKey: JwkEs256k,
-    updatePrivateKey: JwkEs256k
+    updatePrivateKey: JwkEs256k,
+    multihashAlgorithmCodeToUse?: number,
+    multihashAlgorithmForRevealValue?: number
   ) {
     const additionalKeyId = `additional-key`;
     const [additionalPublicKey, additionalPrivateKey] = await OperationGenerator.generateKeyPair(additionalKeyId);
@@ -308,7 +310,9 @@ export default class OperationGenerator {
       updatePublicKey,
       updatePrivateKey,
       additionalPublicKey,
-      nextUpdateCommitmentHash
+      nextUpdateCommitmentHash,
+      multihashAlgorithmCodeToUse,
+      multihashAlgorithmForRevealValue
     );
 
     const operationBuffer = Buffer.from(JSON.stringify(operationJson));
@@ -430,15 +434,17 @@ export default class OperationGenerator {
     updatePublicKey: JwkEs256k,
     updatePrivateKey: JwkEs256k,
     nextUpdateCommitmentHash: string,
-    patches: any
+    patches: any,
+    multihashAlgorithmCodeToUse?: number,
+    multihashAlgorithmForRevealValue?: number
   ) {
-    const revealValue = Multihash.canonicalizeThenHashThenEncode(updatePublicKey);
+    const revealValue = Multihash.canonicalizeThenHashThenEncode(updatePublicKey, multihashAlgorithmForRevealValue);
 
     const delta = {
       patches,
       updateCommitment: nextUpdateCommitmentHash
     };
-    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta, multihashAlgorithmCodeToUse);
 
     const signedDataPayloadObject = {
       updateKey: updatePublicKey,
@@ -574,7 +580,9 @@ export default class OperationGenerator {
     updatePublicKey: JwkEs256k,
     updatePrivateKey: JwkEs256k,
     newPublicKey: PublicKeyModel,
-    nextUpdateCommitmentHash: string) {
+    nextUpdateCommitmentHash: string,
+    multihashAlgorithmCodeToUse?: number,
+    multihashAlgorithmForRevealValue?: number) {
 
     const patches = [
       {
@@ -590,7 +598,9 @@ export default class OperationGenerator {
       updatePublicKey,
       updatePrivateKey,
       nextUpdateCommitmentHash,
-      patches
+      patches,
+      multihashAlgorithmCodeToUse,
+      multihashAlgorithmForRevealValue
     );
 
     return updateOperationRequest;

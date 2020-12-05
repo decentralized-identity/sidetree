@@ -92,11 +92,6 @@ export default class Multihash {
   public static decode (multihashBuffer: Buffer): { algorithm: number, hash: Buffer } {
     const multihash = multihashes.decode(multihashBuffer);
 
-    // Hash algorithm must be SHA-256.
-    if (multihash.code !== 18) {
-      throw new SidetreeError(ErrorCode.MultihashUnsupportedHashAlgorithm);
-    }
-
     return {
       algorithm: multihash.code,
       hash: multihash.digest
