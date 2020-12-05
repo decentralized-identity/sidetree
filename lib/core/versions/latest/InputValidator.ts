@@ -3,6 +3,7 @@ import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
+import protocolParameters from './ProtocolParameters';
 
 /**
  * Class containing generic input validation methods.
@@ -74,7 +75,7 @@ export default class InputValidator {
         );
       }
 
-      InputValidator.validateRevealValue(operationReference.revealValue, inputContextForErrorLogging);
+      InputValidator.validateRevealValue(operationReference.revealValue, `${inputContextForErrorLogging} reveal value`);
     }
   }
 
@@ -85,12 +86,24 @@ export default class InputValidator {
     InputValidator.validateNonArrayObject(suffixData, 'suffix data');
     InputValidator.validateObjectContainsOnlyAllowedProperties(suffixData, ['deltaHash', 'recoveryCommitment', 'type'], `suffix data`);
 
-    const deltaHash = Encoder.decodeAsBuffer(suffixData.deltaHash);
-    const nextRecoveryCommitment = Encoder.decodeAsBuffer(suffixData.recoveryCommitment);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitment);
+    InputValidator.validateEncodedMultihash(suffixData.deltaHash, 'delta hash');
+    InputValidator.validateEncodedMultihash(suffixData.recoveryCommitment, 'recovery commitment');
 
     InputValidator.validateDidType(suffixData.type);
+  }
+
+  /**
+   * Validates that the given input is a multihash computed using a supported hash algorithm.
+   * @param inputContextForErrorLogging This string is used for error logging purposes only. e.g. 'document', or 'suffix data'.
+   */
+  public static validateEncodedMultihash (input: any, inputContextForErrorLogging: string) {
+    const inputType = typeof input;
+    if (inputType !== 'string') {
+      throw new SidetreeError(ErrorCode.EncodedMultihashMustBeAString, `The ${inputContextForErrorLogging} must be a string but is of ${inputType} type.`);
+    }
+
+    const supportedHashAlgorithmsInMultihashCode = protocolParameters.hashAlgorithmsInMultihashCode;
+    Multihash.validateHashComputedUsingSupportedHashAlgorithm(input, supportedHashAlgorithmsInMultihashCode, inputContextForErrorLogging);
   }
 
   /**

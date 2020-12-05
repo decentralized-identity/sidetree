@@ -71,7 +71,8 @@ export default class OperationGenerator {
    */
   public static generateRandomHash (): string {
     const randomBuffer = crypto.randomBytes(32);
-    const randomHash = Encoder.encode(Multihash.hash(randomBuffer));
+    const hashAlgorithmInMultihashCode = 18; // SHA256
+    const randomHash = Encoder.encode(Multihash.hash(randomBuffer, hashAlgorithmInMultihashCode));
 
     return randomHash;
   }
@@ -132,7 +133,6 @@ export default class OperationGenerator {
     otherPublicKeys?: PublicKeyModel[],
     services?: ServiceModel[],
     network?: string) {
-
     const document = {
       publicKeys: otherPublicKeys || [],
       services: services || []
@@ -292,7 +292,11 @@ export default class OperationGenerator {
   /**
    * Generates an update operation that adds a new key.
    */
-  public static async generateUpdateOperation (didUniqueSuffix: string, updatePublicKey: JwkEs256k, updatePrivateKey: JwkEs256k) {
+  public static async generateUpdateOperation (
+    didUniqueSuffix: string,
+    updatePublicKey: JwkEs256k,
+    updatePrivateKey: JwkEs256k
+  ) {
     const additionalKeyId = `additional-key`;
     const [additionalPublicKey, additionalPrivateKey] = await OperationGenerator.generateKeyPair(additionalKeyId);
 

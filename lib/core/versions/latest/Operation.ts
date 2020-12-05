@@ -1,9 +1,8 @@
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import DocumentComposer from './DocumentComposer';
-import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
-import Multihash from './Multihash';
+import InputValidator from './InputValidator';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
@@ -59,7 +58,6 @@ export default class Operation {
 
     // Validate `patches` property using the DocumentComposer.
     DocumentComposer.validateDocumentPatches(delta.patches);
-    const nextUpdateCommitment = Encoder.decodeAsBuffer(delta.updateCommitment);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateCommitment);
+    InputValidator.validateEncodedMultihash(delta.updateCommitment, 'update commitment');
   }
 }

@@ -1,8 +1,6 @@
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
-import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import ProvisionalIndexFile from '../../lib/core/versions/latest/ProvisionalIndexFile';
 import ProvisionalIndexFileModel from '../../lib/core/versions/latest/models/ProvisionalIndexFileModel';
@@ -141,8 +139,8 @@ describe('ProvisionalIndexFile', async () => {
   describe('validateChunksProperty()', async () => {
     it('should throw if there is more than one chunk in chunks array.', async () => {
       const chunks = [
-        { chunkFileUri: Encoder.encode(Multihash.hash(Buffer.from('anyValue1'))) },
-        { chunkFileUri: Encoder.encode(Multihash.hash(Buffer.from('anyValue2'))) } // Intentionally adding more than one element.
+        { chunkFileUri: 'anyValue1' },
+        { chunkFileUri: 'anyValue2' } // Intentionally adding more than one element.
       ];
 
       expect(() => (ProvisionalIndexFile as any).validateChunksProperty(chunks))
@@ -152,7 +150,7 @@ describe('ProvisionalIndexFile', async () => {
     it('should throw if there is more than one property in a chunk element.', async () => {
       const chunks = [
         {
-          chunkFileUri: Encoder.encode(Multihash.hash(Buffer.from('anyValue1'))),
+          chunkFileUri: 'anyValue1',
           unexpectedProperty: 'any value'
         }
       ];

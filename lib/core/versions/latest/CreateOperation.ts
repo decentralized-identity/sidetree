@@ -13,38 +13,18 @@ import SuffixDataModel from './models/SuffixDataModel';
  * A class that represents a create operation.
  */
 export default class CreateOperation implements OperationModel {
-
-  /** The original request buffer sent by the requester. */
-  public readonly operationBuffer: Buffer;
-
-  /** The unique suffix of the DID. */
-  public readonly didUniqueSuffix: string;
-
   /** The type of operation. */
-  public readonly type: OperationType;
-
-  /** Data used to generate the unique DID suffix. */
-  public readonly suffixData: SuffixDataModel;
-
-  /** Delta. */
-  public readonly delta: DeltaModel | undefined;
-
-  /** Encoded string of the suffix data. */
+  public readonly type: OperationType = OperationType.Create;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
    */
   private constructor (
-    operationBuffer: Buffer,
-    didUniqueSuffix: string,
-    suffixData: SuffixDataModel,
-    delta: DeltaModel | undefined) {
-    this.didUniqueSuffix = didUniqueSuffix;
-    this.type = OperationType.Create;
-    this.operationBuffer = operationBuffer;
-    this.suffixData = suffixData;
-    this.delta = delta;
-  }
+    public readonly operationBuffer: Buffer,
+    public readonly didUniqueSuffix: string,
+    public readonly suffixData: SuffixDataModel,
+    public readonly delta: DeltaModel | undefined)
+  { }
 
   /**
    * Parses the given buffer as a `CreateOperation`.

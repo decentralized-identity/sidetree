@@ -88,8 +88,7 @@ export default class UpdateOperation implements OperationModel {
 
     Jwk.validateJwkEs256k(signedData.updateKey);
 
-    const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
+    InputValidator.validateEncodedMultihash(signedData.deltaHash, 'update operation delta hash');
 
     return signedData;
   }

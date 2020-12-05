@@ -4,7 +4,6 @@ import Blockchain from '../../lib/core/Blockchain';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import CoreIndexFile from '../../lib/core/versions/latest/CoreIndexFile';
 import DownloadManager from '../../lib/core/DownloadManager';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
@@ -15,7 +14,6 @@ import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import MockVersionManager from '../mocks/MockVersionManager';
-import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import OperationGenerator from '../generators/OperationGenerator';
 import ProvisionalIndexFile from '../../lib/core/versions/latest/ProvisionalIndexFile';
@@ -171,12 +169,12 @@ describe('Observer', async () => {
       code: FetchResultCode.Success,
       content: mockChunkFileBuffer
     };
-    const mockChunkFileUri = Encoder.encode(Multihash.hash(Buffer.from('MockChunkFileUri')));
+    const mockChunkFileUri = 'MockChunkFileUri';
 
     // Generating provisional index file data.
     const mockProvisionalProofFileUri = undefined;
     const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(mockChunkFileUri, mockProvisionalProofFileUri, []);
-    const mockProvisionalIndexFileUri = Encoder.encode(Multihash.hash(Buffer.from('MockProvisionalIndexFileUri')));
+    const mockProvisionalIndexFileUri = 'MockProvisionalIndexFileUri';
     const mockProvisionalIndexFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: mockProvisionalIndexFileBuffer
@@ -189,7 +187,7 @@ describe('Observer', async () => {
       code: FetchResultCode.Success,
       content: mockCoreIndexFileBuffer
     };
-    const mockCoreIndexFileUri = Encoder.encode(Multihash.hash(Buffer.from('MockCoreIndexFileUri')));
+    const mockCoreIndexFileUri = 'MockCoreIndexFileUri';
 
     // Prepare the mock fetch results from the `DownloadManager.download()`.
     const mockDownloadFunction = async (hash: string) => {

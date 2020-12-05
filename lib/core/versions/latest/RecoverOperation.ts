@@ -103,11 +103,8 @@ export default class RecoverOperation implements OperationModel {
 
     Jwk.validateJwkEs256k(signedData.recoveryKey);
 
-    const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
-
-    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.recoveryCommitment);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
+    InputValidator.validateEncodedMultihash(signedData.deltaHash, 'recover operation delta hash');
+    InputValidator.validateEncodedMultihash(signedData.recoveryCommitment, 'recover operation next recovery commitment');
 
     return signedData;
   }

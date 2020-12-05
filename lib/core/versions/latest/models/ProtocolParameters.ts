@@ -2,8 +2,8 @@
  * Defines the list of protocol parameters, intended ONLY to be used within each version of the protocol implementation.
  */
 export default interface ProtocolParameters {
-  /** Hash algorithm in Multihash code in DEC (not in HEX). */
-  hashAlgorithmInMultihashCode: number;
+  /** Supported hash algorithms in Multihash code in DEC (not in HEX). This list will/must only grow as algorithm support grows. */
+  hashAlgorithmsInMultihashCode: number[];
   /** Maximum allowed CAS uri string length */
   maxCasUriLength: number;
   /** Maximum allowed size of core index file stored in Content Addressable Storage. */

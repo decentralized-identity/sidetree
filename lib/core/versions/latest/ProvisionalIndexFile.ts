@@ -3,7 +3,6 @@ import Compressor from './util/Compressor';
 import ErrorCode from './ErrorCode';
 import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
-import Multihash from './Multihash';
 import OperationReferenceModel from './models/OperationReferenceModel';
 import ProtocolParameters from './ProtocolParameters';
 import ProvisionalIndexFileModel from './models/ProvisionalIndexFileModel';
@@ -118,7 +117,7 @@ export default class ProvisionalIndexFile {
       throw new SidetreeError(ErrorCode.ProvisionalIndexFileChunkHasMissingOrUnknownProperty);
     }
 
-    Multihash.verifyEncodedHashIsComputedUsingLastestAlgorithm(chunk.chunkFileUri);
+    InputValidator.validateCasFileUri(chunk.chunkFileUri, 'chunk file URI');
   }
 
   /**

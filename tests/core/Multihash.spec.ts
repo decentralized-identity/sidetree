@@ -20,19 +20,6 @@ describe('Multihash', async () => {
     });
   });
 
-  describe('verifyHashComputedUsingLatestSupportedAlgorithm()', async () => {
-    it('should throws if multihash buffer given is not the latest supported hash algorithm.', async () => {
-      const content = 'any content';
-      const hash = crypto.createHash('sha512').update(content).digest();
-      const multihash = multihashes.encode(hash, 19); // SHA2-512
-
-      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(multihash),
-        ErrorCode.MultihashNotLatestSupportedHashAlgorithm
-      );
-    });
-  });
-
   describe('isValidHash()', async () => {
     it('should return false if content is undefined', async () => {
       const result = Multihash.isValidHash(undefined, 'anyCommitment');

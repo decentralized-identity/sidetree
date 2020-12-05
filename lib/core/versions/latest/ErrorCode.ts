@@ -2,6 +2,9 @@
  * Error codes used ONLY by this version of the protocol.
  */
 export default {
+  EncodedMultihashMustBeAString: '',
+  MultihashStringNotAMultihash: '',
+  MultihashNotSupported: '',
   AnchoredDataIncorrectFormat: 'anchored_data_incorrect_format',
   AnchoredDataNumberOfOperationsGreaterThanMax: 'anchored_data_number_of_operations_greater_than_max',
   AnchoredDataNumberOfOperationsNotPositiveInteger: 'anchored_data_number_of_operations_not_positive_integer',
