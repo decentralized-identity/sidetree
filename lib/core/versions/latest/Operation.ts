@@ -43,21 +43,12 @@ export default class Operation {
    * @param delta the delta to validate
    */
   public static validateDelta (delta: any): void {
-    if (typeof delta !== 'object') {
-      throw new SidetreeError(ErrorCode.DeltaIsNotObject);
-    }
-
-    const properties = Object.keys(delta);
-    if (properties.length !== 2) {
-      throw new SidetreeError(ErrorCode.DeltaMissingOrUnknownProperty);
-    }
-
-    if (delta.patches === undefined) {
-      throw new SidetreeError(ErrorCode.OperationDocumentPatchesMissing);
-    }
+    InputValidator.validateNonArrayObject(delta, 'delta');
+    InputValidator.validateObjectContainsOnlyAllowedProperties(delta, ['patches', 'updateCommitment'], 'delta');
 
     // Validate `patches` property using the DocumentComposer.
     DocumentComposer.validateDocumentPatches(delta.patches);
+
     InputValidator.validateEncodedMultihash(delta.updateCommitment, 'update commitment');
   }
 }

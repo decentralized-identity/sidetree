@@ -89,6 +89,36 @@ describe('DeactivateOperation', async () => {
         'deactivate request'
       );
     });
+
+    it('should throw if revealValue is not a multihash.', async () => {
+      const didSuffix = OperationGenerator.generateRandomHash();
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const deactivateRequest = await OperationGenerator.createDeactivateOperationRequest(didSuffix, recoveryPrivateKey);
+
+      // Intentionally have an invalid non-multihash reveal value.
+      deactivateRequest.revealValue = 'not-a-multihash';
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => DeactivateOperation.parseObject(deactivateRequest, Buffer.from('unused')),
+        ErrorCode.MultihashStringNotAMultihash,
+        'deactivate request'
+      );
+    });
+
+    it('should throw if revealValue is an unsupported multihash.', async () => {
+      const didSuffix = OperationGenerator.generateRandomHash();
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const deactivateRequest = await OperationGenerator.createDeactivateOperationRequest(didSuffix, recoveryPrivateKey);
+
+      // Intentionally have an unsupported multihash.
+      deactivateRequest.revealValue = 'ARSIZ8iLVuC_uCz_rxWma8jRB9Z1Sg'; // SHA1
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => DeactivateOperation.parseObject(deactivateRequest, Buffer.from('unused')),
+        ErrorCode.MultihashNotSupported,
+        'deactivate request'
+      );
+    });
   });
 
   describe('parseSignedDataPayload()', async () => {

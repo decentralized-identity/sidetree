@@ -1,4 +1,5 @@
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Operation from '../../lib/core/versions/latest/Operation';
 import SidetreeError from '../../lib/common/SidetreeError';
 
@@ -19,11 +20,12 @@ describe('Operation', async () => {
   describe('validateDelta', () => {
     it('should throw sidetree error if input is not an object', () => {
       const input = 'this is not an object, this is a string';
-      try {
-        Operation.validateDelta(input);
-      } catch (e) {
-        expect(e).toEqual(new SidetreeError(ErrorCode.DeltaIsNotObject));
-      }
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => Operation.validateDelta(input),
+        ErrorCode.InputValidatorInputIsNotAnObject,
+        'delta'
+      );
     });
   });
 });
