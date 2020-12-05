@@ -1,8 +1,8 @@
 import ErrorCode from './ErrorCode';
 import JsonCanonicalizer from './util/JsonCanonicalizer';
+import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
-import Operation from './Operation';
 
 /**
  * Class containing reusable operation delta functionalities.

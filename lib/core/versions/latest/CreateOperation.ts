@@ -23,8 +23,7 @@ export default class CreateOperation implements OperationModel {
     public readonly operationBuffer: Buffer,
     public readonly didUniqueSuffix: string,
     public readonly suffixData: SuffixDataModel,
-    public readonly delta: DeltaModel | undefined)
-  { }
+    public readonly delta: DeltaModel | undefined) { }
 
   /**
    * Parses the given buffer as a `CreateOperation`.

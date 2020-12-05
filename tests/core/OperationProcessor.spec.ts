@@ -578,7 +578,7 @@ describe('OperationProcessor', async () => {
       it('should still apply successfully with resultant document being { } if new document is in some unexpected format.', async () => {
         const document = 'unexpected document format';
         const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-        const unusedNextUpdateCommitment = await OperationGenerator.generateRandomHash();
+        const unusedNextUpdateCommitment = OperationGenerator.generateRandomHash();
         const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(
           didUniqueSuffix,
           recoveryPrivateKey,
@@ -600,7 +600,7 @@ describe('OperationProcessor', async () => {
       it('should still apply successfully with resultant document being { } if delta hash mismatch.', async () => {
         const document = { publicKeys: [] };
         const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-        const unusedNextUpdateCommitment = await OperationGenerator.generateRandomHash();
+        const unusedNextUpdateCommitment = OperationGenerator.generateRandomHash();
         const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(
           didUniqueSuffix,
           recoveryPrivateKey,

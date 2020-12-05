@@ -104,7 +104,7 @@ describe('RecoverOperation', async () => {
 
   describe('parseSignedDataPayload()', async () => {
     it('should throw if signedData contains an additional unknown property.', async (done) => {
-      const nextRecoveryCommitmentHash = await OperationGenerator.generateRandomHash();
+      const nextRecoveryCommitmentHash = OperationGenerator.generateRandomHash();
       const signedData = {
         deltaHash: 'anyUnusedHash',
         recoveryKey: 'anyUnusedRecoveryKey',

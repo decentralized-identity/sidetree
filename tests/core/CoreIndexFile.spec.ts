@@ -20,13 +20,15 @@ describe('CoreIndexFile', async () => {
       const createOperation = createOperationData.createOperation;
 
       // Recover operation.
+      const didSuffixForRecoverOperation = OperationGenerator.generateRandomHash();
       const [, anyRecoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const recoverOperationData = await OperationGenerator.generateRecoverOperation(
-        { didUniqueSuffix: 'anyDid1', recoveryPrivateKey: anyRecoveryPrivateKey });
+        { didUniqueSuffix: didSuffixForRecoverOperation, recoveryPrivateKey: anyRecoveryPrivateKey });
       const recoverOperation = recoverOperationData.recoverOperation;
 
       // Deactivate operation.
-      const deactivateOperationData = await OperationGenerator.createDeactivateOperation('anyDid2', anyRecoveryPrivateKey);
+      const didOfDeactivateRequest = OperationGenerator.generateRandomHash();
+      const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didOfDeactivateRequest, anyRecoveryPrivateKey);
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
       const coreIndexFileBuffer = await CoreIndexFile.createBuffer(
@@ -282,7 +284,7 @@ describe('CoreIndexFile', async () => {
           create: [createOperationRequest],
           deactivate: [{
             didSuffix: createOperationData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
-            revealValue: 'unused'
+            revealValue: OperationGenerator.generateRandomHash()
           }]
         }
       };

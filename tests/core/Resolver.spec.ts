@@ -314,6 +314,31 @@ describe('Resolver', () => {
 
   });
 
+  // describe('Hash algorithm change between operations', () => {
+  //   fit('should apply correctly with update using a different hash algorithm than create.', async () => {
+  //     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1});
+  //     await operationStore.put([createOperationData.anchoredOperationModel]);
+
+  //     // Create an update operation with a DIFFERENT hash algorithm.
+  //     const didSuffix = createOperationData.anchoredOperationModel.didUniqueSuffix;
+  //     const multihashAlgorithmCodeToBeUsed = ; // SHA3
+  //     const multihashAlgorithmForRevealValue = 18; // SHA2
+  //     const updateOperationData = await OperationGenerator.generateUpdateOperation(
+  //       didSuffix,
+  //       createOperationData.updatePublicKey,
+  //       createOperationData.updatePrivateKey,
+  //       multihashAlgorithmCodeToUse,
+  //       multihashAlgorithmForRevealValue
+  //     );
+  //     const anchoredUpdateOperation = await OperationGenerator.createAnchoredOperationModelFromOperationModel(updateOperationData.updateOperation, 2, 2, 2);
+  //     await operationStore.put([anchoredUpdateOperation]);
+
+  //     let didState = await resolver.resolve(didSuffix) as DidState;
+  //     expect(didState.document.publicKeys.length).toEqual(2);
+  //     expect(didState.document.services.length).toEqual(2);
+  //   });
+  // });
+
   describe('applyRecoverAndDeactivateOperations()', () => {
     it('should apply earliest recover operations if multiple operations are valid with same reveal.', async (done) => {
       // Setting up initial DID state for the test.

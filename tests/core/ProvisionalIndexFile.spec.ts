@@ -97,8 +97,8 @@ describe('ProvisionalIndexFile', async () => {
       const didSuffix = OperationGenerator.generateRandomHash();
       const operationsProperty = {
         update: [
-          { didSuffix, revealValue: 'unused1' },
-          { didSuffix, revealValue: 'unused2' } // Intentionally having another update reference with the same DID.
+          { didSuffix, revealValue: OperationGenerator.generateRandomHash() },
+          { didSuffix, revealValue: OperationGenerator.generateRandomHash() } // Intentionally having another update reference with the same DID.
         ]
       };
 
@@ -115,8 +115,8 @@ describe('ProvisionalIndexFile', async () => {
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => (ProvisionalIndexFile as any).validateOperationsProperty(operationsProperty),
-        ErrorCode.OperationReferenceDidSuffixIsNotAString,
-        'update reference'
+        ErrorCode.EncodedMultihashMustBeAString,
+        'didSuffix'
       );
     });
 
@@ -130,7 +130,7 @@ describe('ProvisionalIndexFile', async () => {
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => (ProvisionalIndexFile as any).validateOperationsProperty(operationsProperty),
-        ErrorCode.OperationReferenceRevealValueIsNotAString,
+        ErrorCode.EncodedMultihashMustBeAString,
         'update reference'
       );
     });

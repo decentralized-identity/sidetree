@@ -3,7 +3,6 @@ import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
-import protocolParameters from './ProtocolParameters';
 
 /**
  * Class containing generic input validation methods.
@@ -67,15 +66,8 @@ export default class InputValidator {
     for (const operationReference of operationReferences) {
       InputValidator.validateObjectContainsOnlyAllowedProperties(operationReference, ['didSuffix', 'revealValue'], inputContextForErrorLogging);
 
-      const didSuffixType = typeof operationReference.didSuffix;
-      if (didSuffixType !== 'string') {
-        throw new SidetreeError(
-          ErrorCode.OperationReferenceDidSuffixIsNotAString,
-          `Property 'didSuffix' in ${inputContextForErrorLogging} is of type ${didSuffixType}, but needs to be a string.`
-        );
-      }
-
-      InputValidator.validateRevealValue(operationReference.revealValue, `${inputContextForErrorLogging} reveal value`);
+      InputValidator.validateEncodedMultihash(operationReference.didSuffix, `${inputContextForErrorLogging} didSuffix`);
+      InputValidator.validateEncodedMultihash(operationReference.revealValue, `${inputContextForErrorLogging} revealValue`);
     }
   }
 
@@ -102,22 +94,8 @@ export default class InputValidator {
       throw new SidetreeError(ErrorCode.EncodedMultihashMustBeAString, `The ${inputContextForErrorLogging} must be a string but is of ${inputType} type.`);
     }
 
-    const supportedHashAlgorithmsInMultihashCode = protocolParameters.hashAlgorithmsInMultihashCode;
+    const supportedHashAlgorithmsInMultihashCode = ProtocolParameters.hashAlgorithmsInMultihashCode;
     Multihash.validateHashComputedUsingSupportedHashAlgorithm(input, supportedHashAlgorithmsInMultihashCode, inputContextForErrorLogging);
-  }
-
-  /**
-   * Validates the given reveal value.
-   * @param inputContextForErrorLogging This string is used for error logging purposes only. e.g. 'document', or 'suffix data'.
-   */
-  public static validateRevealValue (revealValue: any, inputContextForErrorLogging: string) {
-    const revealValueType = typeof revealValue;
-    if (revealValueType !== 'string') {
-      throw new SidetreeError(
-        ErrorCode.OperationReferenceRevealValueIsNotAString,
-        `Property 'revealValue' in ${inputContextForErrorLogging} is of type ${revealValueType}, but needs to be a string.`
-      );
-    }
   }
 
   private static validateDidType (type: string | undefined): void {

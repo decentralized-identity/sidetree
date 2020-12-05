@@ -48,9 +48,8 @@ export default class RecoverOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<RecoverOperation> {
-    const errorLoggingContext = 'recover request';
     InputValidator.validateObjectContainsOnlyAllowedProperties(
-      operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], errorLoggingContext
+      operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], 'recover request'
     );
 
     if (operationObject.type !== OperationType.Recover) {
@@ -61,13 +60,13 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    InputValidator.validateRevealValue(operationObject.revealValue, errorLoggingContext);
+    InputValidator.validateEncodedMultihash(operationObject.revealValue, 'recover request reveal value');
 
     const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
     const signedDataModel = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
     // Validate that the canonicalized recovery public key hash is the same as `revealValue`.
-    Multihash.validateCanonicalizeObjectHash(signedDataModel.recoveryKey, operationObject.revealValue, errorLoggingContext);
+    Multihash.validateCanonicalizeObjectHash(signedDataModel.recoveryKey, operationObject.revealValue, 'recover request recovery key');
 
     let delta;
     try {

@@ -48,9 +48,8 @@ export default class UpdateOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<UpdateOperation> {
-    const errorLoggingContext = 'update request';
     InputValidator.validateObjectContainsOnlyAllowedProperties(
-      operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], errorLoggingContext
+      operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], 'update request'
     );
 
     if (operationObject.type !== OperationType.Update) {
@@ -61,13 +60,13 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
 
-    InputValidator.validateRevealValue(operationObject.revealValue, errorLoggingContext);
+    InputValidator.validateEncodedMultihash(operationObject.revealValue, 'update request reveal value');
 
     const signedData = Jws.parseCompactJws(operationObject.signedData);
     const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
 
     // Validate that the canonicalized update key hash is the same as `revealValue`.
-    Multihash.validateCanonicalizeObjectHash(signedDataModel.updateKey, operationObject.revealValue, errorLoggingContext);
+    Multihash.validateCanonicalizeObjectHash(signedDataModel.updateKey, operationObject.revealValue, 'update request update key');
 
     Operation.validateDelta(operationObject.delta);
 

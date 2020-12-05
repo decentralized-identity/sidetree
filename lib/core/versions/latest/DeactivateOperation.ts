@@ -45,9 +45,8 @@ export default class DeactivateOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<DeactivateOperation> {
-    const errorLoggingContext = 'deactivate request';
     InputValidator.validateObjectContainsOnlyAllowedProperties(
-      operationObject, ['type', 'didSuffix', 'revealValue', 'signedData'], errorLoggingContext
+      operationObject, ['type', 'didSuffix', 'revealValue', 'signedData'], 'deactivate request'
     );
 
     if (operationObject.type !== OperationType.Deactivate) {
@@ -58,14 +57,14 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    InputValidator.validateRevealValue(operationObject.revealValue, errorLoggingContext);
+    InputValidator.validateEncodedMultihash(operationObject.revealValue, `deactivate request reveal value`);
 
     const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
     const signedDataModel = await DeactivateOperation.parseSignedDataPayload(
       signedDataJws.payload, operationObject.didSuffix);
 
     // Validate that the canonicalized recovery public key hash is the same as `revealValue`.
-    Multihash.validateCanonicalizeObjectHash(signedDataModel.recoveryKey, operationObject.revealValue, errorLoggingContext);
+    Multihash.validateCanonicalizeObjectHash(signedDataModel.recoveryKey, operationObject.revealValue, 'deactivate request recovery key');
 
     return new DeactivateOperation(
       operationBuffer,
