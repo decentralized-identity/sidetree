@@ -43,6 +43,7 @@ Use the following process to generate a Sidetree-based DID:
       "recoveryCommitment": COMMITMENT_HASH
     }
     ```
+    - The object ****MAY**** contain a `type` property, and if present, its value ****MUST**** be a type string, of a length and composition defined by the implementation, that signifies the type of entity a DID represents. The value ****MUST NOT**** be anything that represents humans, groups of humans, or any human-identifying classification - an implementation ****SHALL NOT**** override this directive, and any attempt to do so shall render the implementation non-conformant to this specification.
     - The object ****MUST**** contain a `deltaHash` property, and its value ****MUST**** be a hash of the canonicalized [_Create Operation Delta Object_](#create-delta-object) (detailed above), generated via the [`HASH_PROTOCOL`](#hash-protocol).
     - The object ****MUST**** contain a `recoveryCommitment` property, and its value ****MUST**** be the [recovery commitment](#recovery-commitment) as generated in step 2.
 
@@ -76,7 +77,7 @@ The following process must be used to update the state a Sidetree-based DID:
     }
     ```
     - The JWS `payload` object ****MUST**** include a `updateKey` property, and its value ****MUST**** be a canonicalized [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation (using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme)) matching the previous _Update Commitment_.
-    - The JWS `payload` object ****MUST**** contain a `deltaHash` property, and its value ****MUST**** be a hash of the canonicalized [_Update Operation Delta Object_](#update-delta-object), generated via the [`HASH_PROTOCOL`](#hash-protocol).
+    - The JWS `payload` object ****MUST**** contain a `deltaHash` property, and its value ****MUST**** be a hash of the canonicalized [_Update Operation Delta Object_](#update-delta-object), generated via the [`HASH_PROTOCOL`](#hash-protocol), with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
 
 ### Recover
 
@@ -110,9 +111,9 @@ Use the following process to recover a Sidetree-based DID:
       "signature": SIGNATURE_STRING
     }
     ```
-    - The JWS `payload` object ****MUST**** contain a `recoveryCommitment` property, and its value ****MUST**** be the next [_Recovery Commitment_](#recovery-commitment), as described above.
+    - The JWS `payload` object ****MUST**** contain a `recoveryCommitment` property, and its value ****MUST**** be the next [_Recovery Commitment_](#recovery-commitment), as described above, with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
     - The JWS `payload` object ****MUST**** include a `recoveryKey` property, and its value ****MUST**** be the canonicalized [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation (using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme)) matching the previous _Recovery Commitment_.
-    - The JWS `payload` object ****MUST**** contain a `deltaHash` property, and its value ****MUST**** be a hash of the canonicalized [_Recovery Operation Delta Object_](#recover-delta-object), generated via the [`HASH_PROTOCOL`](#hash-protocol).
+    - The JWS `payload` object ****MUST**** contain a `deltaHash` property, and its value ****MUST**** be a hash of the canonicalized [_Recovery Operation Delta Object_](#recover-delta-object), generated via the [`HASH_PROTOCOL`](#hash-protocol), with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
 
 ### Deactivate
 
@@ -130,5 +131,5 @@ The following process must be used to deactivate a Sidetree-based DID:
       "signature": SIGNATURE_STRING
     }
     ```
-    - The JWS `payload` object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
+    - The JWS `payload` object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to, with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
     - The JWS `payload` object ****MUST**** contain a `recoveryKey` property, and its value ****MUST**** match the last _Recovery Commitment_.

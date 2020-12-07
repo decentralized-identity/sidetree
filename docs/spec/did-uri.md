@@ -33,9 +33,7 @@ colon-separated (`:`) segment appended to the end. The value of this final
 URI segment is a canonicalized JSON data payload composed of the 
 [_Create Operation Suffix_](#create-suffix-data-object) data and the 
 [_Create Operation Delta_](#create-delta-object) data, encoded 
-via the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme). 
-The [_Long-Form DID URI_](#long-form-did) data payload segment ****must not**** 
-exceed 1 kilobyte in size.
+via the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme).
 
 Long-form DID JSON data payload:
 

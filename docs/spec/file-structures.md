@@ -19,6 +19,7 @@ Core Index Files contain [Create](#create), [Recover](#recover), and [Deactivate
     "create": [
       {
         "suffixData": {
+          "type": TYPE_STRING,
           "deltaHash": DELTA_HASH,
           "recoveryCommitment": COMMITMENT_HASH
         }
@@ -44,12 +45,14 @@ Core Index Files contain [Create](#create), [Recover](#recover), and [Deactivate
 ```
 :::
 
-A valid [Core Index File](#core-index-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_CORE_INDEX_FILE_SIZE`](#max-core-index-file-size), and composed as follows:
+A valid [Core Index File](#core-index-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_CORE_INDEX_FILE_SIZE`](#max-core-index-file-size). Any unknown properties in this file not defined by this specification or specifically permitted by the implementer, ****MUST**** result in an invalidation of the entire file.
+
+The [Core Index File](#core-index-file) JSON document is composed as follows:
 
 1. The [Core Index File](#core-index-file) ****MUST**** contain a [`provisionalIndexFileUri`](#provisional-index-file-uri){id="provisional-index-file-uri"} property if the batch of transactions being anchored contains any Create, Recovery, or Update operations, and its value ****MUST**** be a _CAS URI_ for the related Provisional Index File. If the batch of transactions being anchored is only comprised of Deactivate operations, the [`provisionalIndexFileUri`](#provisional-index-file-property) property ****MUST NOT**** be present.
 2. The [Core Index File](#core-index-file) ****MUST**** contain a [`coreProofFileUri`](#core-proof-file-uri){id="core-proof-file-uri"} property if the batch of transactions being anchored contains any Recovery or Deactivate operations, and its value ****MUST**** be a _CAS URI_ for the related [Core Proof File](#core-proof-file).
-4. The [Core Index File](#core-index-file) ****MAY**** contain a [`writerLockId`](#writer-lock-property){id="writer-lock-property"} if the implementation chooses to implement a value locking scheme for economically based network protection, and its value ****MUST**** be defined by the implementation to reflect whatever values the are required to facilitate the necessary ledger and operation-level evaluations.
-5. If the set of operations to be anchored contain any [Create](#create), [Recover](#recover), or [Deactivate](#deactivate) operations, the [Core Index File](#core-index-file) ****MUST**** contain an `operations` property, and its value ****MUST**** be an object composed as follows:
+4. The [Core Index File](#core-index-file) ****MAY**** contain a [`writerLockId`](#writer-lock-property){id="writer-lock-property"} if the implementation chooses to implement an mechanism that requires embedded anchoring information, and if present, its value ****MUST**** comply with the specifications of the implementation.
+5. If the set of operations to be anchored contain any [Create](#create), [Recover](#recover), or [Deactivate](#deactivate) operations, the [Core Index File](#core-index-file) ****MUST**** contain an `operations` property, and its value ****MUST**** be an object, composed as follows:
     - If there are any [Create](#create) operations to be included in the Core Index File:
       1. The `operations` object ****MUST**** include a `create` property, and its value ****MUST**** be an array.
       2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Core Index File Create Entries_](#core-index-file-create-entry){id="core-index-file-create-entry"}, use the following process to compose and include a JSON object for each entry:
@@ -65,10 +68,6 @@ A valid [Core Index File](#core-index-file) is a JSON document that ****MUST NOT
       2. For each [Deactivate](#deactivate) operation to be included in the `deactivate` array, use the following process to compose and include entries:
           - The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An [Core Index File](#core-index-file) ****MUST NOT**** contain more than one operation of any type with the same [DID Suffix](#did-suffix).
           - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [hashed](#multihash) reveal value of the last update commitment.
-
-
-
-- The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be a [_Deactivate Operation Signed Data Object_](#deactivate-signed-data-object).
 
 ### Provisional Index File
 
@@ -95,7 +94,9 @@ Provisional Index Files contain [Update](#update) operation proving data, as wel
 ```
 :::
 
-A valid [Provisional Index File](#provisional-index-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_PROVISIONAL_INDEX_FILE_SIZE`](#max-provisional-index-file-size), and composed as follows:
+A valid [Provisional Index File](#provisional-index-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_PROVISIONAL_INDEX_FILE_SIZE`](#max-provisional-index-file-size). Any unknown properties in this file not defined by this specification or specifically permitted by the implementer, ****MUST**** result in an invalidation of the entire file.
+
+The [Provisional Index File](#provisional-index-file) JSON document is composed as follows:
 
 1. The [Provisional Index File](#provisional-index-file) ****MUST**** contain a [`provisionalProofFileUri`](#provisional-proof-file-uri){id="provisional-proof-file-uri"} property if the batch of transactions being anchored contains any Update operations, and its value ****MUST**** be a _CAS URI_ for the related [Provisional Proof File](#provisional-proof-file).
 2. The [Provisional Index File](#provisional-index-file) ****MUST**** contain a `chunks` property, and its value ****MUST**** be an array of _Chunk Entries_ for the related delta data for a given chunk of operations in the batch. Future versions of the protocol will specify a process for separating the operations in a batch into multiple _Chunk Entries_, but for this version of the protocol there ****MUST**** be only one _Chunk Entry_ present in the array. _Chunk Entry_ objects are composed as follows:
@@ -104,8 +105,8 @@ A valid [Provisional Index File](#provisional-index-file) is a JSON document tha
     - If there are any [Update](#update) entries to be included:
       1. The `operations` object ****MUST**** include an `update` property, and its value ****MUST**** be an array.
       2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Provisional Index File Update Entries](#provisional-index-file-update-entry){id="provisional-index-file-update-entry"}, use the following process to compose and include entries:
-          - The object ****MUST**** contain an `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-          - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [hashed](#multihash) reveal value of the last update commitment.
+          - The object ****MUST**** contain an `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to, with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
+          - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [hashed](#multihash) reveal value of the last update commitment, with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
 
 ### Core Proof File
 
@@ -147,7 +148,9 @@ Core Proof Files are [compressed](#compression-algorithm) JSON Documents contain
 ```
 :::
 
-In this version of the protocol, Core Proof Files are constructed as follows:
+Any unknown properties in this file not defined by this specification or specifically permitted by the implementer, ****MUST**** result in an invalidation of the entire file.
+
+In this version of the protocol, [Core Proof Files](#core-proof-file) are constructed as follows:
 
 1. The Core Proof File ****MUST**** include an `operations` property, and its value ****MUST**** be an object containing cryptographic proof entries for any Recovery and Deactivate operations to be included in a batch. Include the Proof Entries as follows: 
     - If there are any [Recovery](#recover) entries to be included:
@@ -183,7 +186,9 @@ Provisional Proof Files are [compressed](#compression-algorithm) JSON Documents 
 ```
 :::
 
-In this version of the protocol, Provisional Proof Files are constructed as follows:
+Any unknown properties in this file not defined by this specification or specifically permitted by the implementer, ****MUST**** result in an invalidation of the entire file.
+
+In this version of the protocol, [Provisional Proof Files](#provisional-proof-file) are constructed as follows:
 
 1. The Provisional Proof File ****MUST**** include an `operations` property, and its value ****MUST**** be an object containing cryptographic proof entries for any Recovery and Deactivate operations to be included in a batch. Include the Proof Entries as follows: 
     - If there are any [Update](#update) entries to be included:
@@ -211,7 +216,9 @@ For this version of the protocol, there will only exist a single Chunk File that
 ```
 :::
 
-In this version of the protocol, Chunk Files are constructed as follows:
+Any unknown properties in this file not defined by this specification or specifically permitted by the implementer, ****MUST**** result in an invalidation of the entire file.
+
+In this version of the protocol, [Chunk Files](#chunk-files) are constructed as follows:
 
 1. The Chunk File ****MUST**** include a `deltas` property, and its value ****MUST**** be an array containing [_Chunk File Delta Entry_](#chunk-file-delta-entry){id="chunk-file-delta-entry"} objects.
 2. Each [_Chunk File Delta Entry_](#chunk-file-delta-entry) ****MUST**** be a JSON object serialized via the [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme), assembled as follows:
