@@ -3,6 +3,7 @@ import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import DidState from '../../models/DidState';
 import DocumentComposer from './DocumentComposer';
+import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import IOperationProcessor from '../../interfaces/IOperationProcessor';
 import JsonCanonicalizer from './util/JsonCanonicalizer';
@@ -12,7 +13,6 @@ import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
-import Encoder from './Encoder';
 
 /**
  * Implementation of IOperationProcessor.

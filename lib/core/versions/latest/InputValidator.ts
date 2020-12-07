@@ -66,15 +66,8 @@ export default class InputValidator {
     for (const operationReference of operationReferences) {
       InputValidator.validateObjectContainsOnlyAllowedProperties(operationReference, ['didSuffix', 'revealValue'], inputContextForErrorLogging);
 
-      const didSuffixType = typeof operationReference.didSuffix;
-      if (didSuffixType !== 'string') {
-        throw new SidetreeError(
-          ErrorCode.OperationReferenceDidSuffixIsNotAString,
-          `Property 'didSuffix' in ${inputContextForErrorLogging} is of type ${didSuffixType}, but needs to be a string.`
-        );
-      }
-
-      InputValidator.validateRevealValue(operationReference.revealValue, inputContextForErrorLogging);
+      InputValidator.validateEncodedMultihash(operationReference.didSuffix, `${inputContextForErrorLogging} didSuffix`);
+      InputValidator.validateEncodedMultihash(operationReference.revealValue, `${inputContextForErrorLogging} revealValue`);
     }
   }
 
@@ -85,26 +78,24 @@ export default class InputValidator {
     InputValidator.validateNonArrayObject(suffixData, 'suffix data');
     InputValidator.validateObjectContainsOnlyAllowedProperties(suffixData, ['deltaHash', 'recoveryCommitment', 'type'], `suffix data`);
 
-    const deltaHash = Encoder.decodeAsBuffer(suffixData.deltaHash);
-    const nextRecoveryCommitment = Encoder.decodeAsBuffer(suffixData.recoveryCommitment);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitment);
+    InputValidator.validateEncodedMultihash(suffixData.deltaHash, 'delta hash');
+    InputValidator.validateEncodedMultihash(suffixData.recoveryCommitment, 'recovery commitment');
 
     InputValidator.validateDidType(suffixData.type);
   }
 
   /**
-   * Validates the given reveal value.
+   * Validates that the given input is a multihash computed using a supported hash algorithm.
    * @param inputContextForErrorLogging This string is used for error logging purposes only. e.g. 'document', or 'suffix data'.
    */
-  public static validateRevealValue (revealValue: any, inputContextForErrorLogging: string) {
-    const revealValueType = typeof revealValue;
-    if (revealValueType !== 'string') {
-      throw new SidetreeError(
-        ErrorCode.OperationReferenceRevealValueIsNotAString,
-        `Property 'revealValue' in ${inputContextForErrorLogging} is of type ${revealValueType}, but needs to be a string.`
-      );
+  public static validateEncodedMultihash (input: any, inputContextForErrorLogging: string) {
+    const inputType = typeof input;
+    if (inputType !== 'string') {
+      throw new SidetreeError(ErrorCode.EncodedMultihashMustBeAString, `The ${inputContextForErrorLogging} must be a string but is of ${inputType} type.`);
     }
+
+    const supportedHashAlgorithmsInMultihashCode = ProtocolParameters.hashAlgorithmsInMultihashCode;
+    Multihash.validateHashComputedUsingSupportedHashAlgorithm(input, supportedHashAlgorithmsInMultihashCode, inputContextForErrorLogging);
   }
 
   private static validateDidType (type: string | undefined): void {

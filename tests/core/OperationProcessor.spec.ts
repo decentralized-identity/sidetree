@@ -469,7 +469,7 @@ describe('OperationProcessor', async () => {
         const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
         expect(newDidState!.document).toEqual({ });
-        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.recoveryPublicKey));
+        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(createOperationData.operationRequest.suffixData.recoveryCommitment);
       });
     });
 
@@ -578,11 +578,12 @@ describe('OperationProcessor', async () => {
       it('should still apply successfully with resultant document being { } if new document is in some unexpected format.', async () => {
         const document = 'unexpected document format';
         const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+        const unusedNextUpdateCommitment = OperationGenerator.generateRandomHash();
         const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(
           didUniqueSuffix,
           recoveryPrivateKey,
           anyNewRecoveryPublicKey,
-          Multihash.canonicalizeThenDoubleHashThenEncode(['anyNewUpdateCommitmentHash']),
+          unusedNextUpdateCommitment,
           document
         );
         const recoverOperation = await RecoverOperation.parse(Buffer.from(JSON.stringify(recoverOperationRequest)));
@@ -599,11 +600,12 @@ describe('OperationProcessor', async () => {
       it('should still apply successfully with resultant document being { } if delta hash mismatch.', async () => {
         const document = { publicKeys: [] };
         const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+        const unusedNextUpdateCommitment = OperationGenerator.generateRandomHash();
         const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(
           didUniqueSuffix,
           recoveryPrivateKey,
           anyNewRecoveryPublicKey,
-          Multihash.canonicalizeThenDoubleHashThenEncode(['anyNewUpdateCommitmentHash']),
+          unusedNextUpdateCommitment,
           document
         );
         const recoverOperation = await RecoverOperation.parse(Buffer.from(JSON.stringify(recoverOperationRequest)));

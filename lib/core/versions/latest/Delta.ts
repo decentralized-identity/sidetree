@@ -1,5 +1,6 @@
 import ErrorCode from './ErrorCode';
 import JsonCanonicalizer from './util/JsonCanonicalizer';
+import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 
@@ -29,5 +30,8 @@ export default class Delta {
       console.info(errorMessage);
       throw new SidetreeError(ErrorCode.DeltaExceedsMaximumSize, errorMessage);
     }
+
+    // Validate against delta schema.
+    Operation.validateDelta(delta);
   }
 }

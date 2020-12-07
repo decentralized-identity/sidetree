@@ -6,6 +6,7 @@ import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
+import SuffixDataModel from './models/SuffixDataModel';
 
 /**
  * Class containing reusable Sidetree DID related operations.
@@ -100,9 +101,11 @@ export default class Did {
   /**
    * Computes the DID unique suffix given the suffix data object.
    */
-  public static computeUniqueSuffix (suffixData: object): string {
-    const suffixDataBuffer = JsonCanonicalizer.canonicalizeAsBuffer(suffixData);
-    const multihash = Multihash.hash(suffixDataBuffer);
+  public static computeUniqueSuffix (suffixDataModel: SuffixDataModel): string {
+    // TODO: #965 - Need to decide on what hash algorithm to use when hashing suffix data - https://github.com/decentralized-identity/sidetree/issues/965
+    const hashAlgorithmInMultihashCode = 18;
+    const suffixDataBuffer = JsonCanonicalizer.canonicalizeAsBuffer(suffixDataModel);
+    const multihash = Multihash.hash(suffixDataBuffer, hashAlgorithmInMultihashCode);
     const encodedMultihash = Encoder.encode(multihash);
     return encodedMultihash;
   }

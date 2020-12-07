@@ -2,7 +2,6 @@ import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
-import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
@@ -105,10 +104,11 @@ describe('RecoverOperation', async () => {
 
   describe('parseSignedDataPayload()', async () => {
     it('should throw if signedData contains an additional unknown property.', async (done) => {
+      const nextRecoveryCommitmentHash = OperationGenerator.generateRandomHash();
       const signedData = {
         deltaHash: 'anyUnusedHash',
         recoveryKey: 'anyUnusedRecoveryKey',
-        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        nextRecoveryCommitmentHash,
         extraProperty: 'An unknown extra property',
         revealValue: 'some value'
       };

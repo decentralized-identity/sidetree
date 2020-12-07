@@ -37,17 +37,5 @@ describe('Delta', () => {
         ErrorCode.DeltaIsNullOrUndefined
       );
     });
-
-    it('should not throw if delta size is valid', () => {
-      const mockDelta = {
-        someKey: 'some value'
-      };
-
-      try {
-        Delta.validateDelta(mockDelta);
-      } catch (e) {
-        fail(`Expected no error but got ${e}`);
-      }
-    });
   });
 });
