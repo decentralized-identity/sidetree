@@ -26,7 +26,7 @@ describe('Blockchain', async () => {
       const getLatestTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue({} as any);
 
       blockchainClient.startPeriodicCachedBlockchainTimeRefresh();
-      // Time is frozen so it should have have been called.
+      // Time is frozen so it should not have have been called.
       expect(getLatestTimeSpy).not.toHaveBeenCalled();
       // Time is advanced by (refresh time + 1), so the getLatestTimeSpy should be called once.
       jasmine.clock().tick(Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000 + 1);
