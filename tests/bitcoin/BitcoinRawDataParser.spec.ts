@@ -37,7 +37,7 @@ describe('BitcoinRawDataParser', () => {
 
   describe('getBlockHeightFromBlock', () => {
     it('should process blocks correctly', () => {
-      const expectedBlockHeight = 10000
+      const expectedBlockHeight = 10000;
       const mockBlock: any = {
         transactions: [
           {
@@ -45,7 +45,7 @@ describe('BitcoinRawDataParser', () => {
               {
                 _scriptBuffer: {
                   readUInt8: () => { return 123; },
-                  readUIntLE: () => { return expectedBlockHeight }
+                  readUIntLE: () => { return expectedBlockHeight; }
                 }
               }
             ]
@@ -53,11 +53,11 @@ describe('BitcoinRawDataParser', () => {
         ]
       };
 
-      const mainnetMagicBytes = Buffer.from('f9beb4d9', 'hex')
+      const mainnetMagicBytes = Buffer.from('f9beb4d9', 'hex');
 
       const height = BitcoinRawDataParser['getBlockHeightFromBlock'](mockBlock, mainnetMagicBytes);
       expect(height).toEqual(expectedBlockHeight);
-    })
+    });
 
     it('should process regtest blocks under height 17 correctly', () => {
       const mockBlock: any = {
@@ -73,9 +73,9 @@ describe('BitcoinRawDataParser', () => {
           }
         ]
       };
-      const regtestMagicBytes = Buffer.from('fabfb5da', 'hex')
+      const regtestMagicBytes = Buffer.from('fabfb5da', 'hex');
       const height = BitcoinRawDataParser['getBlockHeightFromBlock'](mockBlock, regtestMagicBytes);
       expect(height).toEqual(16);
-    })
-  })
+    });
+  });
 });

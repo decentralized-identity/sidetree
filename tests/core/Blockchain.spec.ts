@@ -24,7 +24,7 @@ describe('Blockchain', async () => {
     it('should setInterval correctly', () => {
       const blockchainClient = new Blockchain('Unused URI');
       const getLatestTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue({} as any);
-  
+
       blockchainClient.startPeriodicCachedBlockchainTimeRefresh();
       // Time is frozen so it should have have been called.
       expect(getLatestTimeSpy).not.toHaveBeenCalled();
@@ -34,7 +34,7 @@ describe('Blockchain', async () => {
       // Time is advanced by (refresh time) again, so getLatestTimeSpy should be called another time.
       jasmine.clock().tick(Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
       expect(getLatestTimeSpy).toHaveBeenCalledTimes(2);
-    })
+    });
   });
 
   describe('read()', async () => {

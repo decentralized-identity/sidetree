@@ -77,7 +77,7 @@ describe('MongoDbTransactionStore', async () => {
     } catch (error) {
       expect(error).toEqual(new Error('Expected test error'));
     }
-  })
+  });
 
   it('should create collections needed on initialization if they do not exist.', async () => {
     console.info(`Deleting collections...`);

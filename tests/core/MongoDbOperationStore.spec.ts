@@ -1,7 +1,7 @@
-import { MongoClient } from 'mongodb';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
+import { MongoClient } from 'mongodb';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
 import Multihash from '../../lib/core/versions/latest/Multihash';
@@ -116,12 +116,12 @@ describe('MongoDbOperationStore', async () => {
     let collectionNames = collections.map(collection => collection.collectionName);
     expect(collectionNames.includes(collectionName)).toBeTruthy();
 
-    //clean up
+    // clean up
     await db.dropCollection(collectionName);
     collections = await db.collections();
     collectionNames = collections.map(collection => collection.collectionName);
     expect(collectionNames.includes(collectionName)).toBeFalsy();
-  })
+  });
 
   it('should get a put create operation', async () => {
     const operationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
