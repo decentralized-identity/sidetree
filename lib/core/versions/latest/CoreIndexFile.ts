@@ -143,10 +143,10 @@ export default class CoreIndexFile {
     if (!('provisionalIndexFileUri' in coreIndexFileModel)) {
       // If `provisionalIndexFileUri` does not exist, then `operations` MUST have just deactivates. ie. only deactivates have no delta in chunk file.
       const createPlusRecoverOperationCount = createDidSuffixes.length + recoverDidSuffixes.length;
-      if (createPlusRecoverOperationCount === 0) {
+      if (createPlusRecoverOperationCount !== 0) {
         throw new SidetreeError(
           ErrorCode.CoreIndexFileProvisionalIndexFileUriMissing,
-          `Provisional index file URI must exist since there are ${createDidSuffixes.length} creates and ${recoverDidSuffixes} recoveries.`
+          `Provisional index file URI must exist since there are ${createDidSuffixes.length} creates and ${recoverDidSuffixes.length} recoveries.`
         );
       }
     } else {
