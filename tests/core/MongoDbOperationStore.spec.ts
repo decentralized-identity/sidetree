@@ -1,3 +1,4 @@
+import { MongoClient } from 'mongodb';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
@@ -100,6 +101,27 @@ describe('MongoDbOperationStore', async () => {
 
     await operationStore.delete();
   });
+
+  it('should create collection when initialize is called', async () => {
+    // Make a new instance of operation store and initialize
+    const databaseName = 'test-new-db';
+    const collectionName = 'test-new-collection';
+    const emptyOperationStore = new MongoDbOperationStore(config.mongoDbConnectionString, databaseName, collectionName);
+    await emptyOperationStore.initialize();
+
+    // Make connection to mongo db to verify collection exists
+    const client = await MongoClient.connect(config.mongoDbConnectionString, { useNewUrlParser: true });
+    const db = client.db(databaseName);
+    let collections = await db.collections();
+    let collectionNames = collections.map(collection => collection.collectionName);
+    expect(collectionNames.includes(collectionName)).toBeTruthy();
+
+    //clean up
+    await db.dropCollection(collectionName);
+    collections = await db.collections();
+    collectionNames = collections.map(collection => collection.collectionName);
+    expect(collectionNames.includes(collectionName)).toBeFalsy();
+  })
 
   it('should get a put create operation', async () => {
     const operationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
