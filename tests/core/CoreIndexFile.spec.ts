@@ -114,11 +114,31 @@ describe('CoreIndexFile', async () => {
       );
     });
 
-    it('should throw if expected `provisionalIndexFileUri` is missing.', async () => {
-      const coreIndexFile = {
+    it('should allow `provisionalIndexFileUri` to be missing if there are only deactivates.', async () => {
+      const coreIndexFile: CoreIndexFileModel = {
         // provisionalIndexFileUri: 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i', // Intentionally kept to show what is missing.
+        coreProofFileUri: 'unused',
         operations: {
           deactivate: [{
+            didSuffix: OperationGenerator.generateRandomHash(),
+            revealValue: OperationGenerator.generateRandomHash()
+          }]
+        }
+      };
+      const coreIndexFileBuffer = Buffer.from(JSON.stringify(coreIndexFile));
+      const coreIndexFileCompressed = await Compressor.compress(coreIndexFileBuffer);
+
+      const coreIndexFileParsed = await CoreIndexFile.parse(coreIndexFileCompressed);
+      expect(coreIndexFileParsed.model.provisionalIndexFileUri).toBeUndefined();
+      expect(coreIndexFileParsed.didUniqueSuffixes.length).toEqual(1);
+    });
+
+    it('should throw if `provisionalIndexFileUri` is missing but there is a create/recover operation.', async () => {
+      const coreIndexFile: CoreIndexFileModel = {
+        // provisionalIndexFileUri: 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i', // Intentionally kept to show what is missing.
+        coreProofFileUri: 'unused',
+        operations: {
+          recover: [{
             didSuffix: OperationGenerator.generateRandomHash(),
             revealValue: OperationGenerator.generateRandomHash()
           }]
