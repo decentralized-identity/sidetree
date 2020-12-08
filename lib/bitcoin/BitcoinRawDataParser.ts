@@ -67,21 +67,7 @@ export default class BitcoinRawDataParser {
         throw SidetreeError.createFromError(ErrorCode.BitcoinRawDataParserInvalidBlockData, e);
       }
 
-      // the first transaction, the coinbase, contains the block height in its input
-      const coinbaseInputScript = (block.transactions[0].inputs[0] as any)._scriptBuffer as Buffer;
-      // this denotes how many bytes following represent the block height
-      const heightBytes = coinbaseInputScript.readUInt8(0);
-
-      let blockHeight;
-      // for regtest blocks 1-16 the blockheight is recorded as 0x51..0x60 (Decimal 81..96) with no heightBytes so adjust this here if it is encountered
-      // see: https://bitcoin.stackexchange.com/questions/97116/why-is-the-data-format-for-block-height-in-coinbase-scriptsigs-inconsistent-for
-      if (actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.regtest) &&
-          heightBytes > 80 && heightBytes < 97) {
-        blockHeight = heightBytes - 80;
-      } else {
-      // the next n bytes are the block height in little endian
-        blockHeight = coinbaseInputScript.readUIntLE(1, heightBytes);
-      }
+      let blockHeight = BitcoinRawDataParser.getBlockHeightFromBlock(block, actualMagicBytes);
 
       const transactionModels = BitcoinClient.convertToBitcoinTransactionModels(block);
 
@@ -96,5 +82,24 @@ export default class BitcoinRawDataParser {
 
     console.info(`Finished processing ${count} blocks from raw block file`);
     return processedBlocks;
+  }
+
+  private static getBlockHeightFromBlock (block: Block, magicBytes: Buffer) {
+      // the first transaction, the coinbase, contains the block height in its input
+      const coinbaseInputScript = (block.transactions[0].inputs[0] as any)._scriptBuffer as Buffer;
+      // this denotes how many bytes following represent the block height
+      const heightBytes = coinbaseInputScript.readUInt8(0);
+
+      let blockHeight;
+      // for regtest blocks 1-16 the blockheight is recorded as 0x51..0x60 (Decimal 81..96) with no heightBytes so adjust this here if it is encountered
+      // see: https://bitcoin.stackexchange.com/questions/97116/why-is-the-data-format-for-block-height-in-coinbase-scriptsigs-inconsistent-for
+      if (magicBytes.equals(BitcoinRawDataParser.magicBytes.regtest) &&
+          heightBytes > 80 && heightBytes < 97) {
+        blockHeight = heightBytes - 80;
+      } else {
+      // the next n bytes are the block height in little endian
+        blockHeight = coinbaseInputScript.readUIntLE(1, heightBytes);
+      }
+      return blockHeight
   }
 }

@@ -62,6 +62,23 @@ describe('MongoDbTransactionStore', async () => {
     await transactionStore.clearCollection();
   });
 
+  it('should throw error if addTransaction throws a non 11000 error', async () => {
+    spyOn(transactionStore['transactionCollection'] as any, 'insertOne').and.throwError('Expected test error');
+    try {
+      await transactionStore.addTransaction({
+        transactionNumber: 1,
+        transactionTime: 1,
+        transactionFeePaid: 1,
+        transactionTimeHash: 'hash',
+        anchorString: 'anchorString',
+        writer: 'writer'
+      });
+      fail('expected to throw but did not');
+    } catch (error) {
+      expect(error).toEqual(new Error('Expected test error'));
+    }
+  })
+
   it('should create collections needed on initialization if they do not exist.', async () => {
     console.info(`Deleting collections...`);
     const client = await MongoClient.connect(config.mongoDbConnectionString);

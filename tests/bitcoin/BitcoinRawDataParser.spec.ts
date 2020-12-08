@@ -34,4 +34,48 @@ describe('BitcoinRawDataParser', () => {
       }).toThrow(new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidBlockData, 'Invalid state: No block data received'));
     });
   });
+
+  describe('getBlockHeightFromBlock', () => {
+    it('should process blocks correctly', () => {
+      const expectedBlockHeight = 10000
+      const mockBlock: any = {
+        transactions: [
+          {
+            inputs: [
+              {
+                _scriptBuffer: {
+                  readUInt8: () => { return 123; },
+                  readUIntLE: () => { return expectedBlockHeight }
+                }
+              }
+            ]
+          }
+        ]
+      };
+
+      const mainnetMagicBytes = Buffer.from('f9beb4d9', 'hex')
+
+      const height = BitcoinRawDataParser['getBlockHeightFromBlock'](mockBlock, mainnetMagicBytes);
+      expect(height).toEqual(expectedBlockHeight);
+    })
+
+    it('should process regtest blocks under height 17 correctly', () => {
+      const mockBlock: any = {
+        transactions: [
+          {
+            inputs: [
+              {
+                _scriptBuffer: {
+                  readUInt8: () => { return 96; }
+                }
+              }
+            ]
+          }
+        ]
+      };
+      const regtestMagicBytes = Buffer.from('fabfb5da', 'hex')
+      const height = BitcoinRawDataParser['getBlockHeightFromBlock'](mockBlock, regtestMagicBytes);
+      expect(height).toEqual(16);
+    })
+  })
 });
