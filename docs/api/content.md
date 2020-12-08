@@ -82,7 +82,7 @@ A valid Sidetree Operation Request is a JSON document composed as follows:
 Use the following process to generate a Sidetree create operation JSON document for the REST API, composed as follows:
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `create`.
-2. The object ****MUST**** contain a `suffix_data` property, and its value must be a _Suffix Data Object_(#core-index-file-create-entry).
+2. The object ****MUST**** contain a `suffixData` property, and its value must be a _Suffix Data Object_(#core-index-file-create-entry).
 3. The object ****MUST**** contain an `delta` property, and its value must be a [_Create Operation Data Object_](#create-data-object).
 
 #### Update
