@@ -10,6 +10,33 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 
 describe('Blockchain', async () => {
+  describe('startPeriodicCachedBlockchainTimeRefresh', () => {
+    beforeEach(() => {
+      // Freeze time
+      jasmine.clock().install();
+    });
+
+    afterEach(() => {
+      // End freeze time
+      jasmine.clock().uninstall();
+    });
+
+    it('should setInterval correctly', () => {
+      const blockchainClient = new Blockchain('Unused URI');
+      const getLatestTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue({} as any);
+
+      blockchainClient.startPeriodicCachedBlockchainTimeRefresh();
+      // Time is frozen so it should not have have been called.
+      expect(getLatestTimeSpy).not.toHaveBeenCalled();
+      // Time is advanced by (refresh time + 1), so the getLatestTimeSpy should be called once.
+      jasmine.clock().tick(Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000 + 1);
+      expect(getLatestTimeSpy).toHaveBeenCalledTimes(1);
+      // Time is advanced by (refresh time) again, so getLatestTimeSpy should be called another time.
+      jasmine.clock().tick(Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
+      expect(getLatestTimeSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('read()', async () => {
     it('should return transactions fetched.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
