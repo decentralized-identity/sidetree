@@ -18,7 +18,7 @@ A full node offers the largest set of features and highest resolution performanc
 
 A light node is a node that retains the ability to independently resolve DIDs without relying on a trusted party or trusted assertions by other nodes, while minimizing the amount of bandwidth and data required to do so. Light nodes run a copy of the target system's blockchain node and fetch only minimal Sidetree data required to create an independent lookup table that enables just-in-time resolution of DIDs.
 
-> NOTE: Light node support is in development.
+> NOTE: Light node support is not yet implemented.
 
 ## Observer
 
@@ -697,8 +697,3 @@ HTTP/1.1 200 OK
 }
 ```
 
-## Frequently Asked Questions
-### Why is the signature not verified before a request is queued and written to the blockchain?
-End users are expected to use a "user agent" for making requests which should almost always generate the right signature,
-thus verifying sigatures for each request simply adds unnecessary computation to the Sidetree node with no real benefits.
-Developers can use other tooling to validate the request signature before submitting a request to a Sidetree node.
