@@ -53,14 +53,14 @@ A Sidetree client manages the private keys and performs document operations on b
 ## FAQs
 * Why are we not checking signatures at observation time for all updates, recoveries, and deactivates?
 
-  Because it would mean we have to resolve all DIDs at observation time which is costly since signature checks are computationally expensive. So we defer such compute until resolution time.
+  Because signature checks are computationally expensive, so we defer such compute until resolution time.
 
 * Why have the concept of _index files_?
 
   It would be ideal to be able to fetch metadata about the batched operations efficiently,
   without needing to download the entire batched operation.
-  This design is needed for the implementation of "light nodes", it also opens up possibilities of other applications of the Sidetree specification.
+  This design is needed for the implementation of "light nodes".
 
 * Why assign a _transaction number_ to invalid transactions?
 
-  In the case of an _unresolvable transaction_, it is unknown if the transaction will be valid or not if it becomes resolvable, thus it is assigned a transaction number such that if the transaction turns out to be valid, the transaction number of valid transactions that occur at a later time remain immutable. This also enables all Sidetree nodes to refer to the same transaction using the same transaction number.
+  This allows all Sidetree nodes to refer to the same transaction using the same transaction number regardless of its validity.
