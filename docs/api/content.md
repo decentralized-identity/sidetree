@@ -91,7 +91,7 @@ Use the following process to generate a Sidetree create operation JSON document 
 ```json
 {
     "type": "update",
-    "didSuffix": DID_SUFFIX,
+    "didSuffix": SUFFIX_STRING,
     "revealValue": REVEAL_VALUE,
     "delta": DELTA_OBJECT,
     "signedData": JWS_SIGNED_VALUE
@@ -105,8 +105,8 @@ Use the following process to generate a Sidetree update operation JSON document 
 1. The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
 1. The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [reveal value](https://identity.foundation/sidetree/spec/#default-parameters) of the DID the operation pertains to.
 1. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be an [_Update Operation Delta Object_](#update-data-object).
-1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be an [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
-as defined in [Provisional Index File](https://identity.foundation/sidetree/spec/#provisional-index-file) for Update operations.
+1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be an [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS Compact
+Serialization of the Update operation as defined in [Provisional Index File](https://identity.foundation/sidetree/spec/#provisional-index-file).
 
 #### Recover
 
@@ -114,7 +114,7 @@ as defined in [Provisional Index File](https://identity.foundation/sidetree/spec
 ```json
 {
     "type": "recover",
-    "didSuffix": DID_SUFFIX,
+    "didSuffix": SUFFIX_STRING,
     "revealValue": REVEAL_VALUE,
     "delta": DELTA_OBJECT,
     "signedData": JWS_SIGNED_VALUE
@@ -128,8 +128,8 @@ Use the following process to generate a Sidetree recovery operation JSON documen
 1. The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
 1. The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [reveal value](https://identity.foundation/sidetree/spec/#default-parameters) of the DID the operation pertains to.
 1. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be a [_Recovery Operation Delta Object_](#recover-delta-object).
-1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be an [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
-as defined in [Core Index File](https://identity.foundation/sidetree/spec/#core-index-file) for Recovery operations.
+1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be an [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS Compact
+Serialization of the Recovery operation as defined in [Core Index File](https://identity.foundation/sidetree/spec/#core-index-file).
 
 #### Deactivate
 
@@ -137,7 +137,7 @@ as defined in [Core Index File](https://identity.foundation/sidetree/spec/#core-
 ```json
 {
     "type": "deactivate",
-    "didSuffix": DID_SUFFIX,
+    "didSuffix": SUFFIX_STRING,
     "revealValue": REVEAL_VALUE,
     "signedData": JWS_SIGNED_VALUE
 }
@@ -149,5 +149,5 @@ Use the following process to generate a Sidetree deactivate operation JSON docum
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `deactivate`.
 1. The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
 1. The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [reveal value](https://identity.foundation/sidetree/spec/#default-parameters) of the DID the operation pertains to.
-1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be an [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object.
-as defined in [Core Index File](https://identity.foundation/sidetree/spec/#core-index-file) for Deactivate operations.
+1. The object ****MUST**** contain a `signedData` property, and its value ****MUST**** be an [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS Compact
+Serialization of the Deactivate operation as defined in [Core Index File](https://identity.foundation/sidetree/spec/#core-index-file).
