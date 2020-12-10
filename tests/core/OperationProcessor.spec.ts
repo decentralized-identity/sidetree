@@ -21,6 +21,7 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
+import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,
@@ -260,7 +261,6 @@ describe('OperationProcessor', async () => {
 
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
-    console.log(didState!.document);
     validateDocumentAfterUpdates(didState!.document, numberOfUpdates);
 
     const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, recoveryPrivateKey);
@@ -471,6 +471,26 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document).toEqual({ });
         expect(newDidState!.nextRecoveryCommitmentHash).toEqual(createOperationData.operationRequest.suffixData.recoveryCommitment);
       });
+
+      it('should apply the create operation with { } as document if delta does not exist', async () => {
+        const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
+        spyOn(CreateOperation, 'parse').and.returnValue({delta: undefined, suffixData: {recoveryCommitment: 'commitment'}} as any); // delta is undefined
+        const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
+        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
+        expect(newDidState!.document).toEqual({ });
+        expect(newDidState!.nextRecoveryCommitmentHash).toEqual('commitment');
+      });
+
+      it('should apply the create operation with { } and advance update commitment as document if delta cannot be applied', async () => {
+        const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
+        spyOn(DocumentComposer, 'applyPatches').and.throwError('Expected test error');
+        const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
+        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
+        expect(newDidState!.document).toEqual({ });
+        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(createOperationData.operationRequest.suffixData.recoveryCommitment);
+        // advance update commitment
+        expect(newDidState!.nextUpdateCommitmentHash).toEqual(createOperationData.operationRequest.delta.updateCommitment);
+      });
     });
 
     describe('applyUpdateOperation()', () => {
@@ -558,6 +578,104 @@ describe('OperationProcessor', async () => {
         // The count of public keys should remain 1, not 2.
         expect(newDidState!.document.publicKeys.length).toEqual(1);
       });
+
+      it('should not apply update operation if delta is undefined', async () => {
+        // Create an update using the create operation generated in `beforeEach()`.
+        const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
+        const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
+          didUniqueSuffix,
+          signingPublicKey.publicKeyJwk,
+          signingPrivateKey,
+          additionalKey,
+          OperationGenerator.generateRandomHash()
+        );
+        const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
+        const anchoredUpdateOperationModel: AnchoredOperationModel = {
+          type: OperationType.Update,
+          didUniqueSuffix,
+          operationBuffer,
+          transactionTime: 2,
+          transactionNumber: 2,
+          operationIndex: 2
+        };
+
+        const modifiedUpdateOperation = await UpdateOperation.parse(anchoredUpdateOperationModel.operationBuffer);
+        // set to undefined to satify the test condition of it being undefined
+        (modifiedUpdateOperation.delta as any) = undefined;
+        // mock the function to return the modified result
+        spyOn(UpdateOperation, 'parse').and.returnValue(Promise.resolve(modifiedUpdateOperation));
+
+        const newDidState = await operationProcessor.apply(anchoredUpdateOperationModel, didState);
+        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
+        expect(newDidState!.document).toBeDefined();
+
+        // The count of public keys should remain 1, not 2.
+        expect(newDidState!.document.publicKeys.length).toEqual(1);
+      });
+
+      it('should not apply update operation if delta deos not match delta hash', async () => {
+        // Create an update using the create operation generated in `beforeEach()`.
+        const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
+        const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
+          didUniqueSuffix,
+          signingPublicKey.publicKeyJwk,
+          signingPrivateKey,
+          additionalKey,
+          OperationGenerator.generateRandomHash()
+        );
+        const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
+        const anchoredUpdateOperationModel: AnchoredOperationModel = {
+          type: OperationType.Update,
+          didUniqueSuffix,
+          operationBuffer,
+          transactionTime: 2,
+          transactionNumber: 2,
+          operationIndex: 2
+        };
+
+        const modifiedUpdateOperation = await UpdateOperation.parse(anchoredUpdateOperationModel.operationBuffer);
+        // set to empty object to satify the test condition of not matching delta hash
+        (modifiedUpdateOperation.delta as any) = {};
+        // mock the function to return the modified result
+        spyOn(UpdateOperation, 'parse').and.returnValue(Promise.resolve(modifiedUpdateOperation));
+
+        const newDidState = await operationProcessor.apply(anchoredUpdateOperationModel, didState);
+        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
+        expect(newDidState!.document).toBeDefined();
+
+        // The count of public keys should remain 1, not 2.
+        expect(newDidState!.document.publicKeys.length).toEqual(1);
+      });
+
+      it('should not apply update operation if document compose fails to apply the operation', async () => {
+        // Create an update using the create operation generated in `beforeEach()`.
+        const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
+        const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
+          didUniqueSuffix,
+          signingPublicKey.publicKeyJwk,
+          signingPrivateKey,
+          additionalKey,
+          OperationGenerator.generateRandomHash()
+        );
+        const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
+        const anchoredUpdateOperationModel: AnchoredOperationModel = {
+          type: OperationType.Update,
+          didUniqueSuffix,
+          operationBuffer,
+          transactionTime: 2,
+          transactionNumber: 2,
+          operationIndex: 2
+        };
+
+        spyOn(DocumentComposer, 'applyUpdateOperation').and.throwError('Expected test error');
+
+        const newDidState = await operationProcessor.apply(anchoredUpdateOperationModel, didState);
+        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
+        expect(newDidState!.document).toBeDefined();
+
+        // The count of public keys should remain 1, not 2.
+        expect(newDidState!.document.publicKeys.length).toEqual(1);
+      });
     });
 
     describe('applyRecoverOperation()', () => {
@@ -573,6 +691,51 @@ describe('OperationProcessor', async () => {
 
         // Verify that the recovery commitment is still the same as prior to the application of the recover operation.
         expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
+      });
+
+      it('should not apply if recovery signature is invalid.', async () => {
+        const operationData = await OperationGenerator.generateRecoverOperation({
+          didUniqueSuffix,
+          recoveryPrivateKey
+        });
+
+        const anchoredRecoverOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(operationData.recoverOperation, 2, 2, 2);
+        const modifiedResult = await RecoverOperation.parse(anchoredRecoverOperationModel.operationBuffer);
+        // modify the result to make signature validation fail
+        spyOn(modifiedResult.signedDataJws, 'verifySignature').and.returnValue(Promise.resolve(false));
+        // mock updateOperation parse to return the modified result
+        spyOn(RecoverOperation, 'parse').and.returnValue(Promise.resolve(modifiedResult));
+
+        const newDidState = await operationProcessor.apply(anchoredRecoverOperationModel, didState);
+        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
+
+        // Verify that the recovery commitment is still the same as prior to the application of the recover operation.
+        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
+      });
+
+      it('should still apply successfully with resultant document being { } documetn composer fails to apply patches.', async () => {
+        const document = { };
+        const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+        const newUpdateCommitment = OperationGenerator.generateRandomHash();
+        const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(
+          didUniqueSuffix,
+          recoveryPrivateKey,
+          anyNewRecoveryPublicKey,
+          newUpdateCommitment,
+          document
+        );
+        const recoverOperation = await RecoverOperation.parse(Buffer.from(JSON.stringify(recoverOperationRequest)));
+        const anchoredRecoverOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
+
+        spyOn(DocumentComposer, 'applyPatches').and.throwError('Expected test error');
+
+        const newDidState = await operationProcessor.apply(anchoredRecoverOperationModel, didState);
+        expect(newDidState!.lastOperationTransactionNumber).toEqual(2);
+        expect(newDidState!.document).toEqual({ });
+
+        const expectedNewRecoveryCommitment = Multihash.canonicalizeThenDoubleHashThenEncode(anyNewRecoveryPublicKey);
+        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(expectedNewRecoveryCommitment);
+        expect(newDidState!.nextUpdateCommitmentHash).toEqual(newUpdateCommitment);
       });
 
       it('should still apply successfully with resultant document being { } if new document is in some unexpected format.', async () => {

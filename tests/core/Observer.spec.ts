@@ -21,6 +21,7 @@ import SidetreeError from '../../lib/common/SidetreeError';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
+import { TransactionProcessingStatus } from '../../lib/core/models/TransactionUnderProcessingModel';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
@@ -31,6 +32,7 @@ describe('Observer', async () => {
   let transactionStore: MockTransactionStore;
   let blockchain: MockBlockchain;
   let versionManager: IVersionManager;
+  let getTransactionProcessorSpy: jasmine.Spy;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
@@ -57,7 +59,8 @@ describe('Observer', async () => {
     const transactionSelector = new TransactionSelector(transactionStore);
     versionManager = new MockVersionManager();
 
-    spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
+    getTransactionProcessorSpy = spyOn(versionManager, 'getTransactionProcessor');
+    getTransactionProcessorSpy.and.returnValue(transactionProcessor);
     spyOn(versionManager, 'getTransactionSelector').and.returnValue(transactionSelector);
   });
 
@@ -501,4 +504,76 @@ describe('Observer', async () => {
     expect(revertInvalidTransactionsSpy).toHaveBeenCalledTimes(0);
     expect(getFirstValidTransactionSpy).toHaveBeenCalledTimes(0);
   });
+
+  describe('waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo', () => {
+    it('should wait until transactionsUnderProcessing is greater than count', async () => {
+      const blockchainClient = new Blockchain(config.blockchainServiceUri);
+      const observer = new Observer(
+        versionManager,
+        blockchainClient,
+        config.maxConcurrentDownloads,
+        operationStore,
+        transactionStore,
+        transactionStore,
+        1
+      );
+      observer['transactionsUnderProcessing'] = [1, 2, 3] as any;
+      const storeConsecutiveTransactionsProcessedSpy =  spyOn(observer as any, 'storeConsecutiveTransactionsProcessed').and.callFake(() => {
+        observer['transactionsUnderProcessing'] = []
+      });
+
+      // Purposefully use then() to resolve promise so we can set isResolved asynchronously
+      await observer['waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo'](0)
+
+      expect(storeConsecutiveTransactionsProcessedSpy).toHaveBeenCalled();
+    })
+  })
+
+  describe('processUnresolvableTransactions', () => {
+    it('should process unresolvable transactions as expected', async () => {
+      const blockchainClient = new Blockchain(config.blockchainServiceUri);
+      const observer = new Observer(
+        versionManager,
+        blockchainClient,
+        config.maxConcurrentDownloads,
+        operationStore,
+        transactionStore,
+        transactionStore,
+        1
+      );
+      const isIndividualResolved = [false, false, false];
+      spyOn(observer['unresolvableTransactionStore'], 'getUnresolvableTransactionsDueForRetry').and.returnValue([1,2,3] as any);
+
+      spyOn(observer as any, 'processTransaction').and.callFake((transaction: any, awaitingTransaction: any) => {
+        awaitingTransaction.processingStatus = TransactionProcessingStatus.Processed;
+        isIndividualResolved[transaction - 1] = true;
+      });
+
+      await observer['processUnresolvableTransactions']();
+      expect(isIndividualResolved[0]).toBeTruthy();
+      expect(isIndividualResolved[1]).toBeTruthy();
+      expect(isIndividualResolved[2]).toBeTruthy();
+    })
+  });
+
+  describe('processTransaction', () => {
+    it('should handle unexpected error', async () => {
+      const blockchainClient = new Blockchain(config.blockchainServiceUri);
+      const observer = new Observer(
+        versionManager,
+        blockchainClient,
+        config.maxConcurrentDownloads,
+        operationStore,
+        transactionStore,
+        transactionStore,
+        1
+      );
+      getTransactionProcessorSpy.and.throwError('Expected test error');
+      const recordUnresolvableAttemptSpy = spyOn(observer['unresolvableTransactionStore'], 'recordUnresolvableTransactionFetchAttempt');
+
+      await observer['processTransaction']({} as any, {} as any);
+      // Failed to process the unresolvable transactions so the attempt should be recorded
+      expect(recordUnresolvableAttemptSpy).toHaveBeenCalled();
+    })
+  })
 });
