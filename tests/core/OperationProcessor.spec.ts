@@ -808,6 +808,26 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document.publicKeys.length).toEqual(1);
         expect(newDidState!.nextUpdateCommitmentHash).toEqual(didState!.nextUpdateCommitmentHash);
       });
+
+      it('should not apply if signature is invalid.', async () => {
+        // Creating and signing a deactivate operation using an invalid/incorrect recovery key.
+        const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, recoveryPrivateKey);
+        const deactivateOperation = await DeactivateOperation.parse(deactivateOperationData.operationBuffer);
+        const anchoredDeactivateOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperation, 2, 2, 2);
+        
+        // Mock to make signature validation fail
+        const modifiedResult = await DeactivateOperation.parse(anchoredDeactivateOperationModel.operationBuffer);
+        spyOn(modifiedResult.signedDataJws, 'verifySignature').and.returnValue(Promise.resolve(false));
+        spyOn(DeactivateOperation, 'parse').and.returnValue(Promise.resolve(modifiedResult));
+
+        const newDidState = await operationProcessor.apply(anchoredDeactivateOperationModel, didState);
+
+        // Expecting resulting DID state to still be the same as prior to attempting to apply the invalid deactivate operation.
+        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
+        expect(newDidState!.document).toBeDefined();
+        expect(newDidState!.document.publicKeys.length).toEqual(1);
+        expect(newDidState!.nextUpdateCommitmentHash).toEqual(didState!.nextUpdateCommitmentHash);
+      });
     });
   });
 
