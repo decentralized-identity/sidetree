@@ -19,9 +19,9 @@ import OperationGenerator from '../generators/OperationGenerator';
 import ProvisionalIndexFile from '../../lib/core/versions/latest/ProvisionalIndexFile';
 import SidetreeError from '../../lib/common/SidetreeError';
 import TransactionModel from '../../lib/common/models/TransactionModel';
+import { TransactionProcessingStatus } from '../../lib/core/models/TransactionUnderProcessingModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
-import { TransactionProcessingStatus } from '../../lib/core/models/TransactionUnderProcessingModel';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
@@ -518,16 +518,16 @@ describe('Observer', async () => {
         1
       );
       observer['transactionsUnderProcessing'] = [1, 2, 3] as any;
-      const storeConsecutiveTransactionsProcessedSpy =  spyOn(observer as any, 'storeConsecutiveTransactionsProcessed').and.callFake(() => {
-        observer['transactionsUnderProcessing'] = []
+      const storeConsecutiveTransactionsProcessedSpy = spyOn(observer as any, 'storeConsecutiveTransactionsProcessed').and.callFake(() => {
+        observer['transactionsUnderProcessing'] = [];
       });
 
       // Purposefully use then() to resolve promise so we can set isResolved asynchronously
-      await observer['waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo'](0)
+      await observer['waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo'](0);
 
       expect(storeConsecutiveTransactionsProcessedSpy).toHaveBeenCalled();
-    })
-  })
+    });
+  });
 
   describe('processUnresolvableTransactions', () => {
     it('should process unresolvable transactions as expected', async () => {
@@ -542,7 +542,7 @@ describe('Observer', async () => {
         1
       );
       const isIndividualResolved = [false, false, false];
-      spyOn(observer['unresolvableTransactionStore'], 'getUnresolvableTransactionsDueForRetry').and.returnValue([1,2,3] as any);
+      spyOn(observer['unresolvableTransactionStore'], 'getUnresolvableTransactionsDueForRetry').and.returnValue([1, 2, 3] as any);
 
       spyOn(observer as any, 'processTransaction').and.callFake((transaction: any, awaitingTransaction: any) => {
         awaitingTransaction.processingStatus = TransactionProcessingStatus.Processed;
@@ -553,7 +553,7 @@ describe('Observer', async () => {
       expect(isIndividualResolved[0]).toBeTruthy();
       expect(isIndividualResolved[1]).toBeTruthy();
       expect(isIndividualResolved[2]).toBeTruthy();
-    })
+    });
   });
 
   describe('processTransaction', () => {
@@ -574,6 +574,6 @@ describe('Observer', async () => {
       await observer['processTransaction']({} as any, {} as any);
       // Failed to process the unresolvable transactions so the attempt should be recorded
       expect(recordUnresolvableAttemptSpy).toHaveBeenCalled();
-    })
-  })
+    });
+  });
 });

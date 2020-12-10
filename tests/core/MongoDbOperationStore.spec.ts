@@ -124,10 +124,10 @@ describe('MongoDbOperationStore', async () => {
   });
 
   it('should throw error if batch put execution throws', async () => {
-    spyOn((operationStore as any )['collection'], 'initializeUnorderedBulkOp').and.returnValue({
-      execute: () => { throw new Error('Expected test error') },
+    spyOn((operationStore as any)['collection'], 'initializeUnorderedBulkOp').and.returnValue({
+      execute: () => { throw new Error('Expected test error'); },
       insert: () => {
-        // do nothing 
+        // do nothing
       }
     });
 

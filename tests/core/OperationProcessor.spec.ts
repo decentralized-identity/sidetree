@@ -3,6 +3,7 @@ import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import DidState from '../../lib/core/models/DidState';
 import Document from '../../lib/core/versions/latest/Document';
+import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
@@ -21,7 +22,6 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
-import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,
@@ -474,7 +474,7 @@ describe('OperationProcessor', async () => {
 
       it('should apply the create operation with { } as document if delta does not exist', async () => {
         const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
-        spyOn(CreateOperation, 'parse').and.returnValue({delta: undefined, suffixData: {recoveryCommitment: 'commitment'}} as any); // delta is undefined
+        spyOn(CreateOperation, 'parse').and.returnValue({ delta: undefined, suffixData: { recoveryCommitment: 'commitment' } } as any); // delta is undefined
         const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
         expect(newDidState!.document).toEqual({ });
@@ -814,7 +814,7 @@ describe('OperationProcessor', async () => {
         const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, recoveryPrivateKey);
         const deactivateOperation = await DeactivateOperation.parse(deactivateOperationData.operationBuffer);
         const anchoredDeactivateOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperation, 2, 2, 2);
-        
+
         // Mock to make signature validation fail
         const modifiedResult = await DeactivateOperation.parse(anchoredDeactivateOperationModel.operationBuffer);
         spyOn(modifiedResult.signedDataJws, 'verifySignature').and.returnValue(Promise.resolve(false));
