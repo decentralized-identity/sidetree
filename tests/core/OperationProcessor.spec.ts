@@ -713,7 +713,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
       });
 
-      it('should still apply successfully with resultant document being { } documetn composer fails to apply patches.', async () => {
+      it('should apply successfully with resultant document being { } and advanced commit reveal when document composer fails to apply patches.', async () => {
         const document = { };
         const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
         const newUpdateCommitment = OperationGenerator.generateRandomHash();
