@@ -383,7 +383,6 @@ describe('Resolver', () => {
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
       const initialDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
 
-      // Generate 3 anchored recover operations with the same reveal value but different anchored time.
       const recoveryOperation1Data = await OperationGenerator.generateRecoverOperation({
         didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
         recoveryPrivateKey: createOperationData.recoveryPrivateKey
@@ -391,7 +390,6 @@ describe('Resolver', () => {
 
       const recoveryOperation1 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation1Data.recoverOperation, 2, 2, 2);
 
-      // Intentionally insert earliest valid recover operation in between the other two operations to test sorting.
       const recoveryCommitValueToOperationMap = new Map<string, AnchoredOperationModel[]>();
       const nextRecoveryCommitment = createOperationData.createOperation.suffixData.recoveryCommitment;
       recoveryCommitValueToOperationMap.set(nextRecoveryCommitment, [recoveryOperation1]);
@@ -400,7 +398,6 @@ describe('Resolver', () => {
 
       const newDidState: DidState = await (resolver as any).applyRecoverAndDeactivateOperations(initialDidState, recoveryCommitValueToOperationMap);
 
-      // Expecting the new state to contain info of the first recovery operation.
       expect(newDidState.lastOperationTransactionNumber).toEqual(1);
       expect(newDidState.nextRecoveryCommitmentHash).toEqual(createOperationData.operationRequest.suffixData.recoveryCommitment);
       done();
