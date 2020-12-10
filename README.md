@@ -6,7 +6,7 @@ This repository contains both the blockchain-agnostic Sidetree specification and
 
 See the [latest spec](https://identity.foundation/sidetree/spec/) for the full Sidetree specification.
 
-See the [API spec] (https://identity.foundation/sidetree/api/) for the full API specification to interact with a Sidetree node.
+See the [API spec](https://identity.foundation/sidetree/api/) for the full API specification to interact with a Sidetree node.
 
 ### Specification Editing/Contributions:
 
