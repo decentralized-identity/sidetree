@@ -19,16 +19,6 @@ describe('Core', async () => {
   });
 
   describe('constructor', () => {
-    it('should construct with the minimal test configuration', () => {
-      // remove the optional parameter "databaseName"
-      const minimalConfig = Object.assign({}, testConfig);
-      delete minimalConfig.databaseName;
-      const core = new Core(minimalConfig, testVersionConfig, mockCas);
-      expect(core).toBeDefined();
-      // test default database name
-      expect(core['operationStore']['databaseName']).toEqual('sidetree');
-    });
-
     it('should construct MongoDBOperationStore with database if passed in config', () => {
       const databaseName = 'mongoDbTestDatabase';
       const databaseIncludedConfig = Object.assign({}, testConfig, { databaseName });

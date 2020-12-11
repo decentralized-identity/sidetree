@@ -248,11 +248,6 @@ describe('MongoDbTransactionStore', async () => {
     expect(remainingTransactions.length).toEqual(0);
   });
 
-  it('should default the database name as `sidetree` if not explicitly overriden.', async () => {
-    const transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
-    expect(transactionStore.databaseName).toEqual(MongoDbTransactionStore.defaultDatabaseName);
-  });
-
   it('should fetch transactions by 1 transactionTime when end time is the same as begin time', async () => {
     const transaction1: TransactionModel = {
       anchorString: 'string1',

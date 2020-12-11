@@ -26,21 +26,15 @@ export default class MongoDbOperationStore implements IOperationStore {
   private collection: Collection<any> | undefined;
 
   /**
-   * MongoDb database name where the operations are stored
-   */
-  private readonly databaseName: string;
-
-  /**
    * MongoDB collection name under the database where the operations are stored
    */
   private readonly operationCollectionName: string;
 
   constructor (
     private serverUrl: string,
-    databaseName?: string,
+    private databaseName: string,
     operationCollectionName?: string
   ) {
-    this.databaseName = databaseName ? databaseName : 'sidetree';
     this.operationCollectionName = operationCollectionName ? operationCollectionName : 'operations';
   }
 

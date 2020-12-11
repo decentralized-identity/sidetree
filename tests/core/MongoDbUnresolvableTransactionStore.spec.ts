@@ -184,9 +184,4 @@ describe('MongoDbUnresolvableTransactionStore', async () => {
     const unresolvableTransactions = await store.getUnresolvableTransactions();
     expect(unresolvableTransactions.length).toEqual(0);
   });
-
-  it('should default the database name as `sidetree` if not explicitly overriden.', async () => {
-    const store = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString);
-    expect(store.databaseName).toEqual(MongoDbUnresolvableTransactionStore.defaultDatabaseName);
-  });
 });

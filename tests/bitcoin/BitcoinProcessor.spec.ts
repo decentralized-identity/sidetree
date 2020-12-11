@@ -196,7 +196,7 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
       expect((bitcoinProcessor as any).config.transactionPollPeriodInSeconds).toEqual(60);
       expect((bitcoinProcessor as any).config.sidetreeTransactionPrefix).toEqual(config.sidetreeTransactionPrefix);
-      expect(bitcoinProcessor['transactionStore'].databaseName).toEqual(config.databaseName);
+      expect(bitcoinProcessor['transactionStore']['databaseName']).toEqual(config.databaseName);
       expect(bitcoinProcessor['transactionStore']['serverUrl']).toEqual(config.mongoDbConnectionString);
       expect(bitcoinProcessor['bitcoinClient']['sidetreeTransactionFeeMarkupPercentage']).toEqual(0);
       expect(bitcoinProcessor['bitcoinClient']['estimatedFeeSatoshiPerKB']).toEqual(42);
