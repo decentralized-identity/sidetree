@@ -147,7 +147,7 @@ describe('Core', async () => {
     beforeEach(() => {
     });
 
-    fit('should not perform upgrade if saved service version is the same as the running service version.', async () => {
+    it('should not perform upgrade if saved service version is the same as the running service version.', async () => {
       const core = new Core(testConfig, testVersionConfig, mockCas);
 
       // Simulate that the saved service version is the same as the running service version.
@@ -161,7 +161,7 @@ describe('Core', async () => {
       expect(serviceStateStorePutSpy).not.toHaveBeenCalled();
     });
 
-    fit('should perform upgrade if saved service version is different from running service version.', async () => {
+    it('should perform upgrade if saved service version is different from running service version.', async () => {
       const core = new Core(testConfig, testVersionConfig, mockCas);
 
       const operationStoreDeleteSpy = spyOn(core['operationStore'], 'delete');
