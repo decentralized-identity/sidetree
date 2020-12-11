@@ -32,6 +32,7 @@ describe('Core', async () => {
   describe('initialize', async () => {
     it('should initialize all required dependencies', async () => {
       const core = new Core(testConfig, testVersionConfig, mockCas);
+      const serviceStateStoreInitializeSpy = spyOn(core['serviceStateStore'], 'initialize');
       const transactionStoreInitSpy = spyOn(core['transactionStore'], 'initialize');
       const unresolvableTransactionStoreInitSpy = spyOn(core['unresolvableTransactionStore'], 'initialize');
       const operationStoreInitSpy = spyOn(core['operationStore'], 'initialize');
@@ -43,6 +44,7 @@ describe('Core', async () => {
       const blockchainStartSpy = spyOn(core['blockchain'], 'startPeriodicCachedBlockchainTimeRefresh');
       const downloadManagerStartSpy = spyOn(core['downloadManager'], 'start');
       await core.initialize();
+      expect(serviceStateStoreInitializeSpy).toHaveBeenCalled();
       expect(transactionStoreInitSpy).toHaveBeenCalled();
       expect(unresolvableTransactionStoreInitSpy).toHaveBeenCalled();
       expect(operationStoreInitSpy).toHaveBeenCalled();
@@ -64,6 +66,7 @@ describe('Core', async () => {
       const core = new Core(config, testVersionConfig, mockCas);
       const observerStartSpy = spyOn(core['observer'], 'startPeriodicProcessing');
       const batchSchedulerStartSpy = spyOn(core['batchScheduler'], 'startPeriodicBatchWriting');
+      spyOn(core['serviceStateStore'], 'initialize');
       spyOn(core['transactionStore'], 'initialize');
       spyOn(core['unresolvableTransactionStore'], 'initialize');
       spyOn(core['operationStore'], 'initialize');
