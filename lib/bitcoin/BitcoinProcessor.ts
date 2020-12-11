@@ -157,9 +157,10 @@ export default class BitcoinProcessor {
     await this.bitcoinClient.initialize();
     await this.mongoDbLockTransactionStore.initialize();
 
+    await this.upgradeDatabaseIfNeeded();
+
     // Only observe transactions if polling is enabled.
     if (this.config.transactionPollPeriodInSeconds > 0) {
-      await this.upgradeDatabaseIfNeeded();
 
       // Current implementation records processing progress at block increments using `this.lastProcessedBlock`,
       // so we need to trim the databases back to the last fully processed block.
@@ -193,28 +194,28 @@ export default class BitcoinProcessor {
   }
 
   private async upgradeDatabaseIfNeeded () {
-    const currentServiceVersion = await this.getServiceVersion();
-    const savedServiceState = await this.serviceStateStore.get();
-    const savedServiceVersion = savedServiceState ? savedServiceState.serviceVersion : 'unknown';
+    const currentServiceVersionModel = await this.getServiceVersion();
+    const currentServiceVersion = currentServiceVersionModel.version;
 
-    if (savedServiceVersion === currentServiceVersion.version) {
+    const savedServiceState = await this.serviceStateStore.get();
+    const savedServiceVersion = savedServiceState?.serviceVersion;
+
+    if (savedServiceVersion === currentServiceVersion) {
       return;
     }
 
     // Add DB upgrade code below.
 
-    // Only upgrade the DB if we don't know the save service version.
-    if (savedServiceVersion === 'unknown') {
-      const timer = timeSpan();
+    console.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(savedServiceVersion)} to ${LogColor.green(currentServiceVersion)}...`));
 
-      // Current upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
-      await this.blockMetadataStore.clearCollection();
-      await this.transactionStore.clearCollection();
+    // Current upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
+    const timer = timeSpan();
+    await this.blockMetadataStore.clearCollection();
+    await this.transactionStore.clearCollection();
 
-      await this.serviceStateStore.put({ serviceVersion: currentServiceVersion.version });
+    await this.serviceStateStore.put({ serviceVersion: currentServiceVersion });
 
-      console.info(`DB upgraded in: ${timer.rounded()} ms.`);
-    }
+    console.warn(LogColor.yellow(`DB upgraded in: ${LogColor.green(timer.rounded())} ms.`));
   }
 
   /**

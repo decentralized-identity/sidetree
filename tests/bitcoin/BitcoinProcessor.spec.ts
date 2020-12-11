@@ -1843,11 +1843,11 @@ describe('BitcoinProcessor', () => {
 
       await (bitcoinProcessor as any).upgradeDatabaseIfNeeded();
 
-      // Verify that that upgrade path was invoked.
+      // Verify that upgrade path was not invoked.
       expect(serviceStateStorePutSpy).not.toHaveBeenCalled();
     });
 
-    it('should perform upgrade if saved service state is `undefined`.', async () => {
+    it('should perform upgrade if saved service version is different from running service version.', async () => {
       const blockMetadataStoreClearCollectionSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'clearCollection');
       const transactionStoreClearCollectionSpy = spyOn(bitcoinProcessor['transactionStore'], 'clearCollection');
       const serviceStateStorePutSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'put');

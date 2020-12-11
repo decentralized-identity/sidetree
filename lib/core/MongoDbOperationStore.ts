@@ -93,10 +93,6 @@ export default class MongoDbOperationStore implements IOperationStore {
     return mongoOperations.map((operation) => { return MongoDbOperationStore.convertToAnchoredOperationModel(operation); });
   }
 
-  /**
-   * Delete all operations with transaction number greater than the
-   * provided parameter.
-   */
   public async delete (transactionNumber?: number): Promise<void> {
     if (transactionNumber) {
       await this.collection!.deleteMany({ txnNumber: { $gt: Long.fromNumber(transactionNumber) } });

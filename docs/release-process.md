@@ -12,21 +12,24 @@ In general the release process can be summarized by the following flow
 
 ### Stable Releases
 
-To create a stable release follow the following steps
+Checklist before creating a stable release:
 
-**Note** At present there is a manual step that must be performed prior to the following defined release process that includes reviewing `latest` since the previously released version in both `./lib/core/versions`, `./lib/bitcoin/versions`. If there are new chagnes, duplicate the `latest` folder with the new release version as the folder name.
+1. Review code in `latest` folder since the previously released version in both `./lib/core/versions`, `./lib/bitcoin/versions`. If there are new changes, duplicate the `latest` folder with the new release version as the folder name.
+1. Verify if there are DB changes that requires a DB upgrade since the last stable release, if so, make sure `upgradeDatabaseIfNeeded()` code in both `core` and `bitcoin` service is updated accordingly.
+
+To create a stable release follow the following steps:
 
 1. Checkout the head of master `git checkout master && git pull`
-2. Create a new release branch from master called `release`
-3. Install the dependencies `npm install`
-5. Build the package `npm build`
-6. Test the package `npm test`
-7. Run `npm run version:release`, with an appropriate option such as [ `major` | `minor` | `patch` ].
-8. Observe the correctly incremented change to the `package.json` and changes to `CHANGELOG.md`
-9. Push the release branch including the newly created tags `git push origin release --tags`
-10. Open a pull request for the release, once approvals have been sought, merge the pull request using **rebase**,
+1. Create a new release branch from master called `release`
+1. Install the dependencies `npm install`
+1. Build the package `npm build`
+1. Test the package `npm test`
+1. Run `npm run version:release`, with an appropriate option such as [ `major` | `minor` | `patch` ].
+1. Observe the correctly incremented change to the `package.json` and changes to `CHANGELOG.md`
+1. Push the release branch including the newly created tags `git push origin release --tags`
+1. Open a pull request for the release, once approvals have been sought, merge the pull request using **rebase**,
     preserving the commit message as `release commit [skip ci]`
-11. Observe the triggering of the `/.github/workflows/push-release.yml` github workflow
+1. Observe the triggering of the `/.github/workflows/push-release.yml` github workflow
 
 **Note** It is important that **rebase** is used as the strategy for merging a release pull request as this preserves the created release tag.
 

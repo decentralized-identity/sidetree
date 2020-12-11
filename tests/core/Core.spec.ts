@@ -45,6 +45,7 @@ describe('Core', async () => {
       const transactionStoreInitSpy = spyOn(core['transactionStore'], 'initialize');
       const unresolvableTransactionStoreInitSpy = spyOn(core['unresolvableTransactionStore'], 'initialize');
       const operationStoreInitSpy = spyOn(core['operationStore'], 'initialize');
+      const upgradeDatabaseIfNeededSpy = spyOn(core as any, 'upgradeDatabaseIfNeeded');
       const blockchainInitSpy = spyOn(core['blockchain'], 'initialize');
       const versionManagerInitSpy = spyOn(core['versionManager'], 'initialize');
       const observerStartSpy = spyOn(core['observer'], 'startPeriodicProcessing');
@@ -55,6 +56,7 @@ describe('Core', async () => {
       expect(transactionStoreInitSpy).toHaveBeenCalled();
       expect(unresolvableTransactionStoreInitSpy).toHaveBeenCalled();
       expect(operationStoreInitSpy).toHaveBeenCalled();
+      expect(upgradeDatabaseIfNeededSpy).toHaveBeenCalled();
       expect(blockchainInitSpy).toHaveBeenCalled();
       expect(versionManagerInitSpy).toHaveBeenCalled();
       expect(observerStartSpy).toHaveBeenCalled();
@@ -75,6 +77,7 @@ describe('Core', async () => {
       spyOn(core['transactionStore'], 'initialize');
       spyOn(core['unresolvableTransactionStore'], 'initialize');
       spyOn(core['operationStore'], 'initialize');
+      spyOn(core as any, 'upgradeDatabaseIfNeeded');
       spyOn(core['blockchain'], 'initialize');
       spyOn(core['versionManager'], 'initialize');
       spyOn(core['blockchain'], 'startPeriodicCachedBlockchainTimeRefresh');
@@ -137,6 +140,45 @@ describe('Core', async () => {
       const response = await core.handleOperationRequest(Buffer.from('some string'));
       expect(mockRequestHandler.handleOperationRequest).toHaveBeenCalled();
       expect(response).toEqual({ status: ResponseStatus.Succeeded, body: null });
+    });
+  });
+
+  describe('upgradeDatabaseIfNeeded', () => {
+    beforeEach(() => {
+    });
+
+    fit('should not perform upgrade if saved service version is the same as the running service version.', async () => {
+      const core = new Core(testConfig, testVersionConfig, mockCas);
+
+      // Simulate that the saved service version is the same as the running service version.
+      const serviceStateModel = core['serviceInfo'].getServiceVersion();
+      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ serviceVersion: serviceStateModel.version }));
+
+      const serviceStateStorePutSpy = spyOn(core['serviceStateStore'], 'put');
+      await (core as any).upgradeDatabaseIfNeeded();
+
+      // Verify that upgrade path was NOT invoked.
+      expect(serviceStateStorePutSpy).not.toHaveBeenCalled();
+    });
+
+    fit('should perform upgrade if saved service version is different from running service version.', async () => {
+      const core = new Core(testConfig, testVersionConfig, mockCas);
+
+      const operationStoreDeleteSpy = spyOn(core['operationStore'], 'delete');
+      const unresolvableTransactionStoreClearCollectionSpy = spyOn(core['unresolvableTransactionStore'], 'clearCollection');
+      const transactionStoreClearCollectionSpy = spyOn(core['transactionStore'], 'clearCollection');
+      const serviceStateStorePutSpy = spyOn(core['serviceStateStore'], 'put');
+
+      // Simulate that the saved service state is different (`undefined`) from the running service version.
+      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve(undefined));
+
+      await (core as any).upgradeDatabaseIfNeeded();
+
+      // Verify that that upgrade path was invoked.
+      expect(operationStoreDeleteSpy).toHaveBeenCalled();
+      expect(unresolvableTransactionStoreClearCollectionSpy).toHaveBeenCalled();
+      expect(transactionStoreClearCollectionSpy).toHaveBeenCalled();
+      expect(serviceStateStorePutSpy).toHaveBeenCalled();
     });
   });
 });

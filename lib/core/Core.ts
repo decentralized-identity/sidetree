@@ -1,3 +1,4 @@
+import * as timeSpan from 'time-span';
 import BatchScheduler from './BatchScheduler';
 import Blockchain from './Blockchain';
 import Config from './models/Config';
@@ -5,6 +6,7 @@ import DownloadManager from './DownloadManager';
 import ICas from './interfaces/ICas';
 import LogColor from '../common/LogColor';
 import MongoDbOperationStore from './MongoDbOperationStore';
+import MongoDbServiceStateStore from '../common/MongoDbServiceStateStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
 import Observer from './Observer';
@@ -12,6 +14,7 @@ import Resolver from './Resolver';
 import ResponseModel from '../common/models/ResponseModel';
 import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfo from '../common/ServiceInfoProvider';
+import ServiceStateModel from './models/ServiceStateModel';
 import VersionManager from './VersionManager';
 import VersionModel from './models/VersionModel';
 
@@ -19,6 +22,7 @@ import VersionModel from './models/VersionModel';
  * The core class that is instantiated when running a Sidetree node.
  */
 export default class Core {
+  private serviceStateStore: MongoDbServiceStateStore<ServiceStateModel>;
   private transactionStore: MongoDbTransactionStore;
   private unresolvableTransactionStore: MongoDbUnresolvableTransactionStore;
   private operationStore: MongoDbOperationStore;
@@ -37,6 +41,7 @@ export default class Core {
     // Component dependency construction & injection.
     this.versionManager = new VersionManager(config, versionModels); // `VersionManager` is first constructed component as multiple components depend on it.
     this.serviceInfo = new ServiceInfo('core');
+    this.serviceStateStore = new MongoDbServiceStateStore(this.config.mongoDbConnectionString, this.config.databaseName);
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString, config.databaseName);
     this.blockchain = new Blockchain(config.blockchainServiceUri);
     this.downloadManager = new DownloadManager(config.maxConcurrentDownloads, this.cas);
@@ -61,9 +66,13 @@ export default class Core {
    * The method starts the Observer and Batch Writer.
    */
   public async initialize () {
+    // DB initializations.
+    await this.serviceStateStore.initialize();
     await this.transactionStore.initialize();
     await this.unresolvableTransactionStore.initialize();
     await this.operationStore.initialize();
+    await this.upgradeDatabaseIfNeeded();
+
     await this.blockchain.initialize();
     await this.versionManager.initialize(
       this.blockchain,
@@ -128,4 +137,30 @@ export default class Core {
       body: JSON.stringify(responses)
     };
   }
+
+  private async upgradeDatabaseIfNeeded () {
+    const currentServiceVersionModel = this.serviceInfo.getServiceVersion();
+    const currentServiceVersion = currentServiceVersionModel.version;
+    const savedServiceState = await this.serviceStateStore.get();
+    const savedServiceVersion = savedServiceState?.serviceVersion;
+
+    if (savedServiceVersion === currentServiceVersion) {
+      return;
+    }
+
+    // Add DB upgrade code below.
+
+    console.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(savedServiceVersion)} to ${LogColor.green(currentServiceVersion)}...`));
+
+    // Current upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
+    const timer = timeSpan();
+    await this.operationStore.delete();
+    await this.transactionStore.clearCollection();
+    await this.unresolvableTransactionStore.clearCollection();
+
+    await this.serviceStateStore.put({ serviceVersion: currentServiceVersion });
+
+    console.warn(LogColor.yellow(`DB upgraded in: ${LogColor.green(timer.rounded())} ms.`));
+  }
+
 }
