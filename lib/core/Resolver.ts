@@ -196,6 +196,7 @@ export default class Resolver {
       }
     }
 
+    // TODO: Issue 981 this can probably return old did state. https://github.com/decentralized-identity/sidetree/issues/981
     // Else we reach the end of operations without being able to apply any of them.
     return undefined;
   }
