@@ -7,13 +7,11 @@ Sidetree-based DIDs support a variety of DID operations, all of which require th
 
 While virtually all DID owners will engage User Agent applications on their local devices to perform these operations, most will not generate the anchoring transactions on the underlying ledger. Instead, most users will likely send the anchoring-related operation values they generate to external nodes for anchoring. This is relatively safe, because operations require signatures that an external node cannot forge. The only attack available to a rogue node operator is to not anchor the operations a DID owner sends them. However, the DID owner can detect this (via a scan of subsequent blocks) and send their operation to a different node or do it themselves, if they so desire.
 
+It is strongly advised that DID owners and User Agents (e.g. wallet apps) retain their DID operations and operation-anchoring files. Doing so is helpful in cases where users, or their User Agent, need to quickly access the operations and operation-anchoring files, or a user wishes to individually persist their operation and operation-anchoring files on the CAS network for even greater independent availability assurance.
+
 ::: note
   This specification does not define an API for sending public DID operation values to third-party Sidetree nodes for external anchoring, as that is an elective activity has no bearing on the technical workings of the protocol, its capabilities, or its security guarantees.
 :::
-
-Sidetree Methods MAY choose to expose protocol operation keys in the DID Document.
-
-Sidetree Methods MAY rely on the DID Document data model when verifying protocol operations.
 
 ::: warning
   Operations other than Create contain a compact JWS. Dereferencing of key material used to verify the JWS is a DID Method specific concern. Some methods may rely of the DID Document data model, others may rely on an internal data model. Some methods may rely on `kid` of the form `did:example:123#fingerprint`, others may not include a `kid` in the JWS, or its value may be arbitrary. Support for specific `alg` fields is also DID Method specific. Implementers are cautioned to choose support for specific `alg` values carefully.
