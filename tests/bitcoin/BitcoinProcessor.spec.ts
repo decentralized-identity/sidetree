@@ -196,7 +196,7 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
       expect((bitcoinProcessor as any).config.transactionPollPeriodInSeconds).toEqual(60);
       expect((bitcoinProcessor as any).config.sidetreeTransactionPrefix).toEqual(config.sidetreeTransactionPrefix);
-      expect(bitcoinProcessor['transactionStore'].databaseName).toEqual(config.databaseName);
+      expect(bitcoinProcessor['transactionStore']['databaseName']).toEqual(config.databaseName);
       expect(bitcoinProcessor['transactionStore']['serverUrl']).toEqual(config.mongoDbConnectionString);
       expect(bitcoinProcessor['bitcoinClient']['sidetreeTransactionFeeMarkupPercentage']).toEqual(0);
       expect(bitcoinProcessor['bitcoinClient']['estimatedFeeSatoshiPerKB']).toEqual(42);
@@ -1843,11 +1843,11 @@ describe('BitcoinProcessor', () => {
 
       await (bitcoinProcessor as any).upgradeDatabaseIfNeeded();
 
-      // Verify that that upgrade path was invoked.
+      // Verify that upgrade path was not invoked.
       expect(serviceStateStorePutSpy).not.toHaveBeenCalled();
     });
 
-    it('should perform upgrade if saved service state is `undefined`.', async () => {
+    it('should perform upgrade if saved service version is different from running service version.', async () => {
       const blockMetadataStoreClearCollectionSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'clearCollection');
       const transactionStoreClearCollectionSpy = spyOn(bitcoinProcessor['transactionStore'], 'clearCollection');
       const serviceStateStorePutSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'put');

@@ -4,7 +4,7 @@
 export default interface Config {
   batchingIntervalInSeconds: number;
   blockchainServiceUri: string;
-  databaseName: string | undefined;
+  databaseName: string;
   didMethodName: string;
   maxConcurrentDownloads: number;
   mongoDbConnectionString: string;

@@ -12,12 +12,8 @@ interface IUnresolvableTransaction extends TransactionModel {
  * Implementation of `IIUnresolvableTransactionStore` that stores the transaction data in a MongoDB database.
  */
 export default class MongoDbUnresolvableTransactionStore implements IUnresolvableTransactionStore {
-  /** Default database name used if not specified in constructor. */
-  public static readonly defaultDatabaseName: string = 'sidetree';
   /** Collection name for unresolvable transactions. */
   public static readonly unresolvableTransactionCollectionName: string = 'unresolvable-transactions';
-  /** Database name used by this transaction store. */
-  public readonly databaseName: string;
 
   private exponentialDelayFactorInMilliseconds = 60000;
   private maximumUnresolvableTransactionReturnCount = 100;
@@ -31,9 +27,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
    *   The exponential delay factor in milliseconds for retries of unresolvable transactions.
    *   e.g. if it is set to 1 seconds, then the delays for retries will be 1 second, 2 seconds, 4 seconds... until the transaction can be resolved.
    */
-  constructor (private serverUrl: string, databaseName?: string, retryExponentialDelayFactor?: number) {
-    this.databaseName = databaseName ? databaseName : MongoDbUnresolvableTransactionStore.defaultDatabaseName;
-
+  constructor (private serverUrl: string, private databaseName: string, retryExponentialDelayFactor?: number) {
     if (retryExponentialDelayFactor !== undefined) {
       this.exponentialDelayFactorInMilliseconds = retryExponentialDelayFactor;
     }

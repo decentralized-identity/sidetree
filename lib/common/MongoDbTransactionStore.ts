@@ -10,8 +10,6 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   public static readonly defaultDatabaseName: string = 'sidetree';
   /** Collection name for transactions. */
   public static readonly transactionCollectionName: string = 'transactions';
-  /** Database name used by this transaction store. */
-  public readonly databaseName: string;
 
   private db: Db | undefined;
   private transactionCollection: Collection<any> | undefined;
@@ -19,9 +17,7 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   /**
    * Constructs a `MongoDbTransactionStore`;
    */
-  constructor (private serverUrl: string, databaseName?: string) {
-    this.databaseName = databaseName ? databaseName : MongoDbTransactionStore.defaultDatabaseName;
-  }
+  constructor (private serverUrl: string, private databaseName: string) { }
 
   /**
    * Initialize the MongoDB transaction store.
