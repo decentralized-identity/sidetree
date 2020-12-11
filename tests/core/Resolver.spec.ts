@@ -377,6 +377,31 @@ describe('Resolver', () => {
 
       done();
     });
+
+    it('should short circuit and return as soon as the end of the recovery/deactivate operation chain is reached.', async (done) => {
+      // Setting up initial DID state for the test.
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
+      const initialDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
+
+      const recoveryOperation1Data = await OperationGenerator.generateRecoverOperation({
+        didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
+        recoveryPrivateKey: createOperationData.recoveryPrivateKey
+      });
+
+      const recoveryOperation1 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation1Data.recoverOperation, 2, 2, 2);
+
+      const recoveryCommitValueToOperationMap = new Map<string, AnchoredOperationModel[]>();
+      const nextRecoveryCommitment = createOperationData.createOperation.suffixData.recoveryCommitment;
+      recoveryCommitValueToOperationMap.set(nextRecoveryCommitment, [recoveryOperation1]);
+
+      spyOn(resolver as any, 'applyFirstValidOperation').and.returnValue(Promise.resolve(undefined));
+
+      const newDidState: DidState = await (resolver as any).applyRecoverAndDeactivateOperations(initialDidState, recoveryCommitValueToOperationMap);
+
+      expect(newDidState.lastOperationTransactionNumber).toEqual(1);
+      expect(newDidState.nextRecoveryCommitmentHash).toEqual(createOperationData.operationRequest.suffixData.recoveryCommitment);
+      done();
+    });
   });
 
   describe('applyUpdateOperations()', () => {

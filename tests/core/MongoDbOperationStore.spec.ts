@@ -123,6 +123,22 @@ describe('MongoDbOperationStore', async () => {
     expect(collectionNames.includes(collectionName)).toBeFalsy();
   });
 
+  it('should throw error if batch put execution throws', async () => {
+    spyOn((operationStore as any)['collection'], 'initializeUnorderedBulkOp').and.returnValue({
+      execute: () => { throw new Error('Expected test error'); },
+      insert: () => {
+        // do nothing
+      }
+    });
+
+    try {
+      await operationStore.put([{} as any]);
+      fail('Expected to fial but did not');
+    } catch (error) {
+      expect(error).toEqual(new Error('Expected test error'));
+    }
+  });
+
   it('should get a put create operation', async () => {
     const operationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const anchoredOperationModel = operationData.anchoredOperationModel;
