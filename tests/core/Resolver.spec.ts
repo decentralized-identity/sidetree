@@ -378,7 +378,7 @@ describe('Resolver', () => {
       done();
     });
 
-    it('should stop applying if did state becomes undfined, and return the previous state.', async (done) => {
+    it('should short circuit and return as soon as the end of the recovery/deactivate operation chain is reached.', async (done) => {
       // Setting up initial DID state for the test.
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
       const initialDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);

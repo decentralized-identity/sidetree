@@ -507,8 +507,6 @@ describe('Observer', async () => {
 
   describe('waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo', () => {
     it('should wait until transactionsUnderProcessing is greater than count', async () => {
-      const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
-      jasmine.DEFAULT_TIMEOUT_INTERVAL = 4000; // it takes 3 seconds to remove all elements
       const blockchainClient = new Blockchain(config.blockchainServiceUri);
       const observer = new Observer(
         versionManager,
@@ -521,16 +519,16 @@ describe('Observer', async () => {
       );
       observer['transactionsUnderProcessing'] = [1, 2, 3] as any;
       const storeConsecutiveTransactionsProcessedSpy = spyOn(observer as any, 'storeConsecutiveTransactionsProcessed').and.callFake(() => {
-        observer['transactionsUnderProcessing'].pop();
+        observer['transactionsUnderProcessing'] = [];
       });
 
       const startTime = Date.now();
       await observer['waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo'](0);
       const endTime = Date.now();
 
-      expect(storeConsecutiveTransactionsProcessedSpy).toHaveBeenCalledTimes(3);
-      expect(endTime - startTime).toBeGreaterThanOrEqual(3000);
-      jasmine.DEFAULT_TIMEOUT_INTERVAL = originalDefaultTestTimeout;
+      expect(storeConsecutiveTransactionsProcessedSpy).toHaveBeenCalledTimes(1);
+      // it should have taken at least 1 second because the setTimeout loop
+      expect(endTime - startTime).toBeGreaterThanOrEqual(1000);
     });
   });
 
