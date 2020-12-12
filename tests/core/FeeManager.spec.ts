@@ -12,12 +12,12 @@ describe('FeeManager', async () => {
 
   describe('computeMinimumTransactionFee', async () => {
 
-    it('should return calculated fee if it is greater', async () => {
+    it('should calculate fee correctly.', async () => {
       const normalizedFee = 1000;
       const numberOfOperations = 1000;
       const fee = FeeManager.computeMinimumTransactionFee(normalizedFee, numberOfOperations);
 
-      expect(fee).toEqual(10000);
+      expect(fee).toEqual(1000);
     });
 
     it('should return at least the normalized fee if the calculated fee is lower', async () => {
