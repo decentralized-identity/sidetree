@@ -9,7 +9,7 @@
   "maxNumberOfTransactionsPerTransactionTime": 300,
   "maxOperationsPerBatch": 10000,
   "maxDeltaSizeInBytes": 1000,
-  "maxNumberOfOperationsForNoValueTimeLock": 1000,
+  "maxNumberOfOperationsForNoValueTimeLock": 100,
   "maxWriterLockIdInBytes": 200,
   "normalizedFeeToPerOperationFeeMultiplier": 0.001,
   "valueTimeLockAmountMultiplier": 60000

@@ -13,7 +13,6 @@ export default class FeeManager {
    *
    * @param normalizedFee The normalized fee for the current transaction.
    * @param numberOfOperations The number of operations to write.
-   * @param feeMarkupFactor Markup to be added to the calculated fee.
    *
    * @throws if the number of operations are <= 0.
    */
