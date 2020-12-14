@@ -3,7 +3,7 @@
   "maxCasUriLength": 100,
   "maxCoreIndexFileSizeInBytes": 1000000,
   "maxProvisionalIndexFileSizeInBytes": 1000000,
-  "maxProofFileSizeInBytes": 2000000,
+  "maxProofFileSizeInBytes": 2500000,
   "maxChunkFileSizeInBytes": 10000000,
   "maxNumberOfOperationsPerTransactionTime": 600000,
   "maxNumberOfTransactionsPerTransactionTime": 300,
@@ -11,6 +11,6 @@
   "maxDeltaSizeInBytes": 1000,
   "maxNumberOfOperationsForNoValueTimeLock": 100,
   "maxWriterLockIdInBytes": 200,
-  "normalizedFeeToPerOperationFeeMultiplier": 0.01,
-  "valueTimeLockAmountMultiplier": 600
+  "normalizedFeeToPerOperationFeeMultiplier": 0.001,
+  "valueTimeLockAmountMultiplier": 60000
 }
