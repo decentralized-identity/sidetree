@@ -13,7 +13,6 @@ import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
 import VersionManager from '../VersionManager';
 import logger from '../../common/Logger';
 
-
 /* global NodeJS */
 
 /** Enum (internal to this class) to track the status of the lock. */

@@ -77,7 +77,7 @@ describe('Core', async () => {
       const customLogger = {
         info: (_data: any) => { customLoggerInvoked = true; },
         warn: (_data: any) => { },
-        error: (_data: any) => { },
+        error: (_data: any) => { }
       };
 
       await core.initialize(customLogger);
