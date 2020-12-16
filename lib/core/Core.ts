@@ -1,9 +1,9 @@
 import * as timeSpan from 'time-span';
+import { ISidetreeCas, ISidetreeLogger } from '..';
 import BatchScheduler from './BatchScheduler';
 import Blockchain from './Blockchain';
 import Config from './models/Config';
 import DownloadManager from './DownloadManager';
-import ICas from './interfaces/ICas';
 import LogColor from '../common/LogColor';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbServiceStateStore from '../common/MongoDbServiceStateStore';
@@ -17,6 +17,7 @@ import ServiceInfo from '../common/ServiceInfoProvider';
 import ServiceStateModel from './models/ServiceStateModel';
 import VersionManager from './VersionManager';
 import VersionModel from './models/VersionModel';
+import logger from '../common/Logger';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -37,7 +38,7 @@ export default class Core {
   /**
    * Core constructor.
    */
-  public constructor (private config: Config, versionModels: VersionModel[], private cas: ICas) {
+  public constructor (private config: Config, versionModels: VersionModel[], private cas: ISidetreeCas) {
     // Component dependency construction & injection.
     this.versionManager = new VersionManager(config, versionModels); // `VersionManager` is first constructed component as multiple components depend on it.
     this.serviceInfo = new ServiceInfo('core');
@@ -65,7 +66,14 @@ export default class Core {
    * The initialization method that must be called before consumption of this core object.
    * The method starts the Observer and Batch Writer.
    */
-  public async initialize () {
+  public async initialize (customLogger?: ISidetreeLogger) {
+    // Override default logger if custom logger is given.
+    if (customLogger !== undefined) {
+      logger.info = customLogger.info;
+      logger.warn = customLogger.warn;
+      logger.error = customLogger.error;
+    }
+
     // DB initializations.
     await this.serviceStateStore.initialize();
     await this.transactionStore.initialize();

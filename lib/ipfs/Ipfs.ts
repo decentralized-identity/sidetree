@@ -64,7 +64,7 @@ export default class Ipfs implements ICas {
     const body = await ReadableStream.readAll(response.body);
     const casUri = JSON.parse(body.toString()).Hash;
 
-    console.log(`Wrote ${content.length} byte content as IPFS CID: ${casUri}`);
+    console.info(`Wrote ${content.length} byte content as IPFS CID: ${casUri}`);
     return casUri;
   }
 
@@ -74,7 +74,7 @@ export default class Ipfs implements ICas {
       /* eslint-disable no-new */
       new Cids(casUri);
     } catch (error) {
-      console.log(`'${casUri}' is not a valid CID: ${SidetreeError.stringify(error)}`);
+      console.info(`'${casUri}' is not a valid CID: ${SidetreeError.stringify(error)}`);
       return { code: FetchResultCode.InvalidHash };
     }
 
@@ -86,7 +86,7 @@ export default class Ipfs implements ICas {
     } catch (error) {
       // Log appropriately based on error.
       if (error.code === IpfsErrorCode.TimeoutPromiseTimedOut) {
-        console.log(`Timed out fetching CID '${casUri}'.`);
+        console.info(`Timed out fetching CID '${casUri}'.`);
       } else {
         // Log any unexpected error for investigation.
         const errorMessage =
@@ -102,7 +102,7 @@ export default class Ipfs implements ICas {
     // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
     if (fetchResult.code === FetchResultCode.Success) {
       await this.pinContent(casUri);
-      console.log(`Read and pinned ${fetchResult.content!.length} bytes for CID: ${casUri}.`);
+      console.info(`Read and pinned ${fetchResult.content!.length} bytes for CID: ${casUri}.`);
     }
 
     return fetchResult;

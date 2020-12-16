@@ -103,7 +103,7 @@ export default class Jws {
       JWS.verify(compactJws, publicKeyJwk);
       return true;
     } catch (error) {
-      console.log(`Input '${compactJws}' failed signature verification: ${SidetreeError.createFromError(ErrorCode.JwsFailedSignatureValidation, error)}`);
+      console.info(`Input '${compactJws}' failed signature verification: ${SidetreeError.createFromError(ErrorCode.JwsFailedSignatureValidation, error)}`);
       return false;
     }
   }

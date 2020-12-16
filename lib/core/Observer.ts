@@ -10,6 +10,7 @@ import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import ThroughputLimiter from './ThroughputLimiter';
 import TransactionModel from '../common/models/TransactionModel';
+import logger from '../common/Logger';
 
 /**
  * Class that performs periodic processing of batches of Sidetree operations anchored to the blockchain.
@@ -52,7 +53,7 @@ export default class Observer {
     // Initialize the last known transaction before starting processing.
     this.lastKnownTransaction = await this.transactionStore.getLastTransaction();
 
-    console.info(`Starting periodic transactions processing.`);
+    logger.info(`Starting periodic transactions processing.`);
     setImmediate(async () => {
       this.continuePeriodicProcessing = true;
 

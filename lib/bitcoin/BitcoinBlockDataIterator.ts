@@ -29,7 +29,7 @@ export default class BitcoinBlockDataIterator {
     if (!this.hasPrevious()) {
       return undefined;
     }
-    console.log(`Parsing file: ${this.fileNames[this.currentIndex]}`);
+    console.info(`Parsing file: ${this.fileNames[this.currentIndex]}`);
     const fileBuffer = this.fileReader.readBlockFile(this.fileNames[this.currentIndex]);
     const parsedData = BitcoinRawDataParser.parseRawDataFile(fileBuffer);
     this.currentIndex--;

@@ -61,7 +61,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
           retryNeeded = true;
         } else {
           // eslint-disable-next-line max-len
-          console.log(LogColor.lightBlue(`Invalid core file found for anchor string '${LogColor.green(transaction.anchorString)}', the entire batch is discarded. Error: ${LogColor.yellow(error.message)}`));
+          console.info(LogColor.lightBlue(`Invalid core file found for anchor string '${LogColor.green(transaction.anchorString)}', the entire batch is discarded. Error: ${LogColor.yellow(error.message)}`));
           retryNeeded = false;
         }
       } else {
@@ -109,7 +109,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
           retryNeeded = true;
         } else {
           // eslint-disable-next-line max-len
-          console.log(LogColor.lightBlue(`Invalid provisional/chunk file found for anchor string '${LogColor.green(transaction.anchorString)}', the entire batch is discarded. Error: ${LogColor.yellow(error.message)}`));
+          console.info(LogColor.lightBlue(`Invalid provisional/chunk file found for anchor string '${LogColor.green(transaction.anchorString)}', the entire batch is discarded. Error: ${LogColor.yellow(error.message)}`));
           retryNeeded = false;
         }
       } else {
@@ -128,7 +128,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
     await this.operationStore.put(operations);
 
-    console.log(LogColor.lightBlue(`Processed ${LogColor.green(operations.length)} operations. Retry needed: ${LogColor.green(retryNeeded)}`));
+    console.info(LogColor.lightBlue(`Processed ${LogColor.green(operations.length)} operations. Retry needed: ${LogColor.green(retryNeeded)}`));
 
     const transactionProcessedCompletely = !retryNeeded;
     return transactionProcessedCompletely;

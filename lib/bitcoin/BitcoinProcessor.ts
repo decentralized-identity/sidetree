@@ -233,7 +233,7 @@ export default class BitcoinProcessor {
     // An array of blocks representing the validated chain reverse sorted by height
     const validatedBlocks: BlockMetadataWithoutNormalizedFee[] = [];
 
-    console.log(`Begin fast processing block ${startingBlock.height} to ${lastBlockHeight}`);
+    console.info(`Begin fast processing block ${startingBlock.height} to ${lastBlockHeight}`);
     // Loop through files backwards and process blocks from the end/tip of the blockchain until we reach the starting block given.
     let hashOfEarliestKnownValidBlock = lastBlockInfo.hash;
     let heightOfEarliestKnownValidBlock = lastBlockInfo.height;
@@ -261,7 +261,7 @@ export default class BitcoinProcessor {
     const validatedBlocksOrderedByHeight = validatedBlocks.reverse();
     await this.writeBlocksToMetadataStoreWithFee(validatedBlocksOrderedByHeight);
     console.info(`Inserted metadata of ${validatedBlocks.length} blocks to DB. Duration: ${timer.rounded()} ms.`);
-    console.log('finished fast processing');
+    console.info('finished fast processing');
   }
 
   private async processBlocks (
@@ -310,7 +310,7 @@ export default class BitcoinProcessor {
       validBlockCount++;
     }
 
-    console.log(LogColor.lightBlue(`Found ${LogColor.green(validBlockCount)} valid blocks.`));
+    console.info(LogColor.lightBlue(`Found ${LogColor.green(validBlockCount)} valid blocks.`));
   }
 
   private async removeTransactionsInInvalidBlocks (invalidBlocks: Map<string, BlockMetadataWithoutNormalizedFee>) {

@@ -33,7 +33,7 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
    * Initializes the normalized fee calculator.
    */
   public async initialize () {
-    console.log(`Initializing normalized fee calculator.`);
+    console.info(`Initializing normalized fee calculator.`);
   }
 
   public async addNormalizedFeeToBlockMetadata (blockMetadata: BlockMetadataWithoutNormalizedFee): Promise<BlockMetadata> {

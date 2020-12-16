@@ -14,6 +14,7 @@ import Resolver from '../../Resolver';
 import ResponseModel from '../../../common/models/ResponseModel';
 import ResponseStatus from '../../../common/enums/ResponseStatus';
 import SidetreeError from '../../../common/SidetreeError';
+import logger from '../../../common/Logger';
 
 /**
  * Sidetree operation request handler.
@@ -145,12 +146,11 @@ export default class RequestHandler implements IRequestHandler {
    * Handles resolve operation.
    * @param shortOrLongFormDid Can either be:
    *   1. A short-form DID. e.g. 'did:<methodName>:abc' or
-   *   2. A long-form DID. e.g. 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
-   *                            'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
+   *   2. A long-form DID. e.g. 'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
    */
   public async handleResolveRequest (shortOrLongFormDid: string): Promise<ResponseModel> {
     try {
-      console.log(`Handling resolution request for: ${shortOrLongFormDid}...`);
+      logger.info(`Handling resolution request for: ${shortOrLongFormDid}...`);
 
       const did = await Did.create(shortOrLongFormDid, this.didMethodName);
 

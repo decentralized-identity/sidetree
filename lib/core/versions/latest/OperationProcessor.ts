@@ -54,7 +54,7 @@ export default class OperationProcessor implements IOperationProcessor {
         console.debug(`Ignored invalid operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
       }
     } catch (error) {
-      console.log(`Failed logging ${error}.`);
+      console.info(`Failed logging ${error}.`);
       // If logging fails, just move on.
     }
 

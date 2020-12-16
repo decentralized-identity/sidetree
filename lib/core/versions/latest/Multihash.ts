@@ -133,7 +133,7 @@ export default class Multihash {
       const contentBuffer = Encoder.decodeAsBuffer(encodedContent);
       return Multihash.verifyEncodedMultihashForContent(contentBuffer, encodedMultihash);
     } catch (error) {
-      console.log(error);
+      console.info(error);
       return false;
     }
   }
@@ -168,7 +168,7 @@ export default class Multihash {
 
       return Multihash.verifyDoubleHash(contentBuffer, encodedMultihash);
     } catch (error) {
-      console.log(error);
+      console.info(error);
       return false;
     }
   }
@@ -188,7 +188,7 @@ export default class Multihash {
 
       return Buffer.compare(actualMultihashBuffer, expectedMultihashBuffer) === 0;
     } catch (error) {
-      console.log(error);
+      console.info(error);
       return false;
     }
   }
@@ -210,7 +210,7 @@ export default class Multihash {
       const actualMultihashString = Encoder.encode(actualMultihashBuffer);
       return actualMultihashString === encodedMultihash;
     } catch (error) {
-      console.log(error);
+      console.info(error);
       return false;
     }
   }
