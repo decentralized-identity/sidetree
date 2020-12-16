@@ -438,6 +438,56 @@ describe('Observer', async () => {
     expect(processedTransactions[3].anchorString).toEqual('4thTransaction');
   });
 
+  it('should log error if blockchian throws', async () => {
+    const blockchainClient = new Blockchain(config.blockchainServiceUri);
+
+    let readInvocationCount = 0;
+    spyOn(blockchainClient, 'read').and.callFake(() => {
+      readInvocationCount++;
+      throw new Error('Expected test error');
+    })
+    const consoleErrorSpy = spyOn(console, 'error').and.callThrough();
+
+    // Start the Observer.
+    const observer = new Observer(
+      versionManager,
+      blockchainClient,
+      config.maxConcurrentDownloads,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      1
+    );
+
+    // mocking throughput limiter to make testing easier
+    spyOn(observer['throughputLimiter'], 'getQualifiedTransactions').and.callFake(
+      (transactions: TransactionModel[]) => {
+        return new Promise((resolve) => { resolve(transactions); });
+      }
+    );
+    
+    await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
+
+    observer.stopPeriodicProcessing(); // Asynchronously stops Observer from processing more transactions after the initial processing cycle.
+
+    await retry(async _bail => {
+      if (readInvocationCount > 0) {
+        return;
+      }
+
+      // NOTE: the `retry` library retries if error is thrown.
+      throw new Error('Two transaction processing cycles have not occured yet.');
+    }, {
+      retries: 3,
+      minTimeout: 1000, // milliseconds
+      maxTimeout: 1000 // milliseconds
+    });
+
+    // throughput limiter applies logic to filter out some transactions
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Encountered unhandled and possibly fatal Observer error, must investigate and fix:')
+    expect(consoleErrorSpy).toHaveBeenCalledWith(new Error('Expected test error'));
+  });
+
   it('should not rollback if blockchain time in bitcoin service is behind core service.', async () => {
     const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: '1stTransaction', numberOfOperations: 1 });
     const transaction = {

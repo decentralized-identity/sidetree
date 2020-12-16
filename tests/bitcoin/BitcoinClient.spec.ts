@@ -85,6 +85,12 @@ describe('BitcoinClient', async () => {
       const actual = new BitcoinClient('uri:mock', 'u', 'p', ctorWallet, 10, 10, 10, expectedEstimatedFee);
       expect(actual['estimatedFeeSatoshiPerKB']).toEqual(expectedEstimatedFee);
     });
+
+    it('should construct without authorization is username and passwords are not supplied', () => {
+      const expectedEstimatedFee = 42;
+      const actual = new BitcoinClient('uri:mock', undefined, undefined, ctorWallet, 10, 10, 10, expectedEstimatedFee);
+      expect(actual['bitcoinAuthorization']).toEqual(undefined);
+    });
   });
 
   describe('createSidetreeTransaction', () => {
@@ -604,11 +610,7 @@ describe('BitcoinClient', async () => {
 
   describe('createBitcoinOutputModel', () => {
     it('should work if the output does not have any script', async (done) => {
-      const mockOutput = new Transaction.Output({
-        script: Script.empty(),
-        satoshis: 10
-      });
-
+      const mockOutput = {script: undefined, saotshis: 123} as any;
       const actual = BitcoinClient['createBitcoinOutputModel'](mockOutput);
       expect(actual.scriptAsmAsString).toEqual('');
       expect(actual.satoshis).toEqual(mockOutput.satoshis);
@@ -1100,6 +1102,45 @@ describe('BitcoinClient', async () => {
       done();
     });
 
+
+    it('should call retry-fetch without authohrization', async (done) => {
+      const request: any = {};
+      const memberName = 'memberRequestName';
+      const memberValue = 'memberRequestValue';
+      request[memberName] = memberValue;
+      const bodyIdentifier = 12345;
+      const result = 'some_result';
+
+      const retryFetchSpy = spyOn(bitcoinClient as any, 'fetchWithRetry');
+      retryFetchSpy.and.callFake((uri: string, params: any) => {
+        expect(uri).toContain(bitcoinPeerUri);
+        expect(params.method).toEqual('post');
+        expect(JSON.parse(params.body)[memberName]).toEqual(memberValue);
+        return Promise.resolve({
+          status: httpStatus.OK,
+          body: bodyIdentifier
+        });
+      });
+      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake((body: any) => {
+        expect(body).toEqual(bodyIdentifier);
+        return Promise.resolve(Buffer.from(JSON.stringify({
+          result,
+          error: null,
+          id: null
+        })));
+      });
+
+      const originalAuthorization = (bitcoinClient as any).bitcoinAuthorization;
+      (bitcoinClient as any).bitcoinAuthorization = undefined;
+
+      const actual = await bitcoinClient['rpcCall'](request, true);
+      expect(actual).toEqual(result);
+      expect(retryFetchSpy).toHaveBeenCalled();
+      expect(readUtilSpy).toHaveBeenCalled();
+      (bitcoinClient as any).bitcoinAuthorization = originalAuthorization;
+      done();
+    });
+
     it('should throw if the request failed', async (done) => {
       const request: any = {
         test: 'some random string'
@@ -1192,6 +1233,28 @@ describe('BitcoinClient', async () => {
       });
 
       const actual = await bitcoinClient['fetchWithRetry'](path, request);
+      expect(actual as any).toEqual(result);
+      expect(fetchSpy).toHaveBeenCalled();
+      done();
+    });
+
+    it('should fetch the URI with the given requestParameters without timeout', async (done) => {
+      const path = 'http://some_random_path';
+      const request: any = {
+        headers: {}
+      };
+      const memberName = 'headerMember';
+      const memberValue = 'headerValue';
+      request.headers[memberName] = memberValue;
+      const result = 200;
+
+      fetchSpy.and.callFake((uri: string, params: any) => {
+        expect(uri).toEqual(path);
+        expect(params.headers[memberName]).toEqual(memberValue);
+        return Promise.resolve(result);
+      });
+
+      const actual = await bitcoinClient['fetchWithRetry'](path, request, false);
       expect(actual as any).toEqual(result);
       expect(fetchSpy).toHaveBeenCalled();
       done();
