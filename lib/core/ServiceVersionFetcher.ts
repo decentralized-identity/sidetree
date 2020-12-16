@@ -54,7 +54,7 @@ export default class ServiceVersionFetcher {
 
       return JSON.parse(responseBodyBuffer.toString());
     } catch (e) {
-      console.error('Ignoring the exception during blockchain service version retrieval: %s', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+      logger.error(`Ignoring the exception during blockchain service version retrieval: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
     }
 
     return ServiceVersionFetcher.emptyServiceVersion;

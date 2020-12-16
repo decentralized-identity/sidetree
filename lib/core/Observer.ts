@@ -162,8 +162,8 @@ export default class Observer {
       // Continue onto processing unresolvable transactions if any.
       await this.processUnresolvableTransactions();
     } catch (error) {
-      console.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
-      console.error(error);
+      logger.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
+      logger.error(error);
     } finally {
       if (this.continuePeriodicProcessing) {
         logger.info(`Waiting for ${this.observingIntervalInSeconds} seconds before fetching and processing transactions again.`);
@@ -248,8 +248,8 @@ export default class Observer {
       const transactionProcessor: ITransactionProcessor = this.versionManager.getTransactionProcessor(transaction.transactionTime);
       transactionProcessedSuccessfully = await transactionProcessor.processTransaction(transaction);
     } catch (error) {
-      console.error(`Unhandled error encountered processing transaction '${transaction.transactionNumber}'.`);
-      console.error(error);
+      logger.error(`Unhandled error encountered processing transaction '${transaction.transactionNumber}'.`);
+      logger.error(error);
       transactionProcessedSuccessfully = false;
     } finally {
       // Purposely setting processing status first before rest of the code to prevent any possibility of deadlocking the Observer.

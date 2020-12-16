@@ -788,7 +788,7 @@ export default class BitcoinClient {
     const responseData = await ReadableStream.readAll(response.body);
     if (response.status !== httpStatus.OK) {
       const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
-      console.error(error);
+      logger.error(error);
       throw error;
     }
 
@@ -796,7 +796,7 @@ export default class BitcoinClient {
 
     if ('error' in responseJson && responseJson.error !== null) {
       const error = new Error(`RPC failed: ${JSON.stringify(responseJson.error)}`);
-      console.error(error);
+      logger.error(error);
       throw error;
     }
 
@@ -837,7 +837,7 @@ export default class BitcoinClient {
               continue;
           }
         }
-        console.error(error);
+        logger.error(error);
         throw error;
       }
     } while (true);

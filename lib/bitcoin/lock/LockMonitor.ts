@@ -103,7 +103,7 @@ export default class LockMonitor {
 
     } catch (e) {
       const message = `An error occurred during periodic poll: ${SidetreeError.stringify(e)}`;
-      console.error(message);
+      logger.error(message);
     } finally {
       this.periodicPollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * this.pollPeriodInSeconds);
     }
@@ -252,7 +252,7 @@ export default class LockMonitor {
       // no exception thrown == transaction found == it was broadcasted even if it is only in the mempool.
       return true;
     } catch (e) {
-      console.warn(`Transaction with id: ${transactionId} was not found on the bitcoin. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      logger.warn(`Transaction with id: ${transactionId} was not found on the bitcoin. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
     }
 
     return false;
@@ -317,7 +317,7 @@ export default class LockMonitor {
       // If there is not enough balance for the relock then just release the lock. Let the next
       // iteration of the polling to try and create a new lock.
       if (e instanceof SidetreeError && e.code === ErrorCode.LockMonitorNotEnoughBalanceForRelock) {
-        console.warn(LogColor.yellow(`There is not enough balance for relocking so going to release the lock. Error: ${e.message}`));
+        logger.warn(LogColor.yellow(`There is not enough balance for relocking so going to release the lock. Error: ${e.message}`));
         await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
       } else {
         // This is an unexpected error at this point ... rethrow as this is needed to be investigated.

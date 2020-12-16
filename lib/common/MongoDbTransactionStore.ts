@@ -74,7 +74,7 @@ export default class MongoDbTransactionStore implements ITransactionStore {
       transactions = await dbCursor.toArray();
 
     } catch (error) {
-      console.error(error);
+      logger.error(error);
     }
 
     return transactions;

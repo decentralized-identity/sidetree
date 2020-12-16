@@ -52,11 +52,11 @@ export default class Ipfs implements ICas {
     const response = await this.fetch(addUrl, requestParameters);
 
     if (response.status !== HttpStatus.OK) {
-      console.error(`IPFS write error response status: ${response.status}`);
+      logger.error(`IPFS write error response status: ${response.status}`);
 
       if (response.body) {
         const errorBody = await ReadableStream.readAll(response.body);
-        console.error(`IPFS write error body: ${errorBody}`);
+        logger.error(`IPFS write error body: ${errorBody}`);
       }
 
       throw new SidetreeError(IpfsErrorCode.IpfsFailedWritingContent, `Failed writing content of ${content.length} bytes.`);
@@ -93,7 +93,7 @@ export default class Ipfs implements ICas {
         const errorMessage =
           `Unexpected error while fetching CID '${casUri}'. ` +
           `Investigate and fix: ${SidetreeError.stringify(error)}`;
-        console.error(errorMessage);
+        logger.error(errorMessage);
       }
 
       // Mark content as `not found` if any error is thrown while fetching.

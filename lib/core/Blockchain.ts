@@ -73,8 +73,8 @@ export default class Blockchain implements IBlockchain {
     const response = await this.fetch(this.transactionsUri, requestParameters);
 
     if (response.status !== HttpStatus.OK) {
-      console.error(`Blockchain write error response status: ${response.status}`);
-      console.error(`Blockchain write error body: ${response.body.read()}`);
+      logger.error(`Blockchain write error response status: ${response.status}`);
+      logger.error(`Blockchain write error body: ${response.body.read()}`);
       throw new SidetreeError(CoreErrorCode.BlockchainWriteResponseNotOk);
     }
   }
@@ -108,8 +108,8 @@ export default class Blockchain implements IBlockchain {
     }
 
     if (response.status !== HttpStatus.OK) {
-      console.error(`Blockchain read error response status: ${response.status}`);
-      console.error(`Blockchain read error body: ${responseBody}`);
+      logger.error(`Blockchain read error response status: ${response.status}`);
+      logger.error(`Blockchain read error body: ${responseBody}`);
       throw new SidetreeError(CoreErrorCode.BlockchainReadResponseNotOk);
     }
 
@@ -187,8 +187,8 @@ export default class Blockchain implements IBlockchain {
     }
 
     if (response.status !== HttpStatus.OK) {
-      console.error(`Blockchain read error response status: ${response.status}`);
-      console.error(`Blockchain read error body: ${responseBodyString}`);
+      logger.error(`Blockchain read error response status: ${response.status}`);
+      logger.error(`Blockchain read error body: ${responseBodyString}`);
       throw new SidetreeError(CoreErrorCode.BlockchainGetFeeResponseNotOk);
     }
 

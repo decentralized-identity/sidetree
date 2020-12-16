@@ -108,7 +108,7 @@ export default class DownloadManager {
       // Remove active downloads from `pendingDownloads` list.
       this.pendingDownloads.splice(0, availableDownloadLanes);
     } catch (error) {
-      console.error(`Encountered unhandled/unexpected error in DownloadManager, must investigate and fix: ${error}`);
+      logger.error(`Encountered unhandled/unexpected error in DownloadManager, must investigate and fix: ${error}`);
     } finally {
       setTimeout(async () => this.start(), 1000);
     }
@@ -149,7 +149,7 @@ export default class DownloadManager {
 
       downloadInfo.fetchResult = fetchResult;
     } catch (error) {
-      console.error(`Unexpected error while downloading '${contentHash}, investigate and fix ${error}'.`);
+      logger.error(`Unexpected error while downloading '${contentHash}, investigate and fix ${error}'.`);
     } finally {
       downloadInfo.completed = true;
     }

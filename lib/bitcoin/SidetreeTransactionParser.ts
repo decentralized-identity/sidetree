@@ -124,7 +124,7 @@ export default class SidetreeTransactionParser {
 
       return transaction.outputs[outputIndexToFetch];
     } catch (e) {
-      console.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
+      logger.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
       return undefined;
     }
   }

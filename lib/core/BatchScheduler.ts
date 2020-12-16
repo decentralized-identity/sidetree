@@ -51,8 +51,8 @@ export default class BatchScheduler {
 
       await batchWriter.write();
     } catch (error) {
-      console.error('Unexpected and unhandled error during batch writing, investigate and fix:');
-      console.error(error);
+      logger.error('Unexpected and unhandled error during batch writing, investigate and fix:');
+      logger.error(error);
     } finally {
       logger.info(`End batch writing. Duration: ${endTimer.rounded()} ms.`);
 

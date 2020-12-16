@@ -85,7 +85,7 @@ export default class SpendingMonitor {
 
     if (totalFeePlusCurrentFee > this.bitcoinFeeSpendingCutoffInSatoshis) {
       // eslint-disable-next-line max-len
-      console.error(`Current fee (in satoshis): ${currentFeeInSatoshis} + total fees (${totalFeeForRelatedTxns}) since block number: ${startingBlockHeight} is greater than the spending cap: ${this.bitcoinFeeSpendingCutoffInSatoshis}`);
+      logger.error(`Current fee (in satoshis): ${currentFeeInSatoshis} + total fees (${totalFeeForRelatedTxns}) since block number: ${startingBlockHeight} is greater than the spending cap: ${this.bitcoinFeeSpendingCutoffInSatoshis}`);
       return false;
     }
 

@@ -94,13 +94,13 @@ export default class Core {
     if (this.config.observingIntervalInSeconds > 0) {
       await this.observer.startPeriodicProcessing();
     } else {
-      console.warn(LogColor.yellow(`Transaction observer is disabled.`));
+      logger.warn(LogColor.yellow(`Transaction observer is disabled.`));
     }
 
     if (this.config.batchingIntervalInSeconds > 0) {
       this.batchScheduler.startPeriodicBatchWriting();
     } else {
-      console.warn(LogColor.yellow(`Batch writing is disabled.`));
+      logger.warn(LogColor.yellow(`Batch writing is disabled.`));
     }
 
     this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
@@ -158,7 +158,7 @@ export default class Core {
 
     // Add DB upgrade code below.
 
-    console.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(savedServiceVersion)} to ${LogColor.green(currentServiceVersion)}...`));
+    logger.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(savedServiceVersion)} to ${LogColor.green(currentServiceVersion)}...`));
 
     // Current upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
     const timer = timeSpan();
@@ -168,7 +168,7 @@ export default class Core {
 
     await this.serviceStateStore.put({ serviceVersion: currentServiceVersion });
 
-    console.warn(LogColor.yellow(`DB upgraded in: ${LogColor.green(timer.rounded())} ms.`));
+    logger.warn(LogColor.yellow(`DB upgraded in: ${LogColor.green(timer.rounded())} ms.`));
   }
 
 }

@@ -185,7 +185,7 @@ export default class BitcoinProcessor {
       // Intentionally not await on the promise.
       this.periodicPoll();
     } else {
-      console.warn(LogColor.yellow(`Transaction observer is disabled.`));
+      logger.warn(LogColor.yellow(`Transaction observer is disabled.`));
     }
 
     // NOTE: important to start lock monitor polling AFTER we have processed all the blocks above (for the case that this node is observing transactions),
@@ -207,7 +207,7 @@ export default class BitcoinProcessor {
 
     // Add DB upgrade code below.
 
-    console.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(savedServiceVersion)} to ${LogColor.green(currentServiceVersion)}...`));
+    logger.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(savedServiceVersion)} to ${LogColor.green(currentServiceVersion)}...`));
 
     // Current upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
     const timer = timeSpan();
@@ -216,7 +216,7 @@ export default class BitcoinProcessor {
 
     await this.serviceStateStore.put({ serviceVersion: currentServiceVersion });
 
-    console.warn(LogColor.yellow(`DB upgraded in: ${LogColor.green(timer.rounded())} ms.`));
+    logger.warn(LogColor.yellow(`DB upgraded in: ${LogColor.green(timer.rounded())} ms.`));
   }
 
   /**
@@ -531,13 +531,13 @@ export default class BitcoinProcessor {
     const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * transactionFee;
     if (totalSatoshis < lowBalanceAmount) {
       const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * transactionFee));
-      console.error(`Low balance (${daysLeft} days remaining), please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
+      logger.error(`Low balance (${daysLeft} days remaining), please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
     }
 
     // cannot make the transaction
     if (totalSatoshis < transactionFee) {
       const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`);
-      console.error(error);
+      logger.error(error);
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.NotEnoughBalanceForWrite);
     }
 
@@ -577,7 +577,7 @@ export default class BitcoinProcessor {
     const blockNumber = Number(block);
     if (blockNumber < this.genesisBlockNumber) {
       const error = `The input block number must be greater than or equal to: ${this.genesisBlockNumber}`;
-      console.error(error);
+      logger.error(error);
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
     }
     const normalizedTransactionFee = await this.versionManager.getFeeCalculator(blockNumber).getNormalizedFee(blockNumber);
@@ -625,7 +625,7 @@ export default class BitcoinProcessor {
         throw new RequestError(ResponseStatus.NotFound, ErrorCode.ValueTimeLockInPendingState);
       }
 
-      console.error(`Current value time lock retrieval failed with error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      logger.error(`Current value time lock retrieval failed with error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
       throw new RequestError(ResponseStatus.ServerError);
     }
 
@@ -663,7 +663,7 @@ export default class BitcoinProcessor {
         await this.processTransactions(startingBlock);
       }
     } catch (error) {
-      console.error(error);
+      logger.error(error);
     } finally {
       this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval, interval);
     }
