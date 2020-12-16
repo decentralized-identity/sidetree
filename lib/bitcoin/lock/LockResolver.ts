@@ -8,6 +8,7 @@ import { Script } from 'bitcore-lib';
 import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from '../../common/models/ValueTimeLockModel';
 import VersionManager from '../VersionManager';
+import logger from '../../common/Logger';
 
 /** Structure (internal for this class) to hold the redeem script verification results */
 interface LockScriptVerifyResult {
@@ -49,7 +50,7 @@ export default class LockResolver {
    */
   public async resolveLockIdentifierAndThrowOnError (lockIdentifier: LockIdentifierModel): Promise<ValueTimeLockModel> {
 
-    console.info(`Starting lock resolution for identifier: ${JSON.stringify(lockIdentifier)}`);
+    logger.info(`Starting lock resolution for identifier: ${JSON.stringify(lockIdentifier)}`);
 
     // The verification of a lock-identifier has the following steps:
     //   (A). The redeem script in the lock-identifier is actually a 'locking' script

@@ -3,6 +3,7 @@ import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonCanonicalizer from './util/JsonCanonicalizer';
 import SidetreeError from '../../../common/SidetreeError';
+import logger from '../../../common/Logger';
 
 const multihashes = require('multihashes');
 
@@ -133,7 +134,7 @@ export default class Multihash {
       const contentBuffer = Encoder.decodeAsBuffer(encodedContent);
       return Multihash.verifyEncodedMultihashForContent(contentBuffer, encodedMultihash);
     } catch (error) {
-      console.info(error);
+      logger.info(error);
       return false;
     }
   }
@@ -168,7 +169,7 @@ export default class Multihash {
 
       return Multihash.verifyDoubleHash(contentBuffer, encodedMultihash);
     } catch (error) {
-      console.info(error);
+      logger.info(error);
       return false;
     }
   }
@@ -188,7 +189,7 @@ export default class Multihash {
 
       return Buffer.compare(actualMultihashBuffer, expectedMultihashBuffer) === 0;
     } catch (error) {
-      console.info(error);
+      logger.info(error);
       return false;
     }
   }
@@ -210,7 +211,7 @@ export default class Multihash {
       const actualMultihashString = Encoder.encode(actualMultihashBuffer);
       return actualMultihashString === encodedMultihash;
     } catch (error) {
-      console.info(error);
+      logger.info(error);
       return false;
     }
   }

@@ -1,6 +1,7 @@
 import ITransactionStore from '../core/interfaces/ITransactionStore';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
+import logger from '../common/Logger';
 
 /**
  * Encapsulates the functionality to calculate the amount of spending that the
@@ -69,12 +70,12 @@ export default class SpendingMonitor {
       await this.transactionStore.getTransactionsLaterThan(startingBlockFirstTxnNumber - 1, undefined);
 
     // eslint-disable-next-line max-len
-    console.info(`SpendingMonitor: total number of transactions from the transaction store starting from block: ${startingBlockHeight} are: ${allTxnsSinceStartingBlock.length}`);
+    logger.info(`SpendingMonitor: total number of transactions from the transaction store starting from block: ${startingBlockHeight} are: ${allTxnsSinceStartingBlock.length}`);
 
     // Since the transactions from the store include transactions written by ALL the nodes in the network,
     // filter them to get the transactions that were written only by this node.
     const txnsWrittenByThisInstance = this.findTransactionsWrittenByThisNode(allTxnsSinceStartingBlock);
-    console.info(`Number of transactions written by this instance: ${txnsWrittenByThisInstance.length}`);
+    logger.info(`Number of transactions written by this instance: ${txnsWrittenByThisInstance.length}`);
 
     const totalFeeForRelatedTxns = txnsWrittenByThisInstance.reduce((total: number, currTxnModel: TransactionModel) => {
       return total + currTxnModel.transactionFeePaid;

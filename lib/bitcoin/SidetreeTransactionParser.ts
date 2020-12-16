@@ -4,6 +4,7 @@ import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionModel from './models/SidetreeTransactionModel';
+import logger from '../common/Logger';
 
 /**
  * Encapsulates functionality about parsing a sidetree transaction written on the bitcoin.
@@ -31,7 +32,7 @@ export default class SidetreeTransactionParser {
     const writer = await this.getValidWriterFromInputs(bitcoinTransaction.id, bitcoinTransaction.inputs);
 
     if (!writer) {
-      console.info(`Valid sidetree data was found but no valid writer was found for transaction id: ${bitcoinTransaction.id}`);
+      logger.info(`Valid sidetree data was found but no valid writer was found for transaction id: ${bitcoinTransaction.id}`);
       return undefined;
     }
 
@@ -94,7 +95,7 @@ export default class SidetreeTransactionParser {
 
     // A.
     if (transactionInputs.length < 1) {
-      console.info(`There must be at least one input in the transaction id: ${transactionId}`);
+      logger.info(`There must be at least one input in the transaction id: ${transactionId}`);
       return undefined;
     }
 
@@ -103,7 +104,7 @@ export default class SidetreeTransactionParser {
     // B.
     const inputScriptAsmParts = inputToCheck.scriptAsmAsString.split(' ');
     if (inputScriptAsmParts.length !== 2) {
-      console.info(`The first input must have only the signature and publickey; transaction id: ${transactionId}`);
+      logger.info(`The first input must have only the signature and publickey; transaction id: ${transactionId}`);
       return undefined;
     }
 

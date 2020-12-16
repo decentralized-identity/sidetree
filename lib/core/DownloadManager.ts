@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import FetchResult from '../common/models/FetchResult';
 import ICas from './interfaces/ICas';
+import logger from '../common/Logger';
 
 /**
  * Interface containing information regarding each queued CAS download.
@@ -57,7 +58,7 @@ export default class DownloadManager {
     // If maximum concurrent CAS download count is NaN, set it to a default value.
     if (isNaN(maxConcurrentDownloads)) {
       const defaultMaxConcurrentDownloads = 20;
-      console.info(`Maximum concurrent CAS download count not given, defaulting to ${defaultMaxConcurrentDownloads}.`);
+      logger.info(`Maximum concurrent CAS download count not given, defaulting to ${defaultMaxConcurrentDownloads}.`);
       this.maxConcurrentDownloads = defaultMaxConcurrentDownloads;
     }
   }

@@ -1,6 +1,7 @@
 import * as timeSpan from 'time-span';
 import IBlockchain from './interfaces/IBlockchain';
 import IVersionManager from './interfaces/IVersionManager';
+import logger from '../common/Logger';
 
 /**
  * Class that performs periodic writing of batches of Sidetree operations to CAS and blockchain.
@@ -31,7 +32,7 @@ export default class BatchScheduler {
    * Mainly used for test purposes.
    */
   public stopPeriodicBatchWriting () {
-    console.info(`Stopped periodic batch writing.`);
+    logger.info(`Stopped periodic batch writing.`);
     this.continuePeriodicBatchWriting = false;
   }
 
@@ -42,7 +43,7 @@ export default class BatchScheduler {
     const endTimer = timeSpan(); // For calculating time taken to write operations.
 
     try {
-      console.info('Start operation batch writing...');
+      logger.info('Start operation batch writing...');
 
       // Get the correct version of the `BatchWriter`.
       const currentTime = this.blockchain.approximateTime.time;
@@ -53,10 +54,10 @@ export default class BatchScheduler {
       console.error('Unexpected and unhandled error during batch writing, investigate and fix:');
       console.error(error);
     } finally {
-      console.info(`End batch writing. Duration: ${endTimer.rounded()} ms.`);
+      logger.info(`End batch writing. Duration: ${endTimer.rounded()} ms.`);
 
       if (this.continuePeriodicBatchWriting) {
-        console.info(`Waiting for ${this.batchingIntervalInSeconds} seconds before writing another batch.`);
+        logger.info(`Waiting for ${this.batchingIntervalInSeconds} seconds before writing another batch.`);
         setTimeout(async () => this.writeOperationBatch(), this.batchingIntervalInSeconds * 1000);
       }
     }

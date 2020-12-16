@@ -29,6 +29,7 @@ import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import VersionManager from './VersionManager';
+import logger from '../common/Logger';
 
 /**
  * Object representing a blockchain time and hash
@@ -169,10 +170,10 @@ export default class BitcoinProcessor {
       const startingBlock = await this.getStartingBlockForPeriodicPoll();
 
       if (startingBlock === undefined) {
-        console.info('Bitcoin processor state is ahead of Bitcoin Core, skipping initialization...');
+        logger.info('Bitcoin processor state is ahead of Bitcoin Core, skipping initialization...');
       } else {
-        console.info('Synchronizing blocks for sidetree transactions...');
-        console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
+        logger.info('Synchronizing blocks for sidetree transactions...');
+        logger.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
         if (this.config.bitcoinDataDirectory) {
           // This reads into the raw block files and parse to speed up the initial startup instead of rpc
           await this.fastProcessTransactions(startingBlock);
@@ -233,7 +234,7 @@ export default class BitcoinProcessor {
     // An array of blocks representing the validated chain reverse sorted by height
     const validatedBlocks: BlockMetadataWithoutNormalizedFee[] = [];
 
-    console.info(`Begin fast processing block ${startingBlock.height} to ${lastBlockHeight}`);
+    logger.info(`Begin fast processing block ${startingBlock.height} to ${lastBlockHeight}`);
     // Loop through files backwards and process blocks from the end/tip of the blockchain until we reach the starting block given.
     let hashOfEarliestKnownValidBlock = lastBlockInfo.hash;
     let heightOfEarliestKnownValidBlock = lastBlockInfo.height;
@@ -260,8 +261,8 @@ export default class BitcoinProcessor {
     // ValidatedBlocks are in descending order, this flips that and make it ascending by height for the purpose of normalized fee calculation
     const validatedBlocksOrderedByHeight = validatedBlocks.reverse();
     await this.writeBlocksToMetadataStoreWithFee(validatedBlocksOrderedByHeight);
-    console.info(`Inserted metadata of ${validatedBlocks.length} blocks to DB. Duration: ${timer.rounded()} ms.`);
-    console.info('finished fast processing');
+    logger.info(`Inserted metadata of ${validatedBlocks.length} blocks to DB. Duration: ${timer.rounded()} ms.`);
+    logger.info('finished fast processing');
   }
 
   private async processBlocks (
@@ -310,7 +311,7 @@ export default class BitcoinProcessor {
       validBlockCount++;
     }
 
-    console.info(LogColor.lightBlue(`Found ${LogColor.green(validBlockCount)} valid blocks.`));
+    logger.info(LogColor.lightBlue(`Found ${LogColor.green(validBlockCount)} valid blocks.`));
   }
 
   private async removeTransactionsInInvalidBlocks (invalidBlocks: Map<string, BlockMetadataWithoutNormalizedFee>) {
@@ -363,14 +364,15 @@ export default class BitcoinProcessor {
 
         // If there are transactions found then add them to the transaction store
         if (sidetreeTxToAdd) {
-          console.info(LogColor.lightBlue(`Sidetree transaction found; adding ${LogColor.green(JSON.stringify(sidetreeTxToAdd))}`));
+          logger.info(LogColor.lightBlue(`Sidetree transaction found; adding ${LogColor.green(JSON.stringify(sidetreeTxToAdd))}`));
           await this.transactionStore.addTransaction(sidetreeTxToAdd);
         }
       } catch (e) {
         const inputs = { blockHeight: block.height, blockHash: block.hash, transactionIndex: transactionIndex };
-        console.info('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
-          JSON.stringify(inputs),
-          JSON.stringify(e, Object.getOwnPropertyNames(e)));
+        logger.info(
+          `An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: ${JSON.stringify(inputs)}\r\n` +
+          `Full error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`
+        );
 
         throw e;
       }
@@ -384,7 +386,7 @@ export default class BitcoinProcessor {
    * @returns the current or associated blockchain time of the given time hash.
    */
   public async time (hash?: string): Promise<IBlockchainTime> {
-    console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
+    logger.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
     if (!hash) {
       const block = await this.blockMetadataStore.getLast();
       return {
@@ -416,12 +418,12 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest);
     } else if (since && hash) {
       if (!await this.verifyBlock(TransactionNumber.getBlockNumber(since), hash)) {
-        console.info('Requested transactions hash mismatched blockchain');
+        logger.info('Requested transactions hash mismatched blockchain');
         throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.InvalidTransactionNumberOrTimeHash);
       }
     }
 
-    console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
+    logger.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
 
     // We get the last processed block directly from DB because if this service has observer turned off,
     // it would not have the last processed block cached in memory.
@@ -459,7 +461,7 @@ export default class BitcoinProcessor {
     // make sure the last processed block hasn't changed since before getting transactions
     // if changed, then a block reorg happened.
     if (!await this.verifyBlock(lastProcessedBlock.height, lastProcessedBlock.hash)) {
-      console.info('Requested transactions hash mismatched blockchain');
+      logger.info('Requested transactions hash mismatched blockchain');
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.InvalidTransactionNumberOrTimeHash);
     }
 
@@ -514,7 +516,7 @@ export default class BitcoinProcessor {
     const sidetreeTransactionString = `${this.config.sidetreeTransactionPrefix}${anchorString}`;
     const sidetreeTransaction = await this.bitcoinClient.createSidetreeTransaction(sidetreeTransactionString, minimumFee);
     const transactionFee = sidetreeTransaction.transactionFee;
-    console.info(`Fee: ${transactionFee}. Anchoring string ${anchorString}`);
+    logger.info(`Fee: ${transactionFee}. Anchoring string ${anchorString}`);
 
     const feeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(transactionFee, this.lastProcessedBlock!.height);
 
@@ -540,7 +542,7 @@ export default class BitcoinProcessor {
     }
 
     const transactionHash = await this.bitcoinClient.broadcastSidetreeTransaction(sidetreeTransaction);
-    console.info(LogColor.lightBlue(`Successfully submitted transaction [hash: ${LogColor.green(transactionHash)}]`));
+    logger.info(LogColor.lightBlue(`Successfully submitted transaction [hash: ${LogColor.green(transactionHash)}]`));
     this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }
 
@@ -604,7 +606,7 @@ export default class BitcoinProcessor {
       // bubbled up above.
       return await this.lockResolver.resolveSerializedLockIdentifierAndThrowOnError(lockIdentifier);
     } catch (e) {
-      console.info(`Value time lock not found. Identifier: ${lockIdentifier}. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      logger.info(`Value time lock not found. Identifier: ${lockIdentifier}. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
       throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
     }
   }
@@ -656,7 +658,7 @@ export default class BitcoinProcessor {
       const startingBlock = await this.getStartingBlockForPeriodicPoll();
 
       if (startingBlock === undefined) {
-        console.info('Bitcoin processor state is ahead of bitcoind: skipping periodic poll');
+        logger.info('Bitcoin processor state is ahead of bitcoind: skipping periodic poll');
       } else {
         await this.processTransactions(startingBlock);
       }
@@ -672,7 +674,7 @@ export default class BitcoinProcessor {
    * @param startBlock The block to begin from (inclusive)
    */
   private async processTransactions (startBlock: IBlockInfo) {
-    console.info(`Starting processTransaction at: ${Date.now()}`);
+    logger.info(`Starting processTransaction at: ${Date.now()}`);
 
     const startBlockHeight = startBlock.height;
 
@@ -683,7 +685,7 @@ export default class BitcoinProcessor {
     }
 
     const endBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
-    console.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
+    logger.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
 
     let blockHeight = startBlockHeight;
     let previousBlockHash = startBlock.previousHash;
@@ -696,7 +698,7 @@ export default class BitcoinProcessor {
       previousBlockHash = processedBlockMetadata.hash;
     }
 
-    console.info(`Finished processing blocks ${startBlockHeight} to ${endBlockHeight}`);
+    logger.info(`Finished processing blocks ${startBlockHeight} to ${endBlockHeight}`);
   }
 
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
@@ -755,7 +757,7 @@ export default class BitcoinProcessor {
    * @param blockHeight The exclusive block height to perform DB trimming on.
    */
   private async trimDatabasesToBlock (blockHeight?: number) {
-    console.info(`Trimming all block and transaction data after block height: ${blockHeight}`);
+    logger.info(`Trimming all block and transaction data after block height: ${blockHeight}`);
 
     // NOTE: Order is IMPORTANT!
     // *****
@@ -773,7 +775,7 @@ export default class BitcoinProcessor {
    * @returns true if valid, false otherwise
    */
   private async verifyBlock (height: number, hash: string): Promise<boolean> {
-    console.info(`Verifying block ${height} (${hash})`);
+    logger.info(`Verifying block ${height} (${hash})`);
     const currentBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
 
     // this means the block height doesn't exist anymore
@@ -783,7 +785,7 @@ export default class BitcoinProcessor {
 
     const responseData = await this.bitcoinClient.getBlockHash(height);
 
-    console.info(`Retrieved block ${height} (${responseData})`);
+    logger.info(`Retrieved block ${height} (${responseData})`);
     return hash === responseData;
   }
 
@@ -794,7 +796,7 @@ export default class BitcoinProcessor {
    * @returns the metadata of block processed
    */
   private async processBlock (blockHeight: number, previousBlockHash: string): Promise<BlockMetadata> {
-    console.info(`Processing block ${blockHeight}`);
+    logger.info(`Processing block ${blockHeight}`);
     const blockHash = await this.bitcoinClient.getBlockHash(blockHeight);
     const blockData = await this.bitcoinClient.getBlock(blockHash);
 

@@ -11,6 +11,8 @@ import SavedLockType from '../enums/SavedLockType';
 import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
 import VersionManager from '../VersionManager';
+import logger from '../../common/Logger';
+
 
 /* global NodeJS */
 
@@ -96,7 +98,7 @@ export default class LockMonitor {
         clearTimeout(this.periodicPollTimeoutId);
       }
 
-      console.info(`Starting periodic polling for the lock monitor.`);
+      logger.info(`Starting periodic polling for the lock monitor.`);
       await this.handlePeriodicPolling();
 
     } catch (e) {
@@ -106,22 +108,22 @@ export default class LockMonitor {
       this.periodicPollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * this.pollPeriodInSeconds);
     }
 
-    console.info(`Ending periodic polling for the lock monitor.`);
+    logger.info(`Ending periodic polling for the lock monitor.`);
   }
 
   private async handlePeriodicPolling (): Promise<void> {
     const currentLockState = await this.getCurrentLockState();
-    console.info(`Refreshed the in-memory value time lock state.`);
+    logger.info(`Refreshed the in-memory value time lock state.`);
 
     // If lock update is disabled, then no further action needs to be taken.
     if (this.valueTimeLockUpdateEnabled === false) {
-      console.info(`Value time lock update is disabled, will not attempt to update the value time lock.`);
+      logger.info(`Value time lock update is disabled, will not attempt to update the value time lock.`);
       return;
     }
 
     // If the current lock is in pending state then we cannot do anything other than rebroadcast the transaction again.
     if (currentLockState.status === LockStatus.Pending) {
-      console.info(`The current lock status is in pending state, rebroadcast the transaction again in case the transaction is lost in the previous broadcast.`);
+      logger.info(`The current lock status is in pending state, rebroadcast the transaction again in case the transaction is lost in the previous broadcast.`);
       await this.rebroadcastTransaction(currentLockState.latestSavedLockInfo!);
       return;
     }
@@ -144,7 +146,7 @@ export default class LockMonitor {
     }
 
     if (!lockRequired && validCurrentLockExist) {
-      console.info(LogColor.lightBlue(`Value time lock no longer needed.`));
+      logger.info(LogColor.lightBlue(`Value time lock no longer needed.`));
 
       await this.handleReleaseExistingLock(
         currentLockState.activeValueTimeLock!,
@@ -166,7 +168,7 @@ export default class LockMonitor {
       };
     }
 
-    console.info(`Found last saved lock of type: ${lastSavedLock.type} with transaction id: ${lastSavedLock.transactionId}.`);
+    logger.info(`Found last saved lock of type: ${lastSavedLock.type} with transaction id: ${lastSavedLock.transactionId}.`);
 
     // Make sure that the last lock txn is actually broadcasted to the blockchain. Rebroadcast
     // if it is not as we don't want to do anything until last lock information is at least
@@ -198,7 +200,7 @@ export default class LockMonitor {
     try {
       const currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
 
-      console.info(`Found a valid current lock: ${JSON.stringify(currentValueTimeLock)}`);
+      logger.info(`Found a valid current lock: ${JSON.stringify(currentValueTimeLock)}`);
 
       return {
         activeValueTimeLock: currentValueTimeLock,
@@ -223,7 +225,7 @@ export default class LockMonitor {
   }
 
   private async rebroadcastTransaction (lastSavedLock: SavedLockModel): Promise<void> {
-    console.info(`Rebroadcasting the transaction id: ${lastSavedLock.transactionId}`);
+    logger.info(`Rebroadcasting the transaction id: ${lastSavedLock.transactionId}`);
 
     // So we had some transaction information saved but the transaction was never found on the
     // blockchain. Either the transaction was broadcasted and we're just waiting for it to be
@@ -269,8 +271,8 @@ export default class LockMonitor {
                              `Lock amount: ${totalLockAmount}; Wallet balance: ${walletBalance}`);
     }
 
-    console.info(LogColor.lightBlue(`Current wallet balance: ${LogColor.green(walletBalance)}`));
-    console.info(LogColor.lightBlue(`Creating a new lock for amount: ${LogColor.green(totalLockAmount)} satoshis.`));
+    logger.info(LogColor.lightBlue(`Current wallet balance: ${LogColor.green(walletBalance)}`));
+    logger.info(LogColor.lightBlue(`Creating a new lock for amount: ${LogColor.green(totalLockAmount)} satoshis.`));
 
     const height = await this.bitcoinClient.getCurrentBlockHeight();
     const lockTransaction = await this.bitcoinClient.createLockTransaction(totalLockAmount, this.versionManager.getLockDurationInBlocks(height));
@@ -300,7 +302,7 @@ export default class LockMonitor {
     // If the desired lock amount is different from previous then just return the amount to
     // the wallet and let the next poll iteration start a new lock.
     if (latestSavedLockInfo.desiredLockAmountInSatoshis !== desiredLockAmountInSatoshis) {
-      console.info(LogColor.lightBlue(`Current desired lock amount ${LogColor.green(desiredLockAmountInSatoshis)} satoshis is different from the previous `) +
+      logger.info(LogColor.lightBlue(`Current desired lock amount ${LogColor.green(desiredLockAmountInSatoshis)} satoshis is different from the previous `) +
         LogColor.lightBlue(`desired lock amount ${LogColor.green(latestSavedLockInfo.desiredLockAmountInSatoshis)} satoshis. Going to release the lock.`));
 
       await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
@@ -341,11 +343,11 @@ export default class LockMonitor {
       return false;
     }
 
-    console.info(LogColor.lightBlue(`Value time lock no longer needed and unlock time reached, releasing lock...`));
+    logger.info(LogColor.lightBlue(`Value time lock no longer needed and unlock time reached, releasing lock...`));
 
     await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
 
-    console.info(LogColor.lightBlue(`Value time lock released.`));
+    logger.info(LogColor.lightBlue(`Value time lock released.`));
 
     return true;
   }
@@ -399,14 +401,14 @@ export default class LockMonitor {
       type: lockType
     };
 
-    console.info(`Saving the ${lockType} type lock with transaction id: ${lockTransaction.transactionId}.`);
+    logger.info(`Saving the ${lockType} type lock with transaction id: ${lockTransaction.transactionId}.`);
 
     // Make sure that we save the lock info to the db BEFORE trying to broadcast it. The reason being is
     // that if the service crashes right after saving then we can just rebroadcast. But if we broadcast first
     // and the service crashes then we won't have anything saved and will try to create yet another txn.
     await this.lockTransactionStore.addLock(lockInfoToSave);
 
-    console.info(`Broadcasting the transaction id: ${lockTransaction.transactionId}`);
+    logger.info(`Broadcasting the transaction id: ${lockTransaction.transactionId}`);
     await this.bitcoinClient.broadcastLockTransaction(lockTransaction);
 
     return lockInfoToSave;
@@ -415,7 +417,7 @@ export default class LockMonitor {
   private async isUnlockTimeReached (unlockTransactionTime: number): Promise<boolean> {
     const currentBlockTime = await this.bitcoinClient.getCurrentBlockHeight();
 
-    console.info(`Current block: ${currentBlockTime}; Current lock's unlock block: ${unlockTransactionTime}`);
+    logger.info(`Current block: ${currentBlockTime}; Current lock's unlock block: ${unlockTransactionTime}`);
 
     return currentBlockTime >= unlockTransactionTime;
   }

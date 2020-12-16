@@ -34,7 +34,7 @@ export default class RequestHandler implements IRequestHandler {
    * Handles an operation request.
    */
   public async handleOperationRequest (request: Buffer): Promise<ResponseModel> {
-    console.info(`Handling operation request of size ${request.length} bytes...`);
+    logger.info(`Handling operation request of size ${request.length} bytes...`);
 
     // Perform common validation for any write request and parse it into an `OperationModel`.
     let operationModel: OperationModel;
@@ -58,8 +58,8 @@ export default class RequestHandler implements IRequestHandler {
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
-        console.info(`Bad request: ${error.code}`);
-        console.info(`Error message: ${error.message}`);
+        logger.info(`Bad request: ${error.code}`);
+        logger.info(`Error message: ${error.message}`);
         return {
           status: ResponseStatus.BadRequest,
           body: { code: error.code, message: error.message }
@@ -67,14 +67,14 @@ export default class RequestHandler implements IRequestHandler {
       }
 
       // Else we give a generic bad request response.
-      console.info(`Bad request: ${error}`);
+      logger.info(`Bad request: ${error}`);
       return {
         status: ResponseStatus.BadRequest
       };
     }
 
     try {
-      console.info(`Operation type: '${operationModel.type}', DID unique suffix: '${operationModel.didUniqueSuffix}'`);
+      logger.info(`Operation type: '${operationModel.type}', DID unique suffix: '${operationModel.didUniqueSuffix}'`);
 
       // Passed common operation validation, hand off to specific operation handler.
       let response: ResponseModel;
@@ -107,14 +107,14 @@ export default class RequestHandler implements IRequestHandler {
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
-        console.info(`Sidetree error: ${error.code} ${error.message}`);
+        logger.info(`Sidetree error: ${error.code} ${error.message}`);
         return {
           status: ResponseStatus.BadRequest,
           body: { code: error.code, message: error.message }
         };
       }
 
-      console.info(`Unexpected error: ${error}`);
+      logger.info(`Unexpected error: ${error}`);
       return {
         status: ResponseStatus.ServerError
       };
@@ -167,7 +167,7 @@ export default class RequestHandler implements IRequestHandler {
       }
 
       if (didState === undefined) {
-        console.info(`DID not found for DID '${shortOrLongFormDid}'...`);
+        logger.info(`DID not found for DID '${shortOrLongFormDid}'...`);
         return {
           status: ResponseStatus.NotFound,
           body: { code: ErrorCode.DidNotFound, message: 'DID Not Found' }
@@ -184,7 +184,7 @@ export default class RequestHandler implements IRequestHandler {
       const didDeactivated = didState.nextRecoveryCommitmentHash === undefined;
       const status = didDeactivated ? ResponseStatus.Deactivated : ResponseStatus.Succeeded;
 
-      console.info(`DID Document found for DID '${shortOrLongFormDid}'...`);
+      logger.info(`DID Document found for DID '${shortOrLongFormDid}'...`);
       return {
         status,
         body: document
@@ -192,14 +192,14 @@ export default class RequestHandler implements IRequestHandler {
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
-        console.info(`Bad request. Code: ${error.code}. Message: ${error.message}`);
+        logger.info(`Bad request. Code: ${error.code}. Message: ${error.message}`);
         return {
           status: ResponseStatus.BadRequest,
           body: { code: error.code, message: error.message }
         };
       }
 
-      console.info(`Unexpected error: ${error}`);
+      logger.info(`Unexpected error: ${error}`);
       return {
         status: ResponseStatus.ServerError
       };
@@ -213,7 +213,7 @@ export default class RequestHandler implements IRequestHandler {
    * @returns [DID state, published]
    */
   private async resolveLongFormDid (did: Did): Promise<[DidState | undefined, boolean]> {
-    console.info(`Handling long-form DID resolution of DID '${did}'...`);
+    logger.info(`Handling long-form DID resolution of DID '${did}'...`);
 
     // Attempt to resolve the DID by using operations found from the network first.
     let didState = await this.resolver.resolve(did.uniqueSuffix);

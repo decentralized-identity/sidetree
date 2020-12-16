@@ -10,6 +10,7 @@ import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import TransactionModel from '../common/models/TransactionModel';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
+import logger from '../common/Logger';
 import nodeFetch from 'node-fetch';
 
 /**
@@ -94,9 +95,9 @@ export default class Blockchain implements IBlockchain {
 
     const readUri = this.transactionsUri + queryString; // e.g. https://127.0.0.1/transactions?since=6212927891701761&transaction-time-hash=abc
 
-    console.info(`Fetching URI '${readUri}'...`);
+    logger.info(`Fetching URI '${readUri}'...`);
     const response = await this.fetch(readUri);
-    console.info(`Fetch response: ${response.status}'.`);
+    logger.info(`Fetch response: ${response.status}'.`);
 
     const responseBodyBuffer = await ReadableStream.readAll(response.body);
     const responseBody = JSON.parse(responseBodyBuffer.toString());
@@ -125,7 +126,7 @@ export default class Blockchain implements IBlockchain {
 
     const firstValidTransactionUri = `${this.transactionsUri}/firstValid`;
 
-    console.info(`Posting to first-valid transaction URI '${firstValidTransactionUri} with body: '${bodyString}'...`);
+    logger.info(`Posting to first-valid transaction URI '${firstValidTransactionUri} with body: '${bodyString}'...`);
 
     const response = await this.fetch(firstValidTransactionUri, requestParameters);
 
@@ -154,7 +155,7 @@ export default class Blockchain implements IBlockchain {
    * Gets the latest blockchain time and updates the cached time.
    */
   public async getLatestTime (): Promise<BlockchainTimeModel> {
-    console.info(`Refreshing cached blockchain time...`);
+    logger.info(`Refreshing cached blockchain time...`);
     const response = await this.fetch(this.timeUri);
     const responseBodyString = (response.body.read() as Buffer).toString();
 
@@ -168,7 +169,7 @@ export default class Blockchain implements IBlockchain {
     // Update the cached blockchain time every time blockchain time is fetched over the network,
     this.cachedBlockchainTime = responseBody;
 
-    console.info(`Refreshed blockchain time: ${responseBodyString}`);
+    logger.info(`Refreshed blockchain time: ${responseBodyString}`);
     return responseBody;
   }
 

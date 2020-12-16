@@ -1,6 +1,7 @@
 import { Collection, Cursor, Db, Long, MongoClient } from 'mongodb';
 import ITransactionStore from '../core/interfaces/ITransactionStore';
 import TransactionModel from './models/TransactionModel';
+import logger from '../common/Logger';
 
 /**
  * Implementation of ITransactionStore that stores the transaction data in a MongoDB database.
@@ -195,14 +196,14 @@ export default class MongoDbTransactionStore implements ITransactionStore {
     // If 'transactions' collection exists, use it; else create it.
     let transactionCollection;
     if (collectionNames.includes(MongoDbTransactionStore.transactionCollectionName)) {
-      console.info('Transaction collection already exists.');
+      logger.info('Transaction collection already exists.');
       transactionCollection = db.collection(MongoDbTransactionStore.transactionCollectionName);
     } else {
-      console.info('Transaction collection does not exists, creating...');
+      logger.info('Transaction collection does not exists, creating...');
       transactionCollection = await db.createCollection(MongoDbTransactionStore.transactionCollectionName);
       // Note the unique index, so duplicate inserts are rejected.
       await transactionCollection.createIndex({ transactionNumber: 1 }, { unique: true });
-      console.info('Transaction collection created.');
+      logger.info('Transaction collection created.');
     }
 
     return transactionCollection;
