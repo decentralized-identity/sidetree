@@ -265,7 +265,7 @@ describe('Observer', async () => {
       spyOn(downloadManager, 'download').and.returnValue(Promise.resolve({ code: mockFetchReturnCode as FetchResultCode }));
 
       let expectedConsoleLogDetected = false;
-      spyOn(global.console, 'log').and.callFake((message: string) => {
+      spyOn(global.console, 'info').and.callFake((message: string) => {
         if (message.includes(expectedConsoleLogSubstring)) {
           expectedConsoleLogDetected = true;
         }

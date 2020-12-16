@@ -171,7 +171,7 @@ export default class BitcoinProcessor {
       if (startingBlock === undefined) {
         console.info('Bitcoin processor state is ahead of Bitcoin Core, skipping initialization...');
       } else {
-        console.debug('Synchronizing blocks for sidetree transactions...');
+        console.info('Synchronizing blocks for sidetree transactions...');
         console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
         if (this.config.bitcoinDataDirectory) {
           // This reads into the raw block files and parse to speed up the initial startup instead of rpc
@@ -363,12 +363,12 @@ export default class BitcoinProcessor {
 
         // If there are transactions found then add them to the transaction store
         if (sidetreeTxToAdd) {
-          console.debug(LogColor.lightBlue(`Sidetree transaction found; adding ${LogColor.green(JSON.stringify(sidetreeTxToAdd))}`));
+          console.info(LogColor.lightBlue(`Sidetree transaction found; adding ${LogColor.green(JSON.stringify(sidetreeTxToAdd))}`));
           await this.transactionStore.addTransaction(sidetreeTxToAdd);
         }
       } catch (e) {
         const inputs = { blockHeight: block.height, blockHash: block.hash, transactionIndex: transactionIndex };
-        console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
+        console.info('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
           JSON.stringify(inputs),
           JSON.stringify(e, Object.getOwnPropertyNames(e)));
 
@@ -783,7 +783,7 @@ export default class BitcoinProcessor {
 
     const responseData = await this.bitcoinClient.getBlockHash(height);
 
-    console.debug(`Retrieved block ${height} (${responseData})`);
+    console.info(`Retrieved block ${height} (${responseData})`);
     return hash === responseData;
   }
 

@@ -51,7 +51,7 @@ export default class OperationProcessor implements IOperationProcessor {
         const time = anchoredOperationModel.transactionTime;
         const number = anchoredOperationModel.transactionNumber;
         const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-        console.debug(`Ignored invalid operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
+        console.info(`Ignored invalid operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
       }
     } catch (error) {
       console.info(`Failed logging ${error}.`);
@@ -121,7 +121,7 @@ export default class OperationProcessor implements IOperationProcessor {
       } catch (error) {
         const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
         const transactionNumber = anchoredOperationModel.transactionNumber;
-        console.debug(
+        console.info(
           `Partial update on next commitment hash applied because: ` +
           `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
       }
@@ -172,7 +172,7 @@ export default class OperationProcessor implements IOperationProcessor {
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const transactionNumber = anchoredOperationModel.transactionNumber;
-      console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
+      console.info(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
 
       // Return the given DID state if error is encountered applying the patches.
       return didState;
@@ -246,7 +246,7 @@ export default class OperationProcessor implements IOperationProcessor {
       } catch (error) {
         const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
         const transactionNumber = anchoredOperationModel.transactionNumber;
-        console.debug(
+        console.info(
           `Partial update on next commitment hash applied because: ` +
           `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
       }

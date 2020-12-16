@@ -65,14 +65,14 @@ export default class BitcoinClient {
 
     const walletAddress = this.bitcoinWallet.getAddress();
 
-    console.debug(`Checking if bitcoin contains a wallet for ${walletAddress}`);
+    console.info(`Checking if bitcoin contains a wallet for ${walletAddress}`);
     if (!await this.isAddressAddedToWallet(walletAddress.toString())) {
-      console.debug(`Configuring bitcoin peer to watch address ${walletAddress}. This can take up to 10 minutes.`);
+      console.info(`Configuring bitcoin peer to watch address ${walletAddress}. This can take up to 10 minutes.`);
 
       const publicKeyAsHex = this.bitcoinWallet.getPublicKeyAsHex();
       await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
     } else {
-      console.debug('Wallet found.');
+      console.info('Wallet found.');
     }
   }
 
@@ -769,7 +769,7 @@ export default class BitcoinClient {
     request.id = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
 
     const requestString = JSON.stringify(request);
-    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request.method}`);
+    console.info(`Sending jRPC request: id: ${request.id}, method: ${request.method}`);
 
     const requestOptions: RequestInit = {
       body: requestString,
@@ -825,14 +825,14 @@ export default class BitcoinClient {
       } catch (error) {
         if (error instanceof FetchError) {
           if (retryCount >= this.requestMaxRetries) {
-            console.debug('Max retries reached. Request failed.');
+            console.info('Max retries reached. Request failed.');
             throw error;
           }
           switch (error.type) {
             case 'request-timeout':
-              console.debug(`Request timeout (${retryCount})`);
+              console.info(`Request timeout (${retryCount})`);
               await this.waitFor(Math.round(timeout));
-              console.debug(`Retrying request (${++retryCount})`);
+              console.info(`Retrying request (${++retryCount})`);
               continue;
           }
         }

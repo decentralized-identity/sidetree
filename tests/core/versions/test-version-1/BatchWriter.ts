@@ -14,7 +14,7 @@ export default class BatchWriter implements IBatchWriter {
     private blockchain: IBlockchain,
     private cas: ICas,
     private versionMetadataFetcher: IVersionMetadataFetcher) {
-    console.debug(this.operationQueue, this.blockchain, this.cas, this.versionMetadataFetcher);
+    console.info(this.operationQueue, this.blockchain, this.cas, this.versionMetadataFetcher);
   }
 
   async write (): Promise<void> {
