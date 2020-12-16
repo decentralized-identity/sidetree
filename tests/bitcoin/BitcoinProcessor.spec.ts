@@ -22,6 +22,7 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import VersionModel from '../../lib/bitcoin/models/BitcoinVersionModel';
+import logger from '../../lib/common/Logger';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -772,13 +773,13 @@ describe('BitcoinProcessor', () => {
         transactionFee: bitcoinFee,
         serializedTransactionObject: 'string'
       }));
-      const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
+      const loggerErrorSpy = spyOn(logger, 'error').and.callFake((message: string) => {
         expect(message).toContain('fund your wallet');
       });
       await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
-      expect(errorSpy).toHaveBeenCalled();
+      expect(loggerErrorSpy).toHaveBeenCalled();
       expect(monitorAddSpy).toHaveBeenCalled();
       done();
     });
@@ -984,7 +985,7 @@ describe('BitcoinProcessor', () => {
       }, 300);
     });
 
-    it('should clear the prevoius timeout if set', async (done) => {
+    it('should clear the previous timeout if set', async (done) => {
 
       getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve());
       const clearTimeoutSpy = spyOn(global, 'clearTimeout').and.returnValue();

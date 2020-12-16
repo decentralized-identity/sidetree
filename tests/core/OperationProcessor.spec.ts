@@ -22,6 +22,7 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
+import logger from '../../lib/common/Logger';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,
@@ -446,7 +447,15 @@ describe('OperationProcessor', async () => {
     it('should continue if logging of an invalid operation application throws for unexpected reason', async () => {
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
 
-      spyOn(console, 'debug').and.throwError('An error message.');
+      // Simulating the logging of invalid operation throws an error.
+      spyOn(logger, 'info').and.callFake(
+        (data: string) => {
+          if (data.startsWith('Ignored invalid operation')) {
+            throw new Error('An error message.');
+          }
+        }
+      );
+
       const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, didState);
       expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
       expect(newDidState!.document).toBeDefined();
