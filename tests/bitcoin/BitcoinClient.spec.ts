@@ -610,7 +610,7 @@ describe('BitcoinClient', async () => {
 
   describe('createBitcoinOutputModel', () => {
     it('should work if the output does not have any script', async (done) => {
-      const mockOutput = {script: undefined, saotshis: 123} as any;
+      const mockOutput = { script: undefined, saotshis: 123 } as any;
       const actual = BitcoinClient['createBitcoinOutputModel'](mockOutput);
       expect(actual.scriptAsmAsString).toEqual('');
       expect(actual.satoshis).toEqual(mockOutput.satoshis);
@@ -1101,7 +1101,6 @@ describe('BitcoinClient', async () => {
       expect(readUtilSpy).toHaveBeenCalled();
       done();
     });
-
 
     it('should call retry-fetch without authohrization', async (done) => {
       const request: any = {};

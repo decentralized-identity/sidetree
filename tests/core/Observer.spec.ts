@@ -445,7 +445,7 @@ describe('Observer', async () => {
     spyOn(blockchainClient, 'read').and.callFake(() => {
       readInvocationCount++;
       throw new Error('Expected test error');
-    })
+    });
     const consoleErrorSpy = spyOn(console, 'error').and.callThrough();
 
     // Start the Observer.
@@ -465,7 +465,7 @@ describe('Observer', async () => {
         return new Promise((resolve) => { resolve(transactions); });
       }
     );
-    
+
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     observer.stopPeriodicProcessing(); // Asynchronously stops Observer from processing more transactions after the initial processing cycle.
@@ -484,7 +484,7 @@ describe('Observer', async () => {
     });
 
     // throughput limiter applies logic to filter out some transactions
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Encountered unhandled and possibly fatal Observer error, must investigate and fix:')
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Encountered unhandled and possibly fatal Observer error, must investigate and fix:');
     expect(consoleErrorSpy).toHaveBeenCalledWith(new Error('Expected test error'));
   });
 
