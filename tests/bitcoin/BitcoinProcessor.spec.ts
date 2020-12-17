@@ -1256,7 +1256,7 @@ describe('BitcoinProcessor', () => {
       expect(writeBlocksToMetadataStoreWithFeeSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('should process transactions as intended', async () => {
+    it('should process transactions as intended with no raw data', async () => {
       // this is the end to end test
       const startBlock = randomBlock(testConfig.genesisBlockNumber);
       const getCurrentHeightMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(startBlock.height + 1));

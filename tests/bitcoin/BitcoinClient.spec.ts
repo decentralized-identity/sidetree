@@ -86,7 +86,7 @@ describe('BitcoinClient', async () => {
       expect(actual['estimatedFeeSatoshiPerKB']).toEqual(expectedEstimatedFee);
     });
 
-    it('should construct without authorization is username and passwords are not supplied', () => {
+    it('should construct without authorization if username and passwords are not supplied', () => {
       const expectedEstimatedFee = 42;
       const actual = new BitcoinClient('uri:mock', undefined, undefined, ctorWallet, 10, 10, 10, expectedEstimatedFee);
       expect(actual['bitcoinAuthorization']).toEqual(undefined);
