@@ -10,6 +10,7 @@ import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Ipfs from '../../lib/ipfs/Ipfs';
+import Logger from '../../lib/common/Logger';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
@@ -22,7 +23,6 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import { TransactionProcessingStatus } from '../../lib/core/models/TransactionUnderProcessingModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
-import Logger from '../../lib/common/Logger';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');

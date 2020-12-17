@@ -6,11 +6,11 @@ import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionStore from './interfaces/ITransactionStore';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
 import IVersionManager from './interfaces/IVersionManager';
+import Logger from '../common/Logger';
 import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import ThroughputLimiter from './ThroughputLimiter';
 import TransactionModel from '../common/models/TransactionModel';
-import Logger from '../common/Logger';
 
 /**
  * Class that performs periodic processing of batches of Sidetree operations anchored to the blockchain.

@@ -5,11 +5,11 @@ import CreateOperation from './CreateOperation';
 import Delta from './Delta';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
+import Logger from '../../../common/Logger';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
-import Logger from '../../../common/Logger';
 
 /**
  * Defines operations related to a Chunk File.

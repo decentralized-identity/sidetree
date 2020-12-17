@@ -1,6 +1,6 @@
 import { Collection, Db, Long, MongoClient } from 'mongodb';
-import SavedLockModel from './../models/SavedLockedModel';
 import Logger from '../../common/Logger';
+import SavedLockModel from './../models/SavedLockedModel';
 
 /**
  * Encapsulates functionality to store the bitcoin lock information to Db.

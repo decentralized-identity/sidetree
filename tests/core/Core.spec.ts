@@ -1,11 +1,11 @@
 import Config from '../../lib/core/models/Config';
 import Core from '../../lib/core/Core';
 import IRequestHandler from '../../lib/core/interfaces/IRequestHandler';
+import Logger from '../../lib/common/Logger';
 import MockCas from '../mocks/MockCas';
 import ResponseModel from '../../lib/common/models/ResponseModel';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
-import Logger from '../../lib/common/Logger';
 
 describe('Core', async () => {
 

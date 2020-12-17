@@ -4,11 +4,11 @@ import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/enums/FetchResultCode';
 import ICas from '../core/interfaces/ICas';
 import IpfsErrorCode from '../ipfs/IpfsErrorCode';
+import Logger from '../common/Logger';
 import ReadableStream from '../common/ReadableStream';
 import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import Timeout from './Util/Timeout';
-import Logger from '../common/Logger';
 import nodeFetch from 'node-fetch';
 
 // this has to be require because it doesn't have a default export

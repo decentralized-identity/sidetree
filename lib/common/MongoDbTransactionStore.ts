@@ -1,7 +1,7 @@
 import { Collection, Cursor, Db, Long, MongoClient } from 'mongodb';
 import ITransactionStore from '../core/interfaces/ITransactionStore';
-import TransactionModel from './models/TransactionModel';
 import Logger from '../common/Logger';
+import TransactionModel from './models/TransactionModel';
 
 /**
  * Implementation of ITransactionStore that stores the transaction data in a MongoDB database.

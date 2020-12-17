@@ -15,6 +15,7 @@ import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import LogColor from '../../../common/LogColor';
+import Logger from '../../../common/Logger';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import ProvisionalIndexFile from './ProvisionalIndexFile';
@@ -22,7 +23,6 @@ import ProvisionalProofFile from './ProvisionalProofFile';
 import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
 import ValueTimeLockVerifier from './ValueTimeLockVerifier';
-import Logger from '../../../common/Logger';
 
 /**
  * Implementation of the `ITransactionProcessor`.

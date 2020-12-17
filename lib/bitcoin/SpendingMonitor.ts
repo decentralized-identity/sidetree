@@ -1,7 +1,7 @@
 import ITransactionStore from '../core/interfaces/ITransactionStore';
+import Logger from '../common/Logger';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
-import Logger from '../common/Logger';
 
 /**
  * Encapsulates the functionality to calculate the amount of spending that the

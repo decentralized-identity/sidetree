@@ -2,9 +2,9 @@ import BitcoinClient from './BitcoinClient';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
+import Logger from '../common/Logger';
 import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionModel from './models/SidetreeTransactionModel';
-import Logger from '../common/Logger';
 
 /**
  * Encapsulates functionality about parsing a sidetree transaction written on the bitcoin.

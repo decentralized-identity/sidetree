@@ -11,6 +11,7 @@ import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
+import Logger from '../../lib/common/Logger';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import Multihash from '../../lib/core/versions/latest/Multihash';
@@ -22,7 +23,6 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
-import Logger from '../../lib/common/Logger';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,

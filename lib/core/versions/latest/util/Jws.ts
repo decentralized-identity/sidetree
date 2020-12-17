@@ -3,8 +3,8 @@ import ErrorCode from '../ErrorCode';
 import { JWS } from 'jose';
 import JwkEs256k from '../../../models/JwkEs256k';
 import JwsModel from '../models/JwsModel';
-import SidetreeError from '../../../../common/SidetreeError';
 import Logger from '../../../../common/Logger';
+import SidetreeError from '../../../../common/SidetreeError';
 
 /**
  * Class containing reusable JWS operations.

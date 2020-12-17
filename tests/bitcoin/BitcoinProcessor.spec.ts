@@ -12,6 +12,7 @@ import BlockMetadataWithoutNormalizedFee from '../../lib/bitcoin/models/BlockMet
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import IBitcoinConfig from '../../lib/bitcoin/IBitcoinConfig';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import Logger from '../../lib/common/Logger';
 import RequestError from '../../lib/bitcoin/RequestError';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
@@ -22,7 +23,6 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import VersionModel from '../../lib/bitcoin/models/BitcoinVersionModel';
-import Logger from '../../lib/common/Logger';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);

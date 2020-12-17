@@ -5,13 +5,13 @@ import LockIdentifier from '../models/LockIdentifierModel';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
 import LockResolver from './LockResolver';
 import LogColor from '../../common/LogColor';
+import Logger from '../../common/Logger';
 import MongoDbLockTransactionStore from './MongoDbLockTransactionStore';
 import SavedLockModel from '../models/SavedLockedModel';
 import SavedLockType from '../enums/SavedLockType';
 import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
 import VersionManager from '../VersionManager';
-import Logger from '../../common/Logger';
 
 /* global NodeJS */
 

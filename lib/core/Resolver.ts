@@ -2,10 +2,10 @@ import AnchoredOperationModel from './models/AnchoredOperationModel';
 import DidState from './models/DidState';
 import IOperationStore from './interfaces/IOperationStore';
 import IVersionManager from './interfaces/IVersionManager';
+import Logger from '../common/Logger';
 import Multihash from './versions/latest/Multihash';
 import OperationType from './enums/OperationType';
 import SidetreeError from '../common/SidetreeError';
-import Logger from '../common/Logger';
 
 /**
  * NOTE: Resolver cannot be versioned because it needs to be aware of `VersionManager` to fetch versioned operation processors.

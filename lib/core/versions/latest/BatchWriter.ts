@@ -12,6 +12,7 @@ import ICas from '../../interfaces/ICas';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import LogColor from '../../../common/LogColor';
+import Logger from '../../../common/Logger';
 import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
@@ -21,7 +22,6 @@ import RecoverOperation from './RecoverOperation';
 import UpdateOperation from './UpdateOperation';
 import ValueTimeLockModel from '../../../common/models/ValueTimeLockModel';
 import ValueTimeLockVerifier from './ValueTimeLockVerifier';
-import Logger from '../../../common/Logger';
 
 /**
  * Implementation of the `IBatchWriter`.

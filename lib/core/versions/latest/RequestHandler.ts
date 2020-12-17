@@ -6,6 +6,7 @@ import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IRequestHandler from '../../interfaces/IRequestHandler';
 import JsonAsync from './util/JsonAsync';
+import Logger from '../../../common/Logger';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationProcessor from './OperationProcessor';
@@ -14,7 +15,6 @@ import Resolver from '../../Resolver';
 import ResponseModel from '../../../common/models/ResponseModel';
 import ResponseStatus from '../../../common/enums/ResponseStatus';
 import SidetreeError from '../../../common/SidetreeError';
-import Logger from '../../../common/Logger';
 
 /**
  * Sidetree operation request handler.
