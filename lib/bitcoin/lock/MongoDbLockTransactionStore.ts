@@ -1,6 +1,6 @@
 import { Collection, Db, Long, MongoClient } from 'mongodb';
 import SavedLockModel from './../models/SavedLockedModel';
-import logger from '../../common/Logger';
+import Logger from '../../common/Logger';
 
 /**
  * Encapsulates functionality to store the bitcoin lock information to Db.
@@ -84,14 +84,14 @@ export default class MongoDbLockTransactionStore {
     // If 'locks' collection exists, use it; else create it.
     let lockCollection;
     if (collectionNames.includes(MongoDbLockTransactionStore.lockCollectionName)) {
-      logger.info('Locks collection already exists.');
+      Logger.info('Locks collection already exists.');
       lockCollection = db.collection(MongoDbLockTransactionStore.lockCollectionName);
     } else {
-      logger.info('Locks collection does not exists, creating...');
+      Logger.info('Locks collection does not exists, creating...');
       lockCollection = await db.createCollection(MongoDbLockTransactionStore.lockCollectionName);
 
       await lockCollection.createIndex({ createTimestamp: -1 });
-      logger.info('Locks collection created.');
+      Logger.info('Locks collection created.');
     }
 
     return lockCollection;

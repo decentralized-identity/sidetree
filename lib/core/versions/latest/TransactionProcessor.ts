@@ -22,7 +22,7 @@ import ProvisionalProofFile from './ProvisionalProofFile';
 import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
 import ValueTimeLockVerifier from './ValueTimeLockVerifier';
-import logger from '../../../common/Logger';
+import Logger from '../../../common/Logger';
 
 /**
  * Implementation of the `ITransactionProcessor`.
@@ -62,11 +62,11 @@ export default class TransactionProcessor implements ITransactionProcessor {
           retryNeeded = true;
         } else {
           // eslint-disable-next-line max-len
-          logger.info(LogColor.lightBlue(`Invalid core file found for anchor string '${LogColor.green(transaction.anchorString)}', the entire batch is discarded. Error: ${LogColor.yellow(error.message)}`));
+          Logger.info(LogColor.lightBlue(`Invalid core file found for anchor string '${LogColor.green(transaction.anchorString)}', the entire batch is discarded. Error: ${LogColor.yellow(error.message)}`));
           retryNeeded = false;
         }
       } else {
-        logger.error(LogColor.red(`Unexpected error while fetching and downloading core files, MUST investigate and fix: ${error.message}`));
+        Logger.error(LogColor.red(`Unexpected error while fetching and downloading core files, MUST investigate and fix: ${error.message}`));
         retryNeeded = true;
       }
 
@@ -110,11 +110,11 @@ export default class TransactionProcessor implements ITransactionProcessor {
           retryNeeded = true;
         } else {
           // eslint-disable-next-line max-len
-          logger.info(LogColor.lightBlue(`Invalid provisional/chunk file found for anchor string '${LogColor.green(transaction.anchorString)}', the entire batch is discarded. Error: ${LogColor.yellow(error.message)}`));
+          Logger.info(LogColor.lightBlue(`Invalid provisional/chunk file found for anchor string '${LogColor.green(transaction.anchorString)}', the entire batch is discarded. Error: ${LogColor.yellow(error.message)}`));
           retryNeeded = false;
         }
       } else {
-        logger.error(LogColor.red(`Unexpected error while fetching and downloading provisional files, MUST investigate and fix: ${error.message}`));
+        Logger.error(LogColor.red(`Unexpected error while fetching and downloading provisional files, MUST investigate and fix: ${error.message}`));
         retryNeeded = true;
       }
     }
@@ -129,7 +129,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
     await this.operationStore.put(operations);
 
-    logger.info(LogColor.lightBlue(`Processed ${LogColor.green(operations.length)} operations. Retry needed: ${LogColor.green(retryNeeded)}`));
+    Logger.info(LogColor.lightBlue(`Processed ${LogColor.green(operations.length)} operations. Retry needed: ${LogColor.green(retryNeeded)}`));
 
     const transactionProcessedCompletely = !retryNeeded;
     return transactionProcessedCompletely;
@@ -144,7 +144,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       );
     }
 
-    logger.info(`Downloading core index file '${coreIndexFileUri}', max file size limit ${ProtocolParameters.maxCoreIndexFileSizeInBytes} bytes...`);
+    Logger.info(`Downloading core index file '${coreIndexFileUri}', max file size limit ${ProtocolParameters.maxCoreIndexFileSizeInBytes} bytes...`);
 
     const fileBuffer = await this.downloadFileFromCas(coreIndexFileUri, ProtocolParameters.maxCoreIndexFileSizeInBytes);
     const coreIndexFile = await CoreIndexFile.parse(fileBuffer);
@@ -176,7 +176,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       return;
     }
 
-    logger.info(`Downloading core proof file '${coreProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
+    Logger.info(`Downloading core proof file '${coreProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
 
     const fileBuffer = await this.downloadFileFromCas(coreProofFileUri, ProtocolParameters.maxProofFileSizeInBytes);
     const coreProofFile = await CoreProofFile.parse(fileBuffer, coreIndexFile.deactivateDidSuffixes);
@@ -201,7 +201,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     }
 
     const provisionalProofFileUri = provisionalIndexFile.model.provisionalProofFileUri;
-    logger.info(`Downloading provisional proof file '${provisionalProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
+    Logger.info(`Downloading provisional proof file '${provisionalProofFileUri}', max file size limit ${ProtocolParameters.maxProofFileSizeInBytes}...`);
 
     const fileBuffer = await this.downloadFileFromCas(provisionalProofFileUri, ProtocolParameters.maxProofFileSizeInBytes);
     const provisionalProofFile = await ProvisionalProofFile.parse(fileBuffer);
@@ -229,7 +229,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       return undefined;
     }
 
-    logger.info(
+    Logger.info(
       `Downloading provisional index file '${provisionalIndexFileUri}', max file size limit ${ProtocolParameters.maxProvisionalIndexFileSizeInBytes}...`
     );
 
@@ -270,7 +270,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     }
 
     const chunkFileUri = provisionalIndexFile.model.chunks[0].chunkFileUri;
-    logger.info(`Downloading chunk file '${chunkFileUri}', max size limit ${ProtocolParameters.maxChunkFileSizeInBytes}...`);
+    Logger.info(`Downloading chunk file '${chunkFileUri}', max size limit ${ProtocolParameters.maxChunkFileSizeInBytes}...`);
 
     const fileBuffer = await this.downloadFileFromCas(chunkFileUri, ProtocolParameters.maxChunkFileSizeInBytes);
     const chunkFileModel = await ChunkFile.parse(fileBuffer);
@@ -511,7 +511,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
   }
 
   private async downloadFileFromCas (fileUri: string, maxFileSizeInBytes: number): Promise<Buffer> {
-    logger.info(`Downloading file '${fileUri}', max size limit ${maxFileSizeInBytes}...`);
+    Logger.info(`Downloading file '${fileUri}', max size limit ${maxFileSizeInBytes}...`);
 
     const fileFetchResult = await this.downloadManager.download(fileUri, maxFileSizeInBytes);
 
@@ -535,7 +535,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       throw new SidetreeError(ErrorCode.CasFileNotFound, `File '${fileUri}' not found.`);
     }
 
-    logger.info(`File '${fileUri}' of size ${fileFetchResult.content!.length} downloaded.`);
+    Logger.info(`File '${fileUri}' of size ${fileFetchResult.content!.length} downloaded.`);
 
     return fileFetchResult.content!;
   }

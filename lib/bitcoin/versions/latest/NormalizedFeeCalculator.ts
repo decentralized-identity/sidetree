@@ -3,7 +3,7 @@ import BlockMetadataWithoutNormalizedFee from '../../models/BlockMetadataWithout
 import IBlockMetadataStore from '../../interfaces/IBlockMetadataStore';
 import IFeeCalculator from '../../interfaces/IFeeCalculator';
 import LogColor from '../../../common/LogColor';
-import logger from '../../../common/Logger';
+import Logger from '../../../common/Logger';
 
 /**
  * `IFeeCalculator` implementation.
@@ -34,7 +34,7 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
    * Initializes the normalized fee calculator.
    */
   public async initialize () {
-    logger.info(`Initializing normalized fee calculator.`);
+    Logger.info(`Initializing normalized fee calculator.`);
   }
 
   public async addNormalizedFeeToBlockMetadata (blockMetadata: BlockMetadataWithoutNormalizedFee): Promise<BlockMetadata> {
@@ -64,7 +64,7 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
     this.cachedLookBackWindow.shift();
     this.blockHeightOfCachedLookBackWindow!++;
 
-    logger.info(LogColor.lightBlue(`Calculated raw normalized fee for block ${LogColor.green(blockMetadata.height)}: ${LogColor.green(normalizedFee)}`));
+    Logger.info(LogColor.lightBlue(`Calculated raw normalized fee for block ${LogColor.green(blockMetadata.height)}: ${LogColor.green(normalizedFee)}`));
     return newBlockWithFee;
   }
 

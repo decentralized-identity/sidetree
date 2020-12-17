@@ -1,7 +1,7 @@
 import ITransactionStore from '../core/interfaces/ITransactionStore';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
-import logger from '../common/Logger';
+import Logger from '../common/Logger';
 
 /**
  * Encapsulates the functionality to calculate the amount of spending that the
@@ -70,12 +70,12 @@ export default class SpendingMonitor {
       await this.transactionStore.getTransactionsLaterThan(startingBlockFirstTxnNumber - 1, undefined);
 
     // eslint-disable-next-line max-len
-    logger.info(`SpendingMonitor: total number of transactions from the transaction store starting from block: ${startingBlockHeight} are: ${allTxnsSinceStartingBlock.length}`);
+    Logger.info(`SpendingMonitor: total number of transactions from the transaction store starting from block: ${startingBlockHeight} are: ${allTxnsSinceStartingBlock.length}`);
 
     // Since the transactions from the store include transactions written by ALL the nodes in the network,
     // filter them to get the transactions that were written only by this node.
     const txnsWrittenByThisInstance = this.findTransactionsWrittenByThisNode(allTxnsSinceStartingBlock);
-    logger.info(`Number of transactions written by this instance: ${txnsWrittenByThisInstance.length}`);
+    Logger.info(`Number of transactions written by this instance: ${txnsWrittenByThisInstance.length}`);
 
     const totalFeeForRelatedTxns = txnsWrittenByThisInstance.reduce((total: number, currTxnModel: TransactionModel) => {
       return total + currTxnModel.transactionFeePaid;
@@ -85,7 +85,7 @@ export default class SpendingMonitor {
 
     if (totalFeePlusCurrentFee > this.bitcoinFeeSpendingCutoffInSatoshis) {
       // eslint-disable-next-line max-len
-      logger.error(`Current fee (in satoshis): ${currentFeeInSatoshis} + total fees (${totalFeeForRelatedTxns}) since block number: ${startingBlockHeight} is greater than the spending cap: ${this.bitcoinFeeSpendingCutoffInSatoshis}`);
+      Logger.error(`Current fee (in satoshis): ${currentFeeInSatoshis} + total fees (${totalFeeForRelatedTxns}) since block number: ${startingBlockHeight} is greater than the spending cap: ${this.bitcoinFeeSpendingCutoffInSatoshis}`);
       return false;
     }
 

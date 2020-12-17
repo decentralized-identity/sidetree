@@ -5,7 +5,7 @@ import MockCas from '../mocks/MockCas';
 import ResponseModel from '../../lib/common/models/ResponseModel';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
-import logger from '../../lib/common/Logger';
+import Logger from '../../lib/common/Logger';
 
 describe('Core', async () => {
 
@@ -83,7 +83,7 @@ describe('Core', async () => {
       await core.initialize(customLogger);
 
       // Invoke logger to trigger the custom logger's method defined above.
-      logger.info('anything');
+      Logger.info('anything');
 
       expect(customLoggerInvoked).toBeTruthy();
     });

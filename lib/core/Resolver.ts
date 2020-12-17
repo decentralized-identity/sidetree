@@ -5,7 +5,7 @@ import IVersionManager from './interfaces/IVersionManager';
 import Multihash from './versions/latest/Multihash';
 import OperationType from './enums/OperationType';
 import SidetreeError from '../common/SidetreeError';
-import logger from '../common/Logger';
+import Logger from '../common/Logger';
 
 /**
  * NOTE: Resolver cannot be versioned because it needs to be aware of `VersionManager` to fetch versioned operation processors.
@@ -20,7 +20,7 @@ export default class Resolver {
    * @returns Final DID state of the DID. Undefined if the unique suffix of the DID is not found or the DID state is not constructable.
    */
   public async resolve (didUniqueSuffix: string): Promise<DidState | undefined> {
-    logger.info(`Resolving DID unique suffix '${didUniqueSuffix}'...`);
+    Logger.info(`Resolving DID unique suffix '${didUniqueSuffix}'...`);
 
     const operations = await this.operationStore.get(didUniqueSuffix);
     const operationsByType = Resolver.categorizeOperationsByType(operations);
@@ -175,7 +175,7 @@ export default class Resolver {
       const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
       appliedDidState = await operationProcessor.apply(operation, appliedDidState);
     } catch (error) {
-      logger.info(`Skipped bad operation for DID ${operation.didUniqueSuffix} at time ${operation.transactionTime}. Error: ${SidetreeError.stringify(error)}`);
+      Logger.info(`Skipped bad operation for DID ${operation.didUniqueSuffix} at time ${operation.transactionTime}. Error: ${SidetreeError.stringify(error)}`);
     }
 
     return appliedDidState;

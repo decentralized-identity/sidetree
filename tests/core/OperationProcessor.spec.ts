@@ -22,7 +22,7 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
-import logger from '../../lib/common/Logger';
+import Logger from '../../lib/common/Logger';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,
@@ -448,7 +448,7 @@ describe('OperationProcessor', async () => {
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
 
       // Simulating the logging of invalid operation throws an error.
-      spyOn(logger, 'info').and.callFake(
+      spyOn(Logger, 'info').and.callFake(
         (data: string) => {
           if (data.startsWith('Ignored invalid operation')) {
             throw new Error('An error message.');

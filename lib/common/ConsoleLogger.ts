@@ -1,7 +1,7 @@
 import ILogger from './interfaces/ILogger';
 
 /**
- * Console logger.
+ * Console Logger.
  */
 export default class ConsoleLogger implements ILogger {
   info (data: any): void {

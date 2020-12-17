@@ -3,7 +3,7 @@ import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
-import logger from '../../../common/Logger';
+import Logger from '../../../common/Logger';
 
 /**
  * Class containing reusable operation delta functionalities.
@@ -28,7 +28,7 @@ export default class Delta {
     const size = Buffer.byteLength(JsonCanonicalizer.canonicalizeAsBuffer(delta));
     if (size > ProtocolParameters.maxDeltaSizeInBytes) {
       const errorMessage = `${size} bytes of 'delta' exceeded limit of ${ProtocolParameters.maxDeltaSizeInBytes} bytes.`;
-      logger.info(errorMessage);
+      Logger.info(errorMessage);
       throw new SidetreeError(ErrorCode.DeltaExceedsMaximumSize, errorMessage);
     }
 

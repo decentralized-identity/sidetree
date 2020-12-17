@@ -22,7 +22,7 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import { TransactionProcessingStatus } from '../../lib/core/models/TransactionUnderProcessingModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
-import logger from '../../lib/common/Logger';
+import Logger from '../../lib/common/Logger';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
@@ -266,7 +266,7 @@ describe('Observer', async () => {
       spyOn(downloadManager, 'download').and.returnValue(Promise.resolve({ code: mockFetchReturnCode as FetchResultCode }));
 
       let expectedConsoleLogDetected = false;
-      spyOn(logger, 'info').and.callFake((message: string) => {
+      spyOn(Logger, 'info').and.callFake((message: string) => {
         if (message.includes(expectedConsoleLogSubstring)) {
           expectedConsoleLogDetected = true;
         }

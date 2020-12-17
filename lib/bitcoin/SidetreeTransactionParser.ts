@@ -4,7 +4,7 @@ import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionModel from './models/SidetreeTransactionModel';
-import logger from '../common/Logger';
+import Logger from '../common/Logger';
 
 /**
  * Encapsulates functionality about parsing a sidetree transaction written on the bitcoin.
@@ -32,7 +32,7 @@ export default class SidetreeTransactionParser {
     const writer = await this.getValidWriterFromInputs(bitcoinTransaction.id, bitcoinTransaction.inputs);
 
     if (!writer) {
-      logger.info(`Valid sidetree data was found but no valid writer was found for transaction id: ${bitcoinTransaction.id}`);
+      Logger.info(`Valid sidetree data was found but no valid writer was found for transaction id: ${bitcoinTransaction.id}`);
       return undefined;
     }
 
@@ -95,7 +95,7 @@ export default class SidetreeTransactionParser {
 
     // A.
     if (transactionInputs.length < 1) {
-      logger.info(`There must be at least one input in the transaction id: ${transactionId}`);
+      Logger.info(`There must be at least one input in the transaction id: ${transactionId}`);
       return undefined;
     }
 
@@ -104,7 +104,7 @@ export default class SidetreeTransactionParser {
     // B.
     const inputScriptAsmParts = inputToCheck.scriptAsmAsString.split(' ');
     if (inputScriptAsmParts.length !== 2) {
-      logger.info(`The first input must have only the signature and publickey; transaction id: ${transactionId}`);
+      Logger.info(`The first input must have only the signature and publickey; transaction id: ${transactionId}`);
       return undefined;
     }
 
@@ -124,7 +124,7 @@ export default class SidetreeTransactionParser {
 
       return transaction.outputs[outputIndexToFetch];
     } catch (e) {
-      logger.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
+      Logger.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
       return undefined;
     }
   }

@@ -8,7 +8,7 @@ import ReadableStream from '../common/ReadableStream';
 import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import Timeout from './Util/Timeout';
-import logger from '../common/Logger';
+import Logger from '../common/Logger';
 import nodeFetch from 'node-fetch';
 
 // this has to be require because it doesn't have a default export
@@ -52,11 +52,11 @@ export default class Ipfs implements ICas {
     const response = await this.fetch(addUrl, requestParameters);
 
     if (response.status !== HttpStatus.OK) {
-      logger.error(`IPFS write error response status: ${response.status}`);
+      Logger.error(`IPFS write error response status: ${response.status}`);
 
       if (response.body) {
         const errorBody = await ReadableStream.readAll(response.body);
-        logger.error(`IPFS write error body: ${errorBody}`);
+        Logger.error(`IPFS write error body: ${errorBody}`);
       }
 
       throw new SidetreeError(IpfsErrorCode.IpfsFailedWritingContent, `Failed writing content of ${content.length} bytes.`);
@@ -65,7 +65,7 @@ export default class Ipfs implements ICas {
     const body = await ReadableStream.readAll(response.body);
     const casUri = JSON.parse(body.toString()).Hash;
 
-    logger.info(`Wrote ${content.length} byte content as IPFS CID: ${casUri}`);
+    Logger.info(`Wrote ${content.length} byte content as IPFS CID: ${casUri}`);
     return casUri;
   }
 
@@ -75,7 +75,7 @@ export default class Ipfs implements ICas {
       /* eslint-disable no-new */
       new Cids(casUri);
     } catch (error) {
-      logger.info(`'${casUri}' is not a valid CID: ${SidetreeError.stringify(error)}`);
+      Logger.info(`'${casUri}' is not a valid CID: ${SidetreeError.stringify(error)}`);
       return { code: FetchResultCode.InvalidHash };
     }
 
@@ -87,13 +87,13 @@ export default class Ipfs implements ICas {
     } catch (error) {
       // Log appropriately based on error.
       if (error.code === IpfsErrorCode.TimeoutPromiseTimedOut) {
-        logger.info(`Timed out fetching CID '${casUri}'.`);
+        Logger.info(`Timed out fetching CID '${casUri}'.`);
       } else {
         // Log any unexpected error for investigation.
         const errorMessage =
           `Unexpected error while fetching CID '${casUri}'. ` +
           `Investigate and fix: ${SidetreeError.stringify(error)}`;
-        logger.error(errorMessage);
+        Logger.error(errorMessage);
       }
 
       // Mark content as `not found` if any error is thrown while fetching.
@@ -103,7 +103,7 @@ export default class Ipfs implements ICas {
     // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
     if (fetchResult.code === FetchResultCode.Success) {
       await this.pinContent(casUri);
-      logger.info(`Read and pinned ${fetchResult.content!.length} bytes for CID: ${casUri}.`);
+      Logger.info(`Read and pinned ${fetchResult.content!.length} bytes for CID: ${casUri}.`);
     }
 
     return fetchResult;
@@ -143,7 +143,7 @@ export default class Ipfs implements ICas {
         return { code: FetchResultCode.NotAFile };
       }
 
-      logger.info(`Received response code ${response.status} from IPFS for CID ${base58Multihash}: ${json})}`);
+      Logger.info(`Received response code ${response.status} from IPFS for CID ${base58Multihash}: ${json})}`);
       return { code: FetchResultCode.NotFound };
     }
 

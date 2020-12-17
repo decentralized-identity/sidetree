@@ -13,7 +13,7 @@ import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
-import logger from '../../../common/Logger';
+import Logger from '../../../common/Logger';
 
 /**
  * Implementation of IOperationProcessor.
@@ -52,10 +52,10 @@ export default class OperationProcessor implements IOperationProcessor {
         const time = anchoredOperationModel.transactionTime;
         const number = anchoredOperationModel.transactionNumber;
         const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-        logger.info(`Ignored invalid operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
+        Logger.info(`Ignored invalid operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
       }
     } catch (error) {
-      logger.info(`Failed logging ${error}.`);
+      Logger.info(`Failed logging ${error}.`);
       // If logging fails, just move on.
     }
 
@@ -122,7 +122,7 @@ export default class OperationProcessor implements IOperationProcessor {
       } catch (error) {
         const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
         const transactionNumber = anchoredOperationModel.transactionNumber;
-        logger.info(
+        Logger.info(
           `Partial update on next commitment hash applied because: ` +
           `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
       }
@@ -173,7 +173,7 @@ export default class OperationProcessor implements IOperationProcessor {
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const transactionNumber = anchoredOperationModel.transactionNumber;
-      logger.info(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
+      Logger.info(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
 
       // Return the given DID state if error is encountered applying the patches.
       return didState;
@@ -247,7 +247,7 @@ export default class OperationProcessor implements IOperationProcessor {
       } catch (error) {
         const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
         const transactionNumber = anchoredOperationModel.transactionNumber;
-        logger.info(
+        Logger.info(
           `Partial update on next commitment hash applied because: ` +
           `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
       }

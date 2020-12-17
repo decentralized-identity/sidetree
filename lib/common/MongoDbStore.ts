@@ -1,5 +1,5 @@
 import { Collection, Db, MongoClient } from 'mongodb';
-import logger from '../common/Logger';
+import Logger from '../common/Logger';
 
 /**
  * Base class that contains the common MongoDB collection setup.
@@ -51,14 +51,14 @@ export default class MongoDbStore {
     // If collection exists, use it; else create it.
     let collection;
     if (collectionNames.includes(this.collectionName)) {
-      logger.info(`Collection '${this.collectionName}' found.`);
+      Logger.info(`Collection '${this.collectionName}' found.`);
       collection = db.collection(this.collectionName);
     } else {
-      logger.info(`Collection '${this.collectionName}' does not exists, creating...`);
+      Logger.info(`Collection '${this.collectionName}' does not exists, creating...`);
       collection = await db.createCollection(this.collectionName);
 
       await this.createIndex(collection);
-      logger.info(`Collection '${this.collectionName}' created.`);
+      Logger.info(`Collection '${this.collectionName}' created.`);
     }
 
     this.collection = collection;
@@ -69,6 +69,6 @@ export default class MongoDbStore {
    * To be overriden by inherited classes if needed.
    */
   protected async createIndex (_collection: Collection): Promise<void> {
-    logger.info(`Collection '${this.collectionName}' has no index.`);
+    Logger.info(`Collection '${this.collectionName}' has no index.`);
   }
 }

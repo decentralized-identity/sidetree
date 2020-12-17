@@ -5,6 +5,7 @@ import Blockchain from './Blockchain';
 import Config from './models/Config';
 import DownloadManager from './DownloadManager';
 import LogColor from '../common/LogColor';
+import Logger from '../common/Logger';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbServiceStateStore from '../common/MongoDbServiceStateStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
@@ -17,7 +18,6 @@ import ServiceInfo from '../common/ServiceInfoProvider';
 import ServiceStateModel from './models/ServiceStateModel';
 import VersionManager from './VersionManager';
 import VersionModel from './models/VersionModel';
-import logger from '../common/Logger';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -67,12 +67,7 @@ export default class Core {
    * The method starts the Observer and Batch Writer.
    */
   public async initialize (customLogger?: ISidetreeLogger) {
-    // Override default logger if custom logger is given.
-    if (customLogger !== undefined) {
-      logger.info = customLogger.info;
-      logger.warn = customLogger.warn;
-      logger.error = customLogger.error;
-    }
+    Logger.initialize(customLogger);
 
     // DB initializations.
     await this.serviceStateStore.initialize();
@@ -94,13 +89,13 @@ export default class Core {
     if (this.config.observingIntervalInSeconds > 0) {
       await this.observer.startPeriodicProcessing();
     } else {
-      logger.warn(LogColor.yellow(`Transaction observer is disabled.`));
+      Logger.warn(LogColor.yellow(`Transaction observer is disabled.`));
     }
 
     if (this.config.batchingIntervalInSeconds > 0) {
       this.batchScheduler.startPeriodicBatchWriting();
     } else {
-      logger.warn(LogColor.yellow(`Batch writing is disabled.`));
+      Logger.warn(LogColor.yellow(`Batch writing is disabled.`));
     }
 
     this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
@@ -158,7 +153,7 @@ export default class Core {
 
     // Add DB upgrade code below.
 
-    logger.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(savedServiceVersion)} to ${LogColor.green(currentServiceVersion)}...`));
+    Logger.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(savedServiceVersion)} to ${LogColor.green(currentServiceVersion)}...`));
 
     // Current upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
     const timer = timeSpan();
@@ -168,7 +163,7 @@ export default class Core {
 
     await this.serviceStateStore.put({ serviceVersion: currentServiceVersion });
 
-    logger.warn(LogColor.yellow(`DB upgraded in: ${LogColor.green(timer.rounded())} ms.`));
+    Logger.warn(LogColor.yellow(`DB upgraded in: ${LogColor.green(timer.rounded())} ms.`));
   }
 
 }

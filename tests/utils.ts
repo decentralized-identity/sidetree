@@ -11,9 +11,9 @@ export const writeFixtureToDisk = (filePath:string, fixture:any) => {
 export const fixtureDriftHelper = (received: any, expected: any, pathToFixture:string, overwrite:boolean = false) => {
   const match = JSON.stringify(received) === JSON.stringify(expected);
   if (!match) {
-    // logger.error('Fixture Drift!');
-    // logger.warn('Consider updating JSON to: ');
-    // logger.warn(JSON.stringify(received, null, 2));
+    // console.error('Fixture Drift!');
+    // console.warn('Consider updating JSON to: ');
+    // console.warn(JSON.stringify(received, null, 2));
     if (overwrite) {
       writeFixtureToDisk(pathToFixture, received);
     }

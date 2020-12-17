@@ -2,7 +2,7 @@ import * as timeSpan from 'time-span';
 import DownloadManager from '../../lib/core/DownloadManager';
 import ICas from '../../lib/core/interfaces/ICas';
 import MockCas from '../mocks/MockCas';
-import logger from '../../lib/common/Logger';
+import Logger from '../../lib/common/Logger';
 
 describe('DownloadManager', async () => {
   const maxConcurrentDownloads = 3;
@@ -32,7 +32,7 @@ describe('DownloadManager', async () => {
     });
 
     it('should log error and restart the timer if an error is thrown within start', () => {
-      const loggerErrorSpy = spyOn(logger, 'error');
+      const loggerErrorSpy = spyOn(Logger, 'error');
       cas = new MockCas(mockSecondsTakenForEachCasFetch);
       downloadManager = new DownloadManager(maxConcurrentDownloads, cas);
       downloadManager['activeDownloads'] = 1 as any; // intentionally set to a bad type so it will throw
@@ -92,9 +92,9 @@ describe('DownloadManager', async () => {
       jasmine.clock().uninstall();
     });
 
-    it('should log error if cas read throws', () => {
+    it('should log error if CAS read throws', () => {
       spyOn(cas, 'read').and.throwError('expected test error');
-      const loggerErrorSpy = spyOn(logger, 'error');
+      const loggerErrorSpy = spyOn(Logger, 'error');
       downloadManager['downloadAsync']({} as any);
       expect(loggerErrorSpy).toHaveBeenCalled();
     });
