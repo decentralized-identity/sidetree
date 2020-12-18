@@ -164,6 +164,15 @@ describe('SidetreeTransactionParser', () => {
       expect(actual).not.toBeDefined();
       done();
     });
+
+    it('should return undefined if data does not start with sidetree prefix', async (done) => {
+      const sidetreeData = 'some test data';
+      const mockDataOutput = createValidDataOutput(sidetreeData);
+
+      const actual = sidetreeTxnParser['getSidetreeDataFromOutputIfExist'](mockDataOutput, 'notSidetree');
+      expect(actual).not.toBeDefined();
+      done();
+    });
   });
 
   describe('getValidWriterFromInputs', () => {

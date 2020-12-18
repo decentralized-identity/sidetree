@@ -131,6 +131,8 @@ export default class BitcoinProcessor {
 
     this.mongoDbLockTransactionStore = new MongoDbLockTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
+    // TODO: #988 Can potentially remove the default. If removed, the config will be required and more explicit but user can set bad values (0).
+    // https://github.com/decentralized-identity/sidetree/issues/988
     const valueTimeLockTransactionFeesInBtc = config.valueTimeLockTransactionFeesAmountInBitcoins === undefined ? 0.25
       : config.valueTimeLockTransactionFeesAmountInBitcoins;
 
