@@ -100,7 +100,8 @@
       "lib/bitcoin/versions/[0-9]**/**",
       "lib/core/versions/[0-9]**/**",
       "lib/core/versions/**/VersionMetadata.ts",
-      "lib/**/**ErrorCode.ts"
+      "lib/**/**ErrorCode.ts",
+      "lib/**/**EventCode.ts"
     ],
     "reporter": [
       "text",

@@ -718,6 +718,7 @@ export default class BitcoinClient {
   private static createBitcoinOutputModel (bitcoreOutput: Transaction.Output): BitcoinOutputModel {
     return {
       satoshis: bitcoreOutput.satoshis,
+      // Some transaction outputs do not have a script, such as coinbase transactions.
       scriptAsmAsString: bitcoreOutput.script ? bitcoreOutput.script.toASM() : ''
     };
   }
@@ -742,7 +743,6 @@ export default class BitcoinClient {
 
   private async getUnspentOutputs (address: Address): Promise<Transaction.UnspentOutput[]> {
 
-    // Retrieve all transactions by addressToSearch via BCoin Node API /tx/address/$address endpoint
     const addressToSearch = address.toString();
     Logger.info(`Getting unspent coins for ${addressToSearch}`);
     const request = {
