@@ -10,6 +10,7 @@ import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Ipfs from '../../lib/ipfs/Ipfs';
+import Logger from '../../lib/common/Logger';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
@@ -265,7 +266,7 @@ describe('Observer', async () => {
       spyOn(downloadManager, 'download').and.returnValue(Promise.resolve({ code: mockFetchReturnCode as FetchResultCode }));
 
       let expectedConsoleLogDetected = false;
-      spyOn(global.console, 'log').and.callFake((message: string) => {
+      spyOn(Logger, 'info').and.callFake((message: string) => {
         if (message.includes(expectedConsoleLogSubstring)) {
           expectedConsoleLogDetected = true;
         }
@@ -392,7 +393,7 @@ describe('Observer', async () => {
     };
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
 
-    // Make the `getFirstValidTransaction` call return the first transaction as the most recent knwon valid transactions.
+    // Make the `getFirstValidTransaction` call return the first transaction as the most recent known valid transactions.
     spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(initialTransactionFetchResponseBody.transactions[0]));
 
     // Process first set of transactions.
@@ -518,7 +519,7 @@ describe('Observer', async () => {
     };
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
 
-    // NOTE: it is irrelvant what getFirstValidTransaction() returns because it is expected to be not called at all.
+    // NOTE: it is irrelevant what getFirstValidTransaction() returns because it is expected to be not called at all.
     const getFirstValidTransactionSpy =
       spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(undefined));
 
@@ -544,7 +545,7 @@ describe('Observer', async () => {
       }
 
       // NOTE: the `retry` library retries if error is thrown.
-      throw new Error('Two transaction processing cycles have not occured yet.');
+      throw new Error('Two transaction processing cycles have not occurred yet.');
     }, {
       retries: 3,
       minTimeout: 1000, // milliseconds

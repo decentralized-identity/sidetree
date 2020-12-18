@@ -6,6 +6,7 @@ import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionStore from './interfaces/ITransactionStore';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
 import IVersionManager from './interfaces/IVersionManager';
+import Logger from '../common/Logger';
 import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import ThroughputLimiter from './ThroughputLimiter';
@@ -52,7 +53,7 @@ export default class Observer {
     // Initialize the last known transaction before starting processing.
     this.lastKnownTransaction = await this.transactionStore.getLastTransaction();
 
-    console.info(`Starting periodic transactions processing.`);
+    Logger.info(`Starting periodic transactions processing.`);
     setImmediate(async () => {
       this.continuePeriodicProcessing = true;
 
@@ -65,7 +66,7 @@ export default class Observer {
    * Mainly used for test purposes.
    */
   public stopPeriodicProcessing () {
-    console.info(`Stopped periodic transactions processing.`);
+    Logger.info(`Stopped periodic transactions processing.`);
     this.continuePeriodicProcessing = false;
   }
 
@@ -90,12 +91,12 @@ export default class Observer {
         let readResult;
         const endTimer = timeSpan(); // Measure time taken to go blockchain read.
         try {
-          console.info('Fetching Sidetree transactions from blockchain service...');
+          Logger.info('Fetching Sidetree transactions from blockchain service...');
           readResult = await this.blockchain.read(lastKnownTransactionNumber, lastKnownTransactionTimeHash);
-          console.info(`Fetched ${readResult.transactions.length} Sidetree transactions from blockchain service in ${endTimer.rounded()} ms.`);
+          Logger.info(`Fetched ${readResult.transactions.length} Sidetree transactions from blockchain service in ${endTimer.rounded()} ms.`);
         } catch (error) {
           if (error instanceof SidetreeError && error.code === SharedErrorCode.InvalidTransactionNumberOrTimeHash) {
-            console.info(`Invalid transaction number ${lastKnownTransactionNumber} or time hash ${lastKnownTransactionTimeHash} given to blockchain service.`);
+            Logger.info(`Invalid transaction number ${lastKnownTransactionNumber} or time hash ${lastKnownTransactionTimeHash} given to blockchain service.`);
             invalidTransactionNumberOrTimeHash = true;
           } else {
             throw error;
@@ -127,19 +128,19 @@ export default class Observer {
             blockReorganizationDetected = true;
             moreTransactions = true;
           } else {
-            console.info(`Blockchain microservice blockchain time is behind last known transaction time, waiting for blockchain microservice to catch up...`);
+            Logger.info(`Blockchain microservice blockchain time is behind last known transaction time, waiting for blockchain microservice to catch up...`);
           }
         }
 
         // If block reorg is detected, we must wait until no more operation processing is pending,
         // then revert invalid transaction and operations.
         if (blockReorganizationDetected) {
-          console.info(`Block reorganization detected.`);
+          Logger.info(`Block reorganization detected.`);
           await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(0);
 
-          console.info(`Reverting invalid transactions...`);
+          Logger.info(`Reverting invalid transactions...`);
           await this.revertInvalidTransactions();
-          console.info(`Completed reverting invalid transactions.`);
+          Logger.info(`Completed reverting invalid transactions.`);
         } else {
           // Else it means transaction fetch was successful:
           // We hold off from fetching more transactions if the list of transactions under processing gets too long.
@@ -156,16 +157,16 @@ export default class Observer {
       } while (moreTransactions);
 
       await this.storeConsecutiveTransactionsProcessed();
-      console.info('Successfully kicked off downloading/processing of all new Sidetree transactions.');
+      Logger.info('Successfully kicked off downloading/processing of all new Sidetree transactions.');
 
       // Continue onto processing unresolvable transactions if any.
       await this.processUnresolvableTransactions();
     } catch (error) {
-      console.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
-      console.error(error);
+      Logger.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
+      Logger.error(error);
     } finally {
       if (this.continuePeriodicProcessing) {
-        console.info(`Waiting for ${this.observingIntervalInSeconds} seconds before fetching and processing transactions again.`);
+        Logger.info(`Waiting for ${this.observingIntervalInSeconds} seconds before fetching and processing transactions again.`);
         setTimeout(async () => this.processTransactions(), this.observingIntervalInSeconds * 1000);
       }
     }
@@ -188,7 +189,7 @@ export default class Observer {
   private async processUnresolvableTransactions () {
     const endTimer = timeSpan();
     const unresolvableTransactions = await this.unresolvableTransactionStore.getUnresolvableTransactionsDueForRetry();
-    console.info(`Fetched ${unresolvableTransactions.length} unresolvable transactions to retry in ${endTimer.rounded()} ms.`);
+    Logger.info(`Fetched ${unresolvableTransactions.length} unresolvable transactions to retry in ${endTimer.rounded()} ms.`);
 
     // Download and process each unresolvable transactions.
     const unresolvableTransactionStatus = [];
@@ -247,19 +248,19 @@ export default class Observer {
       const transactionProcessor: ITransactionProcessor = this.versionManager.getTransactionProcessor(transaction.transactionTime);
       transactionProcessedSuccessfully = await transactionProcessor.processTransaction(transaction);
     } catch (error) {
-      console.error(`Unhandled error encountered processing transaction '${transaction.transactionNumber}'.`);
-      console.error(error);
+      Logger.error(`Unhandled error encountered processing transaction '${transaction.transactionNumber}'.`);
+      Logger.error(error);
       transactionProcessedSuccessfully = false;
     } finally {
       // Purposely setting processing status first before rest of the code to prevent any possibility of deadlocking the Observer.
-      console.info(`Finished processing transaction '${transaction.transactionNumber}'.`);
+      Logger.info(`Finished processing transaction '${transaction.transactionNumber}'.`);
       transactionUnderProcessing.processingStatus = TransactionProcessingStatus.Processed;
 
       if (transactionProcessedSuccessfully) {
-        console.info(`Removing transaction '${transaction.transactionNumber}' from unresolvable transactions if exists...`);
+        Logger.info(`Removing transaction '${transaction.transactionNumber}' from unresolvable transactions if exists...`);
         await this.unresolvableTransactionStore.removeUnresolvableTransaction(transaction);
       } else {
-        console.info(`Recording failed processing attempt for transaction '${transaction.transactionNumber}'...`);
+        Logger.info(`Recording failed processing attempt for transaction '${transaction.transactionNumber}'...`);
         await this.unresolvableTransactionStore.recordUnresolvableTransactionFetchAttempt(transaction);
       }
     }
@@ -277,10 +278,10 @@ export default class Observer {
       await this.blockchain.getFirstValidTransaction(exponentiallySpacedTransactions);
 
     const bestKnownValidRecentTransactionNumber = bestKnownValidRecentTransaction === undefined ? undefined : bestKnownValidRecentTransaction.transactionNumber;
-    console.info(`Best known valid recent transaction: ${bestKnownValidRecentTransactionNumber}`);
+    Logger.info(`Best known valid recent transaction: ${bestKnownValidRecentTransactionNumber}`);
 
     // Revert all processed operations that came after the best known valid recent transaction.
-    console.info('Reverting operations...');
+    Logger.info('Reverting operations...');
     await this.operationStore.delete(bestKnownValidRecentTransactionNumber);
 
     // NOTE: MUST do this step LAST to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.

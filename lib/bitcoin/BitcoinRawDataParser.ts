@@ -2,6 +2,7 @@ import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
 import { Block } from 'bitcore-lib';
 import ErrorCode from './ErrorCode';
+import Logger from '../common/Logger';
 import SidetreeError from '../common/SidetreeError';
 
 /**
@@ -80,7 +81,7 @@ export default class BitcoinRawDataParser {
       count++;
     }
 
-    console.info(`Finished processing ${count} blocks from raw block file`);
+    Logger.info(`Finished processing ${count} blocks from raw block file`);
     return processedBlocks;
   }
 

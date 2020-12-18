@@ -1,6 +1,7 @@
 import Config from '../../lib/core/models/Config';
 import Core from '../../lib/core/Core';
 import IRequestHandler from '../../lib/core/interfaces/IRequestHandler';
+import Logger from '../../lib/common/Logger';
 import MockCas from '../mocks/MockCas';
 import ResponseModel from '../../lib/common/models/ResponseModel';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
@@ -55,6 +56,36 @@ describe('Core', async () => {
       expect(batchSchedulerStartSpy).toHaveBeenCalled();
       expect(blockchainStartSpy).toHaveBeenCalled();
       expect(downloadManagerStartSpy).toHaveBeenCalled();
+    });
+
+    it('should override the default logger if custom logger is given.', async () => {
+      const core = new Core(testConfig, testVersionConfig, mockCas);
+
+      spyOn(core['serviceStateStore'], 'initialize');
+      spyOn(core['transactionStore'], 'initialize');
+      spyOn(core['unresolvableTransactionStore'], 'initialize');
+      spyOn(core['operationStore'], 'initialize');
+      spyOn(core as any, 'upgradeDatabaseIfNeeded');
+      spyOn(core['blockchain'], 'initialize');
+      spyOn(core['versionManager'], 'initialize');
+      spyOn(core['observer'], 'startPeriodicProcessing');
+      spyOn(core['batchScheduler'], 'startPeriodicBatchWriting');
+      spyOn(core['blockchain'], 'startPeriodicCachedBlockchainTimeRefresh');
+      spyOn(core['downloadManager'], 'start');
+
+      let customLoggerInvoked = false;
+      const customLogger = {
+        info: (_data: any) => { customLoggerInvoked = true; },
+        warn: (_data: any) => { },
+        error: (_data: any) => { }
+      };
+
+      await core.initialize(customLogger);
+
+      // Invoke logger to trigger the custom logger's method defined above.
+      Logger.info('anything');
+
+      expect(customLoggerInvoked).toBeTruthy();
     });
 
     it('should not start the Batch Writer and Observer if they are disabled.', async () => {

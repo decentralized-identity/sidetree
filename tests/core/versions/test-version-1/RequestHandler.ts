@@ -12,7 +12,7 @@ export default class RequestHandler implements IRequestHandler {
     private resolver: Resolver,
     private operationQueue: IOperationQueue,
     private didMethodName: string) {
-    console.debug(this.resolver, this.operationQueue, this.didMethodName);
+    console.info(this.resolver, this.operationQueue, this.didMethodName);
   }
 
   async handleOperationRequest (request: Buffer): Promise<ResponseModel> {

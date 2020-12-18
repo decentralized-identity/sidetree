@@ -12,7 +12,7 @@ export default class MongoDb {
       const client = await MongoClient.connect(serverUrl);
       await client.close();
     } catch (error) {
-      console.log('Mongoclient connect error: ' + error);
+      console.info('Mongoclient connect error: ' + error);
       return false;
     }
     return true;

@@ -15,7 +15,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     private operationStore: IOperationStore,
     private blockchain: IBlockchain,
     private versionMetadataFetcher: IVersionMetadataFetcher) {
-    console.debug(this.downloadManager, this.operationStore, this.blockchain, this.versionMetadataFetcher);
+    console.info(this.downloadManager, this.operationStore, this.blockchain, this.versionMetadataFetcher);
   }
 
   async processTransaction (transaction: TransactionModel): Promise<boolean> {

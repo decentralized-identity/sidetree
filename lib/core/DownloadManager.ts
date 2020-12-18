@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import FetchResult from '../common/models/FetchResult';
 import ICas from './interfaces/ICas';
+import Logger from '../common/Logger';
 
 /**
  * Interface containing information regarding each queued CAS download.
@@ -57,7 +58,7 @@ export default class DownloadManager {
     // If maximum concurrent CAS download count is NaN, set it to a default value.
     if (isNaN(maxConcurrentDownloads)) {
       const defaultMaxConcurrentDownloads = 20;
-      console.info(`Maximum concurrent CAS download count not given, defaulting to ${defaultMaxConcurrentDownloads}.`);
+      Logger.info(`Maximum concurrent CAS download count not given, defaulting to ${defaultMaxConcurrentDownloads}.`);
       this.maxConcurrentDownloads = defaultMaxConcurrentDownloads;
     }
   }
@@ -107,7 +108,7 @@ export default class DownloadManager {
       // Remove active downloads from `pendingDownloads` list.
       this.pendingDownloads.splice(0, availableDownloadLanes);
     } catch (error) {
-      console.error(`Encountered unhandled/unexpected error in DownloadManager, must investigate and fix: ${error}`);
+      Logger.error(`Encountered unhandled/unexpected error in DownloadManager, must investigate and fix: ${error}`);
     } finally {
       setTimeout(async () => this.start(), 1000);
     }
@@ -148,7 +149,7 @@ export default class DownloadManager {
 
       downloadInfo.fetchResult = fetchResult;
     } catch (error) {
-      console.error(`Unexpected error while downloading '${contentHash}, investigate and fix ${error}'.`);
+      Logger.error(`Unexpected error while downloading '${contentHash}, investigate and fix ${error}'.`);
     } finally {
       downloadInfo.completed = true;
     }

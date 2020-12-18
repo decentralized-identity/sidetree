@@ -5,6 +5,7 @@ import CreateOperation from './CreateOperation';
 import Delta from './Delta';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
+import Logger from '../../../common/Logger';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
@@ -26,7 +27,7 @@ export default class ChunkFile {
     const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxChunkFileSizeInBytes * Compressor.estimatedDecompressionMultiplier;
     const decompressedChunkFileBuffer = await Compressor.decompress(chunkFileBuffer, maxAllowedDecompressedSizeInBytes);
     const chunkFileObject = await JsonAsync.parse(decompressedChunkFileBuffer);
-    console.info(`Parsed chunk file in ${endTimer.rounded()} ms.`);
+    Logger.info(`Parsed chunk file in ${endTimer.rounded()} ms.`);
 
     // Ensure only properties specified by Sidetree protocol are given.
     const allowedProperties = new Set(['deltas']);
