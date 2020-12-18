@@ -447,7 +447,7 @@ describe('Observer', async () => {
       readInvocationCount++;
       throw new Error('Expected test error');
     });
-    const consoleErrorSpy = spyOn(console, 'error').and.callThrough();
+    const loggerErrorSpy = spyOn(Logger, 'error').and.callThrough();
 
     // Start the Observer.
     const observer = new Observer(
@@ -485,8 +485,8 @@ describe('Observer', async () => {
     });
 
     // throughput limiter applies logic to filter out some transactions
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Encountered unhandled and possibly fatal Observer error, must investigate and fix:');
-    expect(consoleErrorSpy).toHaveBeenCalledWith(new Error('Expected test error'));
+    expect(loggerErrorSpy).toHaveBeenCalledWith('Encountered unhandled and possibly fatal Observer error, must investigate and fix:');
+    expect(loggerErrorSpy).toHaveBeenCalledWith(new Error('Expected test error'));
   });
 
   it('should not rollback if blockchain time in bitcoin service is behind core service.', async () => {
