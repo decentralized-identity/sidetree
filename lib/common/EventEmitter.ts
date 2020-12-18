@@ -8,7 +8,7 @@ export default class EventEmitter {
   private static singleton: IEventEmitter = { emit: async () => { } }; // Default to no-op.
 
   /**
-   * Overrides the default logger if given.
+   * Overrides the default event emitter if given.
    */
   static initialize (customEventEmitter?: IEventEmitter) {
     if (customEventEmitter !== undefined) {
