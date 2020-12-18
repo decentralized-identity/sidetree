@@ -12,6 +12,7 @@ import ICas from '../../interfaces/ICas';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import LogColor from '../../../common/LogColor';
+import Logger from '../../../common/Logger';
 import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
@@ -43,11 +44,11 @@ export default class BatchWriter implements IBatchWriter {
 
     // Do nothing if there is nothing to batch together.
     if (queuedOperations.length === 0) {
-      console.info(`No queued operations to batch.`);
+      Logger.info(`No queued operations to batch.`);
       return;
     }
 
-    console.info(LogColor.lightBlue(`Batch size = ${LogColor.green(numberOfOperations)}`));
+    Logger.info(LogColor.lightBlue(`Batch size = ${LogColor.green(numberOfOperations)}`));
 
     const operationModels = await Promise.all(queuedOperations.map(async (queuedOperation) => Operation.parse(queuedOperation.operationBuffer)));
     const createOperations = operationModels.filter(operation => operation.type === OperationType.Create) as CreateOperation[];
@@ -84,7 +85,7 @@ export default class BatchWriter implements IBatchWriter {
       deactivateOperations
     );
     const coreIndexFileUri = await this.cas.write(coreIndexFileBuffer);
-    console.info(LogColor.lightBlue(`Wrote core index file ${LogColor.green(coreIndexFileUri)} to content addressable store.`));
+    Logger.info(LogColor.lightBlue(`Wrote core index file ${LogColor.green(coreIndexFileUri)} to content addressable store.`));
 
     // Anchor the data to the blockchain
     const dataToBeAnchored: AnchoredData = {
@@ -94,7 +95,7 @@ export default class BatchWriter implements IBatchWriter {
 
     const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
     const fee = FeeManager.computeMinimumTransactionFee(normalizedFee, numberOfOperations);
-    console.info(LogColor.lightBlue(`Writing data to blockchain: ${LogColor.green(stringToWriteToBlockchain)} with minimum fee of: ${LogColor.green(fee)}`));
+    Logger.info(LogColor.lightBlue(`Writing data to blockchain: ${LogColor.green(stringToWriteToBlockchain)} with minimum fee of: ${LogColor.green(fee)}`));
 
     await this.blockchain.write(stringToWriteToBlockchain, fee);
 
@@ -115,7 +116,7 @@ export default class BatchWriter implements IBatchWriter {
     }
 
     const chunkFileUri = await this.cas.write(chunkFileBuffer);
-    console.info(LogColor.lightBlue(`Wrote chunk file ${LogColor.green(chunkFileUri)} to content addressable store.`));
+    Logger.info(LogColor.lightBlue(`Wrote chunk file ${LogColor.green(chunkFileUri)} to content addressable store.`));
 
     return chunkFileUri;
   }
@@ -134,7 +135,7 @@ export default class BatchWriter implements IBatchWriter {
 
     const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileUri!, provisionalProofFileUri, updateOperations);
     const provisionalIndexFileUri = await this.cas.write(provisionalIndexFileBuffer);
-    console.info(LogColor.lightBlue(`Wrote provisional index file ${LogColor.green(provisionalIndexFileUri)} to content addressable store.`));
+    Logger.info(LogColor.lightBlue(`Wrote provisional index file ${LogColor.green(provisionalIndexFileUri)} to content addressable store.`));
 
     return provisionalIndexFileUri;
   }
@@ -145,7 +146,7 @@ export default class BatchWriter implements IBatchWriter {
 
     if (maxNumberOfOpsAllowedByLock > maxNumberOfOpsAllowedByProtocol) {
       // eslint-disable-next-line max-len
-      console.info(`Maximum number of operations allowed by value time lock: ${maxNumberOfOpsAllowedByLock}; Maximum number of operations allowed by protocol: ${maxNumberOfOpsAllowedByProtocol}`);
+      Logger.info(`Maximum number of operations allowed by value time lock: ${maxNumberOfOpsAllowedByLock}; Maximum number of operations allowed by protocol: ${maxNumberOfOpsAllowedByProtocol}`);
     }
 
     return Math.min(maxNumberOfOpsAllowedByLock, maxNumberOfOpsAllowedByProtocol);

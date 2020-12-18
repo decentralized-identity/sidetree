@@ -71,7 +71,7 @@ export default {
         errorCodeFileContent += `  ${errorCodeNames[i]}: '${camelCaseErrorMessage}',\n`;
       }
     } else {
-      console.log(`${errorCodeNames[i]} is removed from ErrorCode because it is not used.`);
+      console.info(`${errorCodeNames[i]} is removed from ErrorCode because it is not used.`);
     };
   }
 

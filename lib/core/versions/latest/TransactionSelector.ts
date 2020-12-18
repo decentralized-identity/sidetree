@@ -2,6 +2,7 @@ import AnchoredDataSerializer from './AnchoredDataSerializer';
 import ErrorCode from './ErrorCode';
 import ITransactionSelector from '../../interfaces/ITransactionSelector';
 import ITransactionStore from '../../interfaces/ITransactionStore';
+import Logger from '../../../common/Logger';
 import PriorityQueue from 'priorityqueue';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
@@ -75,7 +76,7 @@ export default class TransactionSelector implements ITransactionSelector {
       if (writerToTransactionNumberMap.has(transaction.writer)) {
         const acceptedTransactionNumber = writerToTransactionNumberMap.get(transaction.writer);
         // eslint-disable-next-line max-len
-        console.info(`Multiple transactions found in transaction time ${currentTransactionTime} from writer ${transaction.writer}, considering transaction ${acceptedTransactionNumber} and ignoring ${transaction.transactionNumber}`);
+        Logger.info(`Multiple transactions found in transaction time ${currentTransactionTime} from writer ${transaction.writer}, considering transaction ${acceptedTransactionNumber} and ignoring ${transaction.transactionNumber}`);
       } else {
         transactionsPriorityQueue.push(transaction);
         writerToTransactionNumberMap.set(transaction.writer, transaction.transactionNumber);
@@ -92,8 +93,8 @@ export default class TransactionSelector implements ITransactionSelector {
           const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(transaction.anchorString).numberOfOperations;
           numberOfOperations += numOfOperationsInCurrentTransaction;
         } catch (e) {
-          console.debug(`Error thrown in TransactionSelector: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
-          console.info(`Transaction with anchor string ${transaction.anchorString} not considered as selected.`);
+          Logger.info(`Error thrown in TransactionSelector: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+          Logger.info(`Transaction with anchor string ${transaction.anchorString} not considered as selected.`);
         }
       }
     }
@@ -123,8 +124,8 @@ export default class TransactionSelector implements ITransactionSelector {
           transactionsToReturn.push(currentTransaction);
         }
       } catch (e) {
-        console.debug(`Error thrown in TransactionSelector: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
-        console.info(`Transaction with anchor string ${currentTransaction.anchorString} not selected`);
+        Logger.info(`Error thrown in TransactionSelector: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+        Logger.info(`Transaction with anchor string ${currentTransaction.anchorString} not selected`);
       }
     }
 

@@ -3,6 +3,7 @@
 import ISidetreeBitcoinConfig from './bitcoin/IBitcoinConfig';
 import ISidetreeBitcoinWallet from './bitcoin/interfaces/IBitcoinWallet';
 import ISidetreeCas from './core/interfaces/ICas';
+import ISidetreeLogger from './common/interfaces/ILogger';
 import SidetreeBitcoinProcessor from './bitcoin/BitcoinProcessor';
 import SidetreeBitcoinVersionModel from './bitcoin/models/BitcoinVersionModel';
 import SidetreeConfig from './core/models/Config';
@@ -27,4 +28,9 @@ export {
   ISidetreeBitcoinWallet,
   SidetreeBitcoinProcessor,
   SidetreeBitcoinVersionModel
+};
+
+// Common exports.
+export {
+  ISidetreeLogger
 };

@@ -4,6 +4,7 @@ import BitcoinTransactionModel from '../models/BitcoinTransactionModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifierModel from '../models/LockIdentifierModel';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
+import Logger from '../../common/Logger';
 import { Script } from 'bitcore-lib';
 import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from '../../common/models/ValueTimeLockModel';
@@ -49,7 +50,7 @@ export default class LockResolver {
    */
   public async resolveLockIdentifierAndThrowOnError (lockIdentifier: LockIdentifierModel): Promise<ValueTimeLockModel> {
 
-    console.info(`Starting lock resolution for identifier: ${JSON.stringify(lockIdentifier)}`);
+    Logger.info(`Starting lock resolution for identifier: ${JSON.stringify(lockIdentifier)}`);
 
     // The verification of a lock-identifier has the following steps:
     //   (A). The redeem script in the lock-identifier is actually a 'locking' script

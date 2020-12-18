@@ -1,6 +1,7 @@
 import * as timeSpan from 'time-span';
 import DownloadManager from '../../lib/core/DownloadManager';
 import ICas from '../../lib/core/interfaces/ICas';
+import Logger from '../../lib/common/Logger';
 import MockCas from '../mocks/MockCas';
 
 describe('DownloadManager', async () => {
@@ -31,12 +32,12 @@ describe('DownloadManager', async () => {
     });
 
     it('should log error and restart the timer if an error is thrown within start', () => {
-      const consoleErrorSpy = spyOn(console, 'error');
+      const loggerErrorSpy = spyOn(Logger, 'error');
       cas = new MockCas(mockSecondsTakenForEachCasFetch);
       downloadManager = new DownloadManager(maxConcurrentDownloads, cas);
       downloadManager['activeDownloads'] = 1 as any; // intentionally set to a bad type so it will throw
       downloadManager.start();
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(loggerErrorSpy).toHaveBeenCalled();
     });
   });
 
@@ -91,11 +92,11 @@ describe('DownloadManager', async () => {
       jasmine.clock().uninstall();
     });
 
-    it('should log error if cas read throws', () => {
+    it('should log error if CAS read throws', () => {
       spyOn(cas, 'read').and.throwError('expected test error');
-      const consoleErrorSpy = spyOn(console, 'error');
+      const loggerErrorSpy = spyOn(Logger, 'error');
       downloadManager['downloadAsync']({} as any);
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(loggerErrorSpy).toHaveBeenCalled();
     });
   });
 });

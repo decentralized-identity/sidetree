@@ -11,6 +11,7 @@ import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
+import Logger from '../../lib/common/Logger';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import Multihash from '../../lib/core/versions/latest/Multihash';
@@ -446,7 +447,15 @@ describe('OperationProcessor', async () => {
     it('should continue if logging of an invalid operation application throws for unexpected reason', async () => {
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
 
-      spyOn(console, 'debug').and.throwError('An error message.');
+      // Simulating the logging of invalid operation throws an error.
+      spyOn(Logger, 'info').and.callFake(
+        (data: string) => {
+          if (data.startsWith('Ignored invalid operation')) {
+            throw new Error('An error message.');
+          }
+        }
+      );
+
       const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, didState);
       expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
       expect(newDidState!.document).toBeDefined();

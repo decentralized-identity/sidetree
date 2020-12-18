@@ -3,6 +3,7 @@ import ErrorCode from '../ErrorCode';
 import { JWS } from 'jose';
 import JwkEs256k from '../../../models/JwkEs256k';
 import JwsModel from '../models/JwsModel';
+import Logger from '../../../../common/Logger';
 import SidetreeError from '../../../../common/SidetreeError';
 
 /**
@@ -103,7 +104,7 @@ export default class Jws {
       JWS.verify(compactJws, publicKeyJwk);
       return true;
     } catch (error) {
-      console.log(`Input '${compactJws}' failed signature verification: ${SidetreeError.createFromError(ErrorCode.JwsFailedSignatureValidation, error)}`);
+      Logger.info(`Input '${compactJws}' failed signature verification: ${SidetreeError.createFromError(ErrorCode.JwsFailedSignatureValidation, error)}`);
       return false;
     }
   }

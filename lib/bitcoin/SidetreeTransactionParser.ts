@@ -2,6 +2,7 @@ import BitcoinClient from './BitcoinClient';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
+import Logger from '../common/Logger';
 import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionModel from './models/SidetreeTransactionModel';
 
@@ -31,7 +32,7 @@ export default class SidetreeTransactionParser {
     const writer = await this.getValidWriterFromInputs(bitcoinTransaction.id, bitcoinTransaction.inputs);
 
     if (!writer) {
-      console.info(`Valid sidetree data was found but no valid writer was found for transaction id: ${bitcoinTransaction.id}`);
+      Logger.info(`Valid sidetree data was found but no valid writer was found for transaction id: ${bitcoinTransaction.id}`);
       return undefined;
     }
 
@@ -94,7 +95,7 @@ export default class SidetreeTransactionParser {
 
     // A.
     if (transactionInputs.length < 1) {
-      console.info(`There must be at least one input in the transaction id: ${transactionId}`);
+      Logger.info(`There must be at least one input in the transaction id: ${transactionId}`);
       return undefined;
     }
 
@@ -103,7 +104,7 @@ export default class SidetreeTransactionParser {
     // B.
     const inputScriptAsmParts = inputToCheck.scriptAsmAsString.split(' ');
     if (inputScriptAsmParts.length !== 2) {
-      console.info(`The first input must have only the signature and publickey; transaction id: ${transactionId}`);
+      Logger.info(`The first input must have only the signature and publickey; transaction id: ${transactionId}`);
       return undefined;
     }
 
@@ -123,7 +124,7 @@ export default class SidetreeTransactionParser {
 
       return transaction.outputs[outputIndexToFetch];
     } catch (e) {
-      console.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
+      Logger.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
       return undefined;
     }
   }

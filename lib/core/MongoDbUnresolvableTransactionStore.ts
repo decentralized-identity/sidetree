@@ -1,5 +1,6 @@
 import { Collection, Db, Long, MongoClient } from 'mongodb';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
+import Logger from '../common/Logger';
 import TransactionModel from '../common/models/TransactionModel';
 
 interface IUnresolvableTransaction extends TransactionModel {
@@ -83,7 +84,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
       const anchorString = transaction.anchorString;
       const requiredElapsedTimeSinceFirstFetchBeforeNextRetry = Math.pow(2, unresolvableTransaction.retryAttempts) * this.exponentialDelayFactorInMilliseconds;
       const requiredElapsedTimeInSeconds = requiredElapsedTimeSinceFirstFetchBeforeNextRetry / 1000;
-      console.info(`Record transaction ${transactionNumber} with anchor string ${anchorString} to retry after ${requiredElapsedTimeInSeconds} seconds.`);
+      Logger.info(`Record transaction ${transactionNumber} with anchor string ${anchorString} to retry after ${requiredElapsedTimeInSeconds} seconds.`);
       const nextRetryTime = unresolvableTransaction.firstFetchTime + requiredElapsedTimeSinceFirstFetchBeforeNextRetry;
 
       const searchFilter = { transactionTime, transactionNumber: Long.fromNumber(transactionNumber) };
@@ -141,14 +142,14 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
     // If 'unresolvable transactions' collection exists, use it; else create it.
     let unresolvableTransactionCollection;
     if (collectionNames.includes(MongoDbUnresolvableTransactionStore.unresolvableTransactionCollectionName)) {
-      console.info('Unresolvable transaction collection already exists.');
+      Logger.info('Unresolvable transaction collection already exists.');
       unresolvableTransactionCollection = db.collection(MongoDbUnresolvableTransactionStore.unresolvableTransactionCollectionName);
     } else {
-      console.info('Unresolvable transaction collection does not exists, creating...');
+      Logger.info('Unresolvable transaction collection does not exists, creating...');
       unresolvableTransactionCollection = await db.createCollection(MongoDbUnresolvableTransactionStore.unresolvableTransactionCollectionName);
       await unresolvableTransactionCollection.createIndex({ transactionTime: 1, transactionNumber: 1 }, { unique: true });
       await unresolvableTransactionCollection.createIndex({ nextRetryTime: 1 });
-      console.info('Unresolvable transaction collection created.');
+      Logger.info('Unresolvable transaction collection created.');
     }
 
     return unresolvableTransactionCollection;

@@ -3,6 +3,7 @@ import BlockchainTimeModel from './models/BlockchainTimeModel';
 import CoreErrorCode from './ErrorCode';
 import IBlockchain from './interfaces/IBlockchain';
 import JsonAsync from './versions/latest/util/JsonAsync';
+import Logger from '../common/Logger';
 import ReadableStream from '../common/ReadableStream';
 import ServiceVersionFetcher from './ServiceVersionFetcher';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
@@ -72,8 +73,8 @@ export default class Blockchain implements IBlockchain {
     const response = await this.fetch(this.transactionsUri, requestParameters);
 
     if (response.status !== HttpStatus.OK) {
-      console.error(`Blockchain write error response status: ${response.status}`);
-      console.error(`Blockchain write error body: ${response.body.read()}`);
+      Logger.error(`Blockchain write error response status: ${response.status}`);
+      Logger.error(`Blockchain write error body: ${response.body.read()}`);
       throw new SidetreeError(CoreErrorCode.BlockchainWriteResponseNotOk);
     }
   }
@@ -94,9 +95,9 @@ export default class Blockchain implements IBlockchain {
 
     const readUri = this.transactionsUri + queryString; // e.g. https://127.0.0.1/transactions?since=6212927891701761&transaction-time-hash=abc
 
-    console.info(`Fetching URI '${readUri}'...`);
+    Logger.info(`Fetching URI '${readUri}'...`);
     const response = await this.fetch(readUri);
-    console.info(`Fetch response: ${response.status}'.`);
+    Logger.info(`Fetch response: ${response.status}'.`);
 
     const responseBodyBuffer = await ReadableStream.readAll(response.body);
     const responseBody = JSON.parse(responseBodyBuffer.toString());
@@ -107,8 +108,8 @@ export default class Blockchain implements IBlockchain {
     }
 
     if (response.status !== HttpStatus.OK) {
-      console.error(`Blockchain read error response status: ${response.status}`);
-      console.error(`Blockchain read error body: ${responseBody}`);
+      Logger.error(`Blockchain read error response status: ${response.status}`);
+      Logger.error(`Blockchain read error body: ${responseBody}`);
       throw new SidetreeError(CoreErrorCode.BlockchainReadResponseNotOk);
     }
 
@@ -125,7 +126,7 @@ export default class Blockchain implements IBlockchain {
 
     const firstValidTransactionUri = `${this.transactionsUri}/firstValid`;
 
-    console.info(`Posting to first-valid transaction URI '${firstValidTransactionUri} with body: '${bodyString}'...`);
+    Logger.info(`Posting to first-valid transaction URI '${firstValidTransactionUri} with body: '${bodyString}'...`);
 
     const response = await this.fetch(firstValidTransactionUri, requestParameters);
 
@@ -154,7 +155,7 @@ export default class Blockchain implements IBlockchain {
    * Gets the latest blockchain time and updates the cached time.
    */
   public async getLatestTime (): Promise<BlockchainTimeModel> {
-    console.info(`Refreshing cached blockchain time...`);
+    Logger.info(`Refreshing cached blockchain time...`);
     const response = await this.fetch(this.timeUri);
     const responseBodyString = (response.body.read() as Buffer).toString();
 
@@ -168,7 +169,7 @@ export default class Blockchain implements IBlockchain {
     // Update the cached blockchain time every time blockchain time is fetched over the network,
     this.cachedBlockchainTime = responseBody;
 
-    console.info(`Refreshed blockchain time: ${responseBodyString}`);
+    Logger.info(`Refreshed blockchain time: ${responseBodyString}`);
     return responseBody;
   }
 
@@ -186,8 +187,8 @@ export default class Blockchain implements IBlockchain {
     }
 
     if (response.status !== HttpStatus.OK) {
-      console.error(`Blockchain read error response status: ${response.status}`);
-      console.error(`Blockchain read error body: ${responseBodyString}`);
+      Logger.error(`Blockchain read error response status: ${response.status}`);
+      Logger.error(`Blockchain read error body: ${responseBodyString}`);
       throw new SidetreeError(CoreErrorCode.BlockchainGetFeeResponseNotOk);
     }
 

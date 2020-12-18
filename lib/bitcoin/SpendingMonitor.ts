@@ -1,4 +1,5 @@
 import ITransactionStore from '../core/interfaces/ITransactionStore';
+import Logger from '../common/Logger';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 
@@ -69,12 +70,12 @@ export default class SpendingMonitor {
       await this.transactionStore.getTransactionsLaterThan(startingBlockFirstTxnNumber - 1, undefined);
 
     // eslint-disable-next-line max-len
-    console.info(`SpendingMonitor: total number of transactions from the transaction store starting from block: ${startingBlockHeight} are: ${allTxnsSinceStartingBlock.length}`);
+    Logger.info(`SpendingMonitor: total number of transactions from the transaction store starting from block: ${startingBlockHeight} are: ${allTxnsSinceStartingBlock.length}`);
 
     // Since the transactions from the store include transactions written by ALL the nodes in the network,
     // filter them to get the transactions that were written only by this node.
     const txnsWrittenByThisInstance = this.findTransactionsWrittenByThisNode(allTxnsSinceStartingBlock);
-    console.info(`Number of transactions written by this instance: ${txnsWrittenByThisInstance.length}`);
+    Logger.info(`Number of transactions written by this instance: ${txnsWrittenByThisInstance.length}`);
 
     const totalFeeForRelatedTxns = txnsWrittenByThisInstance.reduce((total: number, currTxnModel: TransactionModel) => {
       return total + currTxnModel.transactionFeePaid;
@@ -84,7 +85,7 @@ export default class SpendingMonitor {
 
     if (totalFeePlusCurrentFee > this.bitcoinFeeSpendingCutoffInSatoshis) {
       // eslint-disable-next-line max-len
-      console.error(`Current fee (in satoshis): ${currentFeeInSatoshis} + total fees (${totalFeeForRelatedTxns}) since block number: ${startingBlockHeight} is greater than the spending cap: ${this.bitcoinFeeSpendingCutoffInSatoshis}`);
+      Logger.error(`Current fee (in satoshis): ${currentFeeInSatoshis} + total fees (${totalFeeForRelatedTxns}) since block number: ${startingBlockHeight} is greater than the spending cap: ${this.bitcoinFeeSpendingCutoffInSatoshis}`);
       return false;
     }
 

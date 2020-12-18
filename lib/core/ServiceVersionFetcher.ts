@@ -1,3 +1,4 @@
+import Logger from '../common/Logger';
 import ReadableStream from '../common/ReadableStream';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import nodeFetch from 'node-fetch';
@@ -44,16 +45,16 @@ export default class ServiceVersionFetcher {
       this.lastTryFetchTime = Date.now();
 
       const versionUri = `${this.uri}/version`;
-      console.info('Trying to get the version info from the blockchain service. Url: ', versionUri);
+      Logger.info(`Trying to get the version info from the blockchain service. Url: ${versionUri}`);
 
       const response = await this.fetch(versionUri);
       const responseBodyBuffer = await ReadableStream.readAll(response.body);
 
-      console.info('Received version response from the blockchain service: ', responseBodyBuffer.toString());
+      Logger.info(`Received version response from the blockchain service: ${responseBodyBuffer.toString()}`);
 
       return JSON.parse(responseBodyBuffer.toString());
     } catch (e) {
-      console.error('Ignoring the exception during blockchain service version retrieval: %s', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+      Logger.error(`Ignoring the exception during blockchain service version retrieval: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
     }
 
     return ServiceVersionFetcher.emptyServiceVersion;
