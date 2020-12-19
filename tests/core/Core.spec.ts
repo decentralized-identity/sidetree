@@ -1,5 +1,6 @@
 import Config from '../../lib/core/models/Config';
 import Core from '../../lib/core/Core';
+import EventEmitter from '../../lib/common/EventEmitter';
 import IRequestHandler from '../../lib/core/interfaces/IRequestHandler';
 import Logger from '../../lib/common/Logger';
 import MockCas from '../mocks/MockCas';
@@ -58,7 +59,7 @@ describe('Core', async () => {
       expect(downloadManagerStartSpy).toHaveBeenCalled();
     });
 
-    it('should override the default logger if custom logger is given.', async () => {
+    it('should override the default logger/event emitter if custom logger/event emitter is given.', async () => {
       const core = new Core(testConfig, testVersionConfig, mockCas);
 
       spyOn(core['serviceStateStore'], 'initialize');
@@ -75,17 +76,26 @@ describe('Core', async () => {
 
       let customLoggerInvoked = false;
       const customLogger = {
-        info: (_data: any) => { customLoggerInvoked = true; },
-        warn: (_data: any) => { },
-        error: (_data: any) => { }
+        info: () => { customLoggerInvoked = true; },
+        warn: () => { },
+        error: () => { }
       };
 
-      await core.initialize(customLogger);
+      let customEvenEmitterInvoked = false;
+      const customEvenEmitter = {
+        emit: async () => { customEvenEmitterInvoked = true; }
+      };
+
+      await core.initialize(customLogger, customEvenEmitter);
 
       // Invoke logger to trigger the custom logger's method defined above.
       Logger.info('anything');
 
+      // Invoke event emitter to trigger the custom emitter's method defined above.
+      await EventEmitter.emit('anything');
+
       expect(customLoggerInvoked).toBeTruthy();
+      expect(customEvenEmitterInvoked).toBeTruthy();
     });
 
     it('should not start the Batch Writer and Observer if they are disabled.', async () => {

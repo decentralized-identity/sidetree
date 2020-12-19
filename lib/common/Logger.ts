@@ -3,6 +3,7 @@ import ILogger from './interfaces/ILogger';
 
 /**
  * Logger used in Sidetree.
+ * Intended to be human readable for debugging.
  */
 export default class Logger {
   private static singleton: ILogger = new ConsoleLogger();
