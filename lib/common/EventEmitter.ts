@@ -1,11 +1,17 @@
 import IEventEmitter from './interfaces/IEventEmitter';
+import LogColor from './LogColor';
 
 /**
  * Event emitter used in Sidetree.
  * Intended to be machine readable for triggering custom handlers.
  */
 export default class EventEmitter {
-  private static singleton: IEventEmitter = { emit: async () => { } }; // Default to no-op.
+  // Default to basic console log.
+  private static singleton: IEventEmitter = {
+    emit: async (eventCode) => {
+      console.log(LogColor.lightBlue(`Event emitted: ${LogColor.green(eventCode)}`));
+    }
+  };
 
   /**
    * Overrides the default event emitter if given.
