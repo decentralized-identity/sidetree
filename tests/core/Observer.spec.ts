@@ -630,4 +630,31 @@ describe('Observer', async () => {
       expect(recordUnresolvableAttemptSpy).toHaveBeenCalled();
     });
   });
+
+  describe('revertInvalidTransactions', () => {
+    it('should delete all operations if last know valid transaction does not exist', async () => {
+      const observer = new Observer(
+        versionManager,
+        blockchain,
+        config.maxConcurrentDownloads,
+        operationStore,
+        transactionStore,
+        transactionStore,
+        1
+      );
+
+      spyOn(transactionStore, 'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve([]));
+      spyOn(blockchain, 'getFirstValidTransaction').and.returnValue(Promise.resolve(undefined));
+
+      const operationStoreDelteSpy = spyOn(observer['operationStore'], 'delete').and.returnValue(Promise.resolve());
+      const transactionStoreDelteSpy = spyOn(observer['transactionStore'], 'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
+      const unresolvableTransactionStoreDelteSpy = spyOn(observer['unresolvableTransactionStore'], 'removeUnresolvableTransactionsLaterThan').and.returnValue(Promise.resolve());
+
+      await observer['revertInvalidTransactions']();
+
+      expect(operationStoreDelteSpy).toHaveBeenCalledWith(undefined);
+      expect(transactionStoreDelteSpy).toHaveBeenCalledWith(undefined);
+      expect(unresolvableTransactionStoreDelteSpy).toHaveBeenCalledWith(undefined);
+    })
+  })
 });

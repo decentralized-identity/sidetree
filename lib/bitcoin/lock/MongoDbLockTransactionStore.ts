@@ -9,8 +9,6 @@ export default class MongoDbLockTransactionStore {
   private db: Db | undefined;
   private lockCollection: Collection<any> | undefined;
 
-  private static readonly defaultDatabaseName: string = 'sidetree';
-
   /** The collection name */
   public static readonly lockCollectionName = 'locks';
 
@@ -21,7 +19,7 @@ export default class MongoDbLockTransactionStore {
    */
   public constructor (
     private serverUrl: string,
-    private databaseName: string = MongoDbLockTransactionStore.defaultDatabaseName) {
+    private databaseName: string) {
   }
 
   /**

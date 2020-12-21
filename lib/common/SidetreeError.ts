@@ -18,7 +18,7 @@ export default class SidetreeError extends Error {
    * @param err The error exception thrown.
    */
   public static createFromError (code: string, err: Error): SidetreeError {
-    return new SidetreeError(code, err ? err.message : undefined);
+    return new SidetreeError(code, err.message ? err.message : undefined);
   }
 
   /**

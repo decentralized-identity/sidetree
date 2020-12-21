@@ -139,6 +139,16 @@ describe('Blockchain', async () => {
   });
 
   describe('write()', async () => {
+    it('should write as expected', async () => {
+      const blockchainClient = new Blockchain('uri');
+      const mockFetchResponse = {
+        status: 200
+      };
+      const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      await blockchainClient.write('Unused anchor string.', 100);
+      expect(fetchSpy).toHaveBeenCalled();
+    })
+
     it('should throw if writing anchor string returned an error.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
       const mockFetchResponse = {
