@@ -381,6 +381,8 @@ export default class DocumentComposer {
     } else if (patch.action === 'remove-services') {
       return DocumentComposer.removeServices(document, patch);
     }
+
+    throw new SidetreeError(ErrorCode.DocumentComposerApplyPatchUnknownAction)
   }
 
   /**

@@ -2,6 +2,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import DocumentModel from '../lib/core/versions/latest/models/DocumentModel';
+import PublicKeyModel from '../lib/core/versions/latest/models/PublicKeyModel';
+
 export const writeFixtureToDisk = (filePath:string, fixture:any) => {
   fs.writeFileSync(path.resolve(__dirname, '../../tests/vectors/' + filePath), JSON.stringify(fixture, null, 2));
 };
@@ -19,3 +22,16 @@ export const fixtureDriftHelper = (received: any, expected: any, pathToFixture:s
     }
   }
 };
+
+export const getPublicKey = (document: DocumentModel, keyId: string): PublicKeyModel | undefined => {
+  if (Array.isArray(document.publicKeys)) {
+    for (let i = 0; i < document.publicKeys.length; i++) {
+      const publicKey = document.publicKeys[i];
+
+      if (publicKey.id === keyId) {
+        return publicKey;
+      }
+    }
+  }
+  return undefined;
+}

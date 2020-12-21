@@ -2,7 +2,6 @@ import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import DidState from '../../lib/core/models/DidState';
-import Document from '../../lib/core/versions/latest/Document';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
@@ -23,6 +22,8 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
+
+import { getPublicKey } from '../utils';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,
@@ -156,7 +157,7 @@ describe('OperationProcessor', async () => {
     expect(didState).toBeDefined();
 
     const document = didState!.document;
-    const signingKey = Document.getPublicKey(document, signingKeyId);
+    const signingKey = getPublicKey(document, signingKeyId);
     expect(signingKey).toBeDefined();
   });
 
@@ -172,7 +173,7 @@ describe('OperationProcessor', async () => {
     expect(didState).toBeDefined();
 
     const document = didState!.document;
-    const signingKey = Document.getPublicKey(document, signingKeyId);
+    const signingKey = getPublicKey(document, signingKeyId);
     expect(signingKey).toBeDefined();
   });
 
@@ -210,7 +211,7 @@ describe('OperationProcessor', async () => {
     expect(didState).toBeDefined();
 
     const document = didState!.document;
-    const signingKey = Document.getPublicKey(document, signingKeyId);
+    const signingKey = getPublicKey(document, signingKeyId);
     expect(signingKey).not.toBeDefined(); // if update above went through, new key would be added.
   });
 
@@ -297,7 +298,7 @@ describe('OperationProcessor', async () => {
     expect(didState).toBeDefined();
 
     const document = didState!.document;
-    const signingKey = Document.getPublicKey(document, signingKeyId);
+    const signingKey = getPublicKey(document, signingKeyId);
     expect(signingKey).toBeDefined();
   });
 
@@ -333,7 +334,7 @@ describe('OperationProcessor', async () => {
     expect(didState).toBeDefined();
 
     const document = didState!.document;
-    const newKey = Document.getPublicKey(document, 'additionalKey');
+    const newKey = getPublicKey(document, 'additionalKey');
     expect(newKey).not.toBeDefined(); // if update above went through, new key would be added.
   });
 
@@ -355,7 +356,7 @@ describe('OperationProcessor', async () => {
     expect(didState).toBeDefined();
 
     const document = didState!.document;
-    const newKey = Document.getPublicKey(document, 'new-key');
+    const newKey = getPublicKey(document, 'new-key');
     expect(newKey).not.toBeDefined(); // if update above went through, new key would be added.
   });
 

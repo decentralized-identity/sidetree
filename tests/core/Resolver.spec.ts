@@ -8,7 +8,6 @@ import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import DidState from '../../lib/core/models/DidState';
-import Document from '../../lib/core/versions/latest/Document';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
@@ -22,7 +21,7 @@ import OperationType from '../../lib/core/enums/OperationType';
 import ProtocolParameters from '../../lib/core/versions/latest/ProtocolParameters';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
-import { fixtureDriftHelper } from '../utils';
+import { fixtureDriftHelper, getPublicKey } from '../utils';
 
 const OVERWRITE_FIXTURES = false;
 
@@ -300,8 +299,8 @@ describe('Resolver', () => {
 
       const document = didState.document;
       expect(document).toBeDefined();
-      const actualNewSigningPublicKey1 = Document.getPublicKey(document, 'newSigningKey');
-      const actualNewSigningPublicKey2 = Document.getPublicKey(document, 'newKey2Updte1PostRec');
+      const actualNewSigningPublicKey1 = getPublicKey(document, 'newSigningKey');
+      const actualNewSigningPublicKey2 = getPublicKey(document, 'newKey2Updte1PostRec');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
       expect(document.publicKeys.length).toEqual(2);
@@ -461,4 +460,28 @@ describe('Resolver', () => {
       done();
     });
   });
+
+  describe('applyCreateOperation()', () => {
+    it('should continue applying until did state is not undefined', async () => {
+      let callCount = 0
+
+      // should return undefined the first time and an object the second time
+      const applyOperationSpy = spyOn(resolver as any, 'applyOperation').and.callFake(() => {
+        callCount++;
+        if (callCount == 2) {
+          return {
+            document: {},
+            nextRecoveryCommitmentHash: 'string',
+            nextUpdateCommitmentHash: 'string',
+            lastOperationTransactionNumber: 123
+          }
+        }
+        return undefined;
+      })
+
+      await resolver['applyCreateOperation']([1 as any, 2 as any]);
+
+      expect(applyOperationSpy).toHaveBeenCalledTimes(2);
+    })
+  })
 });
