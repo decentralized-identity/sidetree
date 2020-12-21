@@ -1,4 +1,6 @@
 import * as timeSpan from 'time-span';
+import EventCode from './EventCode';
+import EventEmitter from '../common/EventEmitter';
 import IBlockchain from './interfaces/IBlockchain';
 import IVersionManager from './interfaces/IVersionManager';
 import Logger from '../common/Logger';
@@ -50,6 +52,8 @@ export default class BatchScheduler {
       const batchWriter = this.versionManager.getBatchWriter(currentTime);
 
       await batchWriter.write();
+
+      EventEmitter.emit(EventCode.BatchWriterProcessingLoopSuccess);
     } catch (error) {
       Logger.error('Unexpected and unhandled error during batch writing, investigate and fix:');
       Logger.error(error);

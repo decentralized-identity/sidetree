@@ -1,5 +1,5 @@
 /**
- * Logging interface used in Sidetree.
+ * Custom logger interface.
  */
 export default interface ILogger {
   /**

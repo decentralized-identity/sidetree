@@ -1,9 +1,10 @@
 import * as timeSpan from 'time-span';
-import { ISidetreeCas, ISidetreeLogger } from '..';
+import { ISidetreeCas, ISidetreeEventEmitter, ISidetreeLogger } from '..';
 import BatchScheduler from './BatchScheduler';
 import Blockchain from './Blockchain';
 import Config from './models/Config';
 import DownloadManager from './DownloadManager';
+import EventEmitter from '../common/EventEmitter';
 import LogColor from '../common/LogColor';
 import Logger from '../common/Logger';
 import MongoDbOperationStore from './MongoDbOperationStore';
@@ -66,8 +67,9 @@ export default class Core {
    * The initialization method that must be called before consumption of this core object.
    * The method starts the Observer and Batch Writer.
    */
-  public async initialize (customLogger?: ISidetreeLogger) {
+  public async initialize (customLogger?: ISidetreeLogger, customEventEmitter?: ISidetreeEventEmitter) {
     Logger.initialize(customLogger);
+    EventEmitter.initialize(customEventEmitter);
 
     // DB initializations.
     await this.serviceStateStore.initialize();

@@ -1,5 +1,7 @@
 import * as timeSpan from 'time-span';
 import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
+import EventCode from './EventCode';
+import EventEmitter from '../common/EventEmitter';
 import IBlockchain from './interfaces/IBlockchain';
 import IOperationStore from './interfaces/IOperationStore';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
@@ -121,7 +123,7 @@ export default class Observer {
 
         // NOTE: Blockchain reorg has happened for sure only if `invalidTransactionNumberOrTimeHash` AND
         // latest transaction time is less or equal to blockchain service time.
-        // This check will prevent Core from reverting transactions if/when blockchain service is reinitializing its data itself.
+        // This check will prevent Core from reverting transactions if/when blockchain service is re-initializing its data itself.
         let blockReorganizationDetected = false;
         if (invalidTransactionNumberOrTimeHash) {
           if (lastKnownTransactionTime <= this.blockchain.approximateTime.time) {
@@ -161,6 +163,8 @@ export default class Observer {
 
       // Continue onto processing unresolvable transactions if any.
       await this.processUnresolvableTransactions();
+
+      EventEmitter.emit(EventCode.ObserverProcessingLoopSuccess);
     } catch (error) {
       Logger.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
       Logger.error(error);
