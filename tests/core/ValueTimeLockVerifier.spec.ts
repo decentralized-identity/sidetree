@@ -153,6 +153,20 @@ describe('ValueTimeLockVerifier', () => {
         ErrorCode.ValueTimeLockVerifierInvalidNumberOfOperations);
     });
 
+    it('should not throw if operations are greater than the numer allowed without lock.', () => {
+      const mockMaxNumOfOps = 9999999;
+      spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOperationsAllowed').and.returnValue(100);
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(() => {
+        ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
+          undefined,
+          mockMaxNumOfOps,
+          1234,
+          'owner',
+          versionMetadataFetcher);
+      }, ErrorCode.ValueTimeLockVerifierInvalidNumberOfOperations)
+    });
+
     it('should not throw if all of the checks pass.', () => {
       const mockMaxNumOfOps = 234;
       spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOperationsAllowed').and.returnValue(mockMaxNumOfOps);

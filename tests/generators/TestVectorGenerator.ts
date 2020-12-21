@@ -9,6 +9,7 @@ import * as service1 from '../vectors/inputs/service1.json';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from './OperationGenerator';
+import { PatchAction } from '../../lib/core/versions/latest/PatchAction';
 
 const saveLocation = path.resolve(__dirname, '../../../tests/vectors/inputs');
 fs.mkdirSync(saveLocation, { recursive: true });
@@ -30,7 +31,7 @@ fs.mkdirSync(saveLocation, { recursive: true });
   const [anyNewSigningKey] = await OperationGenerator.generateKeyPair('newKeyId');
   const patches = [
     {
-      action: 'add-public-keys',
+      action: PatchAction.AddPublicKeys,
       publicKeys: [
         anyNewSigningKey
       ]

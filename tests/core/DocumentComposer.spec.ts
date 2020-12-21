@@ -6,6 +6,7 @@ import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import OperationGenerator from '../generators/OperationGenerator';
 import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import SidetreeError from '../../lib/common/SidetreeError';
+import { PatchAction } from '../../lib/core/versions/latest/PatchAction';
 
 describe('DocumentComposer', async () => {
 
@@ -116,7 +117,7 @@ describe('DocumentComposer', async () => {
       };
 
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: 'someType',
@@ -137,7 +138,7 @@ describe('DocumentComposer', async () => {
       };
 
       const patch = {
-        action: 'remove-public-keys',
+        action: PatchAction.RemovePublicKeys,
         ids: ['1', '3']
       };
 
@@ -159,7 +160,7 @@ describe('DocumentComposer', async () => {
       };
 
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: ['1', '3']
       };
 
@@ -182,7 +183,7 @@ describe('DocumentComposer', async () => {
       };
 
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: ['1', '3']
       };
 
@@ -195,7 +196,7 @@ describe('DocumentComposer', async () => {
     it('should throw error if a remove-services patch contains additional unknown property.', async () => {
       const patch = {
         extra: 'unknown value',
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: 'not an array'
       };
 
@@ -207,7 +208,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerPatchServiceIdsNotArray if ids is not an array', () => {
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: 'not an array'
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdsNotArray);
@@ -216,7 +217,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerIdTooLong if an id is not a string', () => {
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: [1234]
       };
 
@@ -227,7 +228,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerIdTooLong if an id is too long', () => {
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: ['super long super long super long super long super long super long super long super long super long']
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
@@ -245,7 +246,7 @@ describe('DocumentComposer', async () => {
     it('should detect unknown error and throw', () => {
       const patch = {
         extra: 'unknown value',
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: 'not an array'
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
@@ -254,7 +255,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerIdTooLong if id is too long', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'super long super long super long super long super long super long super long super long super long',
           type: undefined,
@@ -267,7 +268,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerServiceHasMissingOrUnknownProperty if service has unknown property', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           extra: 'property',
           id: 'someId',
@@ -281,7 +282,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerServiceHasMissingOrUnknownProperty if `serviceEndpoint` is missing', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: undefined
@@ -293,7 +294,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerPatchServiceTypeNotString if type is not a string', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: undefined,
@@ -306,7 +307,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerPatchServiceTypeTooLong if type too long', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: '1234567890123456789012345678901234567890',
@@ -319,7 +320,7 @@ describe('DocumentComposer', async () => {
 
     it('should allow an non-array object as `serviceEndpoint`.', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: 'someType',
@@ -333,7 +334,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if `serviceEndpoint` is an array.', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: 'someType',
@@ -346,7 +347,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if `serviceEndpoint` has an invalid type.', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: 'someType',
@@ -359,7 +360,7 @@ describe('DocumentComposer', async () => {
 
     it('Should throw if `serviceEndpoint` is not valid URI.', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: 'someType',
@@ -384,7 +385,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if given `action` is unknown.', async () => {
       const patches = generatePatchesForPublicKeys();
-      patches[0].action = 'invalidAction';
+      (patches[0].action as string) = 'invalidAction';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownAction);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -497,7 +498,7 @@ describe('DocumentComposer', async () => {
       };
       const patches = [
         {
-          action: 'add-public-keys',
+          action: PatchAction.AddPublicKeys,
           publicKeys: [
             { id: 'aNonRepeatingId', type: 'someType' }
           ]
@@ -519,7 +520,7 @@ describe('DocumentComposer', async () => {
       };
       const patches = [
         {
-          action: 'add-public-keys',
+          action: PatchAction.AddPublicKeys,
           publicKeys: [
             { id: 'aRepeatingId', type: 'newTypeValue' },
             { id: 'aNonRepeatingId', type: 'someType' }
@@ -533,7 +534,23 @@ describe('DocumentComposer', async () => {
         { id: 'aRepeatingId', type: 'newTypeValue' },
         { id: 'aNonRepeatingId', type: 'someType' }
       ]);
+    });
 
+    it('should throw if action is not a valid patch action', async () => {
+      const document: DocumentModel = {
+      };
+      const patches = [
+        {
+          action: 'invalid action',
+          publicKeys: [
+            { id: 'aNonRepeatingId', type: 'someType' }
+          ]
+        }
+      ];
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(() => {
+        DocumentComposer.applyPatches(document, patches);
+      }, ErrorCode.DocumentComposerApplyPatchUnknownAction, 'Cannot apply invalid action: invalid action');
     });
   });
 
@@ -703,7 +720,7 @@ describe('DocumentComposer', async () => {
 function generatePatchesForPublicKeys () {
   return [
     {
-      action: 'add-public-keys',
+      action: PatchAction.AddPublicKeys,
       publicKeys: [
         {
           id: 'keyX',
@@ -718,11 +735,11 @@ function generatePatchesForPublicKeys () {
       ]
     },
     {
-      action: 'remove-public-keys',
+      action: PatchAction.RemovePublicKeys,
       ids: ['keyY']
     },
     {
-      action: 'add-services',
+      action: PatchAction.AddServices,
       services: OperationGenerator.generateServices(['EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8B'])
     }
   ];

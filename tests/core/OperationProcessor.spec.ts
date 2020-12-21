@@ -24,6 +24,7 @@ import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 import { getPublicKey } from '../utils';
+import { PatchAction } from '../../lib/core/versions/latest/PatchAction';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,
@@ -40,11 +41,11 @@ async function createUpdateSequence (
     const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk);
     const patches = [
       {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: ['serviceId' + (i - 1)]
       },
       {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: OperationGenerator.generateServices(['serviceId' + i])
       }
     ];
@@ -182,7 +183,7 @@ describe('OperationProcessor', async () => {
 
     const patches = [
       {
-        action: 'remove-public-keys',
+        action: PatchAction.RemovePublicKeys,
         ids: [signingKeyId]
       }
     ];
@@ -501,6 +502,22 @@ describe('OperationProcessor', async () => {
         // advance update commitment
         expect(newDidState!.nextUpdateCommitmentHash).toEqual(createOperationData.operationRequest.delta.updateCommitment);
       });
+
+      it('should apply the create operation with { } and undefined update commitment as document if delta is undefined', async () => {
+        const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
+        
+        // modify parse to make delta undefined
+        const parsedOperation = await CreateOperation.parse(createOperationData.anchoredOperationModel.operationBuffer);
+        (parsedOperation.delta as any) = undefined;
+        spyOn(CreateOperation, 'parse').and.returnValue(Promise.resolve(parsedOperation));
+
+        const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
+        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
+        expect(newDidState!.document).toEqual({ });
+        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(createOperationData.operationRequest.suffixData.recoveryCommitment);
+        // update commitment is undefined
+        expect(newDidState!.nextUpdateCommitmentHash).toBeUndefined();
+      })
     });
 
     describe('applyUpdateOperation()', () => {
@@ -799,6 +816,34 @@ describe('OperationProcessor', async () => {
 
         const expectedNewRecoveryCommitment = Multihash.canonicalizeThenDoubleHashThenEncode(anyNewRecoveryPublicKey);
         expect(newDidState!.nextRecoveryCommitmentHash).toEqual(expectedNewRecoveryCommitment);
+      });
+
+      it('should still apply successfully with resultant document being { } and update commitment not advanced if delta is undefined', async () => {
+        const document = { publicKeys: [] };
+        const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+        const unusedNextUpdateCommitment = OperationGenerator.generateRandomHash();
+        const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(
+          didUniqueSuffix,
+          recoveryPrivateKey,
+          anyNewRecoveryPublicKey,
+          unusedNextUpdateCommitment,
+          document
+        );
+        const recoverOperation = await RecoverOperation.parse(Buffer.from(JSON.stringify(recoverOperationRequest)));
+        const anchoredRecoverOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
+
+        // mock to make delta undefined
+        const parsedRecoveryOperation = await RecoverOperation.parse(anchoredRecoverOperationModel.operationBuffer);
+        (parsedRecoveryOperation.delta as any) = undefined
+        spyOn(RecoverOperation, 'parse').and.returnValue(Promise.resolve(parsedRecoveryOperation));
+
+        const newDidState = await operationProcessor.apply(anchoredRecoverOperationModel, didState);
+        expect(newDidState!.lastOperationTransactionNumber).toEqual(2);
+        expect(newDidState!.document).toEqual({ });
+
+        const expectedNewRecoveryCommitment = Multihash.canonicalizeThenDoubleHashThenEncode(anyNewRecoveryPublicKey);
+        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(expectedNewRecoveryCommitment);
+        expect(newDidState!.nextUpdateCommitmentHash).toBeUndefined();
       });
     });
 
