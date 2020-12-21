@@ -4,6 +4,8 @@ import * as afterRecover from '../vectors/resolution/afterRecover.json';
 import * as afterUpdate from '../vectors/resolution/afterUpdate.json';
 import * as generatedFixture from '../vectors/generated.json';
 
+import { fixtureDriftHelper, getPublicKey } from '../utils';
+
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
@@ -21,7 +23,6 @@ import OperationType from '../../lib/core/enums/OperationType';
 import ProtocolParameters from '../../lib/core/versions/latest/ProtocolParameters';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
-import { fixtureDriftHelper, getPublicKey } from '../utils';
 
 const OVERWRITE_FIXTURES = false;
 
@@ -463,25 +464,25 @@ describe('Resolver', () => {
 
   describe('applyCreateOperation()', () => {
     it('should continue applying until did state is not undefined', async () => {
-      let callCount = 0
+      let callCount = 0;
 
       // should return undefined the first time and an object the second time
       const applyOperationSpy = spyOn(resolver as any, 'applyOperation').and.callFake(() => {
         callCount++;
-        if (callCount == 2) {
+        if (callCount === 2) {
           return {
             document: {},
             nextRecoveryCommitmentHash: 'string',
             nextUpdateCommitmentHash: 'string',
             lastOperationTransactionNumber: 123
-          }
+          };
         }
         return undefined;
-      })
+      });
 
       await resolver['applyCreateOperation']([1 as any, 2 as any]);
 
       expect(applyOperationSpy).toHaveBeenCalledTimes(2);
-    })
-  })
+    });
+  });
 });

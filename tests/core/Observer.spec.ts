@@ -655,6 +655,6 @@ describe('Observer', async () => {
       expect(operationStoreDelteSpy).toHaveBeenCalledWith(undefined);
       expect(transactionStoreDelteSpy).toHaveBeenCalledWith(undefined);
       expect(unresolvableTransactionStoreDelteSpy).toHaveBeenCalledWith(undefined);
-    })
-  })
+    });
+  });
 });

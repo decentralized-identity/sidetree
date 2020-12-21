@@ -241,7 +241,6 @@ export default class OperationProcessor implements IOperationProcessor {
     const delta = operation.delta;
     let document = { };
 
-
     // update the commitment hash regardless
     newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
     try {

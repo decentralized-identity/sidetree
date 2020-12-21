@@ -34,4 +34,4 @@ export const getPublicKey = (document: DocumentModel, keyId: string): PublicKeyM
     }
   }
   return undefined;
-}
+};

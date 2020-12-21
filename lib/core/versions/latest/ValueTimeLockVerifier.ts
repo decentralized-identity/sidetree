@@ -83,8 +83,8 @@ export default class ValueTimeLockVerifier {
 
     const maxNumberOfOpsAllowed = this.calculateMaxNumberOfOperationsAllowed(valueTimeLock, versionMetadataFetcher);
 
-    console.log(maxNumberOfOpsAllowed)
-    console.log("HERERERERERERERERERERE")
+    console.log(maxNumberOfOpsAllowed);
+    console.log('HERERERERERERERERERERE');
 
     if (numberOfOperations > maxNumberOfOpsAllowed) {
       throw new SidetreeError(

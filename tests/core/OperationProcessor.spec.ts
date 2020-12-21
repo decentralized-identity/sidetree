@@ -17,14 +17,13 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
+import { PatchAction } from '../../lib/core/versions/latest/PatchAction';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
-
 import { getPublicKey } from '../utils';
-import { PatchAction } from '../../lib/core/versions/latest/PatchAction';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,
@@ -505,7 +504,7 @@ describe('OperationProcessor', async () => {
 
       it('should apply the create operation with { } and undefined update commitment as document if delta is undefined', async () => {
         const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
-        
+
         // modify parse to make delta undefined
         const parsedOperation = await CreateOperation.parse(createOperationData.anchoredOperationModel.operationBuffer);
         (parsedOperation.delta as any) = undefined;
@@ -517,7 +516,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.nextRecoveryCommitmentHash).toEqual(createOperationData.operationRequest.suffixData.recoveryCommitment);
         // update commitment is undefined
         expect(newDidState!.nextUpdateCommitmentHash).toBeUndefined();
-      })
+      });
     });
 
     describe('applyUpdateOperation()', () => {
@@ -834,7 +833,7 @@ describe('OperationProcessor', async () => {
 
         // mock to make delta undefined
         const parsedRecoveryOperation = await RecoverOperation.parse(anchoredRecoverOperationModel.operationBuffer);
-        (parsedRecoveryOperation.delta as any) = undefined
+        (parsedRecoveryOperation.delta as any) = undefined;
         spyOn(RecoverOperation, 'parse').and.returnValue(Promise.resolve(parsedRecoveryOperation));
 
         const newDidState = await operationProcessor.apply(anchoredRecoverOperationModel, didState);

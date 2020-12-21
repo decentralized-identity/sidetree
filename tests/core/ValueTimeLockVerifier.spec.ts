@@ -164,7 +164,7 @@ describe('ValueTimeLockVerifier', () => {
           1234,
           'owner',
           versionMetadataFetcher);
-      }, ErrorCode.ValueTimeLockVerifierInvalidNumberOfOperations)
+      }, ErrorCode.ValueTimeLockVerifierInvalidNumberOfOperations);
     });
 
     it('should not throw if all of the checks pass.', () => {

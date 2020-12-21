@@ -15,13 +15,13 @@ import Jws from '../../lib/core/versions/latest/util/Jws';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
+import { PatchAction } from '../../lib/core/versions/latest/PatchAction';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import ServiceModel from '../../lib/core/versions/latest/models/ServiceModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
-import { PatchAction } from '../../lib/core/versions/latest/PatchAction';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
