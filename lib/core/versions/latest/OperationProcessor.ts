@@ -96,14 +96,14 @@ export default class OperationProcessor implements IOperationProcessor {
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
-    // Verify the delta hash against the expected delta hash.
-    const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
-      updateCommitment: operation.delta.updateCommitment,
-      patches: operation.delta.patches
-    }) : undefined;
-    if (deltaPayload === undefined) {
+    if (operation.delta === undefined) {
       return newDidState;
-    };
+    }
+
+    // Verify the delta hash against the expected delta hash.
+    const deltaPayload = JsonCanonicalizer.canonicalizeAsBuffer(operation.delta);
+
+    // If code execution gets to this point, delta is defined.
 
     const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.suffixData.deltaHash);
     if (!isMatchingDelta) {
@@ -113,19 +113,18 @@ export default class OperationProcessor implements IOperationProcessor {
     // Apply the given patches against an empty object.
     const delta = operation.delta;
     let document = { };
-    if (delta !== undefined) {
-      // update the commitment hash regardless
-      newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
-      try {
-        document = DocumentComposer.applyPatches(document, delta.patches);
-        newDidState.document = document;
-      } catch (error) {
-        const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-        const transactionNumber = anchoredOperationModel.transactionNumber;
-        Logger.info(
-          `Partial update on next commitment hash applied because: ` +
-          `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
-      }
+
+    // update the commitment hash regardless
+    newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
+    try {
+      document = DocumentComposer.applyPatches(document, delta.patches);
+      newDidState.document = document;
+    } catch (error) {
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      const transactionNumber = anchoredOperationModel.transactionNumber;
+      Logger.info(
+        `Partial update on next commitment hash applied because: ` +
+        `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
     }
 
     return newDidState;
@@ -153,15 +152,12 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     }
 
-    // Verify the delta hash against the expected delta hash.
-    const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
-      updateCommitment: operation.delta.updateCommitment,
-      patches: operation.delta.patches
-    }) : undefined;
-    if (deltaPayload === undefined) {
+    if (operation.delta === undefined) {
       return didState;
-    };
+    }
 
+    // Verify the delta hash against the expected delta hash.
+    const deltaPayload = JsonCanonicalizer.canonicalizeAsBuffer(operation.delta);
     const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.deltaHash);
     if (!isMatchingDelta) {
       return didState;
@@ -220,14 +216,12 @@ export default class OperationProcessor implements IOperationProcessor {
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
-    // Verify the delta hash against the expected delta hash.
-    const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
-      updateCommitment: operation.delta.updateCommitment,
-      patches: operation.delta.patches
-    }) : undefined;
-    if (deltaPayload === undefined) {
+    if (operation.delta === undefined) {
       return newDidState;
-    };
+    }
+
+    // Verify the delta hash against the expected delta hash.
+    const deltaPayload = JsonCanonicalizer.canonicalizeAsBuffer(operation.delta);
 
     const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.deltaHash);
     if (!isMatchingDelta) {
@@ -238,20 +232,17 @@ export default class OperationProcessor implements IOperationProcessor {
     const delta = operation.delta;
     let document = { };
 
-    if (delta !== undefined) {
-      // update the commitment hash regardless
-      newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
-      try {
-        document = DocumentComposer.applyPatches(document, delta.patches);
-        newDidState.document = document;
-      } catch (error) {
-        const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-        const transactionNumber = anchoredOperationModel.transactionNumber;
-        Logger.info(
-          `Partial update on next commitment hash applied because: ` +
-          `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
-      }
-
+    // update the commitment hash regardless
+    newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
+    try {
+      document = DocumentComposer.applyPatches(document, delta.patches);
+      newDidState.document = document;
+    } catch (error) {
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      const transactionNumber = anchoredOperationModel.transactionNumber;
+      Logger.info(
+        `Partial update on next commitment hash applied because: ` +
+        `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
     }
 
     return newDidState;

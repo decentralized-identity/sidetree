@@ -99,6 +99,7 @@
       "**/index.ts",
       "lib/bitcoin/versions/[0-9]**/**",
       "lib/core/versions/[0-9]**/**",
+      "lib/core/versions/**/PatchActions.ts",
       "lib/core/versions/**/VersionMetadata.ts",
       "lib/**/**ErrorCode.ts",
       "lib/**/**EventCode.ts"

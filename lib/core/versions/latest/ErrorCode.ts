@@ -51,6 +51,7 @@ export default {
   DidNoUniqueSuffix: 'did_no_unique_suffix',
   DidNotFound: 'did_not_found',
   DidUniqueSuffixFromInitialStateMismatch: 'did_unique_suffix_from_initial_state_mismatch',
+  DocumentComposerApplyPatchUnknownAction: 'document_composer_apply_patch_unknown_action',
   DocumentComposerDocumentMissing: 'document_composer_document_missing',
   DocumentComposerIdNotString: 'document_composer_id_not_string',
   DocumentComposerIdNotUsingBase64UrlCharacterSet: 'document_composer_id_not_using_base64_url_character_set',

@@ -5,6 +5,7 @@ import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import InputValidator from './InputValidator';
+import PatchAction from './PatchAction';
 import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
@@ -156,19 +157,19 @@ export default class DocumentComposer {
   private static validatePatch (patch: any) {
     const action = patch.action;
     switch (action) {
-      case 'replace':
+      case PatchAction.Replace:
         DocumentComposer.validateDocument(patch.document);
         break;
-      case 'add-public-keys':
+      case PatchAction.AddPublicKeys:
         DocumentComposer.validateAddPublicKeysPatch(patch);
         break;
-      case 'remove-public-keys':
+      case PatchAction.RemovePublicKeys:
         DocumentComposer.validateRemovePublicKeysPatch(patch);
         break;
-      case 'add-services':
+      case PatchAction.AddServices:
         DocumentComposer.validateAddServicesPatch(patch);
         break;
-      case 'remove-services':
+      case PatchAction.RemoveServices:
         DocumentComposer.validateRemoveServicesPatch(patch);
         break;
       default:
@@ -370,17 +371,19 @@ export default class DocumentComposer {
    * Applies the given patch to the given DID Document.
    */
   private static applyPatchToDidDocument (document: DocumentModel, patch: any): any {
-    if (patch.action === 'replace') {
+    if (patch.action === PatchAction.Replace) {
       return patch.document;
-    } else if (patch.action === 'add-public-keys') {
+    } else if (patch.action === PatchAction.AddPublicKeys) {
       return DocumentComposer.addPublicKeys(document, patch);
-    } else if (patch.action === 'remove-public-keys') {
+    } else if (patch.action === PatchAction.RemovePublicKeys) {
       return DocumentComposer.removePublicKeys(document, patch);
-    } else if (patch.action === 'add-services') {
+    } else if (patch.action === PatchAction.AddServices) {
       return DocumentComposer.addServices(document, patch);
-    } else if (patch.action === 'remove-services') {
+    } else if (patch.action === PatchAction.RemoveServices) {
       return DocumentComposer.removeServices(document, patch);
     }
+
+    throw new SidetreeError(ErrorCode.DocumentComposerApplyPatchUnknownAction, `Cannot apply invalid action: ${patch.action}`);
   }
 
   /**

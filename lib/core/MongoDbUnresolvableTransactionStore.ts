@@ -53,7 +53,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
     await this.unresolvableTransactionCollection!.deleteMany({ }); // Empty filter removes all entries in collection.
   }
 
-  async recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void> {
+  public async recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void> {
     // Try to get the unresolvable transaction from store.
     const transactionTime = transaction.transactionTime;
     const transactionNumber = transaction.transactionNumber;
@@ -92,13 +92,13 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
     }
   }
 
-  async removeUnresolvableTransaction (transaction: TransactionModel): Promise<void> {
+  public async removeUnresolvableTransaction (transaction: TransactionModel): Promise<void> {
     const transactionTime = transaction.transactionTime;
     const transactionNumber = transaction.transactionNumber;
     await this.unresolvableTransactionCollection!.deleteOne({ transactionTime, transactionNumber: Long.fromNumber(transactionNumber) });
   }
 
-  async getUnresolvableTransactionsDueForRetry (maximumReturnCount?: number): Promise<TransactionModel[]> {
+  public async getUnresolvableTransactionsDueForRetry (maximumReturnCount?: number): Promise<TransactionModel[]> {
     // Override the return count if it is specified.
     let returnCount = this.maximumUnresolvableTransactionReturnCount;
     if (maximumReturnCount !== undefined) {
@@ -112,7 +112,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
     return unresolvableTransactionsToRetry;
   }
 
-  async removeUnresolvableTransactionsLaterThan (transactionNumber?: number): Promise<void> {
+  public async removeUnresolvableTransactionsLaterThan (transactionNumber?: number): Promise<void> {
     // If given `undefined`, remove all transactions.
     if (transactionNumber === undefined) {
       await this.clearCollection();

@@ -15,6 +15,7 @@ import Jws from '../../lib/core/versions/latest/util/Jws';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
+import PatchAction from '../../lib/core/versions/latest/PatchAction';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
@@ -139,7 +140,7 @@ export default class OperationGenerator {
     };
 
     const patches = [{
-      action: 'replace',
+      action: PatchAction.Replace,
       document
     }];
 
@@ -362,7 +363,7 @@ export default class OperationGenerator {
     };
 
     const patches = [{
-      action: 'replace',
+      action: PatchAction.Replace,
       document
     }];
 
@@ -400,7 +401,7 @@ export default class OperationGenerator {
     const [anyNewSigningKey] = await OperationGenerator.generateKeyPair(anyNewSigningPublicKeyId);
     const patches = [
       {
-        action: 'add-public-keys',
+        action: PatchAction.AddPublicKeys,
         publicKeys: [
           anyNewSigningKey
         ]
@@ -497,7 +498,7 @@ export default class OperationGenerator {
     const revealValue = Multihash.canonicalizeThenHashThenEncode(recoveryPublicKey);
 
     const patches = [{
-      action: 'replace',
+      action: PatchAction.Replace,
       document
     }];
 
@@ -586,7 +587,7 @@ export default class OperationGenerator {
 
     const patches = [
       {
-        action: 'add-public-keys',
+        action: PatchAction.AddPublicKeys,
         publicKeys: [
           newPublicKey
         ]
@@ -620,7 +621,7 @@ export default class OperationGenerator {
 
     if (idOfServiceEndpointToAdd !== undefined) {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: OperationGenerator.generateServices([idOfServiceEndpointToAdd])
       };
 
@@ -629,7 +630,7 @@ export default class OperationGenerator {
 
     if (idsOfServiceEndpointToRemove.length > 0) {
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: idsOfServiceEndpointToRemove
       };
 

@@ -8,8 +8,9 @@ import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import DidState from '../../lib/core/models/DidState';
-import Document from '../../lib/core/versions/latest/Document';
+import Document from '../utils/Document';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
+import Fixture from '../utils/Fixture';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
@@ -22,7 +23,6 @@ import OperationType from '../../lib/core/enums/OperationType';
 import ProtocolParameters from '../../lib/core/versions/latest/ProtocolParameters';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
-import { fixtureDriftHelper } from '../utils';
 
 const OVERWRITE_FIXTURES = false;
 
@@ -58,7 +58,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/afterCreate.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/afterCreate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterCreate);
     });
 
@@ -90,7 +90,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterUpdate);
     });
 
@@ -116,7 +116,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterRecover);
     });
 
@@ -158,7 +158,7 @@ describe('Resolver', () => {
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const published = true;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterDeactivate);
     });
   });
@@ -459,6 +459,30 @@ describe('Resolver', () => {
       // Expecting undefined to be returned instead of error being thrown.
       expect(initialDidState).toBeUndefined();
       done();
+    });
+  });
+
+  describe('applyCreateOperation()', () => {
+    it('should continue applying until did state is not undefined', async () => {
+      let callCount = 0;
+
+      // should return undefined the first time and an object the second time
+      const applyOperationSpy = spyOn(resolver as any, 'applyOperation').and.callFake(() => {
+        callCount++;
+        if (callCount === 2) {
+          return {
+            document: {},
+            nextRecoveryCommitmentHash: 'string',
+            nextUpdateCommitmentHash: 'string',
+            lastOperationTransactionNumber: 123
+          };
+        }
+        return undefined;
+      });
+
+      await resolver['applyCreateOperation']([1 as any, 2 as any]);
+
+      expect(applyOperationSpy).toHaveBeenCalledTimes(2);
     });
   });
 });

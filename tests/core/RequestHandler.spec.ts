@@ -13,6 +13,7 @@ import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Did from '../../lib/core/versions/latest/Did';
 import DidState from '../../lib/core/models/DidState';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import Fixture from '../utils/Fixture';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
@@ -33,7 +34,6 @@ import Resolver from '../../lib/core/Resolver';
 import Response from '../../lib/common/Response';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import SidetreeError from '../../lib/common/SidetreeError';
-import { fixtureDriftHelper } from '../utils';
 
 const util = require('util');
 
@@ -140,7 +140,7 @@ describe('RequestHandler', () => {
     const response = await requestHandler.handleResolveRequest(generatedFixture.create.longFormDid);
     expect(response.status).toEqual(ResponseStatus.Succeeded);
 
-    fixtureDriftHelper(response.body, longFormResponseDidDocument, 'resolution/longFormResponseDidDocument.json', OVERWRITE_FIXTURES);
+    Fixture.fixtureDriftHelper(response.body, longFormResponseDidDocument, 'resolution/longFormResponseDidDocument.json', OVERWRITE_FIXTURES);
     expect(response.body).toEqual(longFormResponseDidDocument as any);
   });
 
