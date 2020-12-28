@@ -1,4 +1,4 @@
-import { PatchAction } from '../../lib/core/versions/latest/PatchAction';
+import PatchAction from '../../lib/core/versions/latest/PatchAction';
 
 describe('PatchAction', () => {
   it('should have expected string as enum value', () => {

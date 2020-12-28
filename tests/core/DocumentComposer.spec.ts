@@ -4,7 +4,7 @@ import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import OperationGenerator from '../generators/OperationGenerator';
-import { PatchAction } from '../../lib/core/versions/latest/PatchAction';
+import PatchAction from '../../lib/core/versions/latest/PatchAction';
 import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import SidetreeError from '../../lib/common/SidetreeError';
 

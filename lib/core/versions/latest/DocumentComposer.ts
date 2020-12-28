@@ -5,7 +5,7 @@ import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import InputValidator from './InputValidator';
-import { PatchAction } from './PatchAction';
+import PatchAction from './PatchAction';
 import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';

@@ -4,13 +4,13 @@ import * as afterRecover from '../vectors/resolution/afterRecover.json';
 import * as afterUpdate from '../vectors/resolution/afterUpdate.json';
 import * as generatedFixture from '../vectors/generated.json';
 
-import { fixtureDriftHelper, getPublicKey } from '../utils';
-
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import DidState from '../../lib/core/models/DidState';
+import Document from '../utils/Document';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
+import Fixture from '../utils/Fixture';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
@@ -58,7 +58,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/afterCreate.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/afterCreate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterCreate);
     });
 
@@ -90,7 +90,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterUpdate);
     });
 
@@ -116,7 +116,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterRecover);
     });
 
@@ -158,7 +158,7 @@ describe('Resolver', () => {
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const published = true;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterDeactivate);
     });
   });
@@ -300,8 +300,8 @@ describe('Resolver', () => {
 
       const document = didState.document;
       expect(document).toBeDefined();
-      const actualNewSigningPublicKey1 = getPublicKey(document, 'newSigningKey');
-      const actualNewSigningPublicKey2 = getPublicKey(document, 'newKey2Updte1PostRec');
+      const actualNewSigningPublicKey1 = Document.getPublicKey(document, 'newSigningKey');
+      const actualNewSigningPublicKey2 = Document.getPublicKey(document, 'newKey2Updte1PostRec');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
       expect(document.publicKeys.length).toEqual(2);

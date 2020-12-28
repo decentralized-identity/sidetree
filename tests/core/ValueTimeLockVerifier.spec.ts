@@ -153,7 +153,7 @@ describe('ValueTimeLockVerifier', () => {
         ErrorCode.ValueTimeLockVerifierInvalidNumberOfOperations);
     });
 
-    it('should not throw if operations are greater than the numer allowed without lock.', () => {
+    it('should throw if operations are greater than the number allowed without lock.', () => {
       const mockMaxNumOfOps = 9999999;
       spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOperationsAllowed').and.returnValue(100);
 

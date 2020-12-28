@@ -101,10 +101,7 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the delta hash against the expected delta hash.
-    const deltaPayload = JsonCanonicalizer.canonicalizeAsBuffer({
-      updateCommitment: operation.delta.updateCommitment,
-      patches: operation.delta.patches
-    });
+    const deltaPayload = JsonCanonicalizer.canonicalizeAsBuffer(operation.delta);
 
     // If code execution gets to this point, delta is defined.
 
@@ -155,15 +152,12 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     }
 
-    // Verify the delta hash against the expected delta hash.
-    const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
-      updateCommitment: operation.delta.updateCommitment,
-      patches: operation.delta.patches
-    }) : undefined;
-    if (deltaPayload === undefined) {
+    if (operation.delta === undefined) {
       return didState;
-    };
+    }
 
+    // Verify the delta hash against the expected delta hash.
+    const deltaPayload = JsonCanonicalizer.canonicalizeAsBuffer(operation.delta);
     const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.deltaHash);
     if (!isMatchingDelta) {
       return didState;
@@ -227,10 +221,7 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the delta hash against the expected delta hash.
-    const deltaPayload = JsonCanonicalizer.canonicalizeAsBuffer({
-      updateCommitment: operation.delta.updateCommitment,
-      patches: operation.delta.patches
-    });
+    const deltaPayload = JsonCanonicalizer.canonicalizeAsBuffer(operation.delta);
 
     const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.deltaHash);
     if (!isMatchingDelta) {

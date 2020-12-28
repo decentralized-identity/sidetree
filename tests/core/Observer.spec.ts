@@ -632,7 +632,7 @@ describe('Observer', async () => {
   });
 
   describe('revertInvalidTransactions', () => {
-    it('should delete all operations if last know valid transaction does not exist', async () => {
+    it('should delete all operations if last known valid transaction does not exist', async () => {
       const observer = new Observer(
         versionManager,
         blockchain,
