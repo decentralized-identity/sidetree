@@ -25,7 +25,7 @@ export default class FeeManager {
     const feePerOperation = normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
     const feeForAllOperations = feePerOperation * numberOfOperations;
 
-    // Requiring transaction fee prevents miner from paying lower fee because they get to decide what transactions to include in a block
+    // Requiring at least normalized fee prevents miner from paying lower fee because they get to decide what transactions to include in a block
     // It also encourages batching because the fee per operation ratio will be lower with more operations per transaction
     const transactionFee = Math.max(feeForAllOperations, normalizedFee);
 
@@ -48,7 +48,7 @@ export default class FeeManager {
       throw new SidetreeError(ErrorCode.OperationCountLessThanZero, `The number of operations: ${numberOfOperations} must be greater than 0`);
     }
 
-    // Requiring transaction fee prevents miner from paying lower fee because they get to decide what transactions to include in a block
+    // Requiring at least normalized fee prevents miner from paying lower fee because they get to decide what transactions to include in a block
     // It also encourages batching because the fee per operation ratio will be lower with more operations per transaction
     if (transactionFeePaid < normalizedFee) {
       throw new SidetreeError(ErrorCode.TransactionFeePaidLessThanNormalizedFee,
