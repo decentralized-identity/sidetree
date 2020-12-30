@@ -25,9 +25,8 @@ export default class FeeManager {
     const feePerOperation = normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
     const feeForAllOperations = feePerOperation * numberOfOperations;
 
-    // If our calculated-fee is lower than the normalized fee (which can happen if the number of operations is
-    // very low) then the calculated-fee will be ignored by the blockchain miners ... so make sure that we
-    // return at-least the normalized fee.
+    // Requiring at least normalized fee prevents miner from paying lower fee because they get to decide what transactions to include in a block
+    // It also encourages batching because the fee per operation ratio will be lower with more operations per transaction
     const transactionFee = Math.max(feeForAllOperations, normalizedFee);
 
     return transactionFee;
@@ -49,6 +48,8 @@ export default class FeeManager {
       throw new SidetreeError(ErrorCode.OperationCountLessThanZero, `The number of operations: ${numberOfOperations} must be greater than 0`);
     }
 
+    // Requiring at least normalized fee prevents miner from paying lower fee because they get to decide what transactions to include in a block
+    // It also encourages batching because the fee per operation ratio will be lower with more operations per transaction
     if (transactionFeePaid < normalizedFee) {
       throw new SidetreeError(ErrorCode.TransactionFeePaidLessThanNormalizedFee,
                               `The actual fee paid: ${transactionFeePaid} should be greater than or equal to the normalized fee: ${normalizedFee}`);
