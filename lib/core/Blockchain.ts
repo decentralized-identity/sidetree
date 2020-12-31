@@ -1,6 +1,8 @@
 import * as HttpStatus from 'http-status';
 import BlockchainTimeModel from './models/BlockchainTimeModel';
 import CoreErrorCode from './ErrorCode';
+import EventCode from './EventCode';
+import EventEmitter from '../common/EventEmitter';
 import IBlockchain from './interfaces/IBlockchain';
 import JsonAsync from './versions/latest/util/JsonAsync';
 import Logger from '../common/Logger';
@@ -164,13 +166,18 @@ export default class Blockchain implements IBlockchain {
       throw new SidetreeError(CoreErrorCode.BlockchainGetLatestTimeResponseNotOk, errorMessage);
     }
 
-    const responseBody = JSON.parse(responseBodyString);
+    const newBlockchainTimeModel = JSON.parse(responseBodyString) as BlockchainTimeModel;
 
-    // Update the cached blockchain time every time blockchain time is fetched over the network,
-    this.cachedBlockchainTime = responseBody;
+    // Emit a time change event.
+    if (newBlockchainTimeModel.time !== this.cachedBlockchainTime.time) {
+      EventEmitter.emit(EventCode.BlockchainTimeChanged, { time: newBlockchainTimeModel.time });
+    }
+
+    // Update the cached blockchain time every time blockchain time is fetched over the network.
+    this.cachedBlockchainTime = newBlockchainTimeModel;
 
     Logger.info(`Refreshed blockchain time: ${responseBodyString}`);
-    return responseBody;
+    return newBlockchainTimeModel;
   }
 
   public async getFee (transactionTime: number): Promise<number> {

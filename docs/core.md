@@ -1,6 +1,6 @@
-# Sidetree Core Node.js Implementation Document
+# Sidetree Core Node.js Reference Implementation Document
 
-This document focuses on the Node.js implementation of the Sidetree protocol.
+This document focuses on the Node.js reference implementation of the Sidetree specification.
 
 ## Overview
 
@@ -23,12 +23,7 @@ A light node is a node that retains the ability to independently resolve DIDs wi
 ## Observer
 
 The _Observer_ watches the public blockchain to identify Sidetree operations, then parses the operations into data structures that can be used for efficient DID resolutions.
-The primary goals for the _Observer_ are to:
-1. Maximize ingestion processing rate.
-1. Allow horizontal scaling for high DID resolution throughput.
-1. Allow sharing of the processed data structure by multiple Sidetree nodes to minimize redundant computation.
-
-The above goals lead to the design decision of minimal processing of the operations at the time of ingestion, and deferring the heavy processing such as signature validations to the time of DID resolution.
+The _Observer_ defers heavy processing such as signature validations to the time of DID resolution.
 
 ## Versioning
 As the Sidetree protocol evolves, existing nodes executing an earlier version of the protocol need to upgrade to execute the newer version of the protocol while remaining backward compatible to processing of prior transactions and operations.
@@ -152,7 +147,7 @@ HTTP/1.1 200 OK
 
 
 ## Blockchain REST API
-The blockchain REST API interface aims to abstract the underlying blockchain away from the main protocol logic. This allows the underlying blockchain to be replaced without affecting the core protocol logic. The interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same blockchain.
+The blockchain REST API interface is used by the Core service and aims to abstract the underlying blockchain away from the main protocol logic. This allows the underlying blockchain to be replaced without affecting the core protocol logic. The interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same blockchain.
 
 ### Get latest blockchain time
 Gets the latest logical blockchain time. This API allows the Observer and Batch Writer to determine protocol version to be used.
@@ -455,7 +450,7 @@ Returns `HTTP 400 Bad Request` with the following values as the `code` parameter
 | Code                            | Description                                                                                                 |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | spending_cap_per_period_reached | if with the given fee (derived from minimumFee) this node will exceed the spending limit as configured in the parameters.           |
-| not_enough_balace_for_write     | if the wallet configured in the parameters does not have enough balance to complete the write operation.    |
+| not_enough_balance_for_write     | if the wallet configured in the parameters does not have enough balance to complete the write operation.    |
 
 #### Request path
 ```
@@ -572,7 +567,7 @@ GET /locks/gHasdfasodf23230o0jlk23323
   "amountLocked": "A number representing the amount that was locked.",
   "identifier": "The string representing the identifier of the lock. This is the same value which is passed in the request path.",
   "lockTransactionTime": "A number representing the transaction time at which the lock became active.",
-  "owner": "A string reprsenting the owner of the lock.",
+  "owner": "A string representing the owner of the lock.",
   "unlockTransactionTime": "A number representing the transaction time at which the lock became inactive."
 }
 ```
@@ -627,7 +622,7 @@ GET /writerlock
   "amountLocked": "A number representing the amount that was locked.",
   "identifier": "The string representing the identifier of the lock.",
   "lockTransactionTime": "A number representing the transaction time at which the lock became active.",
-  "owner": "A string reprsenting the owner of the lock.",
+  "owner": "A string representing the owner of the lock.",
   "unlockTransactionTime": "A number representing the transaction time at which the lock became inactive."
 }
 ```
@@ -697,3 +692,24 @@ HTTP/1.1 200 OK
 }
 ```
 
+## Core Service Events
+
+### `batch_writer_processing_loop_success`
+Occurs every time the batch writer completes a processing loop.
+
+Event data: none
+
+### `blockchain_time_changed`
+Occurs every time the underlying blockchain time changes.
+
+Event data:
+```json
+{
+  "time": "The logical blockchain time as an integer."
+}
+```
+
+### `observer_processing_loop_success`
+Occurs every time the observer completes a processing loop.
+
+Event data: none

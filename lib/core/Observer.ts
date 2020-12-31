@@ -288,11 +288,12 @@ export default class Observer {
     Logger.info('Reverting operations...');
     await this.operationStore.delete(bestKnownValidRecentTransactionNumber);
 
-    // NOTE: MUST do this step LAST to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
-    await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
     await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
 
-    // Reset the in-memory last known good Transaction so we next processing cycle will fetch from the correct timestamp/maker.
+    // NOTE: MUST do steps below LAST in this particular order to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
+    await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
+
+    // Reset the in-memory last known good Transaction so next processing cycle will fetch from the correct timestamp/marker.
     this.lastKnownTransaction = bestKnownValidRecentTransaction;
   }
 }
