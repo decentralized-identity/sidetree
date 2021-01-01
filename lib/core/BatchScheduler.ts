@@ -51,10 +51,11 @@ export default class BatchScheduler {
       const currentTime = this.blockchain.approximateTime.time;
       const batchWriter = this.versionManager.getBatchWriter(currentTime);
 
-      await batchWriter.write();
+      const batchSize = await batchWriter.write();
 
-      EventEmitter.emit(EventCode.BatchWriterProcessingLoopSuccess);
+      EventEmitter.emit(EventCode.BatchWriterProcessingLoopSuccess, { batchSize });
     } catch (error) {
+      EventEmitter.emit(EventCode.BatchWriterProcessingLoopFailed);
       Logger.error('Unexpected and unhandled error during batch writing, investigate and fix:');
       Logger.error(error);
     } finally {

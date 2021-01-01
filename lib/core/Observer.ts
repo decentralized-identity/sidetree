@@ -166,6 +166,7 @@ export default class Observer {
 
       EventEmitter.emit(EventCode.ObserverProcessingLoopSuccess);
     } catch (error) {
+      EventEmitter.emit(EventCode.ObserverProcessingLoopFailed);
       Logger.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
       Logger.error(error);
     } finally {

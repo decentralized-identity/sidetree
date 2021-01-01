@@ -694,10 +694,20 @@ HTTP/1.1 200 OK
 
 ## Core Service Events
 
+### `batch_writer_processing_loop_failed`
+Occurs every time the batch writer fails a processing loop.
+
+Event data: none
+
 ### `batch_writer_processing_loop_success`
 Occurs every time the batch writer completes a processing loop.
 
-Event data: none
+Event data:
+```json
+{
+  "batchSize": "The size of the batch written.",
+}
+```
 
 ### `blockchain_time_changed`
 Occurs every time the underlying blockchain time changes.
@@ -708,6 +718,21 @@ Event data:
   "time": "The logical blockchain time as an integer."
 }
 ```
+
+### `download_manager_download`
+Occurs every time an asynchronous content download has occurred regardless of success.
+
+Event data:
+```json
+{
+  "code": "The download result code."
+}
+```
+
+### `observer_processing_loop_failed`
+Occurs every time the observer fails a processing loop.
+
+Event data: none
 
 ### `observer_processing_loop_success`
 Occurs every time the observer completes a processing loop.

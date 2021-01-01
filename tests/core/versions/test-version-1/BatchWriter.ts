@@ -17,7 +17,7 @@ export default class BatchWriter implements IBatchWriter {
     console.info(this.operationQueue, this.blockchain, this.cas, this.versionMetadataFetcher);
   }
 
-  async write (): Promise<void> {
+  async write (): Promise<number> {
     throw new Error('BatchWriter: Not implemented. Version: TestVersion1');
   }
 }
