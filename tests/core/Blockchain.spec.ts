@@ -297,7 +297,7 @@ describe('Blockchain', async () => {
       const blockchainClient = new Blockchain('Unused URI');
 
       // Preset the cached to time to a hardcoded value.
-      const hardcodedBlockchainTimeModel = { time: 1, hash: 'unused'};
+      const hardcodedBlockchainTimeModel = { time: 1, hash: 'unused' };
       blockchainClient['cachedBlockchainTime'] = hardcodedBlockchainTimeModel;
 
       // Mock the time fetch response to the same hardcoded value to simulate unchanged time.

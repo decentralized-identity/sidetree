@@ -78,7 +78,7 @@ export default class Observer {
    */
   private async processTransactions () {
     try {
-      await this.storeConsecutiveTransactionsProcessed(); // Do this in multiple places
+      await this.storeConsecutiveTransactionsProcessed();
 
       // Keep fetching new Sidetree transactions from blockchain and processing them
       // until there are no more new transactions or there is a block reorganization.
@@ -112,13 +112,13 @@ export default class Observer {
 
         // Queue parallel downloading and processing of chunk files.
         for (const transaction of qualifiedTransactions) {
-          const awaitingTransaction = {
+          const transactionUnderProcessing = {
             transaction: transaction,
             processingStatus: TransactionProcessingStatus.Pending
           };
-          this.transactionsUnderProcessing.push(awaitingTransaction);
+          this.transactionsUnderProcessing.push(transactionUnderProcessing);
           // Intentionally not awaiting on downloading and processing each operation batch.
-          this.processTransaction(transaction, awaitingTransaction);
+          this.processTransaction(transaction, transactionUnderProcessing);
         }
 
         // NOTE: Blockchain reorg has happened for sure only if `invalidTransactionNumberOrTimeHash` AND
@@ -158,7 +158,6 @@ export default class Observer {
         }
       } while (moreTransactions);
 
-      await this.storeConsecutiveTransactionsProcessed();
       Logger.info('Successfully kicked off downloading/processing of all new Sidetree transactions.');
 
       // Continue onto processing unresolvable transactions if any.
