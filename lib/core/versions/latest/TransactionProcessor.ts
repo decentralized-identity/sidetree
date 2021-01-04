@@ -96,8 +96,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
     } catch (error) {
       // If we encounter any error, regardless of whether the transaction should be retried for processing,
       // we set all the provisional/chunk files to be `undefined`,
-      // this is because chunk file would not be available or valid for its deltas to be used during resolutions,
-      // thus no need to store the operation references in the provisional index file.
+      // this is because chunk file would not be available/valid for its deltas to be used during resolutions,
+      // thus no need to store the operation references found in the provisional index file.
       provisionalIndexFile = undefined;
       provisionalProofFile = undefined;
       chunkFileModel = undefined;

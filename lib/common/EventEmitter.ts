@@ -8,8 +8,12 @@ import LogColor from './LogColor';
 export default class EventEmitter {
   // Default to basic console log.
   private static singleton: IEventEmitter = {
-    emit: async (eventCode) => {
-      console.log(LogColor.lightBlue(`Event emitted: ${LogColor.green(eventCode)}`));
+    emit: async (eventCode, eventData?) => {
+      if (eventData === undefined) {
+        console.log(LogColor.lightBlue(`Event emitted: ${LogColor.green(eventCode)}`));
+      } else {
+        console.log(LogColor.lightBlue(`Event emitted: ${LogColor.green(eventCode)}: ${JSON.stringify(eventData)}`));
+      }
     }
   };
 

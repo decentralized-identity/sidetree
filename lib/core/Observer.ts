@@ -78,7 +78,7 @@ export default class Observer {
    */
   private async processTransactions () {
     try {
-      await this.storeConsecutiveTransactionsProcessed(); // Do this in multiple places
+      await this.storeConsecutiveTransactionsProcessed();
 
       // Keep fetching new Sidetree transactions from blockchain and processing them
       // until there are no more new transactions or there is a block reorganization.
@@ -112,13 +112,13 @@ export default class Observer {
 
         // Queue parallel downloading and processing of chunk files.
         for (const transaction of qualifiedTransactions) {
-          const awaitingTransaction = {
+          const transactionUnderProcessing = {
             transaction: transaction,
             processingStatus: TransactionProcessingStatus.Pending
           };
-          this.transactionsUnderProcessing.push(awaitingTransaction);
+          this.transactionsUnderProcessing.push(transactionUnderProcessing);
           // Intentionally not awaiting on downloading and processing each operation batch.
-          this.processTransaction(transaction, awaitingTransaction);
+          this.processTransaction(transaction, transactionUnderProcessing);
         }
 
         // NOTE: Blockchain reorg has happened for sure only if `invalidTransactionNumberOrTimeHash` AND
@@ -158,7 +158,6 @@ export default class Observer {
         }
       } while (moreTransactions);
 
-      await this.storeConsecutiveTransactionsProcessed();
       Logger.info('Successfully kicked off downloading/processing of all new Sidetree transactions.');
 
       // Continue onto processing unresolvable transactions if any.
@@ -166,6 +165,7 @@ export default class Observer {
 
       EventEmitter.emit(EventCode.ObserverProcessingLoopSuccess);
     } catch (error) {
+      EventEmitter.emit(EventCode.ObserverProcessingLoopFailed);
       Logger.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
       Logger.error(error);
     } finally {
@@ -288,11 +288,12 @@ export default class Observer {
     Logger.info('Reverting operations...');
     await this.operationStore.delete(bestKnownValidRecentTransactionNumber);
 
-    // NOTE: MUST do this step LAST to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
-    await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
     await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
 
-    // Reset the in-memory last known good Transaction so we next processing cycle will fetch from the correct timestamp/maker.
+    // NOTE: MUST do steps below LAST in this particular order to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
+    await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
+
+    // Reset the in-memory last known good Transaction so next processing cycle will fetch from the correct timestamp/marker.
     this.lastKnownTransaction = bestKnownValidRecentTransaction;
   }
 }

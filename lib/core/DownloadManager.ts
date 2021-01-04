@@ -1,4 +1,6 @@
 import * as crypto from 'crypto';
+import EventCode from './EventCode';
+import EventEmitter from '../common/EventEmitter';
 import FetchResult from '../common/models/FetchResult';
 import ICas from './interfaces/ICas';
 import Logger from '../common/Logger';
@@ -130,6 +132,7 @@ export default class DownloadManager {
     const fetchResult = this.completedDownloads.get(handle);
     this.completedDownloads.delete(handle);
 
+    EventEmitter.emit(EventCode.DownloadManagerDownload, { code: fetchResult!.code });
     return fetchResult!;
   }
 

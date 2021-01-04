@@ -1,6 +1,7 @@
 import Blockchain from '../../lib/core/Blockchain';
 import CoreErrorCode from '../../lib/core/ErrorCode';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
+import EventEmitter from '../../lib/common/EventEmitter';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ReadableStream from '../../lib/common/ReadableStream';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
@@ -267,7 +268,7 @@ describe('Blockchain', async () => {
   });
 
   describe('getLatestTime()', async () => {
-    it('should throw if encountered error when fetching time from blockchain service..', async () => {
+    it('should throw if encountered error when fetching time from blockchain service.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
       const mockFetchResponse = {
         status: 500,
@@ -290,6 +291,28 @@ describe('Blockchain', async () => {
       }
 
       fail();
+    });
+
+    it('should not emit an event when underlying blockchain time is unchanged. ', async () => {
+      const blockchainClient = new Blockchain('Unused URI');
+
+      // Preset the cached to time to a hardcoded value.
+      const hardcodedBlockchainTimeModel = { time: 1, hash: 'unused' };
+      blockchainClient['cachedBlockchainTime'] = hardcodedBlockchainTimeModel;
+
+      // Mock the time fetch response to the same hardcoded value to simulate unchanged time.
+      const mockFetchResponse = {
+        status: 200,
+        body: {
+          read: () => { return Buffer.from(JSON.stringify(hardcodedBlockchainTimeModel)); }
+        }
+      };
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      const eventEmitterSpy = spyOn(EventEmitter, 'emit');
+
+      await blockchainClient.getLatestTime();
+
+      expect(eventEmitterSpy).not.toHaveBeenCalled();
     });
   });
 

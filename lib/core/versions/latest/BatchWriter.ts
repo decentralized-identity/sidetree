@@ -33,7 +33,7 @@ export default class BatchWriter implements IBatchWriter {
     private cas: ICas,
     private versionMetadataFetcher: IVersionMetadataFetcher) { }
 
-  public async write () {
+  public async write (): Promise<number> {
     const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
     const currentLock = await this.blockchain.getWriterValueTimeLock();
     const numberOfOpsAllowed = this.getNumberOfOperationsAllowed(currentLock);
@@ -45,7 +45,7 @@ export default class BatchWriter implements IBatchWriter {
     // Do nothing if there is nothing to batch together.
     if (queuedOperations.length === 0) {
       Logger.info(`No queued operations to batch.`);
-      return;
+      return 0;
     }
 
     Logger.info(LogColor.lightBlue(`Batch size = ${LogColor.green(numberOfOperations)}`));
@@ -101,6 +101,8 @@ export default class BatchWriter implements IBatchWriter {
 
     // Remove written operations from queue after batch writing has completed successfully.
     await this.operationQueue.dequeue(queuedOperations.length);
+
+    return numberOfOperations;
   }
 
   /**
