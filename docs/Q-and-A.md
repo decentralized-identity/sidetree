@@ -254,8 +254,8 @@ _(@henkvancann)_
 - Sidetree's goal is {TBW}
 - Layer 1 (settlement layer): blockchain agnostic and databases to register identities and settle 'transactions' between between, `DDO`s, and `VC`s, Sidetree uses {TBW}
 _(@henkvancann)_
-- Layer 2 (communication layer): Non existing in Sidetree, because Sidetree is end-verifiable. Sidetree can use any other means of communication between actors in the ecosystem
-- Layer 3 (transaction layer): Since Sidetree focuses on the more fundamental part of authentication for the internet, you won't find match functionality for usual trust-over-IP transaction like VCs or money.
+- Layer 2 (communication layer): {TBW}
+- Layer 3 (transaction layer): {TBW}
 - Layer 4 (application layer): {TBW}
 _(@henkvancann)_
 
