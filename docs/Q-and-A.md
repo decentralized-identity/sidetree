@@ -108,12 +108,14 @@ We've done our best to protect the privacy of the Github by investigating the im
 In alphabetic order:\
 ACDC = Authentic Chained Data Container Task Force
 BX = [Bidirectional model transformation](#bidirectional-model-transformation)
+CAS = Content Addressable Storage 
 DID = [Decentralized Identity](#decentralized-identity) or Digital Identity dependent of the context.\
 DIF = Decentralized Identity Foundation\
 DDO = DID Document, look up W3D DID standardization for more info\
 DHT = Distributed Hash Table\
 DIF = Decentralized Identity Foundation, https://identity.foundation\
 DKMI = Decentralized Key Mangement Infrastructure\
+JWK = [JSON Web Key](#json-web-key)
 IPv4 = standard Internet Protocol, version 4\
 PKI = [Public Key Infrastructure](#public-key-infrastructure)\
 PR = Pull Request; github terminology\
@@ -174,6 +176,18 @@ Entities are not limited to natural persons but may include groups, organization
 
 #### Identity
 A unique entity. Typically represented with a unique identifier.
+
+#### JSON Web Key
+A JSON Web Key (JWK) is a JavaScript Object Notation (JSON) data structure that represents a cryptographic key. [More info](https://tools.ietf.org/html/rfc7517).
+The following example JWK declares that the key is an Elliptic Curve key, it is used with the P-256 Elliptic Curve, and its x and y coordinates are the base64url-encoded values shown.  A key identifier is also provided for the key:
+```
+     {"kty":"EC",
+      "crv":"P-256",
+      "x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",
+      "y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0",
+      "kid":"Public key used in JWS spec Appendix A.3 example"
+     }
+```
 
 #### Key
 A mechanism for granting or restricing access to something. MAY be used to issue and prove, MAY be used to transfer and control over _identity_ and _cryptocurrency_. [More](https://en.wikipedia.org/wiki/Key_(cryptography))
@@ -316,11 +330,15 @@ Sidetree is dependent of:
 5. {TBW}
 _(@henkvancann)_
 
+## In what can we find the efficiency booster that Sidetree promises to be?
+Sidetree nodes that participate in writing operations into the overlay network do so by **anchoring** Content-Addressable Storage (`CAS`) (e.g. IPFS) references to **aggregated** bundles of operations in an underlying ledger.
+
 ## What would you see as the main drawback of Sidetree?
 {TBW}
 
 ## How can it be one solution, fit for more DIDs? 
 {TBW}
+
 ## Where you would need something quite different than Sidetree?
 {TBW}
 
@@ -354,8 +372,22 @@ Harm that can be done to a `verifier`: {TBW}
 ## What happens if I or other people are offline?
 {TBW}
 
+## How to handle multiple versions of Sidetree protocol. How to keep the network in sync?
+The rules and parameters of the Sidetree protocol may change in the future, resulting in new versions of the specification. 
+#### Version Segment Definitions:
+1. Major: Major protocol evolution, with breaking protocol advancements so large they warrant incrementing the major version.
+2. Minor: Critical updates, protocol forking changes, or security patches that require all nodes to upgrade.
+3. Patch: Non-critical changes that do not require nodes to upgrade.
+
+#### New Version Activation
+New versions of the protocol, or modifications to parameter values by implementers, muat be activated at a specified _Ledger Time_ so **all nodes can remain in sync by enforcing the same ruleset and parameters** beginning at the same logical starting point.\ 
+All transactions that occur after the specified Ledger Time will adhere to the associated version’s rules and parameters until a newer version of the protocol is defined and implemented at a future Ledger Time.\
+New Version Activation is **necessary for Minor and Major version segments**; the ones with breaking protocol advancements, and protocol forking changes, or security patches.
+{_@henkvancann_}
+
 ## How to handle multiple formats of Sidetree JSON files through time. Will they be backwards compatible?
-{TBW}
+
+
 ## Could Sidetree work with be pruned or charded blockchains?
 {TBW}
 ## How to bootstrap Sidetree on the internet? Is it like fax machine; the more there are the more effective it is?
@@ -451,8 +483,15 @@ Yes, Sidetree is blockchain agnostic. \
 _(@henkvancann)_
 
 ## What's the difference between Sidetree and blockchain?
-{TBW}
+Lots. There are only a few similarities for the record:
 
+
+
+## Why does Sidetree need a blockchain? 
+_...when it has nodes in a network that could federatively establish consensus?_
+
+The ledger (blockchain) acts as a linear chronological sequencing oracle, which the Sidetree protocol leverages to **order** DID PKI operations in an **immutable** history all observing nodes can **replay** and validate. It is this ability to replay the precise sequence of DID PKI state change events, and process those events using a common set of deterministic rules, that allows Sidetree nodes to achieve a consistent view of DIDs and their DID Document states, without requiring any additional consensus mechanism.
+The underlaying blockchain provides the consensus mechanism to come to immutable time-stamped ordering.
 
 # Q&A section Agencies
 
