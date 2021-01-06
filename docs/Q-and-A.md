@@ -107,6 +107,7 @@ We've done our best to protect the privacy of the Github by investigating the im
 ## Abbreviations
 In alphabetic order:\
 ACDC = Authentic Chained Data Container Task Force
+BX = [Bidirectional model transformation](#bidirectional-model-transformation)
 DID = [Decentralized Identity](#decentralized-identity) or Digital Identity dependent of the context.\
 DIF = Decentralized Identity Foundation\
 DDO = DID Document, look up W3D DID standardization for more info\
@@ -134,6 +135,10 @@ A representative for an _identity_. MAY require the use of a_wallet_. MAY suppor
 #### Agency
 Agents can be people, edge computers and the functionality within [`wallets`](#digital-identity-wallet). The service an agent offers is agency.
 
+#### Bidirectional model transformation
+Or `BX`. Keeping a system of models mutually consistent (model synchronization) is vital for model-driven engineering. In a typical scenario, given a pair of inter-related models, changes in either of them are to be propagated to the other to restore consistency. This setting is often referred to as bidirectional model transformation (BX). Delta-based is the way to go for Side-tree.
+[Source and more info](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.386.7739&rep=rep1&type=pdf)
+
 #### Claim
 An assertion of the truth of something, typically one which is disputed or in doubt. A set of claims might convey personally identifying information: ½name, address, date of birth and citizenship, for example. ([Source](https://www.identityblog.com/?p=352)).
 
@@ -149,6 +154,15 @@ A digital asset designed to work as a medium of exchange wherein individual coin
 
 #### Decentralized Identity
 DID; Decentralized identity is a technology that uses cryptography to allow individuals to create and control their own unique identifiers. They can use these identifiers to obtain `Verifiable Credentials` from trusted organisations and, subsequently, present elements of these credentials as proof of claims about themselves. In this model, the individual takes ownership of their own identity and need not cede control to centralized service providers or companies.
+
+#### Delta-based
+Delta-based (vs. _state-based_) is a notion that is hard to grasp. See it simplified as _"keeping Sidetree data internally consistent and in sync"_.
+
+The Sidetree protocol defines a core set of `DID PKI` state change operations, structured as **delta-based** Conflict-Free Replicated Data Types.\
+Given pairs of inter-related models (nodes / peers) in Sidetree, changes in either of them are to be propagated to the other to restore consistency; also called [BX](#bidirectional-model-transformation).\
+Propagation operations use deltas as input and output rather than compute them internally. Such frameworks (in our case a **tree-oriented**) have been built for the _asymmetric_ BX case, in which one model in the pair is a view of the other and hence does not contain any new information. In practice, however, it is often the case that two models share some information but each of them contains something new not present in the other; we call this case _symmetric_ `BX`.
+
+[Source and more info](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.386.7739&rep=rep1&type=pdf)
 
 #### Entropy
 Unpredictable information. Often used as a _secret_ or as input to a _key_ generation algorithm.[More](https://en.wikipedia.org/wiki/Entropy_(information_theory))
@@ -312,6 +326,17 @@ _(@henkvancann)_
 
 ## How does Sidetree scale
 {TBW}
+
+## How does Sidetree keep data internally consistent over nodes?
+In brief: By using **delta-based** Conflict-Free Replicated Data Types. _(@henkvancann)_\
+
+Despite early availability on the market, `BX` tools did not gain much user appreciation because of semantic issues. A user should clearly understand the behavior of synchronization procedures implemented by a tool. The majority of algebraic BX frameworks are _state-based_. Synchronizing operations take the states of models before and after update as input, and produce new states of models as output. This design assumes that model alignment, i.e., discovering relations (deltas) between models,
+is done by update propagating procedures themselves. Hence, two quite different operations—heuristics-based delta discovery and algebraic delta propagation are merged, which causes several theoretical and practical problems; See the source for several examples.\
+To separate delta discovery and propagation, several researchers proposed to build `delta-based` frameworks, in which propagation operations use deltas as input and output rather than compute them internally. Such frameworks (a general one and a **tree-oriented**) have been built for the _asymmetric_ BX case, in which one model in the pair is a view of the other and hence does not contain any new information. In practice, however, it is often the case that two models share some information but each of them contains something new not present in the other; we call this case _symmetric_ `BX`.\
+[Source and more info](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.386.7739&rep=rep1&type=pdf)
+
+To summarize: Sidetree keeps data consitent by using a delta-based tree-oriented framework and performs _symmetric_-`BX`information sharing.\
+_(@henkvancann)_
 
 ## How does Sidetree keep identifiers secure?
 {TBW}
