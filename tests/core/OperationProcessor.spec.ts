@@ -694,8 +694,11 @@ describe('OperationProcessor', async () => {
           operationIndex: 2
         };
 
-        // Intentionally failing update patches.
-        spyOn(DocumentComposer, 'applyPatches').and.throwError('Expected test error');
+        // Intentionally modifying the document to an unexpected state then failing update patches.
+        spyOn(DocumentComposer, 'applyPatches').and.callFake((document, _patch) => {
+          document.publicKeys = [];
+          throw new Error('any error');
+        });
 
         // The expected outcome of patch application failure (but all integrity checks including schema checks are passed )is:
         // 1. Operation is considered successful.
