@@ -1,5 +1,5 @@
 /**
- * Class containing JavaScript operations.
+ * Class containing JavaScript object operations.
  */
 export default class JsObject {
   /**

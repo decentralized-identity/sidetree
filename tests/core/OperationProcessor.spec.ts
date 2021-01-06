@@ -694,7 +694,7 @@ describe('OperationProcessor', async () => {
           operationIndex: 2
         };
 
-        // Intentionally modifying the document to an unexpected state then failing update patches.
+        // Intentionally modifying the document before failing update patches to test original document is not modified.
         spyOn(DocumentComposer, 'applyPatches').and.callFake((document, _patch) => {
           document.publicKeys = [];
           throw new Error('any error');
