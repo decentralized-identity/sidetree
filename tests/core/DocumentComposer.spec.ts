@@ -7,6 +7,7 @@ import OperationGenerator from '../generators/OperationGenerator';
 import PatchAction from '../../lib/core/versions/latest/PatchAction';
 import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import SidetreeError from '../../lib/common/SidetreeError';
+import JsObject from '../../lib/core/versions/latest/util/JsObject';
 
 describe('DocumentComposer', async () => {
 
@@ -125,9 +126,9 @@ describe('DocumentComposer', async () => {
         }]
       };
 
-      const result = DocumentComposer['addServices'](document, patch);
+      DocumentComposer['addServices'](document, patch);
 
-      expect(result.services).toEqual([{ id: 'someId', type: 'someType', serviceEndpoint: 'someEndpoint' }]);
+      expect(document.services).toEqual([{ id: 'someId', type: 'someType', serviceEndpoint: 'someEndpoint' }]);
     });
   });
 
@@ -136,14 +137,15 @@ describe('DocumentComposer', async () => {
       const document: DocumentModel = {
         services: OperationGenerator.generateServices(['anyServiceId'])
       };
+      const deepCopyOriginalDocument = JsObject.deepCopyObject(document);
 
       const patch = {
         action: PatchAction.RemovePublicKeys,
         ids: ['1', '3']
       };
 
-      const result = DocumentComposer['removePublicKeys'](document, patch);
-      expect(result).toEqual(document);
+      DocumentComposer['removePublicKeys'](document, patch);
+      expect(document).toEqual(deepCopyOriginalDocument);
     });
   });
 
@@ -164,7 +166,7 @@ describe('DocumentComposer', async () => {
         ids: ['1', '3']
       };
 
-      const result = DocumentComposer['removeServices'](document, patch);
+      DocumentComposer['removeServices'](document, patch);
 
       const expected = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
@@ -174,21 +176,22 @@ describe('DocumentComposer', async () => {
         ]
       };
 
-      expect(result).toEqual(expected);
+      expect(document).toEqual(expected);
     });
 
     it('should leave document unchanged if it does not have `services` property', () => {
       const document: DocumentModel = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }]
       };
+      const deepCopyOriginalDocument = JsObject.deepCopyObject(document);
 
       const patch = {
         action: PatchAction.RemoveServices,
         ids: ['1', '3']
       };
 
-      const result = DocumentComposer['removeServices'](document, patch);
-      expect(result).toEqual(document);
+      DocumentComposer['removeServices'](document, patch);
+      expect(document).toEqual(deepCopyOriginalDocument);
     });
   });
 

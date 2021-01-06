@@ -360,24 +360,23 @@ export default class DocumentComposer {
       // In-place replacement of the document.
       JsObject.clearObject(document);
       Object.assign(document, patch.document);
-      return;
     } else if (patch.action === PatchAction.AddPublicKeys) {
-      return DocumentComposer.addPublicKeys(document, patch);
+      DocumentComposer.addPublicKeys(document, patch);
     } else if (patch.action === PatchAction.RemovePublicKeys) {
-      return DocumentComposer.removePublicKeys(document, patch);
+      DocumentComposer.removePublicKeys(document, patch);
     } else if (patch.action === PatchAction.AddServices) {
-      return DocumentComposer.addServices(document, patch);
+      DocumentComposer.addServices(document, patch);
     } else if (patch.action === PatchAction.RemoveServices) {
-      return DocumentComposer.removeServices(document, patch);
+      DocumentComposer.removeServices(document, patch);
+    } else {
+      throw new SidetreeError(ErrorCode.DocumentComposerApplyPatchUnknownAction, `Cannot apply invalid action: ${patch.action}`);
     }
-
-    throw new SidetreeError(ErrorCode.DocumentComposerApplyPatchUnknownAction, `Cannot apply invalid action: ${patch.action}`);
   }
 
   /**
    * Adds public keys to document.
    */
-  private static addPublicKeys (document: DocumentModel, patch: any): DocumentModel {
+  private static addPublicKeys (document: DocumentModel, patch: any) {
     const publicKeyMap = new Map((document.publicKeys || []).map(publicKey => [publicKey.id, publicKey]));
 
     // Loop through all given public keys and add them.
@@ -388,27 +387,23 @@ export default class DocumentComposer {
     }
 
     document.publicKeys = [...publicKeyMap.values()];
-
-    return document;
   }
 
   /**
    * Removes public keys from document.
    */
-  private static removePublicKeys (document: DocumentModel, patch: any): DocumentModel {
+  private static removePublicKeys (document: DocumentModel, patch: any) {
     if (document.publicKeys === undefined) {
-      return document;
+      return;
     }
 
     const idsOfKeysToRemove = new Set(patch.ids);
 
     // Keep only keys that are not in the removal list.
     document.publicKeys = document.publicKeys.filter(publicKey => !idsOfKeysToRemove.has(publicKey.id));
-
-    return document;
   }
 
-  private static addServices (document: DocumentModel, patch: any): DocumentModel {
+  private static addServices (document: DocumentModel, patch: any) {
     const services = patch.services;
 
     if (document.services === undefined) {
@@ -430,18 +425,14 @@ export default class DocumentComposer {
         document.services.push(service);
       }
     }
-
-    return document;
   }
 
-  private static removeServices (document: DocumentModel, patch: any): DocumentModel {
+  private static removeServices (document: DocumentModel, patch: any) {
     if (document.services === undefined) {
-      return document;
+      return;
     }
 
     const idsToRemove = new Set(patch.ids);
     document.services = document.services.filter(service => !idsToRemove.has(service.id));
-
-    return document;
   }
 }
