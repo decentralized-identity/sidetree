@@ -8,7 +8,6 @@ import InputValidator from './InputValidator';
 import PatchAction from './PatchAction';
 import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
-import UpdateOperation from './UpdateOperation';
 
 /**
  * Class that handles the composition of operations into final external-facing document.
@@ -99,17 +98,6 @@ export default class DocumentComposer {
     };
 
     return didResolutionResult;
-  }
-
-  /**
-   * Applies the update operation to the given document.
-   * @returns The resultant document.
-   * @throws SidetreeError if invalid operation is given.
-   */
-  public static async applyUpdateOperation (operation: UpdateOperation, document: any): Promise<any> {
-    const resultantDocument = DocumentComposer.applyPatches(document, operation.delta!.patches);
-
-    return resultantDocument;
   }
 
   /**

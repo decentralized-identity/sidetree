@@ -173,7 +173,10 @@ export default class OperationProcessor implements IOperationProcessor {
 
     let resultingDocument;
     try {
-      resultingDocument = await DocumentComposer.applyUpdateOperation(operation, didState.document);
+      // NOTE: MUST pass DEEP COPY of the DID Document to `DocumentComposer` such that in the event of a patch failure,
+      // the original document is not modified.
+      const documentDeepCopy = OperationProcessor.deepCopyObject(didState.document);
+      resultingDocument = await DocumentComposer.applyPatches(documentDeepCopy, operation.delta.patches);
       newDidState.document = resultingDocument;
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
@@ -277,5 +280,22 @@ export default class OperationProcessor implements IOperationProcessor {
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
     return newDidState;
+  }
+
+  private static deepCopyObject (input: any): any {
+    if (typeof input !== 'object') {
+      return input;
+    }
+
+    const deepCopy: any = Array.isArray(input) ? [] : {};
+
+    for (const key in input as object) {
+      const value = input[key];
+
+      // Recursively deep copy properties.
+      deepCopy[key] = OperationProcessor.deepCopyObject(value);
+    }
+
+    return deepCopy;
   }
 }
