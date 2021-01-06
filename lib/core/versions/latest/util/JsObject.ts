@@ -12,7 +12,7 @@ export default class JsObject {
 
     const deepCopy: any = Array.isArray(input) ? [] : {};
 
-    for (const key in input as object) {
+    for (const key in input) {
       const value = input[key];
 
       // Recursively deep copy properties.

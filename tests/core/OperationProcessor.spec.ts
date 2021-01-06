@@ -9,6 +9,7 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
+import JsObject from '../../lib/core/versions/latest/util/JsObject';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import Logger from '../../lib/common/Logger';
@@ -704,13 +705,13 @@ describe('OperationProcessor', async () => {
         // 1. Operation is considered successful.
         // 2. Update commitment is updated/incremented.
         // 3. DID document state remains the unchanged (same as prior to the patches being applied).
+        const deepCopyOriginalDocument = JsObject.deepCopyObject(didState!.document);
         const newDidState = await operationProcessor.apply(anchoredUpdateOperationModel, didState);
         expect(newDidState!.lastOperationTransactionNumber).toEqual(2);
         expect(newDidState!.nextUpdateCommitmentHash).toEqual(nextUpdateCommitment);
-        expect(newDidState!.document).toBeDefined();
 
-        // The count of public keys should remain 1, not 2.
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
+        // Expect the DID document to be unchanged.
+        expect(newDidState!.document).toEqual(deepCopyOriginalDocument);
       });
     });
 
