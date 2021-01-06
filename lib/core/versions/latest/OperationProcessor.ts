@@ -113,11 +113,11 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // Apply the given patches against an empty object.
     const delta = operation.delta;
-    let document = { };
 
-    // update the commitment hash regardless
+    // Update the commitment hash regardless of patch application outcome.
     newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
     try {
+      const document = { };
       DocumentComposer.applyPatches(document, delta.patches);
       newDidState.document = document;
     } catch (error) {
@@ -231,11 +231,11 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // Apply the given patches against an empty object.
     const delta = operation.delta;
-    let document = { };
 
     // update the commitment hash regardless
     newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
     try {
+      const document = { };
       DocumentComposer.applyPatches(document, delta.patches);
       newDidState.document = document;
     } catch (error) {

@@ -3,11 +3,11 @@ import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import JsObject from '../../lib/core/versions/latest/util/JsObject';
 import OperationGenerator from '../generators/OperationGenerator';
 import PatchAction from '../../lib/core/versions/latest/PatchAction';
 import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import SidetreeError from '../../lib/common/SidetreeError';
-import JsObject from '../../lib/core/versions/latest/util/JsObject';
 
 describe('DocumentComposer', async () => {
 
@@ -499,7 +499,7 @@ describe('DocumentComposer', async () => {
     it('should add a key even if no keys exist yet.', async () => {
       const document: DocumentModel = { };
 
-      const newKey = { id: 'aNonRepeatingId', type: 'someType', publicKeyJwk: { } }
+      const newKey = { id: 'aNonRepeatingId', type: 'someType', publicKeyJwk: { } };
       const patches = [
         {
           action: PatchAction.AddPublicKeys,

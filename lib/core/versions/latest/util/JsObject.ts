@@ -23,7 +23,7 @@ export default class JsObject {
   }
 
   /**
-   * Clears all the properties in the given object. 
+   * Clears all the properties in the given object.
    */
   public static clearObject (input: any) {
     for (const key in input) {
