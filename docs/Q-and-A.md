@@ -65,6 +65,7 @@ We've done our best to protect the privacy of the Github by investigating the im
 - [Q&A section Sidetree operational](#qa-section-sidetree-operational)
 - [Q&A section Userinterface](#qa-section-userinterface)
 - [Q&A section Identifiers](#qa-section-identifiers)
+- [Q&A section File structure](#file-structure)
 - [Q&A section Wallets](#qa-section-wallets)
 - [Q&A section Signatures](#qa-section-signatures)
 - [Q&A section Proofs](#qa-section-proofs)
@@ -316,6 +317,14 @@ Yes, Sidetree sits under the *Decentralized Identity Foundation*, [DIF](https://
 ## What's the diffrence between a `normative` and `non-normative` description or theory?
 See the [definitions](#normative) section for what both are. For example, theories of ethics are generally `normative` - you should not kill, you should help that person, etc. Economics is most commonly `non-normative` - instead of asking “how should this person choose which goods to buy?”, we are often more interested in “how does this person choose which commodities they buy?”.
 
+## Is Sidetree privacy preserving / GPDR proof?
+These are the information-hiding measures taken in the protocol to facilitate compliance with privacy rules:
+- No sensitive data on layer 1, which can be an open public blockchain
+- THe content in the CAS layer 2, example IPFS, works with `commitments`. A commitment can be shared without revealing the commit value.
+- Files-structures are designed to minimize permanently retained data
+- Operation Request of type Recover or Deactivate
+{TBW : unclear wether `Deactivate` obeys the right to be forgotten}\
+_(@henkvancann)_
 # Q&A section Sidetree operational
 
 ## Where can I download Sidetree?
@@ -437,6 +446,13 @@ _(@henkvancann)_
 ## Does Sidetree support transferable identifiers?
 {TBW}
 
+# File structure
+
+## What do we need IPFS for?
+To store transactions between and changes to DDO's. Sidetree is Layer 2 solution on top of a Layer 1 settlement layer: a blockchain of choice.
+
+minimize permanently retained data
+
 # Q&A section Wallets
 
 ## Do I need a wallet for Sidetree?
@@ -492,8 +508,6 @@ _(@henkvancann)_
 
 ## What's the difference between Sidetree and blockchain?
 Lots. There are only a few similarities for the record:
-
-
 
 ## Why does Sidetree need a blockchain? 
 _...when it has nodes in a network that could federatively establish consensus?_
