@@ -3,7 +3,7 @@
 
 Why should you read or step through the Q&A? To get a different angle to the same topic: Sidetree.
 
-<img src="../www/diagrams/architecture.png" alt="Architecture of Sidetree" border="0" width="400">
+<img src="../www/diagrams/sidetree-logo.png" alt="Sidetree logo" border="0" width="300">
 
 ```
 {TBW} means: to be written
@@ -238,12 +238,16 @@ In our context it is software and sometimes hardware that serves as a key store 
 Sidetree is a protocol for creating scalable decentralized public key infrastructure (DPKI) networks that can run atop of any existing decentralized ledger system (e.g. Bitcoin) and be as open, public, and permissionless as the underlying ledger they utilize.
 ## What is the setting of sidetree?
 The protocol allows users to create _globally unique, user-controlled identifiers_ and manage their associated metadata, all _without the need for centralized authorities_ or trusted third parties. The syntax of the identifier and accompanying data model used by the protocol is conformant to that defined by W3C Decentralized Identifiers. Implementations of the protocol can be codified as their own distinct DID Methods and registered in the W3C DID Method Registry.
+## How is the inner working of Sidetree?
+<img src="../www/diagrams/architecture.png" alt="Architecture of Sidetree" border="0" width="400">
+
 ## For who is Sidetree?
 {TBW}
 ## Why use Sidetree?
 {TBW}
 ## What is so unique to Sidetree?
-Sidetree has a very small footprint on Settle Layer 1 of the trust-over-IP model. It staches multiple identity transactions into on transaction; Lightning Network like in Bitcoin.
+Current approaches that utilize these ledger systems to create decentralized identifier networks suffer from severely limited transactional volumes and other performance issues. Sidetree is a ‘Layer 2’ protocol that runs atop decentralized ledger systems.\
+Sidetree has a very small footprint on Settlement Layer 1 of the trust-over-IP model. It stashes multiple layer 2 identity transactions into one layer 1 transaction; it's "Lightning-Network-like" in Bitcoin.
 
 ## Is Sidetree a DID?
 `Sidetree` is not a `DID` method. The related `DID` method is [`did:core`](https://www.w3.org/TR/did-core/) Implementations of the protocol can be codified as their own distinct DID Methods and registered in the W3C DID Method Registry; e.g. [`did:ion`]().\
@@ -287,6 +291,16 @@ On (sub)page(s of) [github](https://github.com/decentralized-identity/sidetree)
 
 ## Where can we find the code and how could a coder get started?
 The homepage on github [README.md](../README.md) pretty much sums up all the possibilities to download the available code and how developers can engage in the development process currently. We welcome contributions.
+
+## What are the external dependencies of Sidetree?
+_I hear ya: "Sidetree is able to do all this **without requiring** trusted intermediaries, centralized authorities, special protocol tokens, or secondary consensus mechanisms, while preserving the core attributes of decentralization and immutability of the underlying ledger systems it is implemented on." But what does Sidetree require instead?_
+Sidetree is dependent of:
+1. Proper IPFS data management and Identity and Access Management via API keys?
+2. Reasonable fees and confirmation-times on layer 1
+3. Mining and governance of the layer 1 blockchain it settles on.
+4. Ongoing development and blockchain maintenance for safety of the records now and in the future.
+5. {TBW}
+_(@henkvancann)_
 
 ## What would you see as the main drawback of Sidetree?
 {TBW}
