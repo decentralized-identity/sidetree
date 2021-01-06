@@ -626,7 +626,7 @@ describe('OperationProcessor', async () => {
         };
 
         const modifiedUpdateOperation = await UpdateOperation.parse(anchoredUpdateOperationModel.operationBuffer);
-        // set to undefined to satify the test condition of it being undefined
+        // set to undefined to satisfy the test condition of it being undefined
         (modifiedUpdateOperation.delta as any) = undefined;
         // mock the function to return the modified result
         spyOn(UpdateOperation, 'parse').and.returnValue(Promise.resolve(modifiedUpdateOperation));
@@ -639,7 +639,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document.publicKeys.length).toEqual(1);
       });
 
-      it('should not apply update operation if delta deos not match delta hash', async () => {
+      it('should not apply update operation if delta does not match delta hash', async () => {
         // Create an update using the create operation generated in `beforeEach()`.
         const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
@@ -660,7 +660,7 @@ describe('OperationProcessor', async () => {
         };
 
         const modifiedUpdateOperation = await UpdateOperation.parse(anchoredUpdateOperationModel.operationBuffer);
-        // set to empty object to satify the test condition of not matching delta hash
+        // set to empty object to satisfy the test condition of not matching delta hash
         (modifiedUpdateOperation.delta as any) = {};
         // mock the function to return the modified result
         spyOn(UpdateOperation, 'parse').and.returnValue(Promise.resolve(modifiedUpdateOperation));
@@ -673,15 +673,16 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document.publicKeys.length).toEqual(1);
       });
 
-      it('should not apply update operation if document compose fails to apply the operation', async () => {
+      it('should treat update a success and increment update commitment if any patch failed to apply.', async () => {
         // Create an update using the create operation generated in `beforeEach()`.
         const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
+        const nextUpdateCommitment = OperationGenerator.generateRandomHash();
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
           signingPublicKey.publicKeyJwk,
           signingPrivateKey,
           additionalKey,
-          OperationGenerator.generateRandomHash()
+          nextUpdateCommitment
         );
         const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
         const anchoredUpdateOperationModel: AnchoredOperationModel = {
@@ -693,10 +694,16 @@ describe('OperationProcessor', async () => {
           operationIndex: 2
         };
 
+        // Intentionally failing update patches.
         spyOn(DocumentComposer, 'applyUpdateOperation').and.throwError('Expected test error');
 
+        // The expected outcome of patch application failure (but all integrity checks including schema checks are passed )is:
+        // 1. Operation is considered successful.
+        // 2. Update commitment is updated/incremented.
+        // 3. DID document state remains the unchanged (same as prior to the patches being applied).
         const newDidState = await operationProcessor.apply(anchoredUpdateOperationModel, didState);
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
+        expect(newDidState!.lastOperationTransactionNumber).toEqual(2);
+        expect(newDidState!.nextUpdateCommitmentHash).toEqual(nextUpdateCommitment);
         expect(newDidState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.

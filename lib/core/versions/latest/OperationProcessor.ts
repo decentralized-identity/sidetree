@@ -163,25 +163,23 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     };
 
+    // Passed all verifications, must update the update commitment value even if the application of patches fail.
+    const newDidState = {
+      nextRecoveryCommitmentHash: didState.nextRecoveryCommitmentHash,
+      document: didState.document,
+      nextUpdateCommitmentHash: operation.delta.updateCommitment,
+      lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
+    };
+
     let resultingDocument;
     try {
       resultingDocument = await DocumentComposer.applyUpdateOperation(operation, didState.document);
+      newDidState.document = resultingDocument;
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const transactionNumber = anchoredOperationModel.transactionNumber;
       Logger.info(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
-
-      // Return the given DID state if error is encountered applying the patches.
-      return didState;
     }
-
-    const newDidState = {
-      nextRecoveryCommitmentHash: didState.nextRecoveryCommitmentHash,
-      // New values below.
-      document: resultingDocument,
-      nextUpdateCommitmentHash: operation.delta!.updateCommitment,
-      lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
-    };
 
     return newDidState;
   }
