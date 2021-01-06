@@ -5,6 +5,7 @@ import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import InputValidator from './InputValidator';
+import JsObject from './util/JsObject';
 import PatchAction from './PatchAction';
 import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
@@ -343,24 +344,23 @@ export default class DocumentComposer {
   /**
    * Applies the given patches in order to the given document.
    * NOTE: Assumes no schema validation is needed, since validation should've already occurred at the time of the operation being parsed.
-   * @returns The resultant document.
    */
-  public static applyPatches (document: any, patches: any[]): any {
+  public static applyPatches (document: any, patches: any[]) {
     // Loop through and apply all patches.
-    let resultantDocument = document;
     for (const patch of patches) {
-      resultantDocument = DocumentComposer.applyPatchToDidDocument(resultantDocument, patch);
+      DocumentComposer.applyPatchToDidDocument(document, patch);
     }
-
-    return resultantDocument;
   }
 
   /**
    * Applies the given patch to the given DID Document.
    */
-  private static applyPatchToDidDocument (document: DocumentModel, patch: any): any {
+  private static applyPatchToDidDocument (document: DocumentModel, patch: any) {
     if (patch.action === PatchAction.Replace) {
-      return patch.document;
+      // In-place replacement of the document.
+      JsObject.clearObject(document);
+      Object.assign(document, patch.document);
+      return;
     } else if (patch.action === PatchAction.AddPublicKeys) {
       return DocumentComposer.addPublicKeys(document, patch);
     } else if (patch.action === PatchAction.RemovePublicKeys) {

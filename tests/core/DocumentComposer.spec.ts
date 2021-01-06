@@ -494,23 +494,47 @@ describe('DocumentComposer', async () => {
 
   describe('applyPatches()', async () => {
     it('should add a key even if no keys exist yet.', async () => {
-      const document: DocumentModel = {
-      };
+      const document: DocumentModel = { };
+
+      const newKey = { id: 'aNonRepeatingId', type: 'someType', publicKeyJwk: { } }
       const patches = [
         {
           action: PatchAction.AddPublicKeys,
-          publicKeys: [
-            { id: 'aNonRepeatingId', type: 'someType' }
-          ]
+          publicKeys: [newKey]
         }
       ];
 
-      const resultantDocument = DocumentComposer.applyPatches(document, patches);
+      DocumentComposer.applyPatches(document, patches);
 
-      expect(resultantDocument.publicKeys).toEqual([
-        { id: 'aNonRepeatingId', type: 'someType' }
-      ]);
+      expect(document.publicKeys).toEqual([newKey]);
 
+    });
+
+    it('should replace old state entirely if the patch action is a replace.', async () => {
+      const document: DocumentModel = {
+        publicKeys: [{ id: 'anyKeyId', type: 'someType', publicKeyJwk: 'any value' }],
+        services: []
+      };
+
+      // A replace patch that will remove all public keys and add a service endpoint.
+      const patches = [{
+        action: PatchAction.Replace,
+        document: {
+          publicKeys: [],
+          services: [
+            {
+              id: 'key1',
+              type: 'URL',
+              serviceEndpoint: 'https://ion.is.cool/'
+            }
+          ]
+        }
+      }];
+
+      DocumentComposer.applyPatches(document, patches);
+
+      expect(document.publicKeys?.length).toEqual(0);
+      expect(document.services?.length).toEqual(1);
     });
 
     it('should replace old key with the same ID with new values.', async () => {
@@ -518,22 +542,21 @@ describe('DocumentComposer', async () => {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
         services: []
       };
+
+      const newKeys = [
+        { id: 'aRepeatingId', type: 'newTypeValue', publicKeyJwk: 'any new value' },
+        { id: 'aNonRepeatingId', type: 'someType', publicKeyJwk: 'any value' }
+      ];
       const patches = [
         {
           action: PatchAction.AddPublicKeys,
-          publicKeys: [
-            { id: 'aRepeatingId', type: 'newTypeValue' },
-            { id: 'aNonRepeatingId', type: 'someType' }
-          ]
+          publicKeys: newKeys
         }
       ];
 
-      const resultantDocument = DocumentComposer.applyPatches(document, patches);
+      DocumentComposer.applyPatches(document, patches);
 
-      expect(resultantDocument.publicKeys).toEqual([
-        { id: 'aRepeatingId', type: 'newTypeValue' },
-        { id: 'aNonRepeatingId', type: 'someType' }
-      ]);
+      expect(document.publicKeys).toEqual(newKeys);
     });
 
     it('should throw if action is not a valid patch action', async () => {

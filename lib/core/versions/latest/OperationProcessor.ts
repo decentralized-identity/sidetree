@@ -6,6 +6,7 @@ import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import IOperationProcessor from '../../interfaces/IOperationProcessor';
+import JsObject from './util/JsObject';
 import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Logger from '../../../common/Logger';
 import Multihash from './Multihash';
@@ -117,7 +118,7 @@ export default class OperationProcessor implements IOperationProcessor {
     // update the commitment hash regardless
     newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
     try {
-      document = DocumentComposer.applyPatches(document, delta.patches);
+      DocumentComposer.applyPatches(document, delta.patches);
       newDidState.document = document;
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
@@ -171,13 +172,12 @@ export default class OperationProcessor implements IOperationProcessor {
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
-    let resultingDocument;
     try {
       // NOTE: MUST pass DEEP COPY of the DID Document to `DocumentComposer` such that in the event of a patch failure,
       // the original document is not modified.
-      const documentDeepCopy = OperationProcessor.deepCopyObject(didState.document);
-      resultingDocument = await DocumentComposer.applyPatches(documentDeepCopy, operation.delta.patches);
-      newDidState.document = resultingDocument;
+      const documentDeepCopy = JsObject.deepCopyObject(didState.document);
+      DocumentComposer.applyPatches(documentDeepCopy, operation.delta.patches);
+      newDidState.document = documentDeepCopy;
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const transactionNumber = anchoredOperationModel.transactionNumber;
@@ -236,7 +236,7 @@ export default class OperationProcessor implements IOperationProcessor {
     // update the commitment hash regardless
     newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
     try {
-      document = DocumentComposer.applyPatches(document, delta.patches);
+      DocumentComposer.applyPatches(document, delta.patches);
       newDidState.document = document;
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
@@ -280,22 +280,5 @@ export default class OperationProcessor implements IOperationProcessor {
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
     return newDidState;
-  }
-
-  private static deepCopyObject (input: any): any {
-    if (typeof input !== 'object') {
-      return input;
-    }
-
-    const deepCopy: any = Array.isArray(input) ? [] : {};
-
-    for (const key in input as object) {
-      const value = input[key];
-
-      // Recursively deep copy properties.
-      deepCopy[key] = OperationProcessor.deepCopyObject(value);
-    }
-
-    return deepCopy;
   }
 }
