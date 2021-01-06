@@ -166,6 +166,10 @@ Propagation operations use deltas as input and output rather than compute them i
 
 [Source and more info](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.386.7739&rep=rep1&type=pdf)
 
+#### Deterministic Ruleset (of Sidetree)
+Which guarantees only one `fork` of a DID’s state history can ever be valid.\
+To better understand this, read this [section](https://identity.foundation/sidetree/spec/#late-publishing) that illustrates a DID owner, Alice, creating forks by creating and anchoring operations in the past that she does not expose to the network. Known as _Late Publishing_ of a DID operation. 
+
 #### Entropy
 Unpredictable information. Often used as a _secret_ or as input to a _key_ generation algorithm.[More](https://en.wikipedia.org/wiki/Entropy_(information_theory))
 
@@ -178,8 +182,8 @@ Entities are not limited to natural persons but may include groups, organization
 A unique entity. Typically represented with a unique identifier.
 
 #### JSON Web Key
-A JSON Web Key (JWK) is a JavaScript Object Notation (JSON) data structure that represents a cryptographic key. [More info](https://tools.ietf.org/html/rfc7517).
-The following example JWK declares that the key is an Elliptic Curve key, it is used with the P-256 Elliptic Curve, and its x and y coordinates are the base64url-encoded values shown.  A key identifier is also provided for the key:
+A JSON Web Key (JWK) is a JavaScript Object Notation (JSON) data structure that represents a cryptographic key. [More info](https://tools.ietf.org/html/rfc7517).\
+The following **example** JWK declares that the key is an Elliptic Curve key, it is used with the P-256 Elliptic Curve, and its x and y coordinates are the base64url-encoded values shown.  A key identifier is also provided for the key:
 ```
      {"kty":"EC",
       "crv":"P-256",
@@ -332,6 +336,10 @@ _(@henkvancann)_
 
 ## In what can we find the efficiency booster that Sidetree promises to be?
 Sidetree nodes that participate in writing operations into the overlay network do so by **anchoring** Content-Addressable Storage (`CAS`) (e.g. IPFS) references to **aggregated** bundles of operations in an underlying ledger.
+
+## "Process operations in accordance with the protocol deterministic ruleset." What does this mean?
+Read this [section](https://identity.foundation/sidetree/spec/#late-publishing) that illustrates a DID owner, Alice, creating forks by creating and anchoring operations in the past that she does not expose to the network. Known as _Late Publishing_ of a DID operation.\
+This type of processing guarantees only one `fork` of a DID’s state history can ever be valid.
 
 ## What would you see as the main drawback of Sidetree?
 {TBW}
