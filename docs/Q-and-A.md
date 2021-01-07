@@ -84,6 +84,7 @@ We've done our best to protect the privacy of the Github by investigating the im
   * [Who is Sidetree? Is it a company or a not for profit?](#who-is-sidetree--is-it-a-company-or-a-not-for-profit)
   * [In what programming languages is Sidetree available?](#in-what-programming-languages-is-sidetree-available)
   * [Does Sidetree cooperate with other projects in the self-sovereign Identity field?](#does-sidetree-cooperate-with-other-projects-in-the-self-sovereign-identity-field)
+  * [Why is Microsoft so interested in supporting these developments?](#Why-is-Microsoft-so-interested-in-supporting-these-developments)
   * [What's the diffrence between a `normative` and `non-normative` description or theory?](#what-s-the-diffrence-between-a--normative--and--non-normative--description-or-theory)
   * [Is Sidetree privacy preserving / GPDR proof?](#is-sidetree-privacy-preserving---gpdr-proof)
 - [Q&A section Sidetree operational](#qa-section-sidetree-operational)
@@ -410,6 +411,13 @@ _(@henkvancann)_
 ## Does Sidetree cooperate with other projects in the self-sovereign Identity field?
 Yes, Sidetree sits under the *Decentralized Identity Foundation*, [DIF](https://identity.foundation), and is part of the *Identity and Discovery* Workgroup. {TBW There are also non-formal relation with the newly launched trust-over-ip foundation?, how / where does Sidetree fit in trust-over-ip?
 
+## Why is Microsoft so interested in supporting these developments?
+_What's the value to Microsoft in working on this?_
+
+There's a lot of things you just can't do with an identity safely unless people own their own IDs. So they can't find moneyed special deals with say just LinkedIn or just any email provider, or something like that, that might have a specific integration. It actually unlocks the ability to do a lot of different things, like do digital diplomas at scale, to do credentialing for skills and stuff like that, at scale.
+
+In a way that's also standardized, like right now, it's just like people can issue these badges, there's different badge protocols. But it's pretty ad hoc, there's no real systemic way of find them and verify them and it's kind of a mess. So in order for us to unlock a ton of business opportunity in LinkedIn, in other investments we've made, things like GitHub and all these other things, you have to have users owning their own ID. It can't be a Microsoft-owned ID or it's just not safe to do these certain use cases.
+
 ## What's the diffrence between a `normative` and `non-normative` description or theory?
 See the [definitions](#normative) section for what both are. For example, theories of ethics are generally `normative` - you should not kill, you should help that person, etc. Economics is most commonly `non-normative` - instead of asking “how should this person choose which goods to buy?”, we are often more interested in “how does this person choose which commodities they buy?”.
 
@@ -603,6 +611,18 @@ To store transactions between - and changes to DDO's. Sidetree is a Layer 2 solu
 ## How to delegate control over my private keys that control my identifiers?
 {TBW}
 # Q&A section Blockchain
+
+## what does an ID system gain from a blockchain?
+I would actually harken back to what Satoshi first called Bitcoin before it was blockchain, which was timechain. It turns out that `PKI`, which is public key infrastructure and that's like the thing that backs identifiers. I'll give you an analogy of what one is today. An existing example is the DNS system.
+
+The identifier is a domain name and then the backing PKI data is your zone file in DNS that lists your named servers, routing information, then there's the certificate of authorities that have the sort of the backing cryptography. So that's an example of a PKI system. Every PKI system, if it isn't centralized, like a system where they just kind of decree that this users is usurped, if you want to decentralize that, the most important piece is having a global immutable append-only log, because everyone needs to see the state of some identifier. Like if Alice creates an ID and she initially associates, say her phone that she has at the time with her ID and a public key on it, when she goes to get a new phone, she's going to switch that key up.
+
+So everyone needs to be able to see that event, globally and deterministically, or else someone could masquerade as Alice. They could say, "Well, I have her old key so I'm her." You have to have this sort of linear chronology of what happened when, it's a state machine. So what a blockchain does, really elegantly that we never had before, is it's an oracle for entering events into a chronology. That's exactly what we use it for. In its most primitive sense, we use Bitcoin to enter in events in a chronology that nodes sort of watch for and compute so they all can understand the state of every ID that's anchored in Bitcoin. So it's very important.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
+
+## So why would we pick Bitcoin versus some other blockchain, like Ethereum or Hyperledger?
+Because we're not actually concerned with any of the super sexy smart contracts, interesting... Whatever you might call it. Not to say that there's less interesting stuff in Bitcoin, but we just don't care about features like that, that is not applicable for us. What we most care about is entering stuff in the most immutable, hardened record imaginable and right now, that's Bitcoin. It's pretty hard to argue that isn't Bitcoin, so that's why we use it, is because it has those attributes and it suffices, it does exactly what we need it to do.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
 ## Does Sidetree use a blockchain?
 Yes, it needs a global blockchain to provide an ordered settlement layer 1 that has reached consensus over the unique representation of the "truth". Sidetree sits on top of this Layer 1, in layer 2 of the `ToIP model` and is blockchain agnostic.\
