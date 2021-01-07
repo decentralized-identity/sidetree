@@ -490,15 +490,17 @@ The rules and parameters of the Sidetree protocol may change in the future, resu
 New versions of the protocol, or modifications to parameter values by implementers, muat be activated at a specified _Ledger Time_ so **all nodes can remain in sync by enforcing the same ruleset and parameters** beginning at the same logical starting point.\ 
 All transactions that occur after the specified Ledger Time will adhere to the associated version’s rules and parameters until a newer version of the protocol is defined and implemented at a future Ledger Time.\
 New Version Activation is **necessary for Minor and Major version segments**; the ones with breaking protocol advancements, and protocol forking changes, or security patches.
-{_@henkvancann_}
+_(@henkvancann)_
 
 ## How to handle multiple formats of Sidetree JSON files through time. Will they be backwards compatible?
 
 
 ## Could Sidetree work with be pruned or charded blockchains?
-{TBW}
+No, any node needs a full copy of the blockchain that serves as a settlement layer 1. The reason is ordering of operation on DID is done via consensus of the blockchain.\
+_(@henkvancann)_
 ## How to bootstrap Sidetree on the internet? Is it like fax machine; the more there are the more effective it is?
-{TBW}
+It's bootstrapped by the first DID method that uses Sidetree under the hood. The more use of those DIDs the more Sidetree gets used.  However, there is no network effect as such from extended use. None-the-less there is a huge network effect when mulitple DID methods are running on Sidetree, because they share the same resolution, protocol and file structure in the CAS.
+_(@henkvancann)_
 
 # Q&A section Userinterface
 
