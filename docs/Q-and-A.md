@@ -25,6 +25,7 @@ None of the respondents in the **open** repo and presentations have been explici
 If there is no reference added to the answers, then its content stems from either one or more of these sources
 - [Spec]https://identity.foundation/sidetree/spec/
 - [Github Sidetree](https://github.com/decentralized-identity/sidetree)
+- [What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 - it's Daniel Buchner or Henry Tsai who answered the question. 
 Most of the editing is done by @henkvancann, which might have introduced ommission, errors, language glitches and such. Sorry for that, feel free to correct by submitting a pull request (PR).\
 For practical reasons educational images uploaded by Github members may have been downloaded. We de-personalised them by giving images a new name. Under these new names these images have been uploaded to github and used in the Q&A to clarify the questions and answers.
@@ -75,6 +76,7 @@ We've done our best to protect the privacy of the Github by investigating the im
   * [What is the setting of sidetree?](#what-is-the-setting-of-sidetree)
   * [How is the inner working of Sidetree?](#how-is-the-inner-working-of-sidetree)
   * [For who is Sidetree?](#for-who-is-sidetree)
+  * [Why should we care about Sidetree or Self Sovereign Identity](#Why-should-we-care-about-Sidetree-or-Self-Sovereign-Identity)
   * [Why use Sidetree?](#why-use-sidetree)
   * [What is so unique to Sidetree?](#what-is-so-unique-to-sidetree)
   * [Is Sidetree a DID?](#is-sidetree-a-did)
@@ -358,6 +360,16 @@ The protocol allows users to create _globally unique, user-controlled identifier
 Any team or organisation that wants to create an DID based on Sidetree, because of its typical Layer 2 properties, not bloating any Layer 1 solution. Laying a foundation for layer 3 development,  in the DID to be developed,  that will result in W3C DID compliant VCs.
 _(@henkvancann)_
 
+## Why should we care about Sidetree or Self Sovereign Identity
+We don't have any native identity today. You can't really have a verified presence in the world. Like if you're getting scammers impersonating you all the time on social media channels, it's really hard. You deserve to have that presence in the digital world, just like you are a person in the real world. 
+
+Even your Twitter handle, for instance, as we know is **certainly leased** to you. These are identifiers that _can be taken from you_ at any time for any number of reasons, whether it be a social provider who doesn't like what you wrote and you're suspended or it's removed or maybe a company just goes out of business.
+
+If you assert your identity and it's backed by strong cryptography, someone browsing an application on the web could validate it themselves. I think that's what we really want to empower people to do, is remove this pressure point from gatekeepers because a lot of them are not even incentivized to care.
+
+We're moving everything to a digital world, just like we don't have paper mail, we have email now. When those things happen, proofs like, 'do you own your car?' or 'the deed to your house', all that kind of stuff, when that starts getting digitized and tied to some identifier, it really better be an identifier that can't be taken from you at a whim, by either a company or some bad actor because that would be pretty scary.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
+
 ## Why use Sidetree?
 It is a DIDComm layer (2); which is layer 1 agnostic and uses Layer 1 very efficiently. Sidetree does not require trusted intermediaries, centralized authorities, special protocol tokens, or secondary consensus mechanisms, while preserving the core attributes of decentralization and immutability of the underlying ledger systems it is implemented on.
 _(@henkvancann)_
@@ -447,12 +459,12 @@ DID Methods based on the Sidetree protocol all share the same identifier format.
 ## How does Sidetree scale
 This image speaks a thousand words:\
 <img src="./images/Sidetree-file-structure.png" alt="Sidetree file structure" border="0" width="500">
-Sidetree is a lean and mean structure. The content of Sidetree mainly consists of JSON files of hashes, signatures and other cryptographical proofs and pointers. And it connects to other highly scaleable technologies, like IPFS and blockchains.
-<img src="./images/sidetree-logo.png" alt="Sidetree logo" border="0" width="100" align="left">
+Sidetree is a lean and mean structure. The content of Sidetree mainly consists of JSON files of hashes, signatures and other cryptographical proofs and pointers. And it connects to other highly scaleable technologies, like IPFS and blockchains.\
+<img src="./images/sidetree-logo.png" alt="Sidetree logo" border="0" width="100" align="right">
 The importance of this structure for scaleability is rewarded in the Sidetree-logo.
 
 ## How does Sidetree keep data internally consistent over nodes?
-In brief: By using **delta-based** Conflict-Free Replicated Data Types. _(@henkvancann)_\
+In brief: By using **delta-based** Conflict-Free Replicated Data Types. _(@henkvancann)_
 
 Despite early availability on the market, `BX` tools did not gain much user appreciation because of semantic issues. A user should clearly understand the behavior of synchronization procedures implemented by a tool. The majority of algebraic BX frameworks are _state-based_. Synchronizing operations take the states of models before and after update as input, and produce new states of models as output. This design assumes that model alignment, i.e., discovering relations (deltas) between models,
 is done by update propagating procedures themselves. Hence, two quite different operations—heuristics-based delta discovery and algebraic delta propagation are merged, which causes several theoretical and practical problems; See the source for several examples.\
@@ -541,9 +553,7 @@ _(@henkvancann)_
 # File structure
 
 ## What do we need IPFS for?
-To store transactions between and changes to DDO's. Sidetree is Layer 2 solution on top of a Layer 1 settlement layer: a blockchain of choice.
-
-minimize permanently retained data
+To store transactions between - and changes to DDO's. Sidetree is a Layer 2 solution on top of a Layer 1 settlement layer: a blockchain of choice.
 
 # Q&A section Wallets
 
