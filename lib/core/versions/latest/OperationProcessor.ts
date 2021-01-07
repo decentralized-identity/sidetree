@@ -6,6 +6,7 @@ import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import IOperationProcessor from '../../interfaces/IOperationProcessor';
+import JsObject from './util/JsObject';
 import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Logger from '../../../common/Logger';
 import Multihash from './Multihash';
@@ -112,12 +113,12 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // Apply the given patches against an empty object.
     const delta = operation.delta;
-    let document = { };
 
-    // update the commitment hash regardless
+    // Update the commitment hash regardless of patch application outcome.
     newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
     try {
-      document = DocumentComposer.applyPatches(document, delta.patches);
+      const document = { };
+      DocumentComposer.applyPatches(document, delta.patches);
       newDidState.document = document;
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
@@ -163,25 +164,25 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     };
 
-    let resultingDocument;
+    // Passed all verifications, must update the update commitment value even if the application of patches fail.
+    const newDidState = {
+      nextRecoveryCommitmentHash: didState.nextRecoveryCommitmentHash,
+      document: didState.document,
+      nextUpdateCommitmentHash: operation.delta.updateCommitment,
+      lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
+    };
+
     try {
-      resultingDocument = await DocumentComposer.applyUpdateOperation(operation, didState.document);
+      // NOTE: MUST pass DEEP COPY of the DID Document to `DocumentComposer` such that in the event of a patch failure,
+      // the original document is not modified.
+      const documentDeepCopy = JsObject.deepCopyObject(didState.document);
+      DocumentComposer.applyPatches(documentDeepCopy, operation.delta.patches);
+      newDidState.document = documentDeepCopy;
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const transactionNumber = anchoredOperationModel.transactionNumber;
       Logger.info(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
-
-      // Return the given DID state if error is encountered applying the patches.
-      return didState;
     }
-
-    const newDidState = {
-      nextRecoveryCommitmentHash: didState.nextRecoveryCommitmentHash,
-      // New values below.
-      document: resultingDocument,
-      nextUpdateCommitmentHash: operation.delta!.updateCommitment,
-      lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
-    };
 
     return newDidState;
   }
@@ -230,12 +231,12 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // Apply the given patches against an empty object.
     const delta = operation.delta;
-    let document = { };
 
     // update the commitment hash regardless
     newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
     try {
-      document = DocumentComposer.applyPatches(document, delta.patches);
+      const document = { };
+      DocumentComposer.applyPatches(document, delta.patches);
       newDidState.document = document;
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;

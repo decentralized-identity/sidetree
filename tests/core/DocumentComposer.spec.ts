@@ -3,6 +3,7 @@ import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import JsObject from '../../lib/core/versions/latest/util/JsObject';
 import OperationGenerator from '../generators/OperationGenerator';
 import PatchAction from '../../lib/core/versions/latest/PatchAction';
 import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
@@ -125,9 +126,9 @@ describe('DocumentComposer', async () => {
         }]
       };
 
-      const result = DocumentComposer['addServices'](document, patch);
+      DocumentComposer['addServices'](document, patch);
 
-      expect(result.services).toEqual([{ id: 'someId', type: 'someType', serviceEndpoint: 'someEndpoint' }]);
+      expect(document.services).toEqual([{ id: 'someId', type: 'someType', serviceEndpoint: 'someEndpoint' }]);
     });
   });
 
@@ -136,14 +137,15 @@ describe('DocumentComposer', async () => {
       const document: DocumentModel = {
         services: OperationGenerator.generateServices(['anyServiceId'])
       };
+      const deepCopyOriginalDocument = JsObject.deepCopyObject(document);
 
       const patch = {
         action: PatchAction.RemovePublicKeys,
         ids: ['1', '3']
       };
 
-      const result = DocumentComposer['removePublicKeys'](document, patch);
-      expect(result).toEqual(document);
+      DocumentComposer['removePublicKeys'](document, patch);
+      expect(document).toEqual(deepCopyOriginalDocument);
     });
   });
 
@@ -164,7 +166,7 @@ describe('DocumentComposer', async () => {
         ids: ['1', '3']
       };
 
-      const result = DocumentComposer['removeServices'](document, patch);
+      DocumentComposer['removeServices'](document, patch);
 
       const expected = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
@@ -174,21 +176,22 @@ describe('DocumentComposer', async () => {
         ]
       };
 
-      expect(result).toEqual(expected);
+      expect(document).toEqual(expected);
     });
 
     it('should leave document unchanged if it does not have `services` property', () => {
       const document: DocumentModel = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }]
       };
+      const deepCopyOriginalDocument = JsObject.deepCopyObject(document);
 
       const patch = {
         action: PatchAction.RemoveServices,
         ids: ['1', '3']
       };
 
-      const result = DocumentComposer['removeServices'](document, patch);
-      expect(result).toEqual(document);
+      DocumentComposer['removeServices'](document, patch);
+      expect(document).toEqual(deepCopyOriginalDocument);
     });
   });
 
@@ -494,23 +497,47 @@ describe('DocumentComposer', async () => {
 
   describe('applyPatches()', async () => {
     it('should add a key even if no keys exist yet.', async () => {
-      const document: DocumentModel = {
-      };
+      const document: DocumentModel = { };
+
+      const newKey = { id: 'aNonRepeatingId', type: 'someType', publicKeyJwk: { } };
       const patches = [
         {
           action: PatchAction.AddPublicKeys,
-          publicKeys: [
-            { id: 'aNonRepeatingId', type: 'someType' }
-          ]
+          publicKeys: [newKey]
         }
       ];
 
-      const resultantDocument = DocumentComposer.applyPatches(document, patches);
+      DocumentComposer.applyPatches(document, patches);
 
-      expect(resultantDocument.publicKeys).toEqual([
-        { id: 'aNonRepeatingId', type: 'someType' }
-      ]);
+      expect(document.publicKeys).toEqual([newKey]);
 
+    });
+
+    it('should replace old state entirely if the patch action is a replace.', async () => {
+      const document: DocumentModel = {
+        publicKeys: [{ id: 'anyKeyId', type: 'someType', publicKeyJwk: 'any value' }],
+        services: []
+      };
+
+      // A replace patch that will remove all public keys and add a service endpoint.
+      const patches = [{
+        action: PatchAction.Replace,
+        document: {
+          publicKeys: [],
+          services: [
+            {
+              id: 'key1',
+              type: 'URL',
+              serviceEndpoint: 'https://ion.is.cool/'
+            }
+          ]
+        }
+      }];
+
+      DocumentComposer.applyPatches(document, patches);
+
+      expect(document.publicKeys?.length).toEqual(0);
+      expect(document.services?.length).toEqual(1);
     });
 
     it('should replace old key with the same ID with new values.', async () => {
@@ -518,22 +545,21 @@ describe('DocumentComposer', async () => {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
         services: []
       };
+
+      const newKeys = [
+        { id: 'aRepeatingId', type: 'newTypeValue', publicKeyJwk: 'any new value' },
+        { id: 'aNonRepeatingId', type: 'someType', publicKeyJwk: 'any value' }
+      ];
       const patches = [
         {
           action: PatchAction.AddPublicKeys,
-          publicKeys: [
-            { id: 'aRepeatingId', type: 'newTypeValue' },
-            { id: 'aNonRepeatingId', type: 'someType' }
-          ]
+          publicKeys: newKeys
         }
       ];
 
-      const resultantDocument = DocumentComposer.applyPatches(document, patches);
+      DocumentComposer.applyPatches(document, patches);
 
-      expect(resultantDocument.publicKeys).toEqual([
-        { id: 'aRepeatingId', type: 'newTypeValue' },
-        { id: 'aNonRepeatingId', type: 'someType' }
-      ]);
+      expect(document.publicKeys).toEqual(newKeys);
     });
 
     it('should throw if action is not a valid patch action', async () => {
