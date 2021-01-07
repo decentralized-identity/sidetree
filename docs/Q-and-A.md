@@ -3,7 +3,7 @@
 
 Why should you read or step through the Q&A? To get a different angle to the same topic: Sidetree.
 
-<img src="../www/diagrams/sidetree-logo.png" alt="Sidetree logo" border="0" width="300">
+<img src="./images/sidetree-logo.png" alt="Sidetree logo" border="0" width="300">
 
 ```
 {TBW} means: to be written
@@ -360,7 +360,11 @@ This type of processing guarantees only one `fork` of a DID’s state history ca
 {TBW}
 
 ## How does Sidetree scale
-{TBW}
+This image speaks a thousand words:\
+<img src="./images/sidetree-file-structure.png" alt="Sidetree file structure" border="0" width="500">
+Sidetree is a lean and mean structure. The content of Sidetree mainly consists of JSON files of hashes, signatures and other cryptographical proofs and pointers. And it connects to other highly scaleable technologies, like IPFS and blockchains.
+<img src="./images/sidetree-logo.png" alt="Sidetree logo" border="0" width="300" align="left">
+The importance of this structure for scaleability is rewarded in the Sidetree-logo.
 
 ## How does Sidetree keep data internally consistent over nodes?
 In brief: By using **delta-based** Conflict-Free Replicated Data Types. _(@henkvancann)_\
@@ -374,7 +378,8 @@ To summarize: Sidetree keeps data consitent by using a delta-based tree-oriented
 _(@henkvancann)_
 
 ## How does Sidetree keep identifiers secure?
-{TBW}
+ - Internally by commitment schemes
+ - Externally by stressing the importance of proper key management
 
 ## How does Sidetree handle `race conditions`?
 {TBW} 
@@ -507,7 +512,9 @@ Yes, Sidetree is blockchain agnostic. \
 _(@henkvancann)_
 
 ## What's the difference between Sidetree and blockchain?
-Lots. There are only a few similarities for the record:
+Lots, it's a totally different beast. There are only a few similarities, for the record:
+- THe tree-like structure of Side-tree resembles the Merkletree in which blockchain tend to store proofs of transactions (hashes)
+- Core Proof Files form the signature-chained backbone for the state lineages of all DIDs in the system. 
 
 ## Why does Sidetree need a blockchain? 
 _...when it has nodes in a network that could federatively establish consensus?_
