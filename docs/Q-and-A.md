@@ -3,7 +3,7 @@
 
 Why should you read or step through the Q&A? To get a different angle to the same topic: Sidetree.
 
-<img src="./images/sidetree-logo.png" alt="Sidetree logo" border="0" width="300">
+<img src="./images/sidetree-logo.png" alt="Sidetree logo" border="0" width="150">
 
 ```
 {TBW} means: to be written
@@ -227,6 +227,14 @@ The root-of-trust is consistent attribution via verifiable integral non-repudiab
 #### Secret
 Information controlled by an identity. MAY be used to derive _key_s.
 
+#### Self Certifying Identifier
+In brief: A self-certifying identifier cryptographically binds an identifier to a key-pair.\
+A controller issues an own Identifier by binding a generated public private keypair to an identifier. After this a controller is able to sign the identifier and create a certificate. Also called a _cryptonym_. The simplest form of a self-certifying identifier includes either the public key or a unique fingerprint of the public key as a `prefix` in the identifier. Image from [KERI](https://github.com/decentralized-identity/keri):
+
+<img src="./images/sci_issue_bind.png" alt="Self Certifying Identifier issuance and binding" border="0" width="400">
+
+The root-of-trust is fully cryptographic, there is no infrastructure associated with it. If we start there we can build a secure system on top of that. It means SCI gives us strong bindings between the keypair, the controller and the identifier. And so it fixes the main weakness of any administratively issued identifier asserting the binding between the keypair and the identifier and between the controller and the identifier, replacing them with all cryptographically strong bindings.
+
 #### Self Sovereign Identity
 SSI is a new model for Internet-scale digital identity based on an emerging set of protocols, cutting edge cryptography and open standards. Technological and social movements have come together that make SSI possible.\
 [Source](https://livebook.manning.com/book/self-sovereign-identity/chapter-1/v-8/14).\
@@ -275,9 +283,13 @@ The protocol allows users to create _globally unique, user-controlled identifier
 <img src="../www/diagrams/architecture.png" alt="Architecture of Sidetree" border="0" width="400">
 
 ## For who is Sidetree?
-{TBW}
+Any team or organisation that wants to create an DID based on Sidetree, because of its typical Layer 2 properties, not bloating any Layer 1 solution. Laying a foundation for layer 3 development,  in the DID to be developed,  that will result in W3C DID compliant VCs.
+_(@henkvancann)_
+
 ## Why use Sidetree?
-{TBW}
+It is a DIDComm layer (2); which is layer 1 agnostic and uses Layer 1 very efficiently. Sidetree does not require trusted intermediaries, centralized authorities, special protocol tokens, or secondary consensus mechanisms, while preserving the core attributes of decentralization and immutability of the underlying ledger systems it is implemented on.
+_(@henkvancann)_
+
 ## What is so unique to Sidetree?
 Current approaches that utilize these ledger systems to create decentralized identifier networks suffer from severely limited transactional volumes and other performance issues. Sidetree is a ‘Layer 2’ protocol that runs atop decentralized ledger systems.\
 Sidetree has a very small footprint on Settlement Layer 1 of the trust-over-IP model. It stashes multiple layer 2 identity transactions into one layer 1 transaction; it's "Lightning-Network-like" in Bitcoin.
@@ -351,19 +363,20 @@ Read this [section](https://identity.foundation/sidetree/spec/#late-publishing) 
 This type of processing guarantees only one `fork` of a DID’s state history can ever be valid.
 
 ## What would you see as the main drawback of Sidetree?
-{TBW}
+There aren't many. Sidetree has Self-Certifying Identifiers, however they are non-transferable. {Right?}
+_(@henkvancann)_
 
 ## How can it be one solution, fit for more DIDs? 
-{TBW}
+DID Methods based on the Sidetree protocol all share the same identifier format. The unique identifier segment of a Sidetree-based DID, known as the DID Suffix, is derived by using the Hashing Process to generate a hash value from the canonicalized Create Operation Suffix Data Object. The DID Suffix is cryptographically bound to the initial PKI state of the DID, which means Sidetree DIDs are [self-certifying](#self-certifying-identifier).
 
-## Where you would need something quite different than Sidetree?
+## Where you would need something quite different than Sidetree to solve a similar problem?
 {TBW}
 
 ## How does Sidetree scale
 This image speaks a thousand words:\
-<img src="./images/sidetree-file-structure.png" alt="Sidetree file structure" border="0" width="500">
+<img src="./images/Sidetree-file-structure.png" alt="Sidetree file structure" border="0" width="500">
 Sidetree is a lean and mean structure. The content of Sidetree mainly consists of JSON files of hashes, signatures and other cryptographical proofs and pointers. And it connects to other highly scaleable technologies, like IPFS and blockchains.
-<img src="./images/sidetree-logo.png" alt="Sidetree logo" border="0" width="300" align="left">
+<img src="./images/sidetree-logo.png" alt="Sidetree logo" border="0" width="100" align="left">
 The importance of this structure for scaleability is rewarded in the Sidetree-logo.
 
 ## How does Sidetree keep data internally consistent over nodes?
@@ -509,9 +522,7 @@ minimize permanently retained data
 
 ## Does Sidetree use a blockchain?
 Yes, it needs a global blockchain to provide an ordered settlement layer 1 that has reached consensus over the unique representation of the "truth". Sidetree sits on top of this Layer 1, in layer 2 of the `ToIP model` and is blockchain agnostic.\
-<img src="./images/Trust-over-IP,jpeg" alt="Trust-over-IP model" border="0" width="500">
-
-
+<img src="./images/Trust-over-IP.jpeg" alt="Trust-over-IP model" border="0" width="500">
 _(@henkvancann)_
 
 ## What's the difference between Sidetree and blockchain?
