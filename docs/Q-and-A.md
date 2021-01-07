@@ -509,6 +509,9 @@ minimize permanently retained data
 
 ## Does Sidetree use a blockchain?
 Yes, it needs a global blockchain to provide an ordered settlement layer 1 that has reached consensus over the unique representation of the "truth". Sidetree sits on top of this Layer 1, in layer 2 of the `ToIP model` and is blockchain agnostic.\
+<img src="./images/Trust-over-IP,jpeg" alt="Trust-over-IP model" border="0" width="500">
+
+
 _(@henkvancann)_
 
 ## What's the difference between Sidetree and blockchain?
