@@ -26,6 +26,6 @@ The following steps define the [commitment scheme](#commitment-scheme) for gener
 
 1. Encode the public key into the form of a valid [JWK](https://tools.ietf.org/html/rfc7517).
 2. Canonicalize the [JWK](https://tools.ietf.org/html/rfc7517) encoded public key using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme).
-3. Use the implementation's [HASH_PROTOCOL](#hash-protocol) to the hash the canonicalized public key, then hash the resulting hash value again using the implementation's [HASH_PROTOCOL](#hash-protocol) to produce the [public key commitment](#public-key-commitment).
+3. Use the implementation's [`HASH_PROTOCOL`](#hash-protocol) to the hash the canonicalized public key to generate the [`REVEAL_VALUE`](#reveal-value), then hash the resulting hash value again using the implementation's [`HASH_PROTOCOL`](#hash-protocol) to produce the [public key commitment](#public-key-commitment).
 
-Implementers ****MUST NOT**** re-use public keys across different commitment invocations.
+Implementers ****MUST NOT**** re-use public key JWK payloads across different commitment invocations.

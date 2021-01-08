@@ -1,6 +1,6 @@
 ## Proof of Fee
 
-Sidetree implementers ****MAY**** choose to implement this section of protective mechanisms, which are designed to strengthen a Sidetree network against low-cost spurious operations. These mechanisms are primarily designed for open, permissionless implementations utilizing public blockchains that feature native crypto-economic systems.
+Sidetree implementers ****MAY**** choose to implement protective mechanisms designed to strengthen a Sidetree network against low-cost spurious operations. These mechanisms are primarily designed for open, permissionless implementations utilizing public blockchains that feature native crypto-economic systems.
 
 ### Base Fee Variable
 
