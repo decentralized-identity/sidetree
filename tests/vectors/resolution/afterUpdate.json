@@ -18,7 +18,7 @@
     "verificationMethod": [
       {
         "id": "#publicKeyModel1Id",
-        "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
+        "controller": "",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
@@ -29,7 +29,7 @@
       },
       {
         "id": "#additional-key",
-        "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
+        "controller": "",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
@@ -40,21 +40,21 @@
       }
     ],
     "authentication": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#publicKeyModel1Id",
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+      "#publicKeyModel1Id",
+      "#additional-key"
     ],
     "keyAgreement": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#publicKeyModel1Id",
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+      "#publicKeyModel1Id",
+      "#additional-key"
     ],
     "assertionMethod": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+      "#additional-key"
     ],
     "capabilityInvocation": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+      "#additional-key"
     ],
     "capabilityDelegation": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+      "#additional-key"
     ]
   },
   "didDocumentMetadata": {

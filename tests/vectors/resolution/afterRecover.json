@@ -18,7 +18,7 @@
     "verificationMethod": [
       {
         "id": "#newKey",
-        "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
+        "controller": "",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
@@ -29,19 +29,19 @@
       }
     ],
     "authentication": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#newKey"
+      "#newKey"
     ],
     "assertionMethod": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#newKey"
+      "#newKey"
     ],
     "capabilityInvocation": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#newKey"
+      "#newKey"
     ],
     "capabilityDelegation": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#newKey"
+      "#newKey"
     ],
     "keyAgreement": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#newKey"
+      "#newKey"
     ]
   },
   "didDocumentMetadata": {

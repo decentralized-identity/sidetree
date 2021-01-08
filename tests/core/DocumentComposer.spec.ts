@@ -46,31 +46,31 @@ describe('DocumentComposer', async () => {
         verificationMethod: [
           {
             id: '#anySigningKey',
-            controller: result.didDocument.id,
+            controller: '',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.publicKeyJwk.x, y: anySigningPublicKey.publicKeyJwk.y }
           },
           {
             id: '#authPublicKey',
-            controller: result.didDocument.id,
+            controller: '',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: authPublicKey.publicKeyJwk.x, y: authPublicKey.publicKeyJwk.y }
           },
           {
             id: '#noPurposePublicKey',
-            controller: result.didDocument.id,
+            controller: '',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: noPurposePublicKey.publicKeyJwk.x, y: noPurposePublicKey.publicKeyJwk.y }
           }
         ],
-        assertionMethod: ['did:method:suffix#anySigningKey'],
+        assertionMethod: ['#anySigningKey'],
         authentication: [
-          'did:method:suffix#anySigningKey',
-          'did:method:suffix#authPublicKey'
+          '#anySigningKey',
+          '#authPublicKey'
         ],
-        capabilityDelegation: ['did:method:suffix#anySigningKey'],
-        capabilityInvocation: ['did:method:suffix#anySigningKey'],
-        keyAgreement: ['did:method:suffix#anySigningKey']
+        capabilityDelegation: ['#anySigningKey'],
+        capabilityInvocation: ['#anySigningKey'],
+        keyAgreement: ['#anySigningKey']
       });
     });
 
