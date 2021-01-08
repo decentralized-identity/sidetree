@@ -1,3 +1,4 @@
+import Did from '../../lib/core/versions/latest/Did';
 import DidState from '../../lib/core/models/DidState';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
@@ -27,10 +28,10 @@ describe('DocumentComposer', async () => {
       };
 
       const published = true;
-      const isShortForm = true;
-      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published, isShortForm);
+      const did = await Did.create('did:method:suffix', 'method');
+      const result = DocumentComposer.transformToExternalDocument(didState, did, published);
 
-      expect(result['@context']).toEqual('https://www.w3.org/ns/did-resolution/v1');
+      expect(result['@context']).toEqual('https://w3id.org/did-resolution/v1');
       expect(result.didDocumentMetadata).toEqual({
         canonicalId: 'did:method:suffix',
         method: {
@@ -88,12 +89,12 @@ describe('DocumentComposer', async () => {
       };
 
       let published = false;
-      const isShortForm = true;
-      let result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published, isShortForm);
+      const did = new (Did as any)('did:method:suffix:initialState', 'method');
+      let result = DocumentComposer.transformToExternalDocument(didState, did, published);
       expect(result.didDocumentMetadata.method.published).toEqual(published);
 
       published = true;
-      result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published, isShortForm);
+      result = DocumentComposer.transformToExternalDocument(didState, did, published);
       expect(result.didDocumentMetadata.method.published).toEqual(published);
     });
 
@@ -111,16 +112,19 @@ describe('DocumentComposer', async () => {
       };
 
       let published = false;
-      let isShortForm = false;
-      let result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix:initialState', published, isShortForm);
+      // long form unpublished
+      let did = new (Did as any)('did:method:suffix:initialState', 'method');
+      let result = DocumentComposer.transformToExternalDocument(didState, did, published);
       expect(result.didDocumentMetadata.canonicalId).toBeUndefined();
 
       published = true;
-      result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix:initialState', published, isShortForm);
+      // long form published
+      result = DocumentComposer.transformToExternalDocument(didState, did, published);
       expect(result.didDocumentMetadata.canonicalId).toEqual('did:method:suffix');
 
-      isShortForm = true;
-      result = DocumentComposer.transformToExternalDocument(didState, 'did:somethingelse:method:suffix', published, isShortForm);
+      did = await Did.create('did:somethingelse:method:suffix', 'somethingelse:method');
+      // short form published
+      result = DocumentComposer.transformToExternalDocument(didState, did, published);
       expect(result.didDocumentMetadata.canonicalId).toEqual('did:somethingelse:method:suffix');
     });
 
@@ -138,12 +142,14 @@ describe('DocumentComposer', async () => {
       };
 
       const published = true;
-      let isShortForm = true;
-      let result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published, isShortForm);
+      // short form
+      let did = await Did.create('did:method:suffix', 'method');
+      let result = DocumentComposer.transformToExternalDocument(didState, did, published);
       expect(result.didDocumentMetadata.equivalentId).toBeUndefined();
 
-      isShortForm = false;
-      result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix:initialState', published, isShortForm);
+      // long form
+      did = new (Did as any)('did:method:suffix:inistialState', 'method');
+      result = DocumentComposer.transformToExternalDocument(didState, did, published);
       expect(result.didDocumentMetadata.equivalentId).toEqual(['did:method:suffix']);
     });
 
@@ -161,8 +167,8 @@ describe('DocumentComposer', async () => {
       };
 
       const published = true;
-      const isShortForm = true;
-      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published, isShortForm);
+      const did = await Did.create('did:method:suffix', 'method');
+      const result = DocumentComposer.transformToExternalDocument(didState, did, published);
       expect(result.didDocument).toEqual({
         id: 'did:method:suffix',
         '@context': ['https://www.w3.org/ns/did/v1', { '@base': 'did:method:suffix' }]

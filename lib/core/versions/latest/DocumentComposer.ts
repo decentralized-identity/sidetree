@@ -1,5 +1,6 @@
 import * as URI from 'uri-js';
 import ArrayMethods from './util/ArrayMethods';
+import Did from './Did';
 import DidState from '../../models/DidState';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
@@ -18,24 +19,11 @@ export default class DocumentComposer {
   /**
    * Transforms the given DID state into a DID Document.
    */
-  public static transformToExternalDocument (didState: DidState, did: string, published: boolean, isShortForm: boolean): any {
+  public static transformToExternalDocument (didState: DidState, did: Did, published: boolean): any {
     // If the DID is deactivated.
     // Return required metadata and a document with only context and id if so
     if (didState.nextRecoveryCommitmentHash === undefined) {
-      const didDocument = {
-        id: did,
-        '@context': ['https://www.w3.org/ns/did/v1', { '@base': did }]
-      };
-      const didDocumentMetadata = {
-        method: {
-          published
-        },
-        canonicalId: did
-      };
-      return {
-        didDocument,
-        didDocumentMetadata
-      };
+      return DocumentComposer.createDeactivatedResolutionResult(did.shortForm, published);
     }
 
     const document = didState.document as DocumentModel;
@@ -88,9 +76,10 @@ export default class DocumentComposer {
       }
     }
 
+    const baseId = did.isShortForm ? did.shortForm : did.longForm;
     const didDocument: any = {
-      id: did,
-      '@context': ['https://www.w3.org/ns/did/v1', { '@base': did }],
+      id: baseId,
+      '@context': ['https://www.w3.org/ns/did/v1', { '@base': baseId }],
       service: services
     };
 
@@ -103,7 +92,7 @@ export default class DocumentComposer {
     });
 
     const didResolutionResult: any = {
-      '@context': 'https://www.w3.org/ns/did-resolution/v1',
+      '@context': 'https://w3id.org/did-resolution/v1',
       didDocument: didDocument,
       didDocumentMetadata: {
         method: {
@@ -114,19 +103,34 @@ export default class DocumentComposer {
       }
     };
 
-    if (!isShortForm) {
-      // remove last colon and everything behind it to make it short form
-      const didShortForm = did.split(':').slice(0, -1).join(':');
-      didResolutionResult.didDocumentMetadata.equivalentId = [didShortForm];
+    if (did.isShortForm) {
+      didResolutionResult.didDocumentMetadata.canonicalId = did.shortForm;
+    } else {
+      didResolutionResult.didDocumentMetadata.equivalentId = [did.shortForm];
 
       if (published) {
-        didResolutionResult.didDocumentMetadata.canonicalId = didShortForm;
+        didResolutionResult.didDocumentMetadata.canonicalId = did.shortForm;
       }
-    } else {
-      didResolutionResult.didDocumentMetadata.canonicalId = did;
     }
 
     return didResolutionResult;
+  }
+
+  private static createDeactivatedResolutionResult (did: string, published: boolean) {
+    const didDocument = {
+      id: did,
+      '@context': ['https://www.w3.org/ns/did/v1', { '@base': did }]
+    };
+    const didDocumentMetadata = {
+      method: {
+        published
+      },
+      canonicalId: did
+    };
+    return {
+      didDocument,
+      didDocumentMetadata
+    };
   }
 
   /**

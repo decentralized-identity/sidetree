@@ -17,7 +17,7 @@ Sidetree defines `published`, `updateCommitment`, and `recoveryCommitment` metho
 ::: example
 ```json
 {
-    "@context": "https://www.w3.org/ns/did-resolution/v1",
+    "@context": "https://w3id.org/did-resolution/v1",
     "didDocument": DID_DOCUMENT_OBJECT,
     "didDocumentMetadata": {
         "method": {
