@@ -1,5 +1,5 @@
 {
-  "@context": "https://www.w3.org/ns/did-resolution/v1",
+  "@context": "https://w3id.org/did-resolution/v1",
   "didDocument": {
     "id": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
     "@context": [
@@ -18,7 +18,7 @@
     "verificationMethod": [
       {
         "id": "#publicKeyModel1Id",
-        "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
+        "controller": "",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
@@ -29,7 +29,7 @@
       },
       {
         "id": "#additional-key",
-        "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
+        "controller": "",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
@@ -40,26 +40,29 @@
       }
     ],
     "authentication": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#publicKeyModel1Id",
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+      "#publicKeyModel1Id",
+      "#additional-key"
     ],
     "keyAgreement": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#publicKeyModel1Id",
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+      "#publicKeyModel1Id",
+      "#additional-key"
     ],
     "assertionMethod": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+      "#additional-key"
     ],
     "capabilityInvocation": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+      "#additional-key"
     ],
     "capabilityDelegation": [
-      "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#additional-key"
+      "#additional-key"
     ]
   },
-  "methodMetadata": {
-    "published": true,
-    "recoveryCommitment": "EiBfOZdMtU6OBw8Pk879QtZ-2J-9FbbjSZyoaA_bqD4zhA",
-    "updateCommitment": "EiDOrcmPtfMHuwIWN6YoihdeIPxOKDHy3D6sdMXu_7CN0w"
+  "didDocumentMetadata": {
+    "canonicalId": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
+    "method": {
+      "published": true,
+      "recoveryCommitment": "EiBfOZdMtU6OBw8Pk879QtZ-2J-9FbbjSZyoaA_bqD4zhA",
+      "updateCommitment": "EiDOrcmPtfMHuwIWN6YoihdeIPxOKDHy3D6sdMXu_7CN0w"
+    }
   }
 }

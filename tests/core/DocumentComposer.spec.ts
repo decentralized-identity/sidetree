@@ -1,3 +1,4 @@
+import Did from '../../lib/core/versions/latest/Did';
 import DidState from '../../lib/core/models/DidState';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
@@ -27,13 +28,17 @@ describe('DocumentComposer', async () => {
       };
 
       const published = true;
-      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
+      const did = await Did.create('did:method:suffix', 'method');
+      const result = DocumentComposer.transformToExternalDocument(didState, did, published);
 
-      expect(result['@context']).toEqual('https://www.w3.org/ns/did-resolution/v1');
-      expect(result.methodMetadata).toEqual({
-        published: true,
-        recoveryCommitment: 'anyCommitmentHash',
-        updateCommitment: 'anyCommitmentHash'
+      expect(result['@context']).toEqual('https://w3id.org/did-resolution/v1');
+      expect(result.didDocumentMetadata).toEqual({
+        canonicalId: 'did:method:suffix',
+        method: {
+          published: true,
+          recoveryCommitment: 'anyCommitmentHash',
+          updateCommitment: 'anyCommitmentHash'
+        }
       });
       expect(result.didDocument).toEqual({
         id: 'did:method:suffix',
@@ -42,31 +47,31 @@ describe('DocumentComposer', async () => {
         verificationMethod: [
           {
             id: '#anySigningKey',
-            controller: result.didDocument.id,
+            controller: '',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.publicKeyJwk.x, y: anySigningPublicKey.publicKeyJwk.y }
           },
           {
             id: '#authPublicKey',
-            controller: result.didDocument.id,
+            controller: '',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: authPublicKey.publicKeyJwk.x, y: authPublicKey.publicKeyJwk.y }
           },
           {
             id: '#noPurposePublicKey',
-            controller: result.didDocument.id,
+            controller: '',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: noPurposePublicKey.publicKeyJwk.x, y: noPurposePublicKey.publicKeyJwk.y }
           }
         ],
-        assertionMethod: ['did:method:suffix#anySigningKey'],
+        assertionMethod: ['#anySigningKey'],
         authentication: [
-          'did:method:suffix#anySigningKey',
-          'did:method:suffix#authPublicKey'
+          '#anySigningKey',
+          '#authPublicKey'
         ],
-        capabilityDelegation: ['did:method:suffix#anySigningKey'],
-        capabilityInvocation: ['did:method:suffix#anySigningKey'],
-        keyAgreement: ['did:method:suffix#anySigningKey']
+        capabilityDelegation: ['#anySigningKey'],
+        capabilityInvocation: ['#anySigningKey'],
+        keyAgreement: ['#anySigningKey']
       });
     });
 
@@ -84,12 +89,68 @@ describe('DocumentComposer', async () => {
       };
 
       let published = false;
-      let result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
-      expect(result.methodMetadata.published).toEqual(published);
+      const did = new (Did as any)('did:method:suffix:initialState', 'method');
+      let result = DocumentComposer.transformToExternalDocument(didState, did, published);
+      expect(result.didDocumentMetadata.method.published).toEqual(published);
 
       published = true;
-      result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
-      expect(result.methodMetadata.published).toEqual(published);
+      result = DocumentComposer.transformToExternalDocument(didState, did, published);
+      expect(result.didDocumentMetadata.method.published).toEqual(published);
+    });
+
+    it('should output DID document metadata with canonicalId only if published.', async () => {
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Authentication]);
+      const document = {
+        publicKeys: [anySigningPublicKey, authPublicKey]
+      };
+      const didState: DidState = {
+        document,
+        lastOperationTransactionNumber: 123,
+        nextRecoveryCommitmentHash: 'anyCommitmentHash',
+        nextUpdateCommitmentHash: 'anyCommitmentHash'
+      };
+
+      let published = false;
+      // long form unpublished
+      let did = new (Did as any)('did:method:suffix:initialState', 'method');
+      let result = DocumentComposer.transformToExternalDocument(didState, did, published);
+      expect(result.didDocumentMetadata.canonicalId).toBeUndefined();
+
+      published = true;
+      // long form published
+      result = DocumentComposer.transformToExternalDocument(didState, did, published);
+      expect(result.didDocumentMetadata.canonicalId).toEqual('did:method:suffix');
+
+      did = await Did.create('did:somethingelse:method:suffix', 'somethingelse:method');
+      // short form published
+      result = DocumentComposer.transformToExternalDocument(didState, did, published);
+      expect(result.didDocumentMetadata.canonicalId).toEqual('did:somethingelse:method:suffix');
+    });
+
+    it('should output DID document metadata with equivalentId only if is not short form.', async () => {
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Authentication]);
+      const document = {
+        publicKeys: [anySigningPublicKey, authPublicKey]
+      };
+      const didState: DidState = {
+        document,
+        lastOperationTransactionNumber: 123,
+        nextRecoveryCommitmentHash: 'anyCommitmentHash',
+        nextUpdateCommitmentHash: 'anyCommitmentHash'
+      };
+
+      const published = true;
+      // short form
+      let did = await Did.create('did:method:suffix', 'method');
+      let result = DocumentComposer.transformToExternalDocument(didState, did, published);
+      expect(result.didDocumentMetadata.equivalentId).toBeUndefined();
+
+      // long form
+      did = new (Did as any)('did:method:suffix:inistialState', 'method');
+      result = DocumentComposer.transformToExternalDocument(didState, did, published);
+      expect(result.didDocumentMetadata.equivalentId).toEqual(['did:method:suffix']);
     });
 
     it('should return status deactivated if next recovery commit hash is undefined', async () => {
@@ -106,8 +167,18 @@ describe('DocumentComposer', async () => {
       };
 
       const published = true;
-      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
-      expect(result).toEqual({ status: 'deactivated' });
+      const did = await Did.create('did:method:suffix', 'method');
+      const result = DocumentComposer.transformToExternalDocument(didState, did, published);
+      expect(result.didDocument).toEqual({
+        id: 'did:method:suffix',
+        '@context': ['https://www.w3.org/ns/did/v1', { '@base': 'did:method:suffix' }]
+      });
+      expect(result.didDocumentMetadata).toEqual({
+        method: {
+          published
+        },
+        canonicalId: 'did:method:suffix'
+      });
     });
   });
 
