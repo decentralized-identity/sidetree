@@ -165,14 +165,14 @@ describe('DocumentComposer', async () => {
       const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published, isShortForm);
       expect(result.didDocument).toEqual({
         id: 'did:method:suffix',
-        '@context': ['https://www.w3.org/ns/did/v1', { '@base': 'did:method:suffix' }],
+        '@context': ['https://www.w3.org/ns/did/v1', { '@base': 'did:method:suffix' }]
       });
       expect(result.didDocumentMetadata).toEqual({
         method: {
           published
         },
         canonicalId: 'did:method:suffix'
-      })
+      });
     });
   });
 

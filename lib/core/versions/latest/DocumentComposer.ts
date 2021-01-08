@@ -24,15 +24,15 @@ export default class DocumentComposer {
     if (didState.nextRecoveryCommitmentHash === undefined) {
       const didDocument = {
         id: did,
-        '@context': ['https://www.w3.org/ns/did/v1', { '@base': did }],
-      }
+        '@context': ['https://www.w3.org/ns/did/v1', { '@base': did }]
+      };
       const didDocumentMetadata = {
         method: {
           published
         },
         canonicalId: did
-      }
-      return { 
+      };
+      return {
         didDocument,
         didDocumentMetadata
       };
@@ -117,7 +117,7 @@ export default class DocumentComposer {
     if (!isShortForm) {
       // remove last colon and everything behind it to make it short form
       const didShortForm = did.split(':').slice(0, -1).join(':');
-      didResolutionResult.didDocumentMetadata.equivalentId = [didShortForm]
+      didResolutionResult.didDocumentMetadata.equivalentId = [didShortForm];
 
       if (published) {
         didResolutionResult.didDocumentMetadata.canonicalId = didShortForm;
