@@ -8,8 +8,9 @@ import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import DidState from '../../lib/core/models/DidState';
-import Document from '../../lib/core/versions/latest/Document';
+import Document from '../utils/Document';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
+import Fixture from '../utils/Fixture';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
@@ -19,9 +20,9 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
+import ProtocolParameters from '../../lib/core/versions/latest/ProtocolParameters';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
-import { fixtureDriftHelper } from '../utils';
 
 const OVERWRITE_FIXTURES = false;
 
@@ -57,7 +58,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/afterCreate.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/afterCreate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterCreate);
     });
 
@@ -89,7 +90,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterUpdate);
     });
 
@@ -115,7 +116,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterRecover);
     });
 
@@ -157,7 +158,7 @@ describe('Resolver', () => {
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const published = true;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', OVERWRITE_FIXTURES);
+      Fixture.fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterDeactivate);
     });
   });
@@ -314,6 +315,32 @@ describe('Resolver', () => {
 
   });
 
+  describe('Hash algorithm change between operations', () => {
+    it('should apply a subsequent update that uses a different hash algorithm correctly.', async () => {
+      ProtocolParameters.hashAlgorithmsInMultihashCode = [18, 22];
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
+      await operationStore.put([createOperationData.anchoredOperationModel]);
+
+      // Create an update operation with a DIFFERENT hash algorithm.
+      const didSuffix = createOperationData.anchoredOperationModel.didUniqueSuffix;
+      const multihashAlgorithmCodeToUse = 22; // SHA3
+      const multihashAlgorithmForRevealValue = 18; // SHA2
+      const updateOperationData = await OperationGenerator.generateUpdateOperation(
+        didSuffix,
+        createOperationData.updatePublicKey,
+        createOperationData.updatePrivateKey,
+        multihashAlgorithmCodeToUse,
+        multihashAlgorithmForRevealValue
+      );
+      const anchoredUpdateOperation = await OperationGenerator.createAnchoredOperationModelFromOperationModel(updateOperationData.updateOperation, 2, 2, 2);
+      await operationStore.put([anchoredUpdateOperation]);
+
+      const didState = await resolver.resolve(didSuffix) as DidState;
+      expect(didState.document.publicKeys.length).toEqual(2);
+      expect(didState.document.publicKeys[1].id).toEqual(updateOperationData.additionalKeyId);
+    });
+  });
+
   describe('applyRecoverAndDeactivateOperations()', () => {
     it('should apply earliest recover operations if multiple operations are valid with same reveal.', async (done) => {
       // Setting up initial DID state for the test.
@@ -348,6 +375,31 @@ describe('Resolver', () => {
       expect(newDidState.lastOperationTransactionNumber).toEqual(2);
       expect(newDidState.nextRecoveryCommitmentHash).toEqual(recoveryOperation1Data.recoverOperation.signedData.recoveryCommitment);
 
+      done();
+    });
+
+    it('should short circuit and return as soon as the end of the recovery/deactivate operation chain is reached.', async (done) => {
+      // Setting up initial DID state for the test.
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
+      const initialDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
+
+      const recoveryOperation1Data = await OperationGenerator.generateRecoverOperation({
+        didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
+        recoveryPrivateKey: createOperationData.recoveryPrivateKey
+      });
+
+      const recoveryOperation1 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation1Data.recoverOperation, 2, 2, 2);
+
+      const recoveryCommitValueToOperationMap = new Map<string, AnchoredOperationModel[]>();
+      const nextRecoveryCommitment = createOperationData.createOperation.suffixData.recoveryCommitment;
+      recoveryCommitValueToOperationMap.set(nextRecoveryCommitment, [recoveryOperation1]);
+
+      spyOn(resolver as any, 'applyFirstValidOperation').and.returnValue(Promise.resolve(undefined));
+
+      const newDidState: DidState = await (resolver as any).applyRecoverAndDeactivateOperations(initialDidState, recoveryCommitValueToOperationMap);
+
+      expect(newDidState.lastOperationTransactionNumber).toEqual(1);
+      expect(newDidState.nextRecoveryCommitmentHash).toEqual(createOperationData.operationRequest.suffixData.recoveryCommitment);
       done();
     });
   });
@@ -407,6 +459,30 @@ describe('Resolver', () => {
       // Expecting undefined to be returned instead of error being thrown.
       expect(initialDidState).toBeUndefined();
       done();
+    });
+  });
+
+  describe('applyCreateOperation()', () => {
+    it('should continue applying until did state is not undefined', async () => {
+      let callCount = 0;
+
+      // should return undefined the first time and an object the second time
+      const applyOperationSpy = spyOn(resolver as any, 'applyOperation').and.callFake(() => {
+        callCount++;
+        if (callCount === 2) {
+          return {
+            document: {},
+            nextRecoveryCommitmentHash: 'string',
+            nextUpdateCommitmentHash: 'string',
+            lastOperationTransactionNumber: 123
+          };
+        }
+        return undefined;
+      });
+
+      await resolver['applyCreateOperation']([1 as any, 2 as any]);
+
+      expect(applyOperationSpy).toHaveBeenCalledTimes(2);
     });
   });
 });

@@ -2,12 +2,14 @@
  * Defines the list of protocol parameters, intended ONLY to be used within each version of the protocol implementation.
  */
 export default interface ProtocolParameters {
-  /** Hash algorithm in Multihash code in DEC (not in HEX). */
-  hashAlgorithmInMultihashCode: number;
-  /** Maximum allowed size of anchor file stored in Content Addressable Storage. */
-  maxAnchorFileSizeInBytes: number;
-  /** Maximum allowed size of map file stored in Content Addressable Storage. */
-  maxMapFileSizeInBytes: number;
+  /** Supported hash algorithms in Multihash code in DEC (not in HEX). This list will/must only grow as algorithm support grows. */
+  hashAlgorithmsInMultihashCode: number[];
+  /** Maximum allowed CAS uri string length */
+  maxCasUriLength: number;
+  /** Maximum allowed size of core index file stored in Content Addressable Storage. */
+  maxCoreIndexFileSizeInBytes: number;
+  /** Maximum allowed size of provisional index file stored in Content Addressable Storage. */
+  maxProvisionalIndexFileSizeInBytes: number;
   /** Maximum allowed size of core/provisional proof file stored in Content Addressable Storage. */
   maxProofFileSizeInBytes: number;
   /** Maximum allowed size of chunk file stored in Content Addressable Storage. */

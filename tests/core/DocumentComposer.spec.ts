@@ -3,7 +3,9 @@ import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import JsObject from '../../lib/core/versions/latest/util/JsObject';
 import OperationGenerator from '../generators/OperationGenerator';
+import PatchAction from '../../lib/core/versions/latest/PatchAction';
 import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import SidetreeError from '../../lib/common/SidetreeError';
 
@@ -116,7 +118,7 @@ describe('DocumentComposer', async () => {
       };
 
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: 'someType',
@@ -124,9 +126,9 @@ describe('DocumentComposer', async () => {
         }]
       };
 
-      const result = DocumentComposer['addServices'](document, patch);
+      DocumentComposer['addServices'](document, patch);
 
-      expect(result.services).toEqual([{ id: 'someId', type: 'someType', serviceEndpoint: 'someEndpoint' }]);
+      expect(document.services).toEqual([{ id: 'someId', type: 'someType', serviceEndpoint: 'someEndpoint' }]);
     });
   });
 
@@ -135,14 +137,15 @@ describe('DocumentComposer', async () => {
       const document: DocumentModel = {
         services: OperationGenerator.generateServices(['anyServiceId'])
       };
+      const deepCopyOriginalDocument = JsObject.deepCopyObject(document);
 
       const patch = {
-        action: 'remove-public-keys',
+        action: PatchAction.RemovePublicKeys,
         ids: ['1', '3']
       };
 
-      const result = DocumentComposer['removePublicKeys'](document, patch);
-      expect(result).toEqual(document);
+      DocumentComposer['removePublicKeys'](document, patch);
+      expect(document).toEqual(deepCopyOriginalDocument);
     });
   });
 
@@ -159,11 +162,11 @@ describe('DocumentComposer', async () => {
       };
 
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: ['1', '3']
       };
 
-      const result = DocumentComposer['removeServices'](document, patch);
+      DocumentComposer['removeServices'](document, patch);
 
       const expected = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
@@ -173,21 +176,22 @@ describe('DocumentComposer', async () => {
         ]
       };
 
-      expect(result).toEqual(expected);
+      expect(document).toEqual(expected);
     });
 
     it('should leave document unchanged if it does not have `services` property', () => {
       const document: DocumentModel = {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }]
       };
+      const deepCopyOriginalDocument = JsObject.deepCopyObject(document);
 
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: ['1', '3']
       };
 
-      const result = DocumentComposer['removeServices'](document, patch);
-      expect(result).toEqual(document);
+      DocumentComposer['removeServices'](document, patch);
+      expect(document).toEqual(deepCopyOriginalDocument);
     });
   });
 
@@ -195,7 +199,7 @@ describe('DocumentComposer', async () => {
     it('should throw error if a remove-services patch contains additional unknown property.', async () => {
       const patch = {
         extra: 'unknown value',
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: 'not an array'
       };
 
@@ -207,7 +211,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerPatchServiceIdsNotArray if ids is not an array', () => {
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: 'not an array'
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdsNotArray);
@@ -216,7 +220,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerIdTooLong if an id is not a string', () => {
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: [1234]
       };
 
@@ -227,7 +231,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerIdTooLong if an id is too long', () => {
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: ['super long super long super long super long super long super long super long super long super long']
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
@@ -245,7 +249,7 @@ describe('DocumentComposer', async () => {
     it('should detect unknown error and throw', () => {
       const patch = {
         extra: 'unknown value',
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: 'not an array'
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
@@ -254,7 +258,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerIdTooLong if id is too long', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'super long super long super long super long super long super long super long super long super long',
           type: undefined,
@@ -267,7 +271,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerServiceHasMissingOrUnknownProperty if service has unknown property', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           extra: 'property',
           id: 'someId',
@@ -281,7 +285,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerServiceHasMissingOrUnknownProperty if `serviceEndpoint` is missing', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: undefined
@@ -293,7 +297,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerPatchServiceTypeNotString if type is not a string', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: undefined,
@@ -306,7 +310,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw DocumentComposerPatchServiceTypeTooLong if type too long', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: '1234567890123456789012345678901234567890',
@@ -319,7 +323,7 @@ describe('DocumentComposer', async () => {
 
     it('should allow an non-array object as `serviceEndpoint`.', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: 'someType',
@@ -333,7 +337,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if `serviceEndpoint` is an array.', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: 'someType',
@@ -346,7 +350,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if `serviceEndpoint` has an invalid type.', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: 'someType',
@@ -359,7 +363,7 @@ describe('DocumentComposer', async () => {
 
     it('Should throw if `serviceEndpoint` is not valid URI.', () => {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: 'someType',
@@ -374,23 +378,6 @@ describe('DocumentComposer', async () => {
     });
   });
 
-  describe('validateDocument', () => {
-    it('should throw DocumentComposerDocumentMissing if document is undefined', () => {
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerDocumentMissing);
-      expect(() => { DocumentComposer['validateDocument'](undefined); }).toThrow(expectedError);
-    });
-
-    it('should throw DocumentComposerServiceNotArray if `services` is not an array', () => {
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServicesNotArray);
-      const document = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
-        services: 'this is not an array'
-      };
-      spyOn(DocumentComposer as any, 'validatePublicKeys').and.returnValue(1);
-      expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
-    });
-  });
-
   describe('validateDocumentPatches()', async () => {
     it('should throw error if `patches` is not an array.', async () => {
       const patches = 'shouldNotBeAString';
@@ -401,7 +388,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if given `action` is unknown.', async () => {
       const patches = generatePatchesForPublicKeys();
-      patches[0].action = 'invalidAction';
+      (patches[0].action as string) = 'invalidAction';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownAction);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -510,23 +497,47 @@ describe('DocumentComposer', async () => {
 
   describe('applyPatches()', async () => {
     it('should add a key even if no keys exist yet.', async () => {
-      const document: DocumentModel = {
-      };
+      const document: DocumentModel = { };
+
+      const newKey = { id: 'aNonRepeatingId', type: 'someType', publicKeyJwk: { } };
       const patches = [
         {
-          action: 'add-public-keys',
-          publicKeys: [
-            { id: 'aNonRepeatingId', type: 'someType' }
-          ]
+          action: PatchAction.AddPublicKeys,
+          publicKeys: [newKey]
         }
       ];
 
-      const resultantDocument = DocumentComposer.applyPatches(document, patches);
+      DocumentComposer.applyPatches(document, patches);
 
-      expect(resultantDocument.publicKeys).toEqual([
-        { id: 'aNonRepeatingId', type: 'someType' }
-      ]);
+      expect(document.publicKeys).toEqual([newKey]);
 
+    });
+
+    it('should replace old state entirely if the patch action is a replace.', async () => {
+      const document: DocumentModel = {
+        publicKeys: [{ id: 'anyKeyId', type: 'someType', publicKeyJwk: 'any value' }],
+        services: []
+      };
+
+      // A replace patch that will remove all public keys and add a service endpoint.
+      const patches = [{
+        action: PatchAction.Replace,
+        document: {
+          publicKeys: [],
+          services: [
+            {
+              id: 'key1',
+              type: 'URL',
+              serviceEndpoint: 'https://ion.is.cool/'
+            }
+          ]
+        }
+      }];
+
+      DocumentComposer.applyPatches(document, patches);
+
+      expect(document.publicKeys?.length).toEqual(0);
+      expect(document.services?.length).toEqual(1);
     });
 
     it('should replace old key with the same ID with new values.', async () => {
@@ -534,23 +545,38 @@ describe('DocumentComposer', async () => {
         publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
         services: []
       };
+
+      const newKeys = [
+        { id: 'aRepeatingId', type: 'newTypeValue', publicKeyJwk: 'any new value' },
+        { id: 'aNonRepeatingId', type: 'someType', publicKeyJwk: 'any value' }
+      ];
       const patches = [
         {
-          action: 'add-public-keys',
+          action: PatchAction.AddPublicKeys,
+          publicKeys: newKeys
+        }
+      ];
+
+      DocumentComposer.applyPatches(document, patches);
+
+      expect(document.publicKeys).toEqual(newKeys);
+    });
+
+    it('should throw if action is not a valid patch action', async () => {
+      const document: DocumentModel = {
+      };
+      const patches = [
+        {
+          action: 'invalid action',
           publicKeys: [
-            { id: 'aRepeatingId', type: 'newTypeValue' },
             { id: 'aNonRepeatingId', type: 'someType' }
           ]
         }
       ];
 
-      const resultantDocument = DocumentComposer.applyPatches(document, patches);
-
-      expect(resultantDocument.publicKeys).toEqual([
-        { id: 'aRepeatingId', type: 'newTypeValue' },
-        { id: 'aNonRepeatingId', type: 'someType' }
-      ]);
-
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(() => {
+        DocumentComposer.applyPatches(document, patches);
+      }, ErrorCode.DocumentComposerApplyPatchUnknownAction, 'Cannot apply invalid action: invalid action');
     });
   });
 
@@ -564,7 +590,42 @@ describe('DocumentComposer', async () => {
   });
 
   describe('validateDocument()', async () => {
-    it('should throw if document contains 2 keys of with the same ID.', async () => {
+    it('should throw DocumentComposerDocumentMissing if document is undefined', () => {
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerDocumentMissing);
+      expect(() => { DocumentComposer['validateDocument'](undefined); }).toThrow(expectedError);
+    });
+
+    it('should throw DocumentComposerPatchServicesNotArray if `services` is not an array', () => {
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServicesNotArray);
+      const document = {
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
+        services: 'this is not an array'
+      };
+      spyOn(DocumentComposer as any, 'validatePublicKeys').and.returnValue(1);
+      expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
+    });
+
+    it('should throw if document contains 2 services with the same ID.', async () => {
+      const document: DocumentModel = {
+        services: [
+          {
+            id: 'key1',
+            type: 'URL',
+            serviceEndpoint: 'https://ion.is.cool/'
+          },
+          {
+            id: 'key1', // duplicate to cause failure
+            type: 'URL',
+            serviceEndpoint: 'https://ion.is.still.cool/'
+          }
+        ]
+      };
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdNotUnique, 'Service id has to be unique');
+      expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
+    });
+
+    it('should throw if document contains 2 keys with the same ID.', async () => {
       const document = {
         publicKeys: [
           {
@@ -685,7 +746,7 @@ describe('DocumentComposer', async () => {
 function generatePatchesForPublicKeys () {
   return [
     {
-      action: 'add-public-keys',
+      action: PatchAction.AddPublicKeys,
       publicKeys: [
         {
           id: 'keyX',
@@ -700,11 +761,11 @@ function generatePatchesForPublicKeys () {
       ]
     },
     {
-      action: 'remove-public-keys',
+      action: PatchAction.RemovePublicKeys,
       ids: ['keyY']
     },
     {
-      action: 'add-services',
+      action: PatchAction.AddServices,
       services: OperationGenerator.generateServices(['EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8B'])
     }
   ];

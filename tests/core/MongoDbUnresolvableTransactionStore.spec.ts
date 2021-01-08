@@ -139,7 +139,7 @@ describe('MongoDbUnresolvableTransactionStore', async () => {
     expect(unresolvableTransactions.length).toEqual(1);
 
     // Get remaining 1 unresolvable transaction due for retry.
-    unresolvableTransactionsDueForRetry = await store.getUnresolvableTransactionsDueForRetry(maxReturnCount);
+    unresolvableTransactionsDueForRetry = await store.getUnresolvableTransactionsDueForRetry();
     expect(unresolvableTransactionsDueForRetry.length).toEqual(1);
     // Simulate successful resolution of the 1 returned transaction and removing it from the store.
     for (const transaction of unresolvableTransactionsDueForRetry) {
@@ -183,10 +183,5 @@ describe('MongoDbUnresolvableTransactionStore', async () => {
 
     const unresolvableTransactions = await store.getUnresolvableTransactions();
     expect(unresolvableTransactions.length).toEqual(0);
-  });
-
-  it('should default the database name as `sidetree` if not explicitly overriden.', async () => {
-    const store = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString);
-    expect(store.databaseName).toEqual(MongoDbUnresolvableTransactionStore.defaultDatabaseName);
   });
 });

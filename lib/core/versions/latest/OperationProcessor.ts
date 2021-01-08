@@ -3,13 +3,15 @@ import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import DidState from '../../models/DidState';
 import DocumentComposer from './DocumentComposer';
+import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import IOperationProcessor from '../../interfaces/IOperationProcessor';
+import JsObject from './util/JsObject';
 import JsonCanonicalizer from './util/JsonCanonicalizer';
+import Logger from '../../../common/Logger';
 import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
-import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
@@ -51,10 +53,10 @@ export default class OperationProcessor implements IOperationProcessor {
         const time = anchoredOperationModel.transactionTime;
         const number = anchoredOperationModel.transactionNumber;
         const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-        console.debug(`Ignored invalid operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
+        Logger.info(`Ignored invalid operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
       }
     } catch (error) {
-      console.log(`Failed logging ${error}.`);
+      Logger.info(`Failed logging ${error}.`);
       // If logging fails, just move on.
     }
 
@@ -68,30 +70,8 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await Operation.parse(anchoredOperationModel.operationBuffer);
 
-    let canonicalizedKeyBuffer;
-    switch (operation.type) {
-      case OperationType.Recover: {
-        const recoverOperation = (operation as RecoverOperation);
-        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(recoverOperation.signedData.recoveryKey);
-        break;
-      }
-      case OperationType.Update: {
-        const updateOperation = (operation as UpdateOperation);
-        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(updateOperation.signedData.updateKey);
-        break;
-      }
-      default: {
-        // This is a deactivate.
-        const deactivateOperation = (operation as DeactivateOperation);
-        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(deactivateOperation.signedData.recoveryKey);
-        break;
-      }
-    }
-
-    // TODO: Issue #766 - Remove temporary assumption on reveal value being calculated using the same hash algorithm
-    // as the algorithm used by the protocol version when the operation is anchored.
-    const revealValueHashAlgorithm = ProtocolParameters.hashAlgorithmInMultihashCode;
-    const multihashRevealValueBuffer = Multihash.hash(canonicalizedKeyBuffer, revealValueHashAlgorithm);
+    const multihashRevealValue = (operation as RecoverOperation | UpdateOperation | DeactivateOperation).revealValue;
+    const multihashRevealValueBuffer = Encoder.decodeAsBuffer(multihashRevealValue);
     return multihashRevealValueBuffer;
   }
 
@@ -117,14 +97,14 @@ export default class OperationProcessor implements IOperationProcessor {
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
-    // Verify the delta hash against the expected delta hash.
-    const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
-      updateCommitment: operation.delta.updateCommitment,
-      patches: operation.delta.patches
-    }) : undefined;
-    if (deltaPayload === undefined) {
+    if (operation.delta === undefined) {
       return newDidState;
-    };
+    }
+
+    // Verify the delta hash against the expected delta hash.
+    const deltaPayload = JsonCanonicalizer.canonicalizeAsBuffer(operation.delta);
+
+    // If code execution gets to this point, delta is defined.
 
     const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.suffixData.deltaHash);
     if (!isMatchingDelta) {
@@ -133,20 +113,19 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // Apply the given patches against an empty object.
     const delta = operation.delta;
-    let document = { };
-    if (delta !== undefined) {
-      // update the commitment hash regardless
-      newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
-      try {
-        document = DocumentComposer.applyPatches(document, delta.patches);
-        newDidState.document = document;
-      } catch (error) {
-        const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-        const transactionNumber = anchoredOperationModel.transactionNumber;
-        console.debug(
-          `Partial update on next commitment hash applied because: ` +
-          `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
-      }
+
+    // Update the commitment hash regardless of patch application outcome.
+    newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
+    try {
+      const document = { };
+      DocumentComposer.applyPatches(document, delta.patches);
+      newDidState.document = document;
+    } catch (error) {
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      const transactionNumber = anchoredOperationModel.transactionNumber;
+      Logger.info(
+        `Partial update on next commitment hash applied because: ` +
+        `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
     }
 
     return newDidState;
@@ -174,39 +153,36 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     }
 
-    // Verify the delta hash against the expected delta hash.
-    const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
-      updateCommitment: operation.delta.updateCommitment,
-      patches: operation.delta.patches
-    }) : undefined;
-    if (deltaPayload === undefined) {
+    if (operation.delta === undefined) {
       return didState;
-    };
+    }
 
+    // Verify the delta hash against the expected delta hash.
+    const deltaPayload = JsonCanonicalizer.canonicalizeAsBuffer(operation.delta);
     const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.deltaHash);
     if (!isMatchingDelta) {
       return didState;
     };
 
-    let resultingDocument;
+    // Passed all verifications, must update the update commitment value even if the application of patches fail.
+    const newDidState = {
+      nextRecoveryCommitmentHash: didState.nextRecoveryCommitmentHash,
+      document: didState.document,
+      nextUpdateCommitmentHash: operation.delta.updateCommitment,
+      lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
+    };
+
     try {
-      resultingDocument = await DocumentComposer.applyUpdateOperation(operation, didState.document);
+      // NOTE: MUST pass DEEP COPY of the DID Document to `DocumentComposer` such that in the event of a patch failure,
+      // the original document is not modified.
+      const documentDeepCopy = JsObject.deepCopyObject(didState.document);
+      DocumentComposer.applyPatches(documentDeepCopy, operation.delta.patches);
+      newDidState.document = documentDeepCopy;
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const transactionNumber = anchoredOperationModel.transactionNumber;
-      console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
-
-      // Return the given DID state if error is encountered applying the patches.
-      return didState;
+      Logger.info(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
     }
-
-    const newDidState = {
-      nextRecoveryCommitmentHash: didState.nextRecoveryCommitmentHash,
-      // New values below.
-      document: resultingDocument,
-      nextUpdateCommitmentHash: operation.delta!.updateCommitment,
-      lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
-    };
 
     return newDidState;
   }
@@ -241,14 +217,12 @@ export default class OperationProcessor implements IOperationProcessor {
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
-    // Verify the delta hash against the expected delta hash.
-    const deltaPayload = operation.delta ? JsonCanonicalizer.canonicalizeAsBuffer({
-      updateCommitment: operation.delta.updateCommitment,
-      patches: operation.delta.patches
-    }) : undefined;
-    if (deltaPayload === undefined) {
+    if (operation.delta === undefined) {
       return newDidState;
-    };
+    }
+
+    // Verify the delta hash against the expected delta hash.
+    const deltaPayload = JsonCanonicalizer.canonicalizeAsBuffer(operation.delta);
 
     const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.deltaHash);
     if (!isMatchingDelta) {
@@ -257,22 +231,19 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // Apply the given patches against an empty object.
     const delta = operation.delta;
-    let document = { };
 
-    if (delta !== undefined) {
-      // update the commitment hash regardless
-      newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
-      try {
-        document = DocumentComposer.applyPatches(document, delta.patches);
-        newDidState.document = document;
-      } catch (error) {
-        const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-        const transactionNumber = anchoredOperationModel.transactionNumber;
-        console.debug(
-          `Partial update on next commitment hash applied because: ` +
-          `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
-      }
-
+    // update the commitment hash regardless
+    newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
+    try {
+      const document = { };
+      DocumentComposer.applyPatches(document, delta.patches);
+      newDidState.document = document;
+    } catch (error) {
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      const transactionNumber = anchoredOperationModel.transactionNumber;
+      Logger.info(
+        `Partial update on next commitment hash applied because: ` +
+        `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
     }
 
     return newDidState;

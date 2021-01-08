@@ -6,6 +6,7 @@ import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IRequestHandler from '../../interfaces/IRequestHandler';
 import JsonAsync from './util/JsonAsync';
+import Logger from '../../../common/Logger';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationProcessor from './OperationProcessor';
@@ -33,7 +34,7 @@ export default class RequestHandler implements IRequestHandler {
    * Handles an operation request.
    */
   public async handleOperationRequest (request: Buffer): Promise<ResponseModel> {
-    console.info(`Handling operation request of size ${request.length} bytes...`);
+    Logger.info(`Handling operation request of size ${request.length} bytes...`);
 
     // Perform common validation for any write request and parse it into an `OperationModel`.
     let operationModel: OperationModel;
@@ -44,7 +45,7 @@ export default class RequestHandler implements IRequestHandler {
       if (operationRequest.type === OperationType.Create ||
           operationRequest.type === OperationType.Recover ||
           operationRequest.type === OperationType.Update) {
-        Delta.validateDeltaSize(operationRequest.delta);
+        Delta.validateDelta(operationRequest.delta);
       }
 
       operationModel = await Operation.parse(request);
@@ -57,8 +58,8 @@ export default class RequestHandler implements IRequestHandler {
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
-        console.info(`Bad request: ${error.code}`);
-        console.info(`Error message: ${error.message}`);
+        Logger.info(`Bad request: ${error.code}`);
+        Logger.info(`Error message: ${error.message}`);
         return {
           status: ResponseStatus.BadRequest,
           body: { code: error.code, message: error.message }
@@ -66,14 +67,14 @@ export default class RequestHandler implements IRequestHandler {
       }
 
       // Else we give a generic bad request response.
-      console.info(`Bad request: ${error}`);
+      Logger.info(`Bad request: ${error}`);
       return {
         status: ResponseStatus.BadRequest
       };
     }
 
     try {
-      console.info(`Operation type: '${operationModel.type}', DID unique suffix: '${operationModel.didUniqueSuffix}'`);
+      Logger.info(`Operation type: '${operationModel.type}', DID unique suffix: '${operationModel.didUniqueSuffix}'`);
 
       // Passed common operation validation, hand off to specific operation handler.
       let response: ResponseModel;
@@ -106,14 +107,14 @@ export default class RequestHandler implements IRequestHandler {
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
-        console.info(`Sidetree error: ${error.code} ${error.message}`);
+        Logger.info(`Sidetree error: ${error.code} ${error.message}`);
         return {
           status: ResponseStatus.BadRequest,
           body: { code: error.code, message: error.message }
         };
       }
 
-      console.info(`Unexpected error: ${error}`);
+      Logger.info(`Unexpected error: ${error}`);
       return {
         status: ResponseStatus.ServerError
       };
@@ -145,12 +146,11 @@ export default class RequestHandler implements IRequestHandler {
    * Handles resolve operation.
    * @param shortOrLongFormDid Can either be:
    *   1. A short-form DID. e.g. 'did:<methodName>:abc' or
-   *   2. A long-form DID. e.g. 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
-   *                            'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
+   *   2. A long-form DID. e.g. 'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
    */
   public async handleResolveRequest (shortOrLongFormDid: string): Promise<ResponseModel> {
     try {
-      console.log(`Handling resolution request for: ${shortOrLongFormDid}...`);
+      Logger.info(`Handling resolution request for: ${shortOrLongFormDid}...`);
 
       const did = await Did.create(shortOrLongFormDid, this.didMethodName);
 
@@ -167,7 +167,7 @@ export default class RequestHandler implements IRequestHandler {
       }
 
       if (didState === undefined) {
-        console.info(`DID not found for DID '${shortOrLongFormDid}'...`);
+        Logger.info(`DID not found for DID '${shortOrLongFormDid}'...`);
         return {
           status: ResponseStatus.NotFound,
           body: { code: ErrorCode.DidNotFound, message: 'DID Not Found' }
@@ -184,7 +184,7 @@ export default class RequestHandler implements IRequestHandler {
       const didDeactivated = didState.nextRecoveryCommitmentHash === undefined;
       const status = didDeactivated ? ResponseStatus.Deactivated : ResponseStatus.Succeeded;
 
-      console.info(`DID Document found for DID '${shortOrLongFormDid}'...`);
+      Logger.info(`DID Document found for DID '${shortOrLongFormDid}'...`);
       return {
         status,
         body: document
@@ -192,14 +192,14 @@ export default class RequestHandler implements IRequestHandler {
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
-        console.info(`Bad request. Code: ${error.code}. Message: ${error.message}`);
+        Logger.info(`Bad request. Code: ${error.code}. Message: ${error.message}`);
         return {
           status: ResponseStatus.BadRequest,
           body: { code: error.code, message: error.message }
         };
       }
 
-      console.info(`Unexpected error: ${error}`);
+      Logger.info(`Unexpected error: ${error}`);
       return {
         status: ResponseStatus.ServerError
       };
@@ -213,7 +213,7 @@ export default class RequestHandler implements IRequestHandler {
    * @returns [DID state, published]
    */
   private async resolveLongFormDid (did: Did): Promise<[DidState | undefined, boolean]> {
-    console.info(`Handling long-form DID resolution of DID '${did}'...`);
+    Logger.info(`Handling long-form DID resolution of DID '${did}'...`);
 
     // Attempt to resolve the DID by using operations found from the network first.
     let didState = await this.resolver.resolve(did.uniqueSuffix);

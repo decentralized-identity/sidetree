@@ -1,5 +1,6 @@
 import { Collection, Cursor, Db, Long, MongoClient } from 'mongodb';
 import ITransactionStore from '../core/interfaces/ITransactionStore';
+import Logger from '../common/Logger';
 import TransactionModel from './models/TransactionModel';
 
 /**
@@ -10,8 +11,6 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   public static readonly defaultDatabaseName: string = 'sidetree';
   /** Collection name for transactions. */
   public static readonly transactionCollectionName: string = 'transactions';
-  /** Database name used by this transaction store. */
-  public readonly databaseName: string;
 
   private db: Db | undefined;
   private transactionCollection: Collection<any> | undefined;
@@ -19,9 +18,7 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   /**
    * Constructs a `MongoDbTransactionStore`;
    */
-  constructor (private serverUrl: string, databaseName?: string) {
-    this.databaseName = databaseName ? databaseName : MongoDbTransactionStore.defaultDatabaseName;
-  }
+  constructor (private serverUrl: string, private databaseName: string) { }
 
   /**
    * Initialize the MongoDB transaction store.
@@ -77,7 +74,7 @@ export default class MongoDbTransactionStore implements ITransactionStore {
       transactions = await dbCursor.toArray();
 
     } catch (error) {
-      console.error(error);
+      Logger.error(error);
     }
 
     return transactions;
@@ -199,14 +196,14 @@ export default class MongoDbTransactionStore implements ITransactionStore {
     // If 'transactions' collection exists, use it; else create it.
     let transactionCollection;
     if (collectionNames.includes(MongoDbTransactionStore.transactionCollectionName)) {
-      console.info('Transaction collection already exists.');
+      Logger.info('Transaction collection already exists.');
       transactionCollection = db.collection(MongoDbTransactionStore.transactionCollectionName);
     } else {
-      console.info('Transaction collection does not exists, creating...');
+      Logger.info('Transaction collection does not exists, creating...');
       transactionCollection = await db.createCollection(MongoDbTransactionStore.transactionCollectionName);
       // Note the unique index, so duplicate inserts are rejected.
       await transactionCollection.createIndex({ transactionNumber: 1 }, { unique: true });
-      console.info('Transaction collection created.');
+      Logger.info('Transaction collection created.');
     }
 
     return transactionCollection;

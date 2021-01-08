@@ -1,6 +1,6 @@
-import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
+import CoreIndexFile from '../../lib/core/versions/latest/CoreIndexFile';
 import IBlockchain from '../../lib/core/interfaces/IBlockchain';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationQueue from '../../lib/core/versions/latest/interfaces/IOperationQueue';
@@ -47,7 +47,7 @@ describe('BatchWriter', () => {
       done();
     });
 
-    it('should pass the writer lock ID to AnchorFile.createBuffer() if a value lock exists.', async (done) => {
+    it('should pass the writer lock ID to CoreIndexFile.createBuffer() if a value lock exists.', async (done) => {
       spyOn(blockchain, 'getFee').and.returnValue(Promise.resolve(100));
 
       // Simulate a value lock fetched.
@@ -68,16 +68,34 @@ describe('BatchWriter', () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       await operationQueue.enqueue(createOperationData.createOperation.didUniqueSuffix, createOperationData.createOperation.operationBuffer);
 
-      const anchorFileCreateBufferSpy = spyOn(AnchorFile, 'createBuffer');
-      anchorFileCreateBufferSpy.and.callFake(async (lockId) => {
+      const coreIndexFileCreateBufferSpy = spyOn(CoreIndexFile, 'createBuffer');
+      coreIndexFileCreateBufferSpy.and.callFake(async (lockId) => {
         // This is the check for the test.
         expect(lockId).toEqual(valueLock.identifier);
-        return Buffer.from('anyAnchorFileBuffer');
+        return Buffer.from('anyCoreIndexFileBuffer');
       });
 
       await batchWriter.write();
 
       done();
+    });
+  });
+
+  describe('createAndWriteProvisionalIndexFileIfNeeded()', () => {
+    it('should return `undefined` if no chunk file URI is given.', async () => {
+      const chunkFileUri = undefined;
+      const provisionalProofFileUri = OperationGenerator.generateRandomHash();
+      const updateOperations: any[] = [];
+      const provisionalIndexFileUri =
+        await (batchWriter as any).createAndWriteProvisionalIndexFileIfNeeded(chunkFileUri, provisionalProofFileUri, updateOperations);
+      expect(provisionalIndexFileUri).toBeUndefined();
+    });
+  });
+
+  describe('createAndWriteChunkFileIfNeeded()', () => {
+    it('should return `undefined` if no operation is passed in.', async () => {
+      const chunkFileUri = await (batchWriter as any).createAndWriteChunkFileIfNeeded([], [], []);
+      expect(chunkFileUri).toBeUndefined();
     });
   });
 

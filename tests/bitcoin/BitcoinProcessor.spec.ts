@@ -12,6 +12,7 @@ import BlockMetadataWithoutNormalizedFee from '../../lib/bitcoin/models/BlockMet
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import IBitcoinConfig from '../../lib/bitcoin/IBitcoinConfig';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import Logger from '../../lib/common/Logger';
 import RequestError from '../../lib/bitcoin/RequestError';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
@@ -196,7 +197,43 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
       expect((bitcoinProcessor as any).config.transactionPollPeriodInSeconds).toEqual(60);
       expect((bitcoinProcessor as any).config.sidetreeTransactionPrefix).toEqual(config.sidetreeTransactionPrefix);
-      expect(bitcoinProcessor['transactionStore'].databaseName).toEqual(config.databaseName);
+      expect(bitcoinProcessor['transactionStore']['databaseName']).toEqual(config.databaseName);
+      expect(bitcoinProcessor['transactionStore']['serverUrl']).toEqual(config.mongoDbConnectionString);
+      expect(bitcoinProcessor['bitcoinClient']['sidetreeTransactionFeeMarkupPercentage']).toEqual(0);
+      expect(bitcoinProcessor['bitcoinClient']['estimatedFeeSatoshiPerKB']).toEqual(42);
+    });
+
+    it('should use appropriate config values with lock amount', () => {
+      const config: IBitcoinConfig = {
+        bitcoinDataDirectory: undefined,
+        bitcoinFeeSpendingCutoffPeriodInBlocks: 100,
+        bitcoinFeeSpendingCutoff: 1,
+        bitcoinPeerUri: randomString(),
+        bitcoinRpcUsername: 'admin',
+        bitcoinRpcPassword: 'password123',
+        bitcoinWalletOrImportString: BitcoinClient.generatePrivateKey('testnet'),
+        databaseName: randomString(),
+        defaultTransactionFeeInSatoshisPerKB: 42,
+        genesisBlockNumber: randomNumber(),
+        mongoDbConnectionString: randomString(),
+        sidetreeTransactionPrefix: randomString(4),
+        lowBalanceNoticeInDays: undefined,
+        requestTimeoutInMilliseconds: undefined,
+        requestMaxRetries: undefined,
+        transactionPollPeriodInSeconds: 60,
+        sidetreeTransactionFeeMarkupPercentage: 0,
+        valueTimeLockUpdateEnabled: true,
+        valueTimeLockPollPeriodInSeconds: 60,
+        valueTimeLockAmountInBitcoins: 1,
+        valueTimeLockTransactionFeesAmountInBitcoins: 123
+      };
+
+      const bitcoinProcessor = new BitcoinProcessor(config);
+      expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
+      expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
+      expect((bitcoinProcessor as any).config.transactionPollPeriodInSeconds).toEqual(60);
+      expect((bitcoinProcessor as any).config.sidetreeTransactionPrefix).toEqual(config.sidetreeTransactionPrefix);
+      expect(bitcoinProcessor['transactionStore']['databaseName']).toEqual(config.databaseName);
       expect(bitcoinProcessor['transactionStore']['serverUrl']).toEqual(config.mongoDbConnectionString);
       expect(bitcoinProcessor['bitcoinClient']['sidetreeTransactionFeeMarkupPercentage']).toEqual(0);
       expect(bitcoinProcessor['bitcoinClient']['estimatedFeeSatoshiPerKB']).toEqual(42);
@@ -772,13 +809,13 @@ describe('BitcoinProcessor', () => {
         transactionFee: bitcoinFee,
         serializedTransactionObject: 'string'
       }));
-      const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
+      const loggerErrorSpy = spyOn(Logger, 'error').and.callFake((message: string) => {
         expect(message).toContain('fund your wallet');
       });
       await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
-      expect(errorSpy).toHaveBeenCalled();
+      expect(loggerErrorSpy).toHaveBeenCalled();
       expect(monitorAddSpy).toHaveBeenCalled();
       done();
     });
@@ -984,7 +1021,7 @@ describe('BitcoinProcessor', () => {
       }, 300);
     });
 
-    it('should clear the prevoius timeout if set', async (done) => {
+    it('should clear the previous timeout if set', async (done) => {
 
       getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve());
       const clearTimeoutSpy = spyOn(global, 'clearTimeout').and.returnValue();
@@ -1216,6 +1253,33 @@ describe('BitcoinProcessor', () => {
       expect(processSidetreeTransactionsInBlockSpy).toHaveBeenCalledTimes(3);
       // onces because 1 block is forked
       expect(removeTransactionByTransactionTimeHashSpy).toHaveBeenCalledTimes(1);
+      expect(rawDataParserSpy).toHaveBeenCalled();
+      expect(writeBlocksToMetadataStoreWithFeeSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should process transactions as intended with no raw data', async () => {
+      // this is the end to end test
+      const startBlock = randomBlock(testConfig.genesisBlockNumber);
+      const getCurrentHeightMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(startBlock.height + 1));
+      const getCurrentHashMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight')
+        .and.returnValue(Promise.resolve({ hash: 'hash2', height: startBlock.height + 1, previousHash: 'hash1' }));
+      const fsReaddirSyncSpy = spyOn(fs, 'readdirSync').and.returnValue(['blk001.dat' as any]);
+      const fsReadFileSyncSpy = spyOn(fs, 'readFileSync').and.returnValue(Buffer.from('someBuffer'));
+      const writeBlocksToMetadataStoreWithFeeSpy = spyOn(bitcoinProcessor, 'writeBlocksToMetadataStoreWithFee' as any);
+      const rawDataParserSpy = spyOn(BitcoinRawDataParser, 'parseRawDataFile').and.returnValue([]); // make it empty on purpose
+      const mockFeeCalculator = {
+        calculateNormalizedTransactionFeeFromBlock (block: BlockMetadata) { return Math.floor(block.normalizedFee); },
+        async getNormalizedFee () { return 509; },
+        async addNormalizedFeeToBlockMetadata (block: BlockMetadataWithoutNormalizedFee) { return Object.assign({ normalizedFee: 111 }, block); }
+      };
+      spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
+
+      await bitcoinProcessor['fastProcessTransactions'](startBlock);
+      expect(getCurrentHeightMock).toHaveBeenCalled();
+      expect(getCurrentHashMock).toHaveBeenCalled();
+      expect(fsReaddirSyncSpy).toHaveBeenCalled();
+      expect(fsReadFileSyncSpy).toHaveBeenCalled();
+      // onces because 1 block is forked
       expect(rawDataParserSpy).toHaveBeenCalled();
       expect(writeBlocksToMetadataStoreWithFeeSpy).toHaveBeenCalledTimes(1);
     });
@@ -1843,11 +1907,11 @@ describe('BitcoinProcessor', () => {
 
       await (bitcoinProcessor as any).upgradeDatabaseIfNeeded();
 
-      // Verify that that upgrade path was invoked.
+      // Verify that upgrade path was not invoked.
       expect(serviceStateStorePutSpy).not.toHaveBeenCalled();
     });
 
-    it('should perform upgrade if saved service state is `undefined`.', async () => {
+    it('should perform upgrade if saved service version is different from running service version.', async () => {
       const blockMetadataStoreClearCollectionSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'clearCollection');
       const transactionStoreClearCollectionSpy = spyOn(bitcoinProcessor['transactionStore'], 'clearCollection');
       const serviceStateStorePutSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'put');

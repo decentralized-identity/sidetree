@@ -25,18 +25,9 @@ export default class MongoDbOperationQueue implements IOperationQueue {
 
   private collection: Collection<any> | undefined;
 
-  /**
-   * MongoDb database name where the operations are stored
-   */
-  private databaseName: string = 'sidetree';
-
   private db: Db | undefined;
 
-  constructor (private serverUrl: string, databaseName?: string) {
-    if (databaseName) {
-      this.databaseName = databaseName;
-    }
-  }
+  constructor (private serverUrl: string, private databaseName: string) { }
 
   /**
    * Initialize the MongoDB operation store.

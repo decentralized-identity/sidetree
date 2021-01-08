@@ -10,6 +10,7 @@ import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import BitcoinWallet from './BitcoinWallet';
 import IBitcoinWallet from './interfaces/IBitcoinWallet';
 import { IBlockInfo } from './BitcoinProcessor';
+import Logger from '../common/Logger';
 import ReadableStream from '../common/ReadableStream';
 
 /**
@@ -46,10 +47,10 @@ export default class BitcoinClient {
     private estimatedFeeSatoshiPerKB?: number) {
 
     if (typeof bitcoinWalletOrImportString === 'string') {
-      console.info('Creating bitcoin wallet using the import string passed in.');
+      Logger.info('Creating bitcoin wallet using the import string passed in.');
       this.bitcoinWallet = new BitcoinWallet(bitcoinWalletOrImportString);
     } else {
-      console.info(`Using the bitcoin wallet passed in.`);
+      Logger.info(`Using the bitcoin wallet passed in.`);
       this.bitcoinWallet = bitcoinWalletOrImportString;
     }
 
@@ -65,14 +66,14 @@ export default class BitcoinClient {
 
     const walletAddress = this.bitcoinWallet.getAddress();
 
-    console.debug(`Checking if bitcoin contains a wallet for ${walletAddress}`);
+    Logger.info(`Checking if bitcoin contains a wallet for ${walletAddress}`);
     if (!await this.isAddressAddedToWallet(walletAddress.toString())) {
-      console.debug(`Configuring bitcoin peer to watch address ${walletAddress}. This can take up to 10 minutes.`);
+      Logger.info(`Configuring bitcoin peer to watch address ${walletAddress}. This can take up to 10 minutes.`);
 
       const publicKeyAsHex = this.bitcoinWallet.getPublicKeyAsHex();
       await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
     } else {
-      console.debug('Wallet found.');
+      Logger.info('Wallet found.');
     }
   }
 
@@ -120,7 +121,7 @@ export default class BitcoinClient {
    */
   public async broadcastLockTransaction (bitcoinLockTransaction: BitcoinLockTransactionModel): Promise<string> {
     const transactionHash = await this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
-    console.info(`Broadcasted lock transaction: ${transactionHash}`);
+    Logger.info(`Broadcasted lock transaction: ${transactionHash}`);
 
     return transactionHash;
   }
@@ -262,7 +263,7 @@ export default class BitcoinClient {
    * @returns the block hash
    */
   public async getBlockHash (height: number): Promise<string> {
-    console.info(`Getting hash for block ${height}`);
+    Logger.info(`Getting hash for block ${height}`);
     const hashRequest = {
       method: 'getblockhash',
       params: [
@@ -310,7 +311,7 @@ export default class BitcoinClient {
    * @returns the latest block number
    */
   public async getCurrentBlockHeight (): Promise<number> {
-    console.info('Getting current block height...');
+    Logger.info('Getting current block height...');
     const request = {
       method: 'getblockcount'
     };
@@ -386,7 +387,7 @@ export default class BitcoinClient {
   }
 
   private async isAddressAddedToWallet (address: string): Promise<boolean> {
-    console.info(`Checking if bitcoin wallet for ${address} exists`);
+    Logger.info(`Checking if bitcoin wallet for ${address} exists`);
     const request = {
       method: 'getaddressinfo',
       params: [
@@ -566,7 +567,7 @@ export default class BitcoinClient {
     freezeDurationInBlocks: number,
     freezeAmountInSatoshis: number): Promise<[Transaction, Script]> {
 
-    console.info(`Creating a freeze transaction for amount: ${freezeAmountInSatoshis} satoshis with freeze time in blocks: ${freezeDurationInBlocks}`);
+    Logger.info(`Creating a freeze transaction for amount: ${freezeAmountInSatoshis} satoshis with freeze time in blocks: ${freezeDurationInBlocks}`);
 
     const walletAddress = this.bitcoinWallet.getAddress();
     const freezeScript = BitcoinClient.createFreezeScript(freezeDurationInBlocks, walletAddress);
@@ -591,7 +592,7 @@ export default class BitcoinClient {
     newFreezeDurationInBlocks: number): Promise<[Transaction, Script]> {
 
     // eslint-disable-next-line max-len
-    console.info(`Creating a freeze transaction with freeze time of ${newFreezeDurationInBlocks} blocks, from previously frozen transaction with id: ${previousFreezeTransaction.id}`);
+    Logger.info(`Creating a freeze transaction with freeze time of ${newFreezeDurationInBlocks} blocks, from previously frozen transaction with id: ${previousFreezeTransaction.id}`);
 
     const freezeScript = BitcoinClient.createFreezeScript(newFreezeDurationInBlocks, this.bitcoinWallet.getAddress());
     const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
@@ -612,7 +613,7 @@ export default class BitcoinClient {
     previousFreezeDurationInBlocks: number): Promise<Transaction> {
 
     // eslint-disable-next-line max-len
-    console.info(`Creating a transaction to return (to the wallet) the previously frozen amount from transaction with id: ${previousFreezeTransaction.id} which was frozen for block duration: ${previousFreezeDurationInBlocks}`);
+    Logger.info(`Creating a transaction to return (to the wallet) the previously frozen amount from transaction with id: ${previousFreezeTransaction.id} which was frozen for block duration: ${previousFreezeDurationInBlocks}`);
 
     return this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
@@ -717,6 +718,7 @@ export default class BitcoinClient {
   private static createBitcoinOutputModel (bitcoreOutput: Transaction.Output): BitcoinOutputModel {
     return {
       satoshis: bitcoreOutput.satoshis,
+      // Some transaction outputs do not have a script, such as coinbase transactions.
       scriptAsmAsString: bitcoreOutput.script ? bitcoreOutput.script.toASM() : ''
     };
   }
@@ -741,9 +743,8 @@ export default class BitcoinClient {
 
   private async getUnspentOutputs (address: Address): Promise<Transaction.UnspentOutput[]> {
 
-    // Retrieve all transactions by addressToSearch via BCoin Node API /tx/address/$address endpoint
     const addressToSearch = address.toString();
-    console.info(`Getting unspent coins for ${addressToSearch}`);
+    Logger.info(`Getting unspent coins for ${addressToSearch}`);
     const request = {
       method: 'listunspent',
       params: [
@@ -758,7 +759,7 @@ export default class BitcoinClient {
       return new Transaction.UnspentOutput(coin);
     });
 
-    console.info(`Returning ${unspentTransactions.length} coins`);
+    Logger.info(`Returning ${unspentTransactions.length} coins`);
 
     return unspentTransactions;
   }
@@ -769,7 +770,7 @@ export default class BitcoinClient {
     request.id = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
 
     const requestString = JSON.stringify(request);
-    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request.method}`);
+    Logger.info(`Sending jRPC request: id: ${request.id}, method: ${request.method}`);
 
     const requestOptions: RequestInit = {
       body: requestString,
@@ -787,7 +788,7 @@ export default class BitcoinClient {
     const responseData = await ReadableStream.readAll(response.body);
     if (response.status !== httpStatus.OK) {
       const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
-      console.error(error);
+      Logger.error(error);
       throw error;
     }
 
@@ -795,7 +796,7 @@ export default class BitcoinClient {
 
     if ('error' in responseJson && responseJson.error !== null) {
       const error = new Error(`RPC failed: ${JSON.stringify(responseJson.error)}`);
-      console.error(error);
+      Logger.error(error);
       throw error;
     }
 
@@ -825,18 +826,18 @@ export default class BitcoinClient {
       } catch (error) {
         if (error instanceof FetchError) {
           if (retryCount >= this.requestMaxRetries) {
-            console.debug('Max retries reached. Request failed.');
+            Logger.info('Max retries reached. Request failed.');
             throw error;
           }
           switch (error.type) {
             case 'request-timeout':
-              console.debug(`Request timeout (${retryCount})`);
+              Logger.info(`Request timeout (${retryCount})`);
               await this.waitFor(Math.round(timeout));
-              console.debug(`Retrying request (${++retryCount})`);
+              Logger.info(`Retrying request (${++retryCount})`);
               continue;
           }
         }
-        console.error(error);
+        Logger.error(error);
         throw error;
       }
     } while (true);

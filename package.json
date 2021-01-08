@@ -1,6 +1,6 @@
 {
   "name": "@decentralized-identity/sidetree",
-  "version": "0.11.0",
+  "version": "0.12.1",
   "description": "Node.js implementation of Sidetree.",
   "repository": "https://github.com/decentralized-identity/sidetree",
   "license": "Apache-2.0",
@@ -11,6 +11,7 @@
     "bitcore-lib": "8.22.2",
     "canonicalize": "1.0.1",
     "chalk": "4.0.0",
+    "cids": "1.1.4",
     "http-status": "1.3.2",
     "jose": "1.25.0",
     "mongodb": "3.2.3",
@@ -98,8 +99,10 @@
       "**/index.ts",
       "lib/bitcoin/versions/[0-9]**/**",
       "lib/core/versions/[0-9]**/**",
+      "lib/core/versions/**/PatchActions.ts",
       "lib/core/versions/**/VersionMetadata.ts",
-      "lib/**/**ErrorCode.ts"
+      "lib/**/**ErrorCode.ts",
+      "lib/**/**EventCode.ts"
     ],
     "reporter": [
       "text",

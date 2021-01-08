@@ -168,7 +168,6 @@ describe('VersionManager', async () => {
       await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
 
       const result = versionMgr.getVersionMetadata(1001);
-      expect(result.hashAlgorithmInMultihashCode).toEqual(18);
       expect(result.normalizedFeeToPerOperationFeeMultiplier).toEqual(0.01);
     });
   });

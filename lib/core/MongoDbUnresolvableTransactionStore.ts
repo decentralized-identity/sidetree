@@ -1,5 +1,6 @@
 import { Collection, Db, Long, MongoClient } from 'mongodb';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
+import Logger from '../common/Logger';
 import TransactionModel from '../common/models/TransactionModel';
 
 interface IUnresolvableTransaction extends TransactionModel {
@@ -12,12 +13,8 @@ interface IUnresolvableTransaction extends TransactionModel {
  * Implementation of `IIUnresolvableTransactionStore` that stores the transaction data in a MongoDB database.
  */
 export default class MongoDbUnresolvableTransactionStore implements IUnresolvableTransactionStore {
-  /** Default database name used if not specified in constructor. */
-  public static readonly defaultDatabaseName: string = 'sidetree';
   /** Collection name for unresolvable transactions. */
   public static readonly unresolvableTransactionCollectionName: string = 'unresolvable-transactions';
-  /** Database name used by this transaction store. */
-  public readonly databaseName: string;
 
   private exponentialDelayFactorInMilliseconds = 60000;
   private maximumUnresolvableTransactionReturnCount = 100;
@@ -31,9 +28,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
    *   The exponential delay factor in milliseconds for retries of unresolvable transactions.
    *   e.g. if it is set to 1 seconds, then the delays for retries will be 1 second, 2 seconds, 4 seconds... until the transaction can be resolved.
    */
-  constructor (private serverUrl: string, databaseName?: string, retryExponentialDelayFactor?: number) {
-    this.databaseName = databaseName ? databaseName : MongoDbUnresolvableTransactionStore.defaultDatabaseName;
-
+  constructor (private serverUrl: string, private databaseName: string, retryExponentialDelayFactor?: number) {
     if (retryExponentialDelayFactor !== undefined) {
       this.exponentialDelayFactorInMilliseconds = retryExponentialDelayFactor;
     }
@@ -58,7 +53,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
     await this.unresolvableTransactionCollection!.deleteMany({ }); // Empty filter removes all entries in collection.
   }
 
-  async recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void> {
+  public async recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void> {
     // Try to get the unresolvable transaction from store.
     const transactionTime = transaction.transactionTime;
     const transactionNumber = transaction.transactionNumber;
@@ -89,7 +84,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
       const anchorString = transaction.anchorString;
       const requiredElapsedTimeSinceFirstFetchBeforeNextRetry = Math.pow(2, unresolvableTransaction.retryAttempts) * this.exponentialDelayFactorInMilliseconds;
       const requiredElapsedTimeInSeconds = requiredElapsedTimeSinceFirstFetchBeforeNextRetry / 1000;
-      console.info(`Record transaction ${transactionNumber} with anchor string ${anchorString} to retry after ${requiredElapsedTimeInSeconds} seconds.`);
+      Logger.info(`Record transaction ${transactionNumber} with anchor string ${anchorString} to retry after ${requiredElapsedTimeInSeconds} seconds.`);
       const nextRetryTime = unresolvableTransaction.firstFetchTime + requiredElapsedTimeSinceFirstFetchBeforeNextRetry;
 
       const searchFilter = { transactionTime, transactionNumber: Long.fromNumber(transactionNumber) };
@@ -97,13 +92,13 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
     }
   }
 
-  async removeUnresolvableTransaction (transaction: TransactionModel): Promise<void> {
+  public async removeUnresolvableTransaction (transaction: TransactionModel): Promise<void> {
     const transactionTime = transaction.transactionTime;
     const transactionNumber = transaction.transactionNumber;
     await this.unresolvableTransactionCollection!.deleteOne({ transactionTime, transactionNumber: Long.fromNumber(transactionNumber) });
   }
 
-  async getUnresolvableTransactionsDueForRetry (maximumReturnCount?: number): Promise<TransactionModel[]> {
+  public async getUnresolvableTransactionsDueForRetry (maximumReturnCount?: number): Promise<TransactionModel[]> {
     // Override the return count if it is specified.
     let returnCount = this.maximumUnresolvableTransactionReturnCount;
     if (maximumReturnCount !== undefined) {
@@ -117,7 +112,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
     return unresolvableTransactionsToRetry;
   }
 
-  async removeUnresolvableTransactionsLaterThan (transactionNumber?: number): Promise<void> {
+  public async removeUnresolvableTransactionsLaterThan (transactionNumber?: number): Promise<void> {
     // If given `undefined`, remove all transactions.
     if (transactionNumber === undefined) {
       await this.clearCollection();
@@ -147,14 +142,14 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
     // If 'unresolvable transactions' collection exists, use it; else create it.
     let unresolvableTransactionCollection;
     if (collectionNames.includes(MongoDbUnresolvableTransactionStore.unresolvableTransactionCollectionName)) {
-      console.info('Unresolvable transaction collection already exists.');
+      Logger.info('Unresolvable transaction collection already exists.');
       unresolvableTransactionCollection = db.collection(MongoDbUnresolvableTransactionStore.unresolvableTransactionCollectionName);
     } else {
-      console.info('Unresolvable transaction collection does not exists, creating...');
+      Logger.info('Unresolvable transaction collection does not exists, creating...');
       unresolvableTransactionCollection = await db.createCollection(MongoDbUnresolvableTransactionStore.unresolvableTransactionCollectionName);
       await unresolvableTransactionCollection.createIndex({ transactionTime: 1, transactionNumber: 1 }, { unique: true });
       await unresolvableTransactionCollection.createIndex({ nextRetryTime: 1 });
-      console.info('Unresolvable transaction collection created.');
+      Logger.info('Unresolvable transaction collection created.');
     }
 
     return unresolvableTransactionCollection;

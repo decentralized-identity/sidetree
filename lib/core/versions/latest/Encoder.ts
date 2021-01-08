@@ -50,12 +50,12 @@ export default class Encoder {
    */
   private static validateBase64UrlString (input: any) {
     if (typeof input !== 'string') {
-      throw new SidetreeError(ErrorCode.EncoderValidateBase64UrlStringInputNotString, `Input '${input}' not a string.`);
+      throw new SidetreeError(ErrorCode.EncoderValidateBase64UrlStringInputNotString, `Input '${JSON.stringify(input)}' not a string.`);
     }
 
     const isBase64UrlString = Encoder.isBase64UrlString(input);
     if (!isBase64UrlString) {
-      throw new SidetreeError(ErrorCode.EncoderValidateBase64UrlStringInputNotBase64UrlString, `Input '${input}' not a Base64URL string.`);
+      throw new SidetreeError(ErrorCode.EncoderValidateBase64UrlStringInputNotBase64UrlString, `Input '${JSON.stringify(input)}' not a Base64URL string.`);
     }
   }
 

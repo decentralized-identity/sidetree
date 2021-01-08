@@ -8,7 +8,7 @@ export default class MongoDbOperationQueue extends MockOperationQueue {
   public constructor (private connectionString: string) {
     super();
 
-    console.debug('Making typescript ', this.connectionString);
+    console.info('Making typescript ', this.connectionString);
   }
 
   /**

@@ -1,6 +1,7 @@
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -22,7 +23,7 @@ describe('DeactivateOperation', async () => {
       done();
     });
 
-    it('should throw if operation contains unknown property', async (done) => {
+    it('should throw if operation contains unknown property', async () => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
       const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
@@ -33,8 +34,12 @@ describe('DeactivateOperation', async () => {
       (deactivateOperationRequest as any).unknownProperty = 'unknown property value'; // Intentionally creating an unknown property.
 
       const operationBuffer = Buffer.from(JSON.stringify(deactivateOperationRequest));
-      await expectAsync(DeactivateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationMissingOrUnknownProperty));
-      done();
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => DeactivateOperation.parse(operationBuffer),
+        ErrorCode.InputValidatorInputContainsNowAllowedProperty,
+        'deactivate request'
+      );
     });
 
     it('should throw if operation type is incorrect.', async (done) => {
@@ -69,6 +74,53 @@ describe('DeactivateOperation', async () => {
     });
   });
 
+  describe('parseObject()', async () => {
+    it('should throw if hash of `recoveryKey` does not match the revealValue.', async () => {
+      const didSuffix = OperationGenerator.generateRandomHash();
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const deactivateRequest = await OperationGenerator.createDeactivateOperationRequest(didSuffix, recoveryPrivateKey);
+
+      // Intentionally have a mismatching reveal value.
+      deactivateRequest.revealValue = OperationGenerator.generateRandomHash();
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => DeactivateOperation.parseObject(deactivateRequest, Buffer.from('unused')),
+        ErrorCode.CanonicalizedObjectHashMismatch,
+        'deactivate request'
+      );
+    });
+
+    it('should throw if revealValue is not a multihash.', async () => {
+      const didSuffix = OperationGenerator.generateRandomHash();
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const deactivateRequest = await OperationGenerator.createDeactivateOperationRequest(didSuffix, recoveryPrivateKey);
+
+      // Intentionally have an invalid non-multihash reveal value.
+      deactivateRequest.revealValue = 'not-a-multihash';
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => DeactivateOperation.parseObject(deactivateRequest, Buffer.from('unused')),
+        ErrorCode.MultihashStringNotAMultihash,
+        'deactivate request'
+      );
+    });
+
+    it('should throw if revealValue is an unsupported multihash.', async () => {
+      const didSuffix = OperationGenerator.generateRandomHash();
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const deactivateRequest = await OperationGenerator.createDeactivateOperationRequest(didSuffix, recoveryPrivateKey);
+
+      // Intentionally have an unsupported multihash.
+      deactivateRequest.revealValue = 'ARSIZ8iLVuC_uCz_rxWma8jRB9Z1Sg'; // SHA1
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => DeactivateOperation.parseObject(deactivateRequest, Buffer.from('unused')),
+        ErrorCode.MultihashNotSupported,
+        'deactivate request'
+      );
+    });
+  });
+
   describe('parseSignedDataPayload()', async () => {
     it('should throw if signedData contains an additional unknown property.', async (done) => {
       const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
@@ -78,8 +130,8 @@ describe('DeactivateOperation', async () => {
         revealValue: recoveryRevealValue,
         extraProperty: 'An unknown extra property'
       };
-      const encodedDelta = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync(DeactivateOperation.parseSignedDataPayload(encodedDelta, didUniqueSuffix))
+      const signedDataEncodedString = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync(DeactivateOperation.parseSignedDataPayload(signedDataEncodedString, didUniqueSuffix))
         .toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationSignedDataMissingOrUnknownProperty));
       done();
     });
@@ -87,8 +139,8 @@ describe('DeactivateOperation', async () => {
     it('should throw if signedData is missing expected properties.', async (done) => {
       const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
       const signedData = {};
-      const encodedDelta = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync(DeactivateOperation.parseSignedDataPayload(encodedDelta, didUniqueSuffix))
+      const signedDataEncodedString = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync(DeactivateOperation.parseSignedDataPayload(signedDataEncodedString, didUniqueSuffix))
         .toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationSignedDataMissingOrUnknownProperty));
       done();
     });
