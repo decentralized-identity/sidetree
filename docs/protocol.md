@@ -52,7 +52,7 @@ A Sidetree client manages the private keys and performs document operations on b
 
 
 ## Merkle Root Hash Inclusion (Currently not implemented, may support in the future)
-Sidetree _anchor file_ also includes the root hash of a Merkle tree constructed using the hashes of batched operations.
+Sidetree _Core Index File_ also includes the root hash of a Merkle tree constructed using the hashes of batched operations.
 
 The Sidetree specification does *not* rely on the root hash to operate and the usefulness of the Merkle root is still being discussed, but since this hash is small, stored off-chain, and cheap to compute and store, we do. There is an opportunity for an API or service to return a concise receipt (proof) for a given operation such that this operation can be cryptographically proven to be part of a batch without the need of the entire chunk file. Note this receipt cannot be provided in the response of the operation request because Merkle tree construction happens asynchronously when the final batch is formed.
 
