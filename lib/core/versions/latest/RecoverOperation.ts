@@ -1,6 +1,7 @@
 import DeltaModel from './models/DeltaModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
 import Jwk from './util/Jwk';
 import Jws from './util/Jws';
@@ -15,42 +16,20 @@ import SignedDataModel from './models/RecoverSignedDataModel';
  * A class that represents a recover operation.
  */
 export default class RecoverOperation implements OperationModel {
-
-  /** The original request buffer sent by the requester. */
-  public readonly operationBuffer: Buffer;
-
-  /** The unique suffix of the DID. */
-  public readonly didUniqueSuffix: string;
-
   /** The type of operation. */
-  public readonly type: OperationType;
-
-  /** Signed data. */
-  public readonly signedDataJws: Jws;
-
-  /** Decoded signed data payload. */
-  public readonly signedData: SignedDataModel;
-
-  /** Patch data. */
-  public readonly delta: DeltaModel | undefined;
+  public readonly type: OperationType = OperationType.Recover;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
    */
   private constructor (
-    operationBuffer: Buffer,
-    didUniqueSuffix: string,
-    signedDataJws: Jws,
-    signedData: SignedDataModel,
-    delta: DeltaModel | undefined
-  ) {
-    this.operationBuffer = operationBuffer;
-    this.type = OperationType.Recover;
-    this.didUniqueSuffix = didUniqueSuffix;
-    this.signedDataJws = signedDataJws;
-    this.signedData = signedData;
-    this.delta = delta;
-  }
+    public readonly operationBuffer: Buffer,
+    public readonly didUniqueSuffix: string,
+    public readonly revealValue: string,
+    public readonly signedDataJws: Jws,
+    public readonly signedData: SignedDataModel,
+    public readonly delta: DeltaModel | undefined
+  ) { }
 
   /**
    * Parses the given buffer as a `RecoverOperation`.
@@ -69,23 +48,25 @@ export default class RecoverOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<RecoverOperation> {
-    const expectedPropertyCount = 4;
+    InputValidator.validateObjectContainsOnlyAllowedProperties(
+      operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], 'recover request'
+    );
 
-    const properties = Object.keys(operationObject);
-    if (properties.length !== expectedPropertyCount) {
-      throw new SidetreeError(ErrorCode.RecoverOperationMissingOrUnknownProperty);
+    if (operationObject.type !== OperationType.Recover) {
+      throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);
     }
 
     if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
-    const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
+    InputValidator.validateEncodedMultihash(operationObject.revealValue, 'recover request reveal value');
 
-    if (operationObject.type !== OperationType.Recover) {
-      throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);
-    }
+    const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
+    const signedDataModel = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
+
+    // Validate that the canonicalized recovery public key hash is the same as `revealValue`.
+    Multihash.validateCanonicalizeObjectHash(signedDataModel.recoveryKey, operationObject.revealValue, 'recover request recovery key');
 
     let delta;
     try {
@@ -100,8 +81,9 @@ export default class RecoverOperation implements OperationModel {
     return new RecoverOperation(
       operationBuffer,
       operationObject.didSuffix,
+      operationObject.revealValue,
       signedDataJws,
-      signedData,
+      signedDataModel,
       delta
     );
   }
@@ -120,11 +102,8 @@ export default class RecoverOperation implements OperationModel {
 
     Jwk.validateJwkEs256k(signedData.recoveryKey);
 
-    const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
-
-    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.recoveryCommitment);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
+    InputValidator.validateEncodedMultihash(signedData.deltaHash, 'recover operation delta hash');
+    InputValidator.validateEncodedMultihash(signedData.recoveryCommitment, 'recover operation next recovery commitment');
 
     return signedData;
   }

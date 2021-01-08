@@ -1,26 +1,26 @@
 import * as retry from 'async-retry';
-import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import Blockchain from '../../lib/core/Blockchain';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
+import CoreIndexFile from '../../lib/core/versions/latest/CoreIndexFile';
 import DownloadManager from '../../lib/core/DownloadManager';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Ipfs from '../../lib/ipfs/Ipfs';
-import MapFile from '../../lib/core/versions/latest/MapFile';
+import Logger from '../../lib/common/Logger';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import MockVersionManager from '../mocks/MockVersionManager';
-import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import OperationGenerator from '../generators/OperationGenerator';
+import ProvisionalIndexFile from '../../lib/core/versions/latest/ProvisionalIndexFile';
 import SidetreeError from '../../lib/common/SidetreeError';
 import TransactionModel from '../../lib/common/models/TransactionModel';
+import { TransactionProcessingStatus } from '../../lib/core/models/TransactionUnderProcessingModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 
@@ -33,6 +33,7 @@ describe('Observer', async () => {
   let transactionStore: MockTransactionStore;
   let blockchain: MockBlockchain;
   let versionManager: IVersionManager;
+  let getTransactionProcessorSpy: jasmine.Spy;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
@@ -59,7 +60,8 @@ describe('Observer', async () => {
     const transactionSelector = new TransactionSelector(transactionStore);
     versionManager = new MockVersionManager();
 
-    spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
+    getTransactionProcessorSpy = spyOn(versionManager, 'getTransactionProcessor');
+    getTransactionProcessorSpy.and.returnValue(transactionProcessor);
     spyOn(versionManager, 'getTransactionSelector').and.returnValue(transactionSelector);
   });
 
@@ -163,7 +165,7 @@ describe('Observer', async () => {
     const operation2Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 2 });
     const createOperations = [operation1Data.createOperation, operation2Data.createOperation];
 
-    const coreProofFileHash = undefined;
+    const coreProofFileUri = undefined;
 
     // Generating chunk file data.
     const mockChunkFileBuffer = await ChunkFile.createBuffer(createOperations, [], []);
@@ -171,33 +173,33 @@ describe('Observer', async () => {
       code: FetchResultCode.Success,
       content: mockChunkFileBuffer
     };
-    const mockChunkFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockChunkFileHash')));
+    const mockChunkFileUri = 'MockChunkFileUri';
 
-    // Generating map file data.
+    // Generating provisional index file data.
     const mockProvisionalProofFileUri = undefined;
-    const mockMapFileBuffer = await MapFile.createBuffer(mockChunkFileHash, mockProvisionalProofFileUri, []);
-    const mockMapFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockMapFileHash')));
-    const mockMapFileFetchResult: FetchResult = {
+    const mockProvisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(mockChunkFileUri, mockProvisionalProofFileUri, []);
+    const mockProvisionalIndexFileUri = 'MockProvisionalIndexFileUri';
+    const mockProvisionalIndexFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
-      content: mockMapFileBuffer
+      content: mockProvisionalIndexFileBuffer
     };
 
-    // Generating anchor file data.
-    const mockAnchorFileBuffer =
-      await AnchorFile.createBuffer('writerLock', mockMapFileHash, coreProofFileHash, createOperations, [], []);
+    // Generating core index file data.
+    const mockCoreIndexFileBuffer =
+      await CoreIndexFile.createBuffer('writerLock', mockProvisionalIndexFileUri, coreProofFileUri, createOperations, [], []);
     const mockAnchoredFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
-      content: mockAnchorFileBuffer
+      content: mockCoreIndexFileBuffer
     };
-    const mockAnchorFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockAnchorFileHash')));
+    const mockCoreIndexFileUri = 'MockCoreIndexFileUri';
 
     // Prepare the mock fetch results from the `DownloadManager.download()`.
     const mockDownloadFunction = async (hash: string) => {
-      if (hash === mockAnchorFileHash) {
+      if (hash === mockCoreIndexFileUri) {
         return mockAnchoredFileFetchResult;
-      } else if (hash === mockMapFileHash) {
-        return mockMapFileFetchResult;
-      } else if (hash === mockChunkFileHash) {
+      } else if (hash === mockProvisionalIndexFileUri) {
+        return mockProvisionalIndexFileFetchResult;
+      } else if (hash === mockChunkFileUri) {
         return mockChunkFileFetchResult;
       } else {
         throw new Error('Test failed, unexpected hash given');
@@ -216,7 +218,7 @@ describe('Observer', async () => {
       1
     );
 
-    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: mockAnchorFileHash, numberOfOperations: createOperations.length });
+    const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: mockCoreIndexFileUri, numberOfOperations: createOperations.length });
     const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,
@@ -239,17 +241,17 @@ describe('Observer', async () => {
     }
   });
 
-  // Testing invalid anchor file scenarios:
-  const invalidAnchorFileTestsInput = [
+  // Testing invalid core index file scenarios:
+  const invalidCoreIndexFileTestsInput = [
     [FetchResultCode.MaxSizeExceeded, 'exceeded max size limit'],
     [FetchResultCode.NotAFile, 'is not a file'],
     [FetchResultCode.InvalidHash, 'is not a valid hash']
   ];
-  for (const tuple of invalidAnchorFileTestsInput) {
+  for (const tuple of invalidCoreIndexFileTestsInput) {
     const mockFetchReturnCode = tuple[0];
     const expectedConsoleLogSubstring = tuple[1];
 
-    it(`should stop processing a transaction if ${mockFetchReturnCode}`, async () => {
+    it(`should stop processing a transaction if downloading core index files returns '${mockFetchReturnCode}'.`, async () => {
       const blockchainClient = new Blockchain(config.blockchainServiceUri);
       const observer = new Observer(
         versionManager,
@@ -264,7 +266,7 @@ describe('Observer', async () => {
       spyOn(downloadManager, 'download').and.returnValue(Promise.resolve({ code: mockFetchReturnCode as FetchResultCode }));
 
       let expectedConsoleLogDetected = false;
-      spyOn(global.console, 'info').and.callFake((message: string) => {
+      spyOn(Logger, 'info').and.callFake((message: string) => {
         if (message.includes(expectedConsoleLogSubstring)) {
           expectedConsoleLogDetected = true;
         }
@@ -273,7 +275,7 @@ describe('Observer', async () => {
       spyOn(transactionStore, 'removeUnresolvableTransaction');
       spyOn(transactionStore, 'recordUnresolvableTransactionFetchAttempt');
 
-      const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw', numberOfOperations: 1 });
+      const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -391,7 +393,7 @@ describe('Observer', async () => {
     };
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
 
-    // Make the `getFirstValidTransaction` call return the first transaction as the most recent knwon valid transactions.
+    // Make the `getFirstValidTransaction` call return the first transaction as the most recent known valid transactions.
     spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(initialTransactionFetchResponseBody.transactions[0]));
 
     // Process first set of transactions.
@@ -437,8 +439,58 @@ describe('Observer', async () => {
     expect(processedTransactions[3].anchorString).toEqual('4thTransaction');
   });
 
+  it('should log error if blockchian throws', async () => {
+    const blockchainClient = new Blockchain(config.blockchainServiceUri);
+
+    let readInvocationCount = 0;
+    spyOn(blockchainClient, 'read').and.callFake(() => {
+      readInvocationCount++;
+      throw new Error('Expected test error');
+    });
+    const loggerErrorSpy = spyOn(Logger, 'error').and.callThrough();
+
+    // Start the Observer.
+    const observer = new Observer(
+      versionManager,
+      blockchainClient,
+      config.maxConcurrentDownloads,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      1
+    );
+
+    // mocking throughput limiter to make testing easier
+    spyOn(observer['throughputLimiter'], 'getQualifiedTransactions').and.callFake(
+      (transactions: TransactionModel[]) => {
+        return new Promise((resolve) => { resolve(transactions); });
+      }
+    );
+
+    await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
+
+    observer.stopPeriodicProcessing(); // Asynchronously stops Observer from processing more transactions after the initial processing cycle.
+
+    await retry(async _bail => {
+      if (readInvocationCount > 0) {
+        return;
+      }
+
+      // NOTE: the `retry` library retries if error is thrown.
+      throw new Error('Two transaction processing cycles have not occured yet.');
+    }, {
+      retries: 3,
+      minTimeout: 1000, // milliseconds
+      maxTimeout: 1000 // milliseconds
+    });
+
+    // throughput limiter applies logic to filter out some transactions
+    expect(loggerErrorSpy).toHaveBeenCalledWith('Encountered unhandled and possibly fatal Observer error, must investigate and fix:');
+    expect(loggerErrorSpy).toHaveBeenCalledWith(new Error('Expected test error'));
+  });
+
   it('should not rollback if blockchain time in bitcoin service is behind core service.', async () => {
-    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 });
+    const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: '1stTransaction', numberOfOperations: 1 });
     const transaction = {
       transactionNumber: 1,
       transactionTime: 1000,
@@ -467,7 +519,7 @@ describe('Observer', async () => {
     };
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
 
-    // NOTE: it is irrelvant what getFirstValidTransaction() returns because it is expected to be not called at all.
+    // NOTE: it is irrelevant what getFirstValidTransaction() returns because it is expected to be not called at all.
     const getFirstValidTransactionSpy =
       spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(undefined));
 
@@ -493,7 +545,7 @@ describe('Observer', async () => {
       }
 
       // NOTE: the `retry` library retries if error is thrown.
-      throw new Error('Two transaction processing cycles have not occured yet.');
+      throw new Error('Two transaction processing cycles have not occurred yet.');
     }, {
       retries: 3,
       minTimeout: 1000, // milliseconds
@@ -502,5 +554,107 @@ describe('Observer', async () => {
 
     expect(revertInvalidTransactionsSpy).toHaveBeenCalledTimes(0);
     expect(getFirstValidTransactionSpy).toHaveBeenCalledTimes(0);
+  });
+
+  describe('waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo', () => {
+    it('should wait until transactionsUnderProcessing is greater than count', async () => {
+      const blockchainClient = new Blockchain(config.blockchainServiceUri);
+      const observer = new Observer(
+        versionManager,
+        blockchainClient,
+        config.maxConcurrentDownloads,
+        operationStore,
+        transactionStore,
+        transactionStore,
+        1
+      );
+      observer['transactionsUnderProcessing'] = [1, 2, 3] as any;
+      const storeConsecutiveTransactionsProcessedSpy = spyOn(observer as any, 'storeConsecutiveTransactionsProcessed').and.callFake(() => {
+        observer['transactionsUnderProcessing'] = [];
+      });
+
+      const startTime = Date.now();
+      await observer['waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo'](0);
+      const endTime = Date.now();
+
+      expect(storeConsecutiveTransactionsProcessedSpy).toHaveBeenCalledTimes(1);
+      // it should have taken at least 1 second because the setTimeout loop
+      expect(endTime - startTime).toBeGreaterThanOrEqual(1000);
+    });
+  });
+
+  describe('processUnresolvableTransactions', () => {
+    it('should process unresolvable transactions as expected', async () => {
+      const blockchainClient = new Blockchain(config.blockchainServiceUri);
+      const observer = new Observer(
+        versionManager,
+        blockchainClient,
+        config.maxConcurrentDownloads,
+        operationStore,
+        transactionStore,
+        transactionStore,
+        1
+      );
+      const isIndividualResolved = [false, false, false];
+      spyOn(observer['unresolvableTransactionStore'], 'getUnresolvableTransactionsDueForRetry').and.returnValue([1, 2, 3] as any);
+
+      spyOn(observer as any, 'processTransaction').and.callFake((transaction: any, awaitingTransaction: any) => {
+        awaitingTransaction.processingStatus = TransactionProcessingStatus.Processed;
+        isIndividualResolved[transaction - 1] = true;
+      });
+
+      await observer['processUnresolvableTransactions']();
+      expect(isIndividualResolved[0]).toBeTruthy();
+      expect(isIndividualResolved[1]).toBeTruthy();
+      expect(isIndividualResolved[2]).toBeTruthy();
+    });
+  });
+
+  describe('processTransaction', () => {
+    it('should handle unexpected error', async () => {
+      const blockchainClient = new Blockchain(config.blockchainServiceUri);
+      const observer = new Observer(
+        versionManager,
+        blockchainClient,
+        config.maxConcurrentDownloads,
+        operationStore,
+        transactionStore,
+        transactionStore,
+        1
+      );
+      getTransactionProcessorSpy.and.throwError('Expected test error');
+      const recordUnresolvableAttemptSpy = spyOn(observer['unresolvableTransactionStore'], 'recordUnresolvableTransactionFetchAttempt');
+
+      await observer['processTransaction']({} as any, {} as any);
+      // Failed to process the unresolvable transactions so the attempt should be recorded
+      expect(recordUnresolvableAttemptSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('revertInvalidTransactions', () => {
+    it('should delete all operations if last known valid transaction does not exist', async () => {
+      const observer = new Observer(
+        versionManager,
+        blockchain,
+        config.maxConcurrentDownloads,
+        operationStore,
+        transactionStore,
+        transactionStore,
+        1
+      );
+
+      spyOn(transactionStore, 'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve([]));
+      spyOn(blockchain, 'getFirstValidTransaction').and.returnValue(Promise.resolve(undefined));
+
+      const operationStoreDelteSpy = spyOn(observer['operationStore'], 'delete').and.returnValue(Promise.resolve());
+      const transactionStoreDelteSpy = spyOn(observer['transactionStore'], 'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
+      const unresolvableTransactionStoreDelteSpy = spyOn(observer['unresolvableTransactionStore'], 'removeUnresolvableTransactionsLaterThan').and.returnValue(Promise.resolve());
+
+      await observer['revertInvalidTransactions']();
+
+      expect(operationStoreDelteSpy).toHaveBeenCalledWith(undefined);
+      expect(transactionStoreDelteSpy).toHaveBeenCalledWith(undefined);
+      expect(unresolvableTransactionStoreDelteSpy).toHaveBeenCalledWith(undefined);
+    });
   });
 });

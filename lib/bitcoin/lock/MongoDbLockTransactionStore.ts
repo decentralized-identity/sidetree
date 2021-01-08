@@ -1,4 +1,5 @@
 import { Collection, Db, Long, MongoClient } from 'mongodb';
+import Logger from '../../common/Logger';
 import SavedLockModel from './../models/SavedLockedModel';
 
 /**
@@ -7,8 +8,6 @@ import SavedLockModel from './../models/SavedLockedModel';
 export default class MongoDbLockTransactionStore {
   private db: Db | undefined;
   private lockCollection: Collection<any> | undefined;
-
-  private static readonly defaultDatabaseName: string = 'sidetree';
 
   /** The collection name */
   public static readonly lockCollectionName = 'locks';
@@ -20,7 +19,7 @@ export default class MongoDbLockTransactionStore {
    */
   public constructor (
     private serverUrl: string,
-    private databaseName: string = MongoDbLockTransactionStore.defaultDatabaseName) {
+    private databaseName: string) {
   }
 
   /**
@@ -83,14 +82,14 @@ export default class MongoDbLockTransactionStore {
     // If 'locks' collection exists, use it; else create it.
     let lockCollection;
     if (collectionNames.includes(MongoDbLockTransactionStore.lockCollectionName)) {
-      console.info('Locks collection already exists.');
+      Logger.info('Locks collection already exists.');
       lockCollection = db.collection(MongoDbLockTransactionStore.lockCollectionName);
     } else {
-      console.info('Locks collection does not exists, creating...');
+      Logger.info('Locks collection does not exists, creating...');
       lockCollection = await db.createCollection(MongoDbLockTransactionStore.lockCollectionName);
 
       await lockCollection.createIndex({ createTimestamp: -1 });
-      console.info('Locks collection created.');
+      Logger.info('Locks collection created.');
     }
 
     return lockCollection;

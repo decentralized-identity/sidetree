@@ -1,15 +1,23 @@
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import FeeManager from '../../lib/core/versions/latest/FeeManager';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import ProtocolParameters from '../../lib/core/versions/latest/ProtocolParameters';
 
 describe('FeeManager', async () => {
 
+  beforeAll(() => {
+    ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock = 100;
+    ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier = 0.001;
+  });
+
   describe('computeMinimumTransactionFee', async () => {
 
-    it('should return calculated fee if it is greater', async () => {
-      const fee = FeeManager.computeMinimumTransactionFee(2, 10000);
+    it('should calculate fee correctly.', async () => {
+      const normalizedFee = 1000;
+      const numberOfOperations = 1000;
+      const fee = FeeManager.computeMinimumTransactionFee(normalizedFee, numberOfOperations);
 
-      expect(fee).toEqual(200);
+      expect(fee).toEqual(1000);
     });
 
     it('should return at least the normalized fee if the calculated fee is lower', async () => {
@@ -50,11 +58,13 @@ describe('FeeManager', async () => {
     });
 
     it('should throw if the fee paid is less than the expected fee', async () => {
-      const feeToPay = FeeManager.computeMinimumTransactionFee(100, 100);
+      const feePaid = 2000; // Make fee paid very small.
+      const numberOfOperations = 10000;
+      const normalizedFee = 1000;
 
       // Make the next call w/ a large number of operations to simulate the error condition.
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => FeeManager.verifyTransactionFeeAndThrowOnError(feeToPay, 1000, 100),
+        () => FeeManager.verifyTransactionFeeAndThrowOnError(feePaid, numberOfOperations, normalizedFee),
         ErrorCode.TransactionFeePaidInvalid);
     });
 

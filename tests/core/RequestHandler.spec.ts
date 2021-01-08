@@ -13,6 +13,7 @@ import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Did from '../../lib/core/versions/latest/Did';
 import DidState from '../../lib/core/models/DidState';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import Fixture from '../utils/Fixture';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
@@ -33,7 +34,6 @@ import Resolver from '../../lib/core/Resolver';
 import Response from '../../lib/common/Response';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import SidetreeError from '../../lib/common/SidetreeError';
-import { fixtureDriftHelper } from '../utils';
 
 const util = require('util');
 
@@ -43,7 +43,7 @@ describe('RequestHandler', () => {
   // Suppress console logging during testing so we get a compact test summary in console.
   console.info = () => { };
   console.error = () => { };
-  console.debug = () => { };
+  console.info = () => { };
 
   const config: Config = require('../json/config-test.json');
   const didMethodName = config.didMethodName;
@@ -136,19 +136,11 @@ describe('RequestHandler', () => {
     await batchScheduler.writeOperationBatch();
   });
 
-  it('should resolve LEGACY long form did from test vectors correctly', async () => {
-    // TODO: SIP2 #781 delete this test when legacy format is deprecated
-    // NOTE: this test was not implemented correctly, and I am not implementing support
-    // for deprecated features in this PR.
-    const response = await requestHandler.handleResolveRequest(generatedFixture.create.longFormDid);
-    expect(response.status).toEqual(ResponseStatus.Succeeded);
-  });
-
   it('should resolve long form did from test vectors correctly', async () => {
     const response = await requestHandler.handleResolveRequest(generatedFixture.create.longFormDid);
     expect(response.status).toEqual(ResponseStatus.Succeeded);
 
-    fixtureDriftHelper(response.body, longFormResponseDidDocument, 'resolution/longFormResponseDidDocument.json', OVERWRITE_FIXTURES);
+    Fixture.fixtureDriftHelper(response.body, longFormResponseDidDocument, 'resolution/longFormResponseDidDocument.json', OVERWRITE_FIXTURES);
     expect(response.body).toEqual(longFormResponseDidDocument as any);
   });
 
@@ -213,8 +205,8 @@ describe('RequestHandler', () => {
     // Verify that CAS was invoked to store the chunk file.
     const maxChunkFileSize = 20000000;
     const expectedBatchBuffer = await ChunkFile.createBuffer([createOperation], [recoverOperation], [updateOperation]);
-    const expectedChunkFileHash = MockCas.getAddress(expectedBatchBuffer);
-    const fetchResult = await cas.read(expectedChunkFileHash, maxChunkFileSize);
+    const expectedChunkFileUri = MockCas.getAddress(expectedBatchBuffer!);
+    const fetchResult = await cas.read(expectedChunkFileUri, maxChunkFileSize);
     const decompressedData = await Compressor.decompress(fetchResult.content!, maxChunkFileSize);
     const chunkFile = JSON.parse(decompressedData.toString());
     expect(chunkFile.deltas.length).toEqual(3); // Deactivates do not have `delta`.
@@ -266,26 +258,7 @@ describe('RequestHandler', () => {
     validateDidReferencesInDidDocument(response.body.didDocument, did);
   });
 
-  it('should return a resolved DID Document given a valid long-form DID with query param initial state format.', async () => {
-    // Create a long-form DID string.
-    const createOperationData = await OperationGenerator.generateCreateOperation();
-    const didMethodName = 'sidetree';
-    const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
-    const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
-    const encodedDelta = createOperationData.createOperation.encodedDelta;
-    const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-    const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
-
-    const response = await requestHandler.handleResolveRequest(longFormDid);
-    const httpStatus = Response.toHttpStatus(response.status);
-
-    expect(httpStatus).toEqual(200);
-    expect(response.body).toBeDefined();
-
-    validateDidReferencesInDidDocument(response.body.didDocument, longFormDid);
-  });
-
-  it('should return a resolved DID Document given a valid long-form DID with JCS format.', async () => {
+  it('should return a resolved DID Document given a valid long-form DID.', async () => {
     // Create a long-form DID string.
     const longFormDid = (await OperationGenerator.generateLongFormDid()).longFormDid;
 

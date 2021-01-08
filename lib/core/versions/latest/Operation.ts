@@ -1,11 +1,8 @@
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
-import DeltaModel from './models/DeltaModel';
 import DocumentComposer from './DocumentComposer';
-import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
-import JsonAsync from './util/JsonAsync';
-import Multihash from './Multihash';
+import InputValidator from './InputValidator';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
@@ -29,7 +26,7 @@ export default class Operation {
     const operationType = operationObject.type;
 
     if (operationType === OperationType.Create) {
-      return CreateOperation.parseJcsObject(operationObject, operationBuffer);
+      return CreateOperation.parseObject(operationObject, operationBuffer);
     } else if (operationType === OperationType.Update) {
       return UpdateOperation.parseObject(operationObject, operationBuffer);
     } else if (operationType === OperationType.Recover) {
@@ -46,41 +43,12 @@ export default class Operation {
    * @param delta the delta to validate
    */
   public static validateDelta (delta: any): void {
-    if (typeof delta !== 'object') {
-      throw new SidetreeError(ErrorCode.DeltaIsNotObject);
-    }
-
-    const properties = Object.keys(delta);
-    if (properties.length !== 2) {
-      throw new SidetreeError(ErrorCode.DeltaMissingOrUnknownProperty);
-    }
-
-    if (delta.patches === undefined) {
-      throw new SidetreeError(ErrorCode.OperationDocumentPatchesMissing);
-    }
+    InputValidator.validateNonArrayObject(delta, 'delta');
+    InputValidator.validateObjectContainsOnlyAllowedProperties(delta, ['patches', 'updateCommitment'], 'delta');
 
     // Validate `patches` property using the DocumentComposer.
     DocumentComposer.validateDocumentPatches(delta.patches);
-    const nextUpdateCommitment = Encoder.decodeAsBuffer(delta.updateCommitment);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateCommitment);
-  }
 
-  /**
-   * Parses the given encoded delta string into an internal `DeltaModel`.
-   */
-  public static async parseDelta (deltaEncodedString: any): Promise<DeltaModel> {
-    if (typeof deltaEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.DeltaMissingOrNotString);
-    }
-
-    const deltaJsonString = Encoder.decodeAsString(deltaEncodedString);
-    const delta = await JsonAsync.parse(deltaJsonString);
-
-    Operation.validateDelta(delta);
-
-    return {
-      patches: delta.patches,
-      updateCommitment: delta.updateCommitment
-    };
+    InputValidator.validateEncodedMultihash(delta.updateCommitment, 'update commitment');
   }
 }

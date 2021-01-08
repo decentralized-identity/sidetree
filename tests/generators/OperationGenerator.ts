@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
-import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
+import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
+import CoreIndexFile from '../../lib/core/versions/latest/CoreIndexFile';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DataGenerator from './DataGenerator';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
@@ -14,6 +15,7 @@ import Jws from '../../lib/core/versions/latest/util/Jws';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
+import PatchAction from '../../lib/core/versions/latest/PatchAction';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
@@ -53,8 +55,9 @@ export default class OperationGenerator {
    * Generates a random `TransactionModel`.
    */
   public static generateTransactionModel (): TransactionModel {
+    const anchorString = AnchoredDataSerializer.serialize({ coreIndexFileUri: OperationGenerator.generateRandomHash(), numberOfOperations: 1 });
     return {
-      anchorString: OperationGenerator.generateRandomHash(),
+      anchorString,
       normalizedTransactionFee: DataGenerator.generateInteger(),
       transactionFeePaid: DataGenerator.generateInteger(),
       transactionNumber: DataGenerator.generateInteger(),
@@ -69,7 +72,8 @@ export default class OperationGenerator {
    */
   public static generateRandomHash (): string {
     const randomBuffer = crypto.randomBytes(32);
-    const randomHash = Encoder.encode(Multihash.hash(randomBuffer));
+    const hashAlgorithmInMultihashCode = 18; // SHA256
+    const randomHash = Encoder.encode(Multihash.hash(randomBuffer, hashAlgorithmInMultihashCode));
 
     return randomHash;
   }
@@ -130,14 +134,13 @@ export default class OperationGenerator {
     otherPublicKeys?: PublicKeyModel[],
     services?: ServiceModel[],
     network?: string) {
-
     const document = {
       publicKeys: otherPublicKeys || [],
       services: services || []
     };
 
     const patches = [{
-      action: 'replace',
+      action: PatchAction.Replace,
       document
     }];
 
@@ -290,7 +293,13 @@ export default class OperationGenerator {
   /**
    * Generates an update operation that adds a new key.
    */
-  public static async generateUpdateOperation (didUniqueSuffix: string, updatePublicKey: JwkEs256k, updatePrivateKey: JwkEs256k) {
+  public static async generateUpdateOperation (
+    didUniqueSuffix: string,
+    updatePublicKey: JwkEs256k,
+    updatePrivateKey: JwkEs256k,
+    multihashAlgorithmCodeToUse?: number,
+    multihashAlgorithmForRevealValue?: number
+  ) {
     const additionalKeyId = `additional-key`;
     const [additionalPublicKey, additionalPrivateKey] = await OperationGenerator.generateKeyPair(additionalKeyId);
 
@@ -302,7 +311,9 @@ export default class OperationGenerator {
       updatePublicKey,
       updatePrivateKey,
       additionalPublicKey,
-      nextUpdateCommitmentHash
+      nextUpdateCommitmentHash,
+      multihashAlgorithmCodeToUse,
+      multihashAlgorithmForRevealValue
     );
 
     const operationBuffer = Buffer.from(JSON.stringify(operationJson));
@@ -352,7 +363,7 @@ export default class OperationGenerator {
     };
 
     const patches = [{
-      action: 'replace',
+      action: PatchAction.Replace,
       document
     }];
 
@@ -390,7 +401,7 @@ export default class OperationGenerator {
     const [anyNewSigningKey] = await OperationGenerator.generateKeyPair(anyNewSigningPublicKeyId);
     const patches = [
       {
-        action: 'add-public-keys',
+        action: PatchAction.AddPublicKeys,
         publicKeys: [
           anyNewSigningKey
         ]
@@ -420,17 +431,21 @@ export default class OperationGenerator {
    * Creates an update operation request.
    */
   public static async createUpdateOperationRequest (
-    didUniqueSuffix: string,
+    didSuffix: string,
     updatePublicKey: JwkEs256k,
     updatePrivateKey: JwkEs256k,
     nextUpdateCommitmentHash: string,
-    patches: any
+    patches: any,
+    multihashAlgorithmCodeToUse?: number,
+    multihashAlgorithmForRevealValue?: number
   ) {
+    const revealValue = Multihash.canonicalizeThenHashThenEncode(updatePublicKey, multihashAlgorithmForRevealValue);
+
     const delta = {
       patches,
       updateCommitment: nextUpdateCommitmentHash
     };
-    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta, multihashAlgorithmCodeToUse);
 
     const signedDataPayloadObject = {
       updateKey: updatePublicKey,
@@ -440,9 +455,10 @@ export default class OperationGenerator {
 
     const updateOperationRequest = {
       type: OperationType.Update,
-      didSuffix: didUniqueSuffix,
-      delta: delta,
-      signedData: signedData
+      didSuffix,
+      revealValue,
+      delta,
+      signedData
     };
 
     return updateOperationRequest;
@@ -472,14 +488,17 @@ export default class OperationGenerator {
    * Creates a recover operation request.
    */
   public static async createRecoverOperationRequest (
-    didUniqueSuffix: string,
+    didSuffix: string,
     recoveryPrivateKey: JwkEs256k,
     newRecoveryPublicKey: JwkEs256k,
     nextUpdateCommitmentHash: string,
-    document: any) {
+    document: any
+  ) {
+    const recoveryPublicKey = Jwk.getEs256kPublicKey(recoveryPrivateKey);
+    const revealValue = Multihash.canonicalizeThenHashThenEncode(recoveryPublicKey);
 
     const patches = [{
-      action: 'replace',
+      action: PatchAction.Replace,
       document
     }];
 
@@ -491,17 +510,18 @@ export default class OperationGenerator {
     const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const signedDataPayloadObject = {
-      deltaHash: deltaHash,
-      recoveryKey: Jwk.getEs256kPublicKey(recoveryPrivateKey),
+      deltaHash,
+      recoveryKey: recoveryPublicKey,
       recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(newRecoveryPublicKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Recover,
-      didSuffix: didUniqueSuffix,
-      signedData: signedData,
-      delta: delta
+      didSuffix,
+      revealValue,
+      signedData,
+      delta
     };
 
     return operation;
@@ -511,19 +531,23 @@ export default class OperationGenerator {
    * Generates a deactivate operation request.
    */
   public static async createDeactivateOperationRequest (
-    didUniqueSuffix: string,
-    recoveryPrivateKey: JwkEs256k) {
+    didSuffix: string,
+    recoveryPrivateKey: JwkEs256k
+  ) {
+    const recoveryPublicKey = Jwk.getEs256kPublicKey(recoveryPrivateKey);
+    const revealValue = Multihash.canonicalizeThenHashThenEncode(recoveryPublicKey);
 
     const signedDataPayloadObject = {
-      didSuffix: didUniqueSuffix,
-      recoveryKey: Jwk.getEs256kPublicKey(recoveryPrivateKey)
+      didSuffix,
+      recoveryKey: recoveryPublicKey
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Deactivate,
-      didSuffix: didUniqueSuffix,
-      signedData: signedData
+      didSuffix,
+      revealValue,
+      signedData
     };
 
     return operation;
@@ -557,11 +581,13 @@ export default class OperationGenerator {
     updatePublicKey: JwkEs256k,
     updatePrivateKey: JwkEs256k,
     newPublicKey: PublicKeyModel,
-    nextUpdateCommitmentHash: string) {
+    nextUpdateCommitmentHash: string,
+    multihashAlgorithmCodeToUse?: number,
+    multihashAlgorithmForRevealValue?: number) {
 
     const patches = [
       {
-        action: 'add-public-keys',
+        action: PatchAction.AddPublicKeys,
         publicKeys: [
           newPublicKey
         ]
@@ -573,7 +599,9 @@ export default class OperationGenerator {
       updatePublicKey,
       updatePrivateKey,
       nextUpdateCommitmentHash,
-      patches
+      patches,
+      multihashAlgorithmCodeToUse,
+      multihashAlgorithmForRevealValue
     );
 
     return updateOperationRequest;
@@ -593,7 +621,7 @@ export default class OperationGenerator {
 
     if (idOfServiceEndpointToAdd !== undefined) {
       const patch = {
-        action: 'add-services',
+        action: PatchAction.AddServices,
         services: OperationGenerator.generateServices([idOfServiceEndpointToAdd])
       };
 
@@ -602,7 +630,7 @@ export default class OperationGenerator {
 
     if (idsOfServiceEndpointToRemove.length > 0) {
       const patch = {
-        action: 'remove-services',
+        action: PatchAction.RemoveServices,
         ids: idsOfServiceEndpointToRemove
       };
 
@@ -668,11 +696,11 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates an anchor file.
+   * Generates an core index file.
    */
-  public static async generateAnchorFile (recoveryOperationCount: number): Promise<Buffer> {
-    const provisionalIndexFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
-    const coreProofFileUri = 'EiBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
+  public static async generateCoreIndexFile (recoveryOperationCount: number): Promise<Buffer> {
+    const provisionalIndexFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
+    const coreProofFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557aaaa';
 
     const recoverOperations = [];
 
@@ -685,8 +713,8 @@ export default class OperationGenerator {
 
       recoverOperations.push(recoverOperation);
     }
-    const anchorFileBuffer = await AnchorFile.createBuffer(undefined, provisionalIndexFileUri, coreProofFileUri, [], recoverOperations, []);
+    const coreIndexFileBuffer = await CoreIndexFile.createBuffer(undefined, provisionalIndexFileUri, coreProofFileUri, [], recoverOperations, []);
 
-    return anchorFileBuffer;
+    return coreIndexFileBuffer;
   }
 }

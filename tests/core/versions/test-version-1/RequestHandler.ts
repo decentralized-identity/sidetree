@@ -11,9 +11,8 @@ export default class RequestHandler implements IRequestHandler {
   public constructor (
     private resolver: Resolver,
     private operationQueue: IOperationQueue,
-    private didMethodName: string,
-    private supportedAlgorithms: number[]) {
-    console.debug(this.resolver, this.operationQueue, this.didMethodName, this.supportedAlgorithms);
+    private didMethodName: string) {
+    console.info(this.resolver, this.operationQueue, this.didMethodName);
   }
 
   async handleOperationRequest (request: Buffer): Promise<ResponseModel> {

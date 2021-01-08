@@ -18,7 +18,7 @@ describe('TransactionSelector', () => {
         transactionTime: 1,
         transactionTimeHash: 'some hash',
         anchorString: AnchoredDataSerializer.serialize({
-          anchorFileHash: 'file_hash',
+          coreIndexFileUri: 'file_hash',
           numberOfOperations: 12
         }),
         transactionFeePaid: 333,
@@ -30,7 +30,7 @@ describe('TransactionSelector', () => {
         transactionTime: 1,
         transactionTimeHash: 'some hash',
         anchorString: AnchoredDataSerializer.serialize({
-          anchorFileHash: 'file_hash2',
+          coreIndexFileUri: 'file_hash2',
           numberOfOperations: 11
         }),
         transactionFeePaid: 998, // second highest fee should come second
@@ -42,7 +42,7 @@ describe('TransactionSelector', () => {
         transactionTime: 1,
         transactionTimeHash: 'some hash',
         anchorString: AnchoredDataSerializer.serialize({
-          anchorFileHash: 'file_hash3',
+          coreIndexFileUri: 'file_hash3',
           numberOfOperations: 8
         }),
         transactionFeePaid: 999, // highest fee should come first
@@ -54,7 +54,7 @@ describe('TransactionSelector', () => {
         transactionTime: 1,
         transactionTimeHash: 'some hash',
         anchorString: AnchoredDataSerializer.serialize({
-          anchorFileHash: 'file_hash4',
+          coreIndexFileUri: 'file_hash4',
           numberOfOperations: 1
         }),
         transactionFeePaid: 14,
@@ -83,7 +83,7 @@ describe('TransactionSelector', () => {
           transactionTime: 1,
           transactionTimeHash: 'some hash',
           anchorString: AnchoredDataSerializer.serialize({
-            anchorFileHash: 'file_hash3',
+            coreIndexFileUri: 'file_hash3',
             numberOfOperations: 8
           }),
           transactionFeePaid: 999, // highest fee should come first
@@ -95,7 +95,7 @@ describe('TransactionSelector', () => {
           transactionTime: 1,
           transactionTimeHash: 'some hash',
           anchorString: AnchoredDataSerializer.serialize({
-            anchorFileHash: 'file_hash2',
+            coreIndexFileUri: 'file_hash2',
             numberOfOperations: 11
           }),
           transactionFeePaid: 998, // second highest fee should come second
@@ -136,7 +136,7 @@ describe('TransactionSelector', () => {
           transactionTime: 1,
           transactionTimeHash: 'some hash',
           anchorString: AnchoredDataSerializer.serialize({
-            anchorFileHash: 'file_hash3',
+            coreIndexFileUri: 'file_hash3',
             numberOfOperations: 8
           }),
           transactionFeePaid: 999, // second highest fee should come second
@@ -169,7 +169,7 @@ describe('TransactionSelector', () => {
         transactionTime: 1,
         transactionTimeHash: 'some hash',
         anchorString: AnchoredDataSerializer.serialize({
-          anchorFileHash: 'file_hash',
+          coreIndexFileUri: 'file_hash',
           numberOfOperations: 16
         }),
         transactionFeePaid: 9999,
@@ -186,7 +186,7 @@ describe('TransactionSelector', () => {
           transactionTime: 1,
           transactionTimeHash: 'some hash',
           anchorString: AnchoredDataSerializer.serialize({
-            anchorFileHash: 'file_hash3',
+            coreIndexFileUri: 'file_hash3',
             numberOfOperations: 8
           }),
           transactionFeePaid: 999, // second highest fee should come second
@@ -207,7 +207,7 @@ describe('TransactionSelector', () => {
         transactionTime: 1,
         transactionTimeHash: 'some hash',
         anchorString: AnchoredDataSerializer.serialize({
-          anchorFileHash: 'file_hash',
+          coreIndexFileUri: 'file_hash',
           numberOfOperations: 1
         }),
         transactionFeePaid: 9999,
@@ -224,7 +224,7 @@ describe('TransactionSelector', () => {
           transactionTime: 1,
           transactionTimeHash: 'some hash',
           anchorString: AnchoredDataSerializer.serialize({
-            anchorFileHash: 'file_hash3',
+            coreIndexFileUri: 'file_hash3',
             numberOfOperations: 8
           }),
           transactionFeePaid: 999, // second highest fee should come second

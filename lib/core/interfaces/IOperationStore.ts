@@ -18,8 +18,7 @@ export default interface IOperationStore {
   get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]>;
 
   /**
-   * Deletes all operations with transaction number greater than the
-   * provided parameter.
+   * Deletes all operations with transaction number greater than the provided parameter.
    */
   delete (transactionNumber?: number): Promise<void>;
 

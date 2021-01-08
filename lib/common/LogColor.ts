@@ -12,4 +12,7 @@ export default class LogColor {
 
   /** Method for logging in yellow. */
   public static yellow = chalk.yellow;
+
+  /** Method for logging in red. */
+  public static red = chalk.red;
 }

@@ -129,4 +129,7 @@ The following process must be used to deactivate a Sidetree-based DID:
       "signature": SIGNATURE_STRING
     }
     ```
+    - The JWS `payload` object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to, with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
     - The JWS `payload` object ****MUST**** include a `recoveryKey` property, and its value ****MUST**** be the [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation matching the previous _Recovery Commitment_.
+
+    

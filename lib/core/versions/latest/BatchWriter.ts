@@ -1,7 +1,7 @@
-import AnchorFile from './AnchorFile';
 import AnchoredData from './models/AnchoredData';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import ChunkFile from './ChunkFile';
+import CoreIndexFile from './CoreIndexFile';
 import CoreProofFile from './CoreProofFile';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
@@ -12,10 +12,11 @@ import ICas from '../../interfaces/ICas';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import LogColor from '../../../common/LogColor';
-import MapFile from './MapFile';
+import Logger from '../../../common/Logger';
 import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
+import ProvisionalIndexFile from './ProvisionalIndexFile';
 import ProvisionalProofFile from './ProvisionalProofFile';
 import RecoverOperation from './RecoverOperation';
 import UpdateOperation from './UpdateOperation';
@@ -32,7 +33,7 @@ export default class BatchWriter implements IBatchWriter {
     private cas: ICas,
     private versionMetadataFetcher: IVersionMetadataFetcher) { }
 
-  public async write () {
+  public async write (): Promise<number> {
     const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
     const currentLock = await this.blockchain.getWriterValueTimeLock();
     const numberOfOpsAllowed = this.getNumberOfOperationsAllowed(currentLock);
@@ -43,11 +44,11 @@ export default class BatchWriter implements IBatchWriter {
 
     // Do nothing if there is nothing to batch together.
     if (queuedOperations.length === 0) {
-      console.info(`No queued operations to batch.`);
-      return;
+      Logger.info(`No queued operations to batch.`);
+      return 0;
     }
 
-    console.info(LogColor.lightBlue(`Batch size = ${LogColor.green(numberOfOperations)}`));
+    Logger.info(LogColor.lightBlue(`Batch size = ${LogColor.green(numberOfOperations)}`));
 
     const operationModels = await Promise.all(queuedOperations.map(async (queuedOperation) => Operation.parse(queuedOperation.operationBuffer)));
     const createOperations = operationModels.filter(operation => operation.type === OperationType.Create) as CreateOperation[];
@@ -55,58 +56,90 @@ export default class BatchWriter implements IBatchWriter {
     const updateOperations = operationModels.filter(operation => operation.type === OperationType.Update) as UpdateOperation[];
     const deactivateOperations = operationModels.filter(operation => operation.type === OperationType.Deactivate) as DeactivateOperation[];
 
-    // Write core proof File if needed.
+    // Write core proof file if needed.
     const coreProofFileBuffer = await CoreProofFile.createBuffer(recoverOperations, deactivateOperations);
-    let coreProofFileHash: string | undefined;
+    let coreProofFileUri: string | undefined;
     if (coreProofFileBuffer !== undefined) {
-      coreProofFileHash = await this.cas.write(coreProofFileBuffer);
+      coreProofFileUri = await this.cas.write(coreProofFileBuffer);
     }
 
-    // Write provisional proof File if needed.
+    // Write provisional proof file if needed.
     const provisionalProofFileBuffer = await ProvisionalProofFile.createBuffer(updateOperations);
-    let provisionalProofFileHash: string | undefined;
+    let provisionalProofFileUri: string | undefined;
     if (provisionalProofFileBuffer !== undefined) {
-      provisionalProofFileHash = await this.cas.write(provisionalProofFileBuffer);
+      provisionalProofFileUri = await this.cas.write(provisionalProofFileBuffer);
     }
 
-    // Create the chunk file buffer from the operation models, then write the chunk file to content addressable store.
-    // NOTE: deactivate operations don't have delta.
-    const chunkFileBuffer = await ChunkFile.createBuffer(createOperations, recoverOperations, updateOperations);
-    const chunkFileHash = await this.cas.write(chunkFileBuffer);
-    console.info(LogColor.lightBlue(`Wrote chunk file ${LogColor.green(chunkFileHash)} to content addressable store.`));
+    const chunkFileUri = await this.createAndWriteChunkFileIfNeeded(createOperations, recoverOperations, updateOperations);
 
-    // Write the map file to content addressable store.
-    const mapFileBuffer = await MapFile.createBuffer(chunkFileHash, provisionalProofFileHash, updateOperations);
-    const mapFileHash = await this.cas.write(mapFileBuffer);
-    console.info(LogColor.lightBlue(`Wrote map file ${LogColor.green(mapFileHash)} to content addressable store.`));
+    const provisionalIndexFileUri = await this.createAndWriteProvisionalIndexFileIfNeeded(chunkFileUri, provisionalProofFileUri, updateOperations);
 
-    // Write the anchor file to content addressable store.
+    // Write the core index file to content addressable store.
     const writerLockId = currentLock ? currentLock.identifier : undefined;
-    const anchorFileBuffer = await AnchorFile.createBuffer(
+    const coreIndexFileBuffer = await CoreIndexFile.createBuffer(
       writerLockId,
-      mapFileHash,
-      coreProofFileHash,
+      provisionalIndexFileUri,
+      coreProofFileUri,
       createOperations,
       recoverOperations,
       deactivateOperations
     );
-    const anchorFileHash = await this.cas.write(anchorFileBuffer);
-    console.info(LogColor.lightBlue(`Wrote anchor file ${LogColor.green(anchorFileHash)} to content addressable store.`));
+    const coreIndexFileUri = await this.cas.write(coreIndexFileBuffer);
+    Logger.info(LogColor.lightBlue(`Wrote core index file ${LogColor.green(coreIndexFileUri)} to content addressable store.`));
 
     // Anchor the data to the blockchain
     const dataToBeAnchored: AnchoredData = {
-      anchorFileHash,
+      coreIndexFileUri,
       numberOfOperations
     };
 
     const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
     const fee = FeeManager.computeMinimumTransactionFee(normalizedFee, numberOfOperations);
-    console.info(LogColor.lightBlue(`Writing data to blockchain: ${LogColor.green(stringToWriteToBlockchain)} with minimum fee of: ${LogColor.green(fee)}`));
+    Logger.info(LogColor.lightBlue(`Writing data to blockchain: ${LogColor.green(stringToWriteToBlockchain)} with minimum fee of: ${LogColor.green(fee)}`));
 
     await this.blockchain.write(stringToWriteToBlockchain, fee);
 
     // Remove written operations from queue after batch writing has completed successfully.
     await this.operationQueue.dequeue(queuedOperations.length);
+
+    return numberOfOperations;
+  }
+
+  /**
+   * Create and write chunk file if needed.
+   * @returns CAS URI of the chunk file. `undefined` if there is no need to create and write the file.
+   */
+  private async createAndWriteChunkFileIfNeeded (
+    createOperations: CreateOperation[], recoverOperations: RecoverOperation[], updateOperations: UpdateOperation[]
+  ): Promise<string | undefined> {
+    const chunkFileBuffer = await ChunkFile.createBuffer(createOperations, recoverOperations, updateOperations);
+    if (chunkFileBuffer === undefined) {
+      return undefined;
+    }
+
+    const chunkFileUri = await this.cas.write(chunkFileBuffer);
+    Logger.info(LogColor.lightBlue(`Wrote chunk file ${LogColor.green(chunkFileUri)} to content addressable store.`));
+
+    return chunkFileUri;
+  }
+
+  /**
+   * Create and write provisional index file if needed.
+   * @returns  URI of the provisional index file. `undefined` if there is no need to create and write the file.
+   */
+  private async createAndWriteProvisionalIndexFileIfNeeded (
+    chunkFileUri: string | undefined, provisionalProofFileUri: string | undefined, updateOperations: UpdateOperation[]
+  ): Promise<string | undefined> {
+    // If `chunkFileUri` is `undefined` it means there are only deactivates, and a batch with only deactivates does not reference a provisional index file.
+    if (chunkFileUri === undefined) {
+      return undefined;
+    }
+
+    const provisionalIndexFileBuffer = await ProvisionalIndexFile.createBuffer(chunkFileUri!, provisionalProofFileUri, updateOperations);
+    const provisionalIndexFileUri = await this.cas.write(provisionalIndexFileBuffer);
+    Logger.info(LogColor.lightBlue(`Wrote provisional index file ${LogColor.green(provisionalIndexFileUri)} to content addressable store.`));
+
+    return provisionalIndexFileUri;
   }
 
   private getNumberOfOperationsAllowed (valueTimeLock: ValueTimeLockModel | undefined): number {
@@ -115,7 +148,7 @@ export default class BatchWriter implements IBatchWriter {
 
     if (maxNumberOfOpsAllowedByLock > maxNumberOfOpsAllowedByProtocol) {
       // eslint-disable-next-line max-len
-      console.info(`Maximum number of operations allowed by value time lock: ${maxNumberOfOpsAllowedByLock}; Maximum number of operations allowed by protocol: ${maxNumberOfOpsAllowedByProtocol}`);
+      Logger.info(`Maximum number of operations allowed by value time lock: ${maxNumberOfOpsAllowedByLock}; Maximum number of operations allowed by protocol: ${maxNumberOfOpsAllowedByProtocol}`);
     }
 
     return Math.min(maxNumberOfOpsAllowedByLock, maxNumberOfOpsAllowedByProtocol);

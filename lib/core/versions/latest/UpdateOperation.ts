@@ -1,6 +1,7 @@
 import DeltaModel from './models/DeltaModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InputValidator from './InputValidator';
 import JsonAsync from './util/JsonAsync';
 import Jwk from './util/Jwk';
 import Jws from './util/Jws';
@@ -15,41 +16,20 @@ import SignedDataModel from './models/UpdateSignedDataModel';
  * A class that represents an update operation.
  */
 export default class UpdateOperation implements OperationModel {
-
-  /** The original request buffer sent by the requester. */
-  public readonly operationBuffer: Buffer;
-
-  /** The unique suffix of the DID. */
-  public readonly didUniqueSuffix: string;
-
   /** The type of operation. */
-  public readonly type: OperationType;
-
-  /** Signed data for the operation. */
-  public readonly signedDataJws: Jws;
-
-  /** Decoded signed data payload. */
-  public readonly signedData: SignedDataModel;
-
-  /** Patch data. */
-  public readonly delta: DeltaModel | undefined;
+  public readonly type: OperationType = OperationType.Update;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
    */
   private constructor (
-    operationBuffer: Buffer,
-    didUniqueSuffix: string,
-    signedDataJws: Jws,
-    signedData: SignedDataModel,
-    delta: DeltaModel | undefined) {
-    this.operationBuffer = operationBuffer;
-    this.type = OperationType.Update;
-    this.didUniqueSuffix = didUniqueSuffix;
-    this.signedDataJws = signedDataJws;
-    this.signedData = signedData;
-    this.delta = delta;
-  }
+    public readonly operationBuffer: Buffer,
+    public readonly didUniqueSuffix: string,
+    public readonly revealValue: string,
+    public readonly signedDataJws: Jws,
+    public readonly signedData: SignedDataModel,
+    public readonly delta: DeltaModel | undefined
+  ) { }
 
   /**
    * Parses the given buffer as a `UpdateOperation`.
@@ -68,27 +48,29 @@ export default class UpdateOperation implements OperationModel {
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<UpdateOperation> {
-    const expectedPropertyCount = 4;
+    InputValidator.validateObjectContainsOnlyAllowedProperties(
+      operationObject, ['type', 'didSuffix', 'revealValue', 'signedData', 'delta'], 'update request'
+    );
 
-    const properties = Object.keys(operationObject);
-    if (properties.length !== expectedPropertyCount) {
-      throw new SidetreeError(ErrorCode.UpdateOperationMissingOrUnknownProperty);
+    if (operationObject.type !== OperationType.Update) {
+      throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
     }
 
     if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
 
+    InputValidator.validateEncodedMultihash(operationObject.revealValue, 'update request reveal value');
+
     const signedData = Jws.parseCompactJws(operationObject.signedData);
     const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
 
-    if (operationObject.type !== OperationType.Update) {
-      throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
-    }
+    // Validate that the canonicalized update key hash is the same as `revealValue`.
+    Multihash.validateCanonicalizeObjectHash(signedDataModel.updateKey, operationObject.revealValue, 'update request update key');
 
     Operation.validateDelta(operationObject.delta);
 
-    return new UpdateOperation(operationBuffer, operationObject.didSuffix, signedData, signedDataModel, operationObject.delta);
+    return new UpdateOperation(operationBuffer, operationObject.didSuffix, operationObject.revealValue, signedData, signedDataModel, operationObject.delta);
   }
 
   /**
@@ -105,8 +87,7 @@ export default class UpdateOperation implements OperationModel {
 
     Jwk.validateJwkEs256k(signedData.updateKey);
 
-    const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
+    InputValidator.validateEncodedMultihash(signedData.deltaHash, 'update operation delta hash');
 
     return signedData;
   }

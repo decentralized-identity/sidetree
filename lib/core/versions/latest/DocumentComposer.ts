@@ -5,9 +5,10 @@ import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import InputValidator from './InputValidator';
+import JsObject from './util/JsObject';
+import PatchAction from './PatchAction';
 import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
-import UpdateOperation from './UpdateOperation';
 
 /**
  * Class that handles the composition of operations into final external-facing document.
@@ -101,17 +102,6 @@ export default class DocumentComposer {
   }
 
   /**
-   * Applies the update operation to the given document.
-   * @returns The resultant document.
-   * @throws SidetreeError if invalid operation is given.
-   */
-  public static async applyUpdateOperation (operation: UpdateOperation, document: any): Promise<any> {
-    const resultantDocument = DocumentComposer.applyPatches(document, operation.delta!.patches);
-
-    return resultantDocument;
-  }
-
-  /**
    * Validates the schema of the given full document state.
    * @throws SidetreeError if given document patch fails validation.
    */
@@ -156,19 +146,19 @@ export default class DocumentComposer {
   private static validatePatch (patch: any) {
     const action = patch.action;
     switch (action) {
-      case 'replace':
+      case PatchAction.Replace:
         DocumentComposer.validateDocument(patch.document);
         break;
-      case 'add-public-keys':
+      case PatchAction.AddPublicKeys:
         DocumentComposer.validateAddPublicKeysPatch(patch);
         break;
-      case 'remove-public-keys':
+      case PatchAction.RemovePublicKeys:
         DocumentComposer.validateRemovePublicKeysPatch(patch);
         break;
-      case 'add-services':
+      case PatchAction.AddServices:
         DocumentComposer.validateAddServicesPatch(patch);
         break;
-      case 'remove-services':
+      case PatchAction.RemoveServices:
         DocumentComposer.validateRemoveServicesPatch(patch);
         break;
       default:
@@ -296,6 +286,7 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchServicesNotArray);
     }
 
+    const serviceIdSet: Set<string> = new Set();
     for (const service of services) {
       const serviceProperties = Object.keys(service);
       if (serviceProperties.length !== 3) { // type, id, and serviceEndpoint
@@ -303,6 +294,10 @@ export default class DocumentComposer {
       }
 
       DocumentComposer.validateId(service.id);
+      if (serviceIdSet.has(service.id)) {
+        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceIdNotUnique, 'Service id has to be unique');
+      }
+      serviceIdSet.add(service.id);
 
       if (typeof service.type !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceTypeNotString);
@@ -349,39 +344,39 @@ export default class DocumentComposer {
   /**
    * Applies the given patches in order to the given document.
    * NOTE: Assumes no schema validation is needed, since validation should've already occurred at the time of the operation being parsed.
-   * @returns The resultant document.
    */
-  public static applyPatches (document: any, patches: any[]): any {
+  public static applyPatches (document: any, patches: any[]) {
     // Loop through and apply all patches.
-    let resultantDocument = document;
     for (const patch of patches) {
-      resultantDocument = DocumentComposer.applyPatchToDidDocument(resultantDocument, patch);
+      DocumentComposer.applyPatchToDidDocument(document, patch);
     }
-
-    return resultantDocument;
   }
 
   /**
    * Applies the given patch to the given DID Document.
    */
-  private static applyPatchToDidDocument (document: DocumentModel, patch: any): any {
-    if (patch.action === 'replace') {
-      return patch.document;
-    } else if (patch.action === 'add-public-keys') {
-      return DocumentComposer.addPublicKeys(document, patch);
-    } else if (patch.action === 'remove-public-keys') {
-      return DocumentComposer.removePublicKeys(document, patch);
-    } else if (patch.action === 'add-services') {
-      return DocumentComposer.addServices(document, patch);
-    } else if (patch.action === 'remove-services') {
-      return DocumentComposer.removeServices(document, patch);
+  private static applyPatchToDidDocument (document: DocumentModel, patch: any) {
+    if (patch.action === PatchAction.Replace) {
+      // In-place replacement of the document.
+      JsObject.clearObject(document);
+      Object.assign(document, patch.document);
+    } else if (patch.action === PatchAction.AddPublicKeys) {
+      DocumentComposer.addPublicKeys(document, patch);
+    } else if (patch.action === PatchAction.RemovePublicKeys) {
+      DocumentComposer.removePublicKeys(document, patch);
+    } else if (patch.action === PatchAction.AddServices) {
+      DocumentComposer.addServices(document, patch);
+    } else if (patch.action === PatchAction.RemoveServices) {
+      DocumentComposer.removeServices(document, patch);
+    } else {
+      throw new SidetreeError(ErrorCode.DocumentComposerApplyPatchUnknownAction, `Cannot apply invalid action: ${patch.action}`);
     }
   }
 
   /**
    * Adds public keys to document.
    */
-  private static addPublicKeys (document: DocumentModel, patch: any): DocumentModel {
+  private static addPublicKeys (document: DocumentModel, patch: any) {
     const publicKeyMap = new Map((document.publicKeys || []).map(publicKey => [publicKey.id, publicKey]));
 
     // Loop through all given public keys and add them.
@@ -392,27 +387,23 @@ export default class DocumentComposer {
     }
 
     document.publicKeys = [...publicKeyMap.values()];
-
-    return document;
   }
 
   /**
    * Removes public keys from document.
    */
-  private static removePublicKeys (document: DocumentModel, patch: any): DocumentModel {
+  private static removePublicKeys (document: DocumentModel, patch: any) {
     if (document.publicKeys === undefined) {
-      return document;
+      return;
     }
 
     const idsOfKeysToRemove = new Set(patch.ids);
 
     // Keep only keys that are not in the removal list.
     document.publicKeys = document.publicKeys.filter(publicKey => !idsOfKeysToRemove.has(publicKey.id));
-
-    return document;
   }
 
-  private static addServices (document: DocumentModel, patch: any): DocumentModel {
+  private static addServices (document: DocumentModel, patch: any) {
     const services = patch.services;
 
     if (document.services === undefined) {
@@ -434,18 +425,14 @@ export default class DocumentComposer {
         document.services.push(service);
       }
     }
-
-    return document;
   }
 
-  private static removeServices (document: DocumentModel, patch: any): DocumentModel {
+  private static removeServices (document: DocumentModel, patch: any) {
     if (document.services === undefined) {
-      return document;
+      return;
     }
 
     const idsToRemove = new Set(patch.ids);
     document.services = document.services.filter(service => !idsToRemove.has(service.id));
-
-    return document;
   }
 }

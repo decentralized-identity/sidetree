@@ -62,6 +62,23 @@ describe('MongoDbTransactionStore', async () => {
     await transactionStore.clearCollection();
   });
 
+  it('should throw error if addTransaction throws a non 11000 error', async () => {
+    spyOn(transactionStore['transactionCollection'] as any, 'insertOne').and.throwError('Expected test error');
+    try {
+      await transactionStore.addTransaction({
+        transactionNumber: 1,
+        transactionTime: 1,
+        transactionFeePaid: 1,
+        transactionTimeHash: 'hash',
+        anchorString: 'anchorString',
+        writer: 'writer'
+      });
+      fail('expected to throw but did not');
+    } catch (error) {
+      expect(error).toEqual(new Error('Expected test error'));
+    }
+  });
+
   it('should create collections needed on initialization if they do not exist.', async () => {
     console.info(`Deleting collections...`);
     const client = await MongoClient.connect(config.mongoDbConnectionString);
@@ -114,6 +131,15 @@ describe('MongoDbTransactionStore', async () => {
     expect(transactions.length).toEqual(2);
     expect(transactions[0].transactionNumber).toEqual(2);
     expect(transactions[1].transactionNumber).toEqual(3);
+  });
+
+  it('should return [] if error is thrown when fetching transactions later than a given transaction number', async () => {
+    const transactionCount = 3;
+    await generateAndStoreTransactions(transactionStore, transactionCount);
+
+    spyOn(transactionStore['transactionCollection'] as any, 'find').and.throwError('expected test error');
+    const transactions = await transactionStore.getTransactionsLaterThan(1, 100);
+    expect(transactions.length).toEqual(0);
   });
 
   it('should fetch transactions from the start if transaction number is not given.', async () => {
@@ -220,11 +246,6 @@ describe('MongoDbTransactionStore', async () => {
 
     const remainingTransactions = await transactionStore.getTransactions();
     expect(remainingTransactions.length).toEqual(0);
-  });
-
-  it('should default the database name as `sidetree` if not explicitly overriden.', async () => {
-    const transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
-    expect(transactionStore.databaseName).toEqual(MongoDbTransactionStore.defaultDatabaseName);
   });
 
   it('should fetch transactions by 1 transactionTime when end time is the same as begin time', async () => {

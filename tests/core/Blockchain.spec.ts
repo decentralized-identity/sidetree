@@ -1,6 +1,7 @@
 import Blockchain from '../../lib/core/Blockchain';
 import CoreErrorCode from '../../lib/core/ErrorCode';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
+import EventEmitter from '../../lib/common/EventEmitter';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ReadableStream from '../../lib/common/ReadableStream';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
@@ -10,6 +11,33 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 
 describe('Blockchain', async () => {
+  describe('startPeriodicCachedBlockchainTimeRefresh', () => {
+    beforeEach(() => {
+      // Freeze time
+      jasmine.clock().install();
+    });
+
+    afterEach(() => {
+      // End freeze time
+      jasmine.clock().uninstall();
+    });
+
+    it('should setInterval correctly', () => {
+      const blockchainClient = new Blockchain('Unused URI');
+      const getLatestTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue({} as any);
+
+      blockchainClient.startPeriodicCachedBlockchainTimeRefresh();
+      // Time is frozen so it should not have have been called.
+      expect(getLatestTimeSpy).not.toHaveBeenCalled();
+      // Time is advanced by (refresh time + 1), so the getLatestTimeSpy should be called once.
+      jasmine.clock().tick(Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000 + 1);
+      expect(getLatestTimeSpy).toHaveBeenCalledTimes(1);
+      // Time is advanced by (refresh time) again, so getLatestTimeSpy should be called another time.
+      jasmine.clock().tick(Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
+      expect(getLatestTimeSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('read()', async () => {
     it('should return transactions fetched.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
@@ -112,6 +140,16 @@ describe('Blockchain', async () => {
   });
 
   describe('write()', async () => {
+    it('should write as expected', async () => {
+      const blockchainClient = new Blockchain('uri');
+      const mockFetchResponse = {
+        status: 200
+      };
+      const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      await blockchainClient.write('Unused anchor string.', 100);
+      expect(fetchSpy).toHaveBeenCalled();
+    });
+
     it('should throw if writing anchor string returned an error.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
       const mockFetchResponse = {
@@ -230,7 +268,7 @@ describe('Blockchain', async () => {
   });
 
   describe('getLatestTime()', async () => {
-    it('should throw if encountered error when fetching time from blockchain service..', async () => {
+    it('should throw if encountered error when fetching time from blockchain service.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
       const mockFetchResponse = {
         status: 500,
@@ -253,6 +291,28 @@ describe('Blockchain', async () => {
       }
 
       fail();
+    });
+
+    it('should not emit an event when underlying blockchain time is unchanged. ', async () => {
+      const blockchainClient = new Blockchain('Unused URI');
+
+      // Preset the cached to time to a hardcoded value.
+      const hardcodedBlockchainTimeModel = { time: 1, hash: 'unused' };
+      blockchainClient['cachedBlockchainTime'] = hardcodedBlockchainTimeModel;
+
+      // Mock the time fetch response to the same hardcoded value to simulate unchanged time.
+      const mockFetchResponse = {
+        status: 200,
+        body: {
+          read: () => { return Buffer.from(JSON.stringify(hardcodedBlockchainTimeModel)); }
+        }
+      };
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      const eventEmitterSpy = spyOn(EventEmitter, 'emit');
+
+      await blockchainClient.getLatestTime();
+
+      expect(eventEmitterSpy).not.toHaveBeenCalled();
     });
   });
 
