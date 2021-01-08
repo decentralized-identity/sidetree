@@ -1,3 +1,15 @@
 {
-  "status": "deactivated"
+  "didDocument": { 
+    "id": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg", 
+    "@context": [ 
+      "https://www.w3.org/ns/did/v1", 
+      { "@base": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg" }
+    ] 
+  },
+  "didDocumentMetadata": {
+    "method": {
+      "published": true
+    },
+    "canonicalId": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg"
+  }
 }

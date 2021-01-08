@@ -89,10 +89,10 @@ If the compiled DID ****was not**** determined to be _Unresolvable_, as defined 
 
 1. Generate a JSON object for the _Resolution Result_, structured in accordance with the [Decentralized Identifier Resolution](https://w3c-ccg.github.io/did-resolution/#example-14-example-did-resolution-result) specification.
 2. Set the `didDocument` property of the _Resolution Result_ object to the resolved DID Document generated via the [Operation Compilation](#operation-compilation) process.
-3. The _Resolution Result_ object ****MUST**** include a `methodMetadata` property, and its value ****MUST**** be an object.
-4. The _Resolution Result_ `methodMetadata` object ****MUST**** include a `published` property with a boolean value. If the compiled DID state is flagged as _Unpublished_ and/or _Unresolvable_ (per the [Operation Compilation](#operation-compilation) process), the `published` property ****MUST**** be set to `false`, otherwise, set the value to `true`.
-5. The _Resolution Result_ `methodMetadata` object ****MUST**** include an `updateCommitment` property, and its value ****MUST**** be the `updateCommitment` hash value expected to be fulfilled in with the next `updateKey` revealed in the next [Update](#update) operation.
-6. The _Resolution Result_ `methodMetadata` object ****MUST**** include an `recoveryCommitment` property, and its value ****MUST**** be the `recoveryCommitment` hash value expected to be fulfilled in with the next `recoveryKey` revealed in the next [Recovery](#recover) operation.
+3. The _Resolution Result_ object ****MUST**** include a `didDocumentMetadata` property, and its value ****MUST**** be an object.
+4. The _Resolution Result_ `didDocumentMetadata` object ****MUST**** include a `method` object, which invludes a `published` property with a boolean value. If the compiled DID state is flagged as _Unpublished_ and/or _Unresolvable_ (per the [Operation Compilation](#operation-compilation) process), the `published` property ****MUST**** be set to `false`, otherwise, set the value to `true`.
+5. The _Resolution Result_ `method` object ****MUST**** include an `updateCommitment` property, and its value ****MUST**** be the `updateCommitment` hash value expected to be fulfilled in with the next `updateKey` revealed in the next [Update](#update) operation.
+6. The _Resolution Result_ `method` object ****MUST**** include an `recoveryCommitment` property, and its value ****MUST**** be the `recoveryCommitment` hash value expected to be fulfilled in with the next `recoveryKey` revealed in the next [Recovery](#recover) operation.
 
 #### Unresolvable DIDs
 

@@ -56,8 +56,9 @@ describe('Resolver', () => {
       };
       await operationStore.put([anchoredOperationModel]);
       const published = true;
+      const isShortForm = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published, isShortForm);
       Fixture.fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/afterCreate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterCreate);
     });
@@ -88,8 +89,9 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation]);
 
       const published = true;
+      const isShortForm = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published, isShortForm);
       Fixture.fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterUpdate);
     });
@@ -114,8 +116,9 @@ describe('Resolver', () => {
       await operationStore.put([anchoredRecoverOperation]);
 
       const published = true;
+      const isShortForm = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published, isShortForm);
       Fixture.fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterRecover);
     });
@@ -157,7 +160,8 @@ describe('Resolver', () => {
 
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const published = true;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const isShortForm = true;
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published, isShortForm);
       Fixture.fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterDeactivate);
     });

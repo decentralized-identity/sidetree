@@ -18,10 +18,24 @@ export default class DocumentComposer {
   /**
    * Transforms the given DID state into a DID Document.
    */
-  public static transformToExternalDocument (didState: DidState, did: string, published: boolean): any {
+  public static transformToExternalDocument (didState: DidState, did: string, published: boolean, isShortForm: boolean): any {
     // If the DID is deactivated.
+    // Return required metadata and a document with only context and id if so
     if (didState.nextRecoveryCommitmentHash === undefined) {
-      return { status: 'deactivated' };
+      const didDocument = {
+        id: did,
+        '@context': ['https://www.w3.org/ns/did/v1', { '@base': did }],
+      }
+      const didDocumentMetadata = {
+        method: {
+          published
+        },
+        canonicalId: did
+      }
+      return { 
+        didDocument,
+        didDocumentMetadata
+      };
     }
 
     const document = didState.document as DocumentModel;
@@ -91,12 +105,26 @@ export default class DocumentComposer {
     const didResolutionResult: any = {
       '@context': 'https://www.w3.org/ns/did-resolution/v1',
       didDocument: didDocument,
-      methodMetadata: {
-        published,
-        recoveryCommitment: didState.nextRecoveryCommitmentHash,
-        updateCommitment: didState.nextUpdateCommitmentHash
+      didDocumentMetadata: {
+        method: {
+          published,
+          recoveryCommitment: didState.nextRecoveryCommitmentHash,
+          updateCommitment: didState.nextUpdateCommitmentHash
+        }
       }
     };
+
+    if (!isShortForm) {
+      // remove last colon and everything behind it to make it short form
+      const didShortForm = did.split(':').slice(0, -1).join(':');
+      didResolutionResult.didDocumentMetadata.equivalentId = [didShortForm]
+
+      if (published) {
+        didResolutionResult.didDocumentMetadata.canonicalId = didShortForm;
+      }
+    } else {
+      didResolutionResult.didDocumentMetadata.canonicalId = did;
+    }
 
     return didResolutionResult;
   }

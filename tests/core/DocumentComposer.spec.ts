@@ -27,13 +27,17 @@ describe('DocumentComposer', async () => {
       };
 
       const published = true;
-      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
+      const isShortForm = true;
+      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published, isShortForm);
 
       expect(result['@context']).toEqual('https://www.w3.org/ns/did-resolution/v1');
-      expect(result.methodMetadata).toEqual({
-        published: true,
-        recoveryCommitment: 'anyCommitmentHash',
-        updateCommitment: 'anyCommitmentHash'
+      expect(result.didDocumentMetadata).toEqual({
+        canonicalId: 'did:method:suffix',
+        method: {
+          published: true,
+          recoveryCommitment: 'anyCommitmentHash',
+          updateCommitment: 'anyCommitmentHash'
+        }
       });
       expect(result.didDocument).toEqual({
         id: 'did:method:suffix',
@@ -84,12 +88,63 @@ describe('DocumentComposer', async () => {
       };
 
       let published = false;
-      let result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
-      expect(result.methodMetadata.published).toEqual(published);
+      const isShortForm = true;
+      let result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published, isShortForm);
+      expect(result.didDocumentMetadata.method.published).toEqual(published);
 
       published = true;
-      result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
-      expect(result.methodMetadata.published).toEqual(published);
+      result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published, isShortForm);
+      expect(result.didDocumentMetadata.method.published).toEqual(published);
+    });
+
+    it('should output DID document metadata with canonicalId only if published.', async () => {
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Authentication]);
+      const document = {
+        publicKeys: [anySigningPublicKey, authPublicKey]
+      };
+      const didState: DidState = {
+        document,
+        lastOperationTransactionNumber: 123,
+        nextRecoveryCommitmentHash: 'anyCommitmentHash',
+        nextUpdateCommitmentHash: 'anyCommitmentHash'
+      };
+
+      let published = false;
+      let isShortForm = false;
+      let result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix:initialState', published, isShortForm);
+      expect(result.didDocumentMetadata.canonicalId).toBeUndefined();
+
+      published = true;
+      result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix:initialState', published, isShortForm);
+      expect(result.didDocumentMetadata.canonicalId).toEqual('did:method:suffix');
+
+      isShortForm = true;
+      result = DocumentComposer.transformToExternalDocument(didState, 'did:somethingelse:method:suffix', published, isShortForm);
+      expect(result.didDocumentMetadata.canonicalId).toEqual('did:somethingelse:method:suffix');
+    });
+
+    it('should output DID document metadata with equivalentId only if is not short form.', async () => {
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Authentication]);
+      const document = {
+        publicKeys: [anySigningPublicKey, authPublicKey]
+      };
+      const didState: DidState = {
+        document,
+        lastOperationTransactionNumber: 123,
+        nextRecoveryCommitmentHash: 'anyCommitmentHash',
+        nextUpdateCommitmentHash: 'anyCommitmentHash'
+      };
+
+      const published = true;
+      let isShortForm = true;
+      let result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published, isShortForm);
+      expect(result.didDocumentMetadata.equivalentId).toBeUndefined();
+
+      isShortForm = false;
+      result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix:initialState', published, isShortForm);
+      expect(result.didDocumentMetadata.equivalentId).toEqual(['did:method:suffix']);
     });
 
     it('should return status deactivated if next recovery commit hash is undefined', async () => {
@@ -106,8 +161,18 @@ describe('DocumentComposer', async () => {
       };
 
       const published = true;
-      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
-      expect(result).toEqual({ status: 'deactivated' });
+      const isShortForm = true;
+      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published, isShortForm);
+      expect(result.didDocument).toEqual({
+        id: 'did:method:suffix',
+        '@context': ['https://www.w3.org/ns/did/v1', { '@base': 'did:method:suffix' }],
+      });
+      expect(result.didDocumentMetadata).toEqual({
+        method: {
+          published
+        },
+        canonicalId: 'did:method:suffix'
+      })
     });
   });
 

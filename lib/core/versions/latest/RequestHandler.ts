@@ -134,7 +134,7 @@ export default class RequestHandler implements IRequestHandler {
 
     const did = `did:${this.didMethodName}:${operationModel.didUniqueSuffix}`;
     const published = false;
-    const document = DocumentComposer.transformToExternalDocument(didState, did, published);
+    const document = DocumentComposer.transformToExternalDocument(didState, did, published, true);
 
     return {
       status: ResponseStatus.Succeeded,
@@ -177,8 +177,8 @@ export default class RequestHandler implements IRequestHandler {
       // We reach here it means there is a DID Document to return.
 
       // If DID is published, use the short-form DID; else use long-form DID in document.
-      const didStringToUseInDidDocument = published ? did.shortForm : did.longForm!;
-      const document = DocumentComposer.transformToExternalDocument(didState, didStringToUseInDidDocument, published);
+      const didStringToUseInDidDocument = shortOrLongFormDid;
+      const document = DocumentComposer.transformToExternalDocument(didState, didStringToUseInDidDocument, published, did.isShortForm);
 
       // Status is different if DID is deactivated.
       const didDeactivated = didState.nextRecoveryCommitmentHash === undefined;

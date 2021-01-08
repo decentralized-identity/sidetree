@@ -44,9 +44,12 @@
       "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg#newKey"
     ]
   },
-  "methodMetadata": {
-    "published": true,
-    "recoveryCommitment": "EiCsA7SGLNeda5InloqnokUcJFz6vKT4HS5dcKrmnlJhpA",
-    "updateCommitment": "EiD6_csybTfxELBoMgkE9O2BTCmhScG_RW_qaZQkIkJ_aQ"
+  "didDocumentMetadata": {
+    "canonicalId": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
+    "method": {
+      "published": true,
+      "recoveryCommitment": "EiCsA7SGLNeda5InloqnokUcJFz6vKT4HS5dcKrmnlJhpA",
+      "updateCommitment": "EiD6_csybTfxELBoMgkE9O2BTCmhScG_RW_qaZQkIkJ_aQ"
+    }
   }
 }
