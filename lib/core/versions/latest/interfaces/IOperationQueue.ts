@@ -25,4 +25,9 @@ export default interface IOperationQueue {
    * Checks to see if the queue already contains an operation for the given DID unique suffix.
    */
   contains (didUniqueSuffix: string): Promise<boolean>;
+
+  /**
+   * Gets the size of the queue.
+   */
+  getSize (): Promise<number>;
 }

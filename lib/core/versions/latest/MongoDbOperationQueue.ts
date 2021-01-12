@@ -87,6 +87,11 @@ export default class MongoDbOperationQueue implements IOperationQueue {
     return operations.length > 0;
   }
 
+  async getSize (): Promise<number> {
+    const size = await this.collection!.countDocuments();
+    return size;
+  }
+
   /**
    * * Clears the unresolvable transaction store. Mainly used in tests.
    */

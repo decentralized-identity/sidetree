@@ -145,4 +145,12 @@ describe('MongoDbOperationQueue', async () => {
       }
     }
   });
+
+  it('should get queue size correctly.', async () => {
+    const operationCount = 3;
+    await generateAndQueueOperations(operationQueue, operationCount);
+
+    const size = await operationQueue.getSize();
+    expect(size).toEqual(3);
+  });
 });
