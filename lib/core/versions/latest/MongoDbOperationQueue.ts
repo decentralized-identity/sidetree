@@ -88,7 +88,7 @@ export default class MongoDbOperationQueue implements IOperationQueue {
   }
 
   async getSize (): Promise<number> {
-    const size = await this.collection!.countDocuments();
+    const size = await this.collection!.estimatedDocumentCount();
     return size;
   }
 

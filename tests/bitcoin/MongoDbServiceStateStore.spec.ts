@@ -64,18 +64,18 @@ describe('MongoDbServiceStateStore', async () => {
       await db.dropCollection(MongoDbServiceStateStore.collectionName);
 
       // Make sure no collection exists before we start the test.
-      let collections = await db.collections();
-      let collectionNames = collections.map(collection => collection.collectionName);
+      const collections = await db.collections();
+      const collectionNames = collections.map(collection => collection.collectionName);
       expect(collectionNames.includes(MongoDbServiceStateStore.collectionName)).toBeFalsy();
 
-      // // NOTE: This test fails in cosmosDB when due to the speed in which db.collections() is called after initialize().
-      // // Strangely enough, if an index is created using createIndex() override (such as MongoDBBlockMetadataStore),
-      // // then the exactly same test will reliably pass as seen in MongoDBBlockMetadataStore.spec.ts
+      // NOTE: In CosmosDB `db.createCollection()` call in `initialize()` does not make the collection "visible"
+      // until a subsequent operation is called (such as `createIndex()` or inserting record) possibly due to lazy load.
+      // hence in this test we insert a record and retrieve it again to prove that the collection is created.
       await store.initialize();
+      await store.put({ serviceVersion: '1.1' });
 
-      collections = await db.collections();
-      collectionNames = collections.map(collection => collection.collectionName);
-      expect(collectionNames.includes(MongoDbServiceStateStore.collectionName)).toBeTruthy();
+      const serviceState = await store.get();
+      expect(serviceState?.serviceVersion).toEqual('1.1');
 
       done();
     });
