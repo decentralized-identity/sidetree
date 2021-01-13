@@ -7,12 +7,14 @@ import MongoDbOperationQueue from './versions/latest/MongoDbOperationQueue';
  */
 export default class Monitor {
 
-  private operationQueue!: MongoDbOperationQueue;
+  private operationQueue: MongoDbOperationQueue;
+
+  public constructor () {
+    this.operationQueue = new MongoDbOperationQueue();
+  }
 
   public async initialize (config: Config) {
-    this.operationQueue = new MongoDbOperationQueue(config.mongoDbConnectionString, config.databaseName);
-
-    this.operationQueue.initialize();
+    this.operationQueue.initialize(config.mongoDbConnectionString, config.databaseName);
   }
 
   /**

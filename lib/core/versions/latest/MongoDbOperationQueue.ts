@@ -27,14 +27,12 @@ export default class MongoDbOperationQueue implements IOperationQueue {
 
   private db: Db | undefined;
 
-  constructor (private serverUrl: string, private databaseName: string) { }
-
   /**
    * Initialize the MongoDB operation store.
    */
-  public async initialize () {
-    const client = await MongoClient.connect(this.serverUrl);
-    this.db = client.db(this.databaseName);
+  public async initialize (serverUrl: string, databaseName: string) {
+    const client = await MongoClient.connect(serverUrl);
+    this.db = client.db(databaseName);
     this.collection = await MongoDbOperationQueue.createCollectionIfNotExist(this.db);
   }
 
