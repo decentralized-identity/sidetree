@@ -1,5 +1,5 @@
-import MongoDbOperationQueue from './versions/latest/MongoDbOperationQueue';
 import Config from './models/Config';
+import MongoDbOperationQueue from './versions/latest/MongoDbOperationQueue';
 
 /**
  * An class to monitor the Core.

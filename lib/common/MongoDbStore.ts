@@ -27,7 +27,7 @@ export default class MongoDbStore {
   /**
    * Clears the store.
    * NOTE: Avoid dropping collection using `collection.drop()` and recreating the collection in rapid succession (such as in tests), because:
-   * 1. It takes some time (seconds) for the collection be create again.
+   * 1. It takes some time (seconds) for the collection be created again.
    * 2. Some cloud MongoDB services such as CosmosDB will lead to `MongoError: ns not found` connectivity error.
    */
   public async clearCollection () {
