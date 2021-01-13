@@ -9,6 +9,8 @@ import SidetreeBitcoinProcessor from './bitcoin/BitcoinProcessor';
 import SidetreeBitcoinVersionModel from './bitcoin/models/BitcoinVersionModel';
 import SidetreeConfig from './core/models/Config';
 import SidetreeCore from './core/Core';
+import SidetreeEventCode from './core/EventCode';
+import SidetreeMonitor from './core/Monitor';
 import SidetreeResponse from './common/Response';
 import SidetreeResponseModel from './common/models/ResponseModel';
 import SidetreeVersionModel from './core/models/VersionModel';
@@ -18,6 +20,8 @@ export {
   ISidetreeCas,
   SidetreeConfig,
   SidetreeCore,
+  SidetreeEventCode,
+  SidetreeMonitor,
   SidetreeResponse,
   SidetreeResponseModel,
   SidetreeVersionModel
