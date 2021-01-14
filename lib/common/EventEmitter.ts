@@ -15,6 +15,7 @@ export default class EventEmitter {
   static initialize (customEventEmitter?: IEventEmitter) {
     if (customEventEmitter !== undefined) {
       EventEmitter.customEvenEmitter = customEventEmitter;
+      Logger.info('Custom event emitter given.');
     }
   }
 
@@ -22,15 +23,15 @@ export default class EventEmitter {
    * Emits an event.
    */
   public static async emit (eventCode: string, eventData?: {[property: string]: any}): Promise<void> {
+    if (EventEmitter.customEvenEmitter !== undefined) {
+      await EventEmitter.customEvenEmitter.emit(eventCode, eventData);
+    }
+
     // Always log the event using the logger.
     if (eventData === undefined) {
       Logger.info(LogColor.lightBlue(`Event emitted: ${LogColor.green(eventCode)}`));
     } else {
       Logger.info(LogColor.lightBlue(`Event emitted: ${LogColor.green(eventCode)}: ${JSON.stringify(eventData)}`));
-    }
-
-    if (EventEmitter.customEvenEmitter !== undefined) {
-      await EventEmitter.customEvenEmitter.emit(eventCode, eventData);
     }
   }
 }
