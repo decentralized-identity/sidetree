@@ -1,5 +1,6 @@
 import BitcoinServiceStateModel from '../../lib/bitcoin/models/BitcoinServiceStateModel';
 import Config from '../../lib/core/models/Config';
+import { MongoClient } from 'mongodb';
 import MongoDb from '../common/MongoDb';
 import MongoDbServiceStateStore from '../../lib/common/MongoDbServiceStateStore';
 
@@ -12,7 +13,7 @@ async function createStore (storeUri: string, databaseName: string): Promise<Mon
   return store;
 }
 
-describe('MongoDbSeviceStateStore', async () => {
+describe('MongoDbServiceStateStore', async () => {
 
   const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
@@ -21,16 +22,11 @@ describe('MongoDbSeviceStateStore', async () => {
   let store: MongoDbServiceStateStore<BitcoinServiceStateModel>;
 
   beforeAll(async () => {
-
     mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
     if (mongoServiceAvailable) {
       store = await createStore(config.mongoDbConnectionString, databaseName);
-
-      // // Delibrately drop the collection completely and initialize it again.
-      await store.dropCollection();
-      await store.initialize();
     }
-  }, 10000); // Increasing `beforeAll()` timeout because dropping then recreating collection can take longer than default test timeout of 5 seconds.
+  });
 
   beforeEach(async () => {
     if (!mongoServiceAvailable) {
@@ -58,5 +54,30 @@ describe('MongoDbSeviceStateStore', async () => {
     expect(actualServiceState).toEqual(newServiceState);
 
     done();
+  });
+
+  describe('initialize()', async () => {
+    it('should create collection on initialization if it does not exist.', async (done) => {
+      // Deleting collections to setup this test.
+      const client = await MongoClient.connect(config.mongoDbConnectionString);
+      const db = client.db(databaseName);
+      await db.dropCollection(MongoDbServiceStateStore.collectionName);
+
+      // Make sure no collection exists before we start the test.
+      const collections = await db.collections();
+      const collectionNames = collections.map(collection => collection.collectionName);
+      expect(collectionNames.includes(MongoDbServiceStateStore.collectionName)).toBeFalsy();
+
+      // NOTE: In CosmosDB `db.createCollection()` call in `initialize()` does not make the collection "visible"
+      // until a subsequent operation is called (such as `createIndex()` or inserting record) possibly due to lazy load.
+      // hence in this test we insert a record and retrieve it again to prove that the collection is created.
+      await store.initialize();
+      await store.put({ serviceVersion: '1.1' });
+
+      const serviceState = await store.get();
+      expect(serviceState?.serviceVersion).toEqual('1.1');
+
+      done();
+    });
   });
 });

@@ -5,5 +5,5 @@ export default interface IEventEmitter {
   /**
    * Emits an event.
    */
-  emit (eventName: string, eventData?: {[property: string]: any}): Promise<void>;
+  emit (eventCode: string, eventData?: {[property: string]: any}): Promise<void>;
 }

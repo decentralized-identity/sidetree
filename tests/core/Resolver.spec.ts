@@ -7,6 +7,7 @@ import * as generatedFixture from '../vectors/generated.json';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
+import Did from '../../lib/core/versions/latest/Did';
 import DidState from '../../lib/core/models/DidState';
 import Document from '../utils/Document';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
@@ -57,7 +58,8 @@ describe('Resolver', () => {
       await operationStore.put([anchoredOperationModel]);
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const did = await Did.create(`did:sidetree:${didUniqueSuffix}`, 'sidetree');
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, did, published);
       Fixture.fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/afterCreate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterCreate);
     });
@@ -89,7 +91,8 @@ describe('Resolver', () => {
 
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const did = await Did.create(`did:sidetree:${didUniqueSuffix}`, 'sidetree');
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, did, published);
       Fixture.fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterUpdate);
     });
@@ -115,7 +118,8 @@ describe('Resolver', () => {
 
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const did = await Did.create(`did:sidetree:${didUniqueSuffix}`, 'sidetree');
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, did, published);
       Fixture.fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterRecover);
     });
@@ -157,7 +161,8 @@ describe('Resolver', () => {
 
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const published = true;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const did = await Did.create(`did:sidetree:${didUniqueSuffix}`, 'sidetree');
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, did, published);
       Fixture.fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterDeactivate);
     });
