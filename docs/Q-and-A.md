@@ -527,6 +527,20 @@ _(@henkvancann)_
 It's bootstrapped by the first DID method that uses Sidetree under the hood. The more use of those DIDs the more Sidetree gets used.  However, there is no network effect as such from extended use. None-the-less there is a huge network effect when mulitple DID methods are running on Sidetree, because they share the same resolution, protocol and file structure in the CAS.
 _(@henkvancann)_
 
+## What do you need to purchase to operate Sidetree or on sidetree based DIDs like ION?
+
+But to look up the IDs in ION, you have to have a full node, you've got to have the index of history. So in fact, we're going to be spawning a new reason why people will want to run full nodes, because it actually provides you concrete value you absolutely cannot get any other way. So running a node for us, it's a priority that anyone be able to do it.
+
+So our target hardware has been this little 2017 Intel NUC that I bought for $400, back three years when we started this. This thing is pretty underpowered, it's like a 2017 i5, it's got six gigs of RAM, a half a terabyte hard drive and we're running this thing at full scale, as fast as you could do, even our Azure blades or anything like that. You could run it at home right under your desk! Part of that is running a Bitcoin full node, IPFS, and other things, so anyone should be able to get it started.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
+
+## What do you need to do?
+_to operate Sidetree or on sidetree based DIDs like ION?_\
+So we're putting out the install guides, there are `Docker` containers for quick install. See more on [github]((https://github.com/decentralized-identity/sidetree)
+
+## Am I creating value for Microsoft while I contribute to Sidetree? And they will sell it on their behalf?
+We're really wanting to encourage people to install and help us, especially if you're technically capable, or you're a coder or have some aptitude. Kick the tires on it, let us know, find bugs, this is for everyone! This is a public utility, we're not trying to make money on this at all, and so just help it be the best it can be.
+
 # Q&A section Userinterface
 
 ## What does Sidetree look like?
@@ -644,7 +658,6 @@ To store transactions between - and changes to DDO's. Sidetree is a Layer 2 solu
 
 ## What does Sidetree proof?
 {TBW}
-
 
 ## Do I need to show the full IPFS Sidetree database to anybody I transact with, even though I'd only like to show a part of it, for example a virtual credential?
 {TBW}
