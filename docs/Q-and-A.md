@@ -25,7 +25,7 @@ None of the respondents in the **open** repo and presentations have been explici
 If there is no reference added to the answers, then its content stems from either one or more of these sources
 - [Spec]https://identity.foundation/sidetree/spec/
 - [Github Sidetree](https://github.com/decentralized-identity/sidetree)
-- [What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
+- [What bitcoin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 - it's Daniel Buchner or Henry Tsai who answered the question. 
 Most of the editing is done by @henkvancann, which might have introduced ommission, errors, language glitches and such. Sorry for that, feel free to correct by submitting a pull request (PR).\
 For practical reasons educational images uploaded by Github members may have been downloaded. We de-personalised them by giving images a new name. Under these new names these images have been uploaded to github and used in the Q&A to clarify the questions and answers.
@@ -121,7 +121,7 @@ We've done our best to protect the privacy of the Github by investigating the im
   * [Is my Sidetree identifier public?](#is-my-sidetree-identifier-public)
   * [Is a Sidetree identifier GPDR proof?](#is-a-sidetree-identifier-gpdr-proof)
   * [Does Sidetree support transferable identifiers?](#does-sidetree-support-transferable-identifiers)
-- [File structure](#file-structure)
+  * [File structure](#file-structure)
   * [What do we need IPFS for?](#what-do-we-need-ipfs-for)
 - [Q&A section Wallets](#qa-section-wallets)
   * [Do I need a wallet for Sidetree?](#do-i-need-a-wallet-for-sidetree)
@@ -416,7 +416,8 @@ _What's the value to Microsoft in working on this?_
 
 There's a lot of things you just can't do with an identity safely unless people own their own IDs. So they can't find moneyed special deals with say just LinkedIn or just any email provider, or something like that, that might have a specific integration. It actually unlocks the ability to do a lot of different things, like do digital diplomas at scale, to do credentialing for skills and stuff like that, at scale.
 
-In a way that's also standardized, like right now, it's just like people can issue these badges, there's different badge protocols. But it's pretty ad hoc, there's no real systemic way of find them and verify them and it's kind of a mess. So in order for us to unlock a ton of business opportunity in LinkedIn, in other investments we've made, things like GitHub and all these other things, you have to have users owning their own ID. It can't be a Microsoft-owned ID or it's just not safe to do these certain use cases.
+In a way that's also standardized, like right now, it's just like people can issue these badges, there's different badge protocols. But it's pretty ad hoc, there's no real systemic way of find them and verify them and it's kind of a mess. So in order for us to unlock a ton of business opportunity in LinkedIn, in other investments we've made, things like GitHub and all these other things, you have to have users owning their own ID. It can't be a Microsoft-owned ID or it's just not safe to do these certain use cases.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
 ## What's the diffrence between a `normative` and `non-normative` description or theory?
 See the [definitions](#normative) section for what both are. For example, theories of ethics are generally `normative` - you should not kill, you should help that person, etc. Economics is most commonly `non-normative` - instead of asking “how should this person choose which goods to buy?”, we are often more interested in “how does this person choose which commodities they buy?”.
@@ -429,6 +430,10 @@ These are the information-hiding measures taken in the protocol to facilitate co
 - Operation Request of type Recover or Deactivate
 {TBW : unclear wether `Deactivate` obeys the right to be forgotten}\
 _(@henkvancann)_
+
+## Is there like a central, GitHub repository that someone or some group of people are responsible for?
+it is in the Decentralized Identity Foundation's GitHub depository, [Sidetree](https://github.com/decentralized-identity/sidetree) is the name of it. So you can contribute code there, you can read every line of code. There's no code insertions after the fact, like every bit of every piece of code that we run, as an ION node, is there. So it's totally inspectable.
+
 # Q&A section Sidetree operational
 
 ## Where can I download Sidetree?
@@ -529,14 +534,63 @@ Currently `Sidetree` is just code, that can be tested and executed in a terminal
 {TBW}\
 _(@henkvancann)_
 
+
+## How does it actually work in terms of me as an individual? Could I have multiple IDs? Could I bind my ID to a bitcoin public address?
+Yeah, so you can actually have as many IDs as you want in the system. You could have thousands for instance. Actually, there's this concept that we kind of play around with that is, you're going to have probably a couple persona IDs, so well-known persona IDs. This is great for a lot of people. You want a couple IDs in the world that people know are for example Peter, like when Peter signs this with this ID, that's Peter. It's not anyone else, it's not any scammers, imposters, that's him. There's a lot of public stuff you'll tie to that.
+
+You might tie your resume, your podcast, like signed statements you make, like public things you say. That's all good, we all want that and most users want that. Then you have a ton of identifiers, like maybe 99% of them, that we call peer-wise or pairwise identifiers. Where you meet someone, or a company or an app, you get engaged with, where you want to create an ID just for that connection. So that when you create the ID it keeps that connection sort of silent and private between you two, so you're not leaking information.
+
+So it's not just one ID that signs everything and anytime you see any signature you can like triangulate it back to you. What we're trying to do is section those relationships out so that you can keep them as private as you would like between you and your counter parties. To answer your other question about how many keys and stuff, DIDs are an international standard that's being finalized in the W3C.
+
+So this stuff is actually all built on standards, DIDs are represented by this thing called a DID document, which is just a piece of metadata that contains key references and routing endpoints. You can have as many keys in that document as you want, you have say, like a key that maps to your phone and your laptop and other devices you own, because that's the devices you're going to be using your ID with. You can have a bunch of different keys, so it's not like Bitcoin addresses, where there's like a key behind an address or even just multi-sigged, you can have a lot more variety than that.
+
+Then you can also put endpoints that point to certain things. So you can have an endpoint that points to your Twitter profile or you can have an endpoint that points to a personal data store with encrypted data. That's kind of the more future-looking stuff, when we start getting into apps.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
+
+## Will I have some interface for managing all my IDs because it will come down to usability for adoption long-term by the general public?
+_I would want something like a one-pass or a Dashlane where I can just manage all my IDs in a single location. Is that coming? Is that coming now or is that coming later?_
+
+We're integrating DIDs into our authenticator app called _Microsoft Authenticator_. If you're familiar with like Google Authenticator or some of the other things, right now it handles 2FA and it's got like your passcodes for your `2FA` stuff for apps. We're adding the ID supports so you'll be able to get DIDs. We're not even like up-levelling the content of the DIDs so you don't have to be super technical, it's going to just get IDs for you when you make new connections, help you manage those keys instate.
+
+We're going to be doing everything we can to augment that process to make it as easy for the average person as possible.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
+
+## Is it mandatory to work with Microsoft (Authenticator)?
+You don't have to get Microsoft's wallet. The cool thing about the DID system we're building on Bitcoin, you can have an open source wallet that you go download and all the libraries, everything to create these. IDs are completely untethered from any company. So you could say, _"You know what? I don't trust you Microsoft! I'm going to go get this like completely opensource GPL3 thing that I see out there on GitHub and I'm going to run that"_ and that's perfectly fine. In fact, we encourage it.
+
 ## Is there a Sidetree course or webinar available?
+- [What bitcoin Did 231 podcast](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 {TBW}
 
 
 ## Could Sidetree work for edge computers that need self sovereign identity? How to (selectively) share control with the owners of the device?
+What a Sidetree based DID schema like ION provides you to do, is the ability to create identifiers that aren't just for humans or companies, you can create identifiers for intangible, non-living things, like a package. So instead, I can go get a DID for my package and I could put the service endpoint to point to GitHub. From there, I can go scan ION and find all the packets and all the IDs in the system that declare themselves to be say packages and create a decentralized version of npm where I'm no longer reliant on npm happening to exist or to believe my packet is worth indexing. I can create that index myself. I can present the same sort of userinterface you would see on `npm`, but I don't need a centralized identity in the middle of that.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)\
 {TBW}
 
+
 # Q&A section Root of trust
+
+## What does an ID system gain from a blockchain?
+Because there's lots of bullshit going around about people using blockchains for all sorts of nonsense. I would actually harken back to what Satoshi first called Bitcoin before it was blockchain, which was **timechain**. It turns out that `PKI` backs identifiers. An analogy of what one is, is the DNS system.
+
+The identifier in the DNS system is a domain name and then the backing PKI data is your zone file in DNS that lists your named servers, routing information. Then there's the _certificate of authorities_ that have a sort of the backing cryptography. So this is an example of a PKI system. 
+
+Every `PKI` system, if it isn't centralized, like a system where they just kind of decree that this users is usurped, if you want to decentralize that, the most important piece is having a **global immutable append-only log**, because everyone needs to see the state of some identifier. 
+
+If Alice creates an ID and she initially associates her phone with using her ID and a public key on the phone. When she gets a new phone, she's going to switch that key. So everyone needs to be able to see that event, globally and deterministically, or else someone could masquerade as Alice. They could say, "Well, I have her old key so I'm her." You have to have this sort of linear chronology of what happened when, it's a state machine. So what a blockchain does, really elegantly that we never had before, is: **it's an oracle for entering events into a chronology.**\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
+
+
+## What is it about Bitcoin? 
+_This stuff can be done on Ethereum and other blockchains as well, but just specifically, what is it about Bitcoin that enables this to make it possible to create these IDs?_
+
+First we need to understand [what does an ID system gain from a blockchain](what-does-an-id-system-gain-from-a-blockchain). In brief: it's an oracle for entering events into a chronology. That's exactly what we use the Bitcoin network for. In its most primitive sense, we use Bitcoin to enter in events in a chronology that nodes sort of watch for and compute so they all can understand the state of every ID that's anchored in Bitcoin. So it's very important. 
+
+So why would we pick Bitcoin versus some other blockchain?
+
+Well because we're not actually concerned with any of the super sexy smart contracts, and other stuff. Not to say that there's less interesting stuff in Bitcoin, but we just don't care about features like that, which are not applicable for us. What we most care about is entering stuff in the most immutable, hardened record imaginable and right now, that's Bitcoin. It's pretty hard to argue that isn't Bitcoin, so that's why we use it, is because it has those attributes and it suffices, it does exactly what we need it to do.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
 ## What do I need to trust in Sidetree?
 {TBW}
@@ -545,6 +599,10 @@ _(@henkvancann)_
 {TBW}
 
 # Q&A section Identifiers
+
+## DIDs based on Sidetree could stop SIM-swapping?
+Oh yeah, it has this potential. I mean if carriers were able to tie your account to a DID or something hardened, literally an attacker would have to physically come take from you, just like they would have to take your Bitcoin, absolutely! I don't think we have this sort of transient ID problem where it can just be like one button push from an operator on their end switches your account.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
 ## How is a Sidetree identifier different than a regular identifier in DID methods?
 {TBW}
@@ -640,9 +698,28 @@ _...when it has nodes in a network that could federatively establish consensus?_
 The ledger (blockchain) acts as a linear chronological sequencing oracle, which the Sidetree protocol leverages to **order** DID PKI operations in an **immutable** history all observing nodes can **replay** and validate. It is this ability to replay the precise sequence of DID PKI state change events, and process those events using a common set of deterministic rules, that allows Sidetree nodes to achieve a consistent view of DIDs and their DID Document states, without requiring any additional consensus mechanism.
 The underlaying blockchain provides the consensus mechanism to come to immutable time-stamped ordering.
 
+## Every time I want to verify an ID, does something happen on the Bitcoin blockchain? 
+_Therefore, do I have to pay some kind of transaction fee?_
+
+No, so one thing that's an interesting about this. When we talk about `PKI` systems, and I'll use the analogy of DNS:\
+You don't have change your DNS records when you log into Facebook, right? You change your DNS records very infrequently like when you want to move an IP address. So much like that, the system of DIDs, like maybe when you get a new phone, you want to swap out the public key that was on your old one, for the new phone.
+
+So it's a very infrequent activity. When you go to do authentications, like if you authenticated into an app your DID by signing a public and private key challenge based on the ID, none of that actually touches Bitcoin. In fact, it doesn't even touch ION or any other DID schema based on Sidetree. The ID system that we're helping to build, is completely standalone. That's like once you have your ID and you want to use it, you would go onto the website and the website will assert to you, "Hey, please log in." You would say, "Well, I'm DID123" and what the website's going to do is say, "Well, I don't believe you. I'm going to look that DID up. I'm going to find the keys that I know are associated with it." \
+When it does, that look up doesn't incur any Bitcoin cost or anything like that, they're just finding cache data and they say, "Great, I have the keys. Now I'm going to sign something and you're going to be able to answer this challenge if you truly own that ID." \
+So that entire activity happened at a third layer like well above, it doesn't touch any blockchain stuff at all.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
+
+## Will Sidetree put more sensitive data on a public blockchain, like Bitcoin? 
+
+Any other data than just identifiers, that you'd want to expose has nothing to do with ION or Bitcoin. None of that is embedded in Bitcoin. That's completely off and on regular infrastructure. It's up to you what you want to disclose. So when I say registry of IDs, it's mean that ION essentially provides you the ability to iterate over every ID that's been entered into the system. This is pretty cool and it has some interesting applications. One application that I like to throw out there that Devs might resonate with a little bit is like `npm`.\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 # Q&A section Agencies
 
 ## What does the governance framework of Sidetree look like?
 > Decentralized systems must coordinate across multiple parties, all acting independently in their own self-interest. This means that the rules of engagement and interaction must be spelled out and agreed to ahead of time, with incentives, disincentives, consequences, processes, and procedures made clear.
 {TBW}
 DRAFT BY _(@henkvancann)_
+
+## Sidetree is like a better version of two-factor authentication?
+Yeah, a better version of two-factor authentication. It gives us an opportunity to do things potentially in the future, better underpinning for things like DNS. It is a global registry, at least ION has the ability to be and I know that sounds scary, it's a global registry of IDs, but when I say registry, what I mean is, every ID in ION is, you know at least the identifier. You might not know anything else about the ID, you don't know that it's a person or a dog on the internet, or anything like that. But you know the ID and the keys. So if you ever ran into that person, you could at least like say, "Hey, prove you're you."\
+[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
