@@ -18,7 +18,6 @@
     "verificationMethod": [
       {
         "id": "#newKey",
-        "controller": "",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",

@@ -18,7 +18,6 @@
     "verificationMethod": [
       {
         "id": "#publicKeyModel1Id",
-        "controller": "",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "crv": "secp256k1",
