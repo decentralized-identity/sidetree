@@ -16,6 +16,9 @@ import SidetreeError from '../../../common/SidetreeError';
  */
 export default class DocumentComposer {
 
+  private static resolutionObjectContextUrl = 'https://w3id.org/did-resolution/v1';
+  private static didDocumentContextUrl = 'https://www.w3.org/ns/did/v1';
+
   /**
    * Transforms the given DID state into a DID Document.
    */
@@ -37,7 +40,6 @@ export default class DocumentComposer {
         const id = '#' + publicKey.id;
         const didDocumentPublicKey = {
           id: id,
-          controller: '',
           type: publicKey.type,
           publicKeyJwk: publicKey.publicKeyJwk
         };
@@ -48,7 +50,7 @@ export default class DocumentComposer {
         verificationMethod.push(didDocumentPublicKey);
 
         if (purposeSet.size > 0) {
-          const reference = didDocumentPublicKey.controller + didDocumentPublicKey.id;
+          const reference = didDocumentPublicKey.id;
 
           for (const purpose of purposeSet) {
             if (!verificationRelationships.has(purpose)) {
@@ -79,7 +81,7 @@ export default class DocumentComposer {
     const baseId = did.isShortForm ? did.shortForm : did.longForm;
     const didDocument: any = {
       id: baseId,
-      '@context': ['https://www.w3.org/ns/did/v1', { '@base': baseId }],
+      '@context': [DocumentComposer.didDocumentContextUrl, { '@base': baseId }],
       service: services
     };
 
@@ -92,7 +94,7 @@ export default class DocumentComposer {
     });
 
     const didResolutionResult: any = {
-      '@context': 'https://w3id.org/did-resolution/v1',
+      '@context': DocumentComposer.resolutionObjectContextUrl,
       didDocument: didDocument,
       didDocumentMetadata: {
         method: {
@@ -119,7 +121,7 @@ export default class DocumentComposer {
   private static createDeactivatedResolutionResult (did: string, published: boolean) {
     const didDocument = {
       id: did,
-      '@context': ['https://www.w3.org/ns/did/v1', { '@base': did }]
+      '@context': [DocumentComposer.didDocumentContextUrl, { '@base': did }]
     };
     const didDocumentMetadata = {
       method: {
@@ -128,6 +130,7 @@ export default class DocumentComposer {
       canonicalId: did
     };
     return {
+      '@context': DocumentComposer.resolutionObjectContextUrl,
       didDocument,
       didDocumentMetadata
     };
