@@ -700,8 +700,11 @@ So everyone needs to be able to see that event, globally and deterministically, 
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
 ## So why would we pick Bitcoin versus some other blockchain, like Ethereum or Hyperledger?
-Because we're not actually concerned with any of the super sexy smart contracts, interesting... Whatever you might call it. Not to say that there's less interesting stuff in Bitcoin, but we just don't care about features like that, that is not applicable for us. What we most care about is entering stuff in the most immutable, hardened record imaginable and right now, that's Bitcoin. It's pretty hard to argue that isn't Bitcoin, so that's why we use it, is because it has those attributes and it suffices, it does exactly what we need it to do.\
-[Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
+Sidetree is settlement layer agnostic. There are different reasons to use either one of those platforms. For ION example we argue that because we're not actually concerned with any of the super sexy smart contracts. What we most care about is entering stuff in the most immutable, hardened record imaginable and right now, that's Bitcoin. It's pretty hard to argue that isn't Bitcoin, so that's why we use it, is because it has those attributes and it suffices, it does exactly what we need it to do. [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner).
+
+There are also Sidetree implementations on Ethereum and Hyperledger Fabric:
+ - Ethereum: https://github.com/decentralized-identity/element
+ - Hyperledger Fabric: https://github.com/trustbloc/sidetree-fabric
 
 ## Does Sidetree use a blockchain?
 Yes, it needs a global blockchain to provide an ordered settlement layer 1 that has reached consensus over the unique representation of the "truth". Sidetree sits on top of this Layer 1, in layer 2 of the `ToIP model` and is blockchain agnostic.\
