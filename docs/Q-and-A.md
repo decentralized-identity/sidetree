@@ -393,7 +393,6 @@ _(@henkvancann)_
 - Layer 4 (application layer): {TBW}
 _(@henkvancann)_
 
-
 ## Who is Sidetree? Is it a company or a not for profit?
 Sidetree sits under the *Decentralized Identity Foundation*, [DIF](https://identity.foundation), and within that in the *Identity and Discovery* Workgroup.
 Due to its licensing structure, Sidetree isn't owned by anyone and everyone at the same time. The Intellectual Property Right of Sidetree is hosted with `DIF`. It is an open source project.
@@ -403,6 +402,15 @@ On github Sidetree is - and will become even more - a thickening bunch of reposi
 
  Lastly, Microsoft is an important promotor of Sidetree and employer of some contributors.
  _(@henkvancann)_
+
+ ## Why is a company like Microsoft working on decentralized IDs using Bitcoin? 
+_What are the feelings with Bitcoin around Microsoft? Is there a general kind of acceptance and like about it?_
+
+Not everyone is into Bitcoin, I would say the majority aren't. They don't care, they're product people, they want to get something done. They do understand that there's one system out there that's just stood and just embattled the test of time. So that part is like sort of empirical; you can't really argue with that part. There are believers among the people who do believe in Bitcoin.
+
+But I'd say the majority, they believe in decentralizing. The reason they believe in it, is for all the things it does, not necessarily how we're doing it, but what it does. What it does for people, what it enables for the business, and so on. I personally believe Sidetree needs to be censorship resistant and tamper-evasive as possible. So that's the reason why I heavily encouraged Microsoft to go this route. But it becomes a humanitarian thing and it's hard to argue with.
+
+The alternative is you could go set up some private permission blockchain or something, but that's only as decentralized as whoever is running those few nodes that gets to decide everything. That's not really something we're interested in, because it's not significantly differentiated from the centralized identity systems we provide today. It's just not something that might be good for people; to get people involved in a system where they could be shut off.
 
 ## In what programming languages is Sidetree available?
 In Javascript.
