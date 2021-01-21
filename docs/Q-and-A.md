@@ -413,8 +413,8 @@ But I'd say the majority, they believe in decentralizing. The reason they believ
 The alternative is you could go set up some private permission blockchain or something, but that's only as decentralized as whoever is running those few nodes that gets to decide everything. That's not really something we're interested in, because it's not significantly differentiated from the centralized identity systems we provide today. It's just not something that might be good for people; to get people involved in a system where they could be shut off.
 
 ## In what programming languages is Sidetree available?
-In Javascript.
-_(@henkvancann)_
+There are two JavaScript implementations that I know about. The reference implementation hosted at DIF and also https://github.com/transmute-industries/sidetree.js. Sidetree has also been implemented in Go: https://github.com/trustbloc/sidetree-core-go. 
+_(@troyronda)_
 
 ## Does Sidetree cooperate with other projects in the self-sovereign Identity field?
 Yes, Sidetree sits under the *Decentralized Identity Foundation*, [DIF](https://identity.foundation), and is part of the *Identity and Discovery* Workgroup. {TBW There are also non-formal relation with the newly launched trust-over-ip foundation?, how / where does Sidetree fit in trust-over-ip?
