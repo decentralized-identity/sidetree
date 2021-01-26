@@ -24,8 +24,3 @@ Each version of the protocol will define a set of protocol rules and parameters 
 | `MAX_DELTA_SIZE` { #max-delta-size }             | Maximum canonicalized operation delta buffer size.       |                1,000 bytes |
 | `MAX_OPERATION_COUNT`       | Maximum number of operations per batch.                                       |                 10,000 ops |
 | `MAX_OPERATION_HASH_LENGTH` { #max-operation-hash-length } | Maximum length of all hashes in CAS URI files. |           SHA256 Multihash |
-
-::: todo
-- Put REVEAL_VALUE in places where reveal value is used.
-- All hashes will be base64Url encoded, ensure the spec reads that way.
-:::
