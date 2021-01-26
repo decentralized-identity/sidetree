@@ -108,15 +108,16 @@ If the compiled DID ****was not**** determined to be _Unresolvable_, as defined 
 
 1. Generate a JSON object for the _Resolution Result_, structured in accordance with the [Decentralized Identifier Resolution](https://w3c-ccg.github.io/did-resolution/#example-14-example-did-resolution-result) specification.
 2. Set the `didDocument` property of the _Resolution Result_ object to the resolved DID Document generated via the [Operation Compilation](#operation-compilation) process.
-5. The _Resolution Result_ object ****MUST**** include a `didDocumentMetadata` property, and its value is an object composed of the following values:
-    - `canonicalId` - If canonical representation of the resolved DID exists, the presence of canonical DID representation within the `didDocumentMetadata` is determined as follows:
+5. The _Resolution Result_ object ****MUST**** include a `didDocumentMetadata` property, and its value ****MUST**** be an object composed of the following properties:
+    - `deactivated` - This property ****MUST**** be present if the resolved DID is determined to be in a deactivated state, and it ****MUST**** be set to the boolean value `true`. If the resolved DID is not in a deactivated state, this value ****MUST**** be set to the boolean value `false`.
+    - `canonicalId` - If canonical representation of the resolved DID exists, the implementation ****MUST**** include the `canonicalId` property, and the presence and value of the `canonicalId` property is determined as follows:
         1. Presence and value of the `canonicalId` property:
             - If the DID being resolved is a [_Long-Form DID_](#long-form-did-uris) representation and is unpublished, the `canonicalId` property ****MUST NOT**** be included in the `didDocumentMetadata` object.
             - If the DID being resolved is a [_Long-Form DID_](#long-form-did-uris) representation and is published, the `canonicalId` property ****MUST**** be included in the `didDocumentMetadata` object, and its value ****MUST**** be the [_Short-Form DID_](#short-form-did) representation.
             - If the DID being resolved is a [_Short-Form DID_](#short-form-did) representation and is published, the `canonicalId` property ****MUST**** be included in the `didDocumentMetadata` object, and its value ****MUST**** be the [_Short-Form DID_](#short-form-did) representation.
         2. Inclusion of the canonical DID representation in the `equivalentId` array:
             - If under any of the cases above there is a canonical DID representation included for the `canonicalId` property, the canonical DID representation ****MUST**** also be included in the `equivalentId` array. See below for details on the `equivalentId` property.
-    - `equivalentId` - If equivalent representations of the resolved DID exist, the presence of equivalent DID representations within the `didDocumentMetadata` is determined as follows:
+    - `equivalentId` - If equivalent representations of the resolved DID exist, the implementation ****MUST**** include the `equivalentId` property, and the presence and value of the `equivalentId` property is determined as follows:
         - If the DID being resolved is a [_Long-Form DID_](#long-form-did-uris) representation, the `equivalentId` property ****MUST**** be included in the `didDocumentMetadata` object, and its array value ****MUST**** include the [_Short-Form DID_](#short-form-did) representation.
     - `method` - Its value ****MUST**** be an object composed of the following values:
         1. The object ****MUST**** include a `published` property with a boolean value. If the compiled DID state is flagged as _Unpublished_ and/or _Unresolvable_ (per the [Operation Compilation](#operation-compilation) process), the `published` property ****MUST**** be set to `false`, otherwise, set the value to `true`.
