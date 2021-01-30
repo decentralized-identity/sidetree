@@ -137,6 +137,19 @@ describe('Blockchain', async () => {
 
       fail();
     });
+
+    it('should throw if response body fails JSON parse.', async () => {
+      const blockchainClient = new Blockchain('Unused URI');
+
+      const mockFetchResponse = { status: 200 };
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from('An unexpected non JSON string.')));
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => blockchainClient.read(1, 'Unused'),
+        CoreErrorCode.BlockchainReadResponseBodyNotJson
+      );
+    });
   });
 
   describe('write()', async () => {
