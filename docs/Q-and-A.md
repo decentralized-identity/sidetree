@@ -587,6 +587,9 @@ These could be some interesting sources:
 - [Orie Steele's SSI Meetup](https://www.youtube.com/watch?v=mk4w2tBTgdE)
 Technical folks could also browse through the closed and open [issues](https://github.com/decentralized-identity/sidetree/issues) to get an idea of what has been achieved in the project.
 
+#### Element-DID playground based on Sidetree
+https://element-did.com Element DID creation, based on a PPK inception, resulting in a Self Sovereign Identifier that will be anchored through Sidetree on Ethereum.\
+_(@henkvancann)_
 
 ## Could Sidetree work for edge computers that need self sovereign identity? How to (selectively) share control with the owners of the device?
 What a Sidetree based DID schema like ION provides you to do, is the ability to create identifiers that aren't just for humans or companies, you can create identifiers for intangible, non-living things, like a package. So instead, I can go get a DID for my package and I could put the service endpoint to point to GitHub. From there, I can go scan ION and find all the packets and all the IDs in the system that declare themselves to be say packages and create a decentralized version of npm where I'm no longer reliant on npm happening to exist or to believe my packet is worth indexing. I can create that index myself. I can present the same sort of userinterface you would see on `npm`, but I don't need a centralized identity in the middle of that.\
