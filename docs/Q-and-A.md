@@ -581,8 +581,11 @@ We're going to be doing everything we can to augment that process to make it as 
 You don't have to get Microsoft's wallet. The cool thing about the DID system we're building on Bitcoin, you can have an open source wallet that you go download and all the libraries, everything to create these. IDs are completely untethered from any company. So you could say, _"You know what? I don't trust you Microsoft! I'm going to go get this like completely opensource GPL3 thing that I see out there on GitHub and I'm going to run that"_ and that's perfectly fine. In fact, we encourage it.
 
 ## Is there a Sidetree course or webinar available?
+These could be some interesting sources:
 - [What bitcoin Did 231 podcast](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
-{TBW}
+- [Daniel Buchner's very quick run down Jan 2021](https://www.youtube.com/watch?v=dZTmGPiLBv8)
+- [Orie Steele's SSI Meetup](https://www.youtube.com/watch?v=mk4w2tBTgdE)
+Technical folks could also browse through the closed and open [issues](https://github.com/decentralized-identity/sidetree/issues) to get an idea of what has been achieved in the project.
 
 
 ## Could Sidetree work for edge computers that need self sovereign identity? How to (selectively) share control with the owners of the device?
