@@ -127,7 +127,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       transaction, coreIndexFile, provisionalIndexFile, coreProofFile, provisionalProofFile, chunkFileModel
     );
 
-    await this.operationStore.put(operations);
+    await this.operationStore.insertOrReplace(operations);
 
     Logger.info(LogColor.lightBlue(`Processed ${LogColor.green(operations.length)} operations. Retry needed: ${LogColor.green(retryNeeded)}`));
 

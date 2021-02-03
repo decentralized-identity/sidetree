@@ -125,16 +125,16 @@ describe('MongoDbOperationStore', async () => {
     expect(collectionNames.includes(collectionName)).toBeFalsy();
   });
 
-  describe('put()', () => {
-    it('should get a put create operation', async () => {
+  describe('insertOrReplace()', () => {
+    it('should be able to insert an create operation successfully.', async () => {
       const operationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
       const anchoredOperationModel = operationData.anchoredOperationModel;
-      await operationStore.put([anchoredOperationModel]);
+      await operationStore.insertOrReplace([anchoredOperationModel]);
       const returnedOperations = await operationStore.get(anchoredOperationModel.didUniqueSuffix);
       checkEqualArray([anchoredOperationModel], returnedOperations);
     });
 
-    it('should get a put update operation', async () => {
+    it('should be able to insert an update operation successfully.', async () => {
       // Use a create operation to generate a DID
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
       const anchoredOperationModel = createOperationData.anchoredOperationModel;
@@ -154,39 +154,12 @@ describe('MongoDbOperationStore', async () => {
         operationModel, 1, 1, 0
       );
 
-      await operationStore.put([anchoredUpdateOperation]);
+      await operationStore.insertOrReplace([anchoredUpdateOperation]);
       const returnedOperations = await operationStore.get(didUniqueSuffix);
       checkEqualArray([anchoredUpdateOperation], returnedOperations);
     });
 
-    it('should ignore duplicate updates', async () => {
-      // Use a create operation to generate a DID
-      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-      const anchoredOperationModel = createOperationData.anchoredOperationModel;
-      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-
-      // Generate an update operation.
-      const operationRequest = await OperationGenerator.generateUpdateOperationRequestForServices(
-        didUniqueSuffix,
-        createOperationData.signingPublicKey.publicKeyJwk,
-        createOperationData.signingPrivateKey,
-        OperationGenerator.generateRandomHash(),
-        'someId',
-        []
-      );
-      const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
-      const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
-        operationModel, 1, 1, 0
-      );
-
-      await operationStore.put([anchoredUpdateOperation]);
-      // Insert duplicate operation
-      await operationStore.put([anchoredUpdateOperation]);
-      const returnedOperations = await operationStore.get(didUniqueSuffix);
-      checkEqualArray([anchoredUpdateOperation], returnedOperations);
-    });
-
-    it('should upsert operations', async () => {
+    it('should replace an existing operations successfully.', async () => {
       // Use a create operation to generate a DID
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
       const anchoredOperationModel = createOperationData.anchoredOperationModel;
@@ -200,13 +173,13 @@ describe('MongoDbOperationStore', async () => {
       anchoredOperationModelWithoutDelta.operationBuffer = Buffer.from(JSON.stringify(clonedCreateRequestWithoutDelta));
 
       // Insert the anchored operation without `delta` into DB first.
-      await operationStore.put([anchoredOperationModelWithoutDelta]);
+      await operationStore.insertOrReplace([anchoredOperationModelWithoutDelta]);
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const returnedOperations1 = await operationStore.get(didUniqueSuffix);
       checkEqualArray([anchoredOperationModelWithoutDelta], returnedOperations1);
 
       // Insert the anchored operation with `delta` into DB.
-      await operationStore.put([anchoredOperationModel]);
+      await operationStore.insertOrReplace([anchoredOperationModel]);
       const returnedOperations2 = await operationStore.get(didUniqueSuffix);
       checkEqualArray([anchoredOperationModel], returnedOperations2);
     });
@@ -222,7 +195,7 @@ describe('MongoDbOperationStore', async () => {
 
     const chainSize = 10;
     const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
-    await operationStore.put(operationChain);
+    await operationStore.insertOrReplace(operationChain);
 
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
@@ -242,7 +215,7 @@ describe('MongoDbOperationStore', async () => {
     // construct an operation chain with duplicated operations
     const batchWithDuplicates = operationChain.concat(operationChain);
 
-    await operationStore.put(batchWithDuplicates);
+    await operationStore.insertOrReplace(batchWithDuplicates);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
   });
@@ -258,7 +231,7 @@ describe('MongoDbOperationStore', async () => {
     const chainSize = 10;
     const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
 
-    await operationStore.put(operationChain);
+    await operationStore.insertOrReplace(operationChain);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
 
@@ -277,7 +250,7 @@ describe('MongoDbOperationStore', async () => {
 
     const chainSize = 10;
     const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
-    await operationStore.put(operationChain);
+    await operationStore.insertOrReplace(operationChain);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
 
@@ -298,7 +271,7 @@ describe('MongoDbOperationStore', async () => {
 
     const chainSize = 10;
     const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
-    await operationStore.put(operationChain);
+    await operationStore.insertOrReplace(operationChain);
     let returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
 
@@ -323,7 +296,7 @@ describe('MongoDbOperationStore', async () => {
 
     // Insert operations in reverse transaction time order
     for (let i = chainSize - 1; i >= 0; i--) {
-      await operationStore.put([operationChain[i]]);
+      await operationStore.insertOrReplace([operationChain[i]]);
     }
 
     const returnedOperations = await operationStore.get(didUniqueSuffix);
@@ -342,7 +315,7 @@ describe('MongoDbOperationStore', async () => {
 
       const chainSize = 10;
       const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
-      await operationStore.put(operationChain);
+      await operationStore.insertOrReplace(operationChain);
       const returnedOperations = await operationStore.get(didUniqueSuffix);
       checkEqualArray(operationChain, returnedOperations);
 
@@ -368,7 +341,7 @@ describe('MongoDbOperationStore', async () => {
       const txnNumber = 1;
       const operationChain = await createOperationChain(
         anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey, txnNumber);
-      await operationStore.put(operationChain);
+      await operationStore.insertOrReplace(operationChain);
       const returnedOperations = await operationStore.get(didUniqueSuffix);
       checkEqualArray(operationChain, returnedOperations);
 
