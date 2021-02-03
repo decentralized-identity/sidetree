@@ -1,5 +1,6 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import JsObject from '../../lib/core/versions/latest/util/JsObject';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import { MongoClient } from 'mongodb';
 import MongoDb from '../common/MongoDb';
@@ -70,6 +71,7 @@ function checkEqual (operation1: AnchoredOperationModel, operation2: AnchoredOpe
   expect(operation1.transactionTime).toEqual(operation2.transactionTime);
   expect(operation1.didUniqueSuffix).toEqual(operation2.didUniqueSuffix);
   expect(operation1.type).toEqual(operation2.type);
+  expect(operation1.operationBuffer).toEqual(operation2.operationBuffer);
 }
 
 // Check if two operation arrays are equal
@@ -123,80 +125,91 @@ describe('MongoDbOperationStore', async () => {
     expect(collectionNames.includes(collectionName)).toBeFalsy();
   });
 
-  it('should throw error if batch put execution throws', async () => {
-    spyOn((operationStore as any)['collection'], 'initializeUnorderedBulkOp').and.returnValue({
-      execute: () => { throw new Error('Expected test error'); },
-      insert: () => {
-        // do nothing
-      }
+  describe('put()', () => {
+    it('should get a put create operation', async () => {
+      const operationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
+      const anchoredOperationModel = operationData.anchoredOperationModel;
+      await operationStore.put([anchoredOperationModel]);
+      const returnedOperations = await operationStore.get(anchoredOperationModel.didUniqueSuffix);
+      checkEqualArray([anchoredOperationModel], returnedOperations);
     });
 
-    try {
-      await operationStore.put([{} as any]);
-      fail('Expected to fial but did not');
-    } catch (error) {
-      expect(error).toEqual(new Error('Expected test error'));
-    }
-  });
+    it('should get a put update operation', async () => {
+      // Use a create operation to generate a DID
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
+      const anchoredOperationModel = createOperationData.anchoredOperationModel;
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
 
-  it('should get a put create operation', async () => {
-    const operationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const anchoredOperationModel = operationData.anchoredOperationModel;
-    await operationStore.put([anchoredOperationModel]);
-    const returnedOperations = await operationStore.get(anchoredOperationModel.didUniqueSuffix);
-    checkEqualArray([anchoredOperationModel], returnedOperations);
-  });
+      // Generate an update operation.
+      const operationRequest = await OperationGenerator.generateUpdateOperationRequestForServices(
+        didUniqueSuffix,
+        createOperationData.signingPublicKey.publicKeyJwk,
+        createOperationData.signingPrivateKey,
+        OperationGenerator.generateRandomHash(),
+        'someID',
+        []
+      );
+      const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
+      const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
+        operationModel, 1, 1, 0
+      );
 
-  it('should get a put update operation', async () => {
-    // Use a create operation to generate a DID
-    const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const anchoredOperationModel = createOperationData.anchoredOperationModel;
-    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      await operationStore.put([anchoredUpdateOperation]);
+      const returnedOperations = await operationStore.get(didUniqueSuffix);
+      checkEqualArray([anchoredUpdateOperation], returnedOperations);
+    });
 
-    // Generate an update operation.
-    const operationRequest = await OperationGenerator.generateUpdateOperationRequestForServices(
-      didUniqueSuffix,
-      createOperationData.signingPublicKey.publicKeyJwk,
-      createOperationData.signingPrivateKey,
-      OperationGenerator.generateRandomHash(),
-      'someID',
-      []
-    );
-    const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
-    const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
-      operationModel, 1, 1, 0
-    );
+    it('should ignore duplicate updates', async () => {
+      // Use a create operation to generate a DID
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
+      const anchoredOperationModel = createOperationData.anchoredOperationModel;
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
 
-    await operationStore.put([anchoredUpdateOperation]);
-    const returnedOperations = await operationStore.get(didUniqueSuffix);
-    checkEqualArray([anchoredUpdateOperation], returnedOperations);
-  });
+      // Generate an update operation.
+      const operationRequest = await OperationGenerator.generateUpdateOperationRequestForServices(
+        didUniqueSuffix,
+        createOperationData.signingPublicKey.publicKeyJwk,
+        createOperationData.signingPrivateKey,
+        OperationGenerator.generateRandomHash(),
+        'someId',
+        []
+      );
+      const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
+      const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
+        operationModel, 1, 1, 0
+      );
 
-  it('should ignore duplicate updates', async () => {
-    // Use a create operation to generate a DID
-    const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const anchoredOperationModel = createOperationData.anchoredOperationModel;
-    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      await operationStore.put([anchoredUpdateOperation]);
+      // Insert duplicate operation
+      await operationStore.put([anchoredUpdateOperation]);
+      const returnedOperations = await operationStore.get(didUniqueSuffix);
+      checkEqualArray([anchoredUpdateOperation], returnedOperations);
+    });
 
-    // Generate an update operation.
-    const operationRequest = await OperationGenerator.generateUpdateOperationRequestForServices(
-      didUniqueSuffix,
-      createOperationData.signingPublicKey.publicKeyJwk,
-      createOperationData.signingPrivateKey,
-      OperationGenerator.generateRandomHash(),
-      'someId',
-      []
-    );
-    const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
-    const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
-      operationModel, 1, 1, 0
-    );
+    it('should upsert operations', async () => {
+      // Use a create operation to generate a DID
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
+      const anchoredOperationModel = createOperationData.anchoredOperationModel;
 
-    await operationStore.put([anchoredUpdateOperation]);
-    // Insert duplicate operation
-    await operationStore.put([anchoredUpdateOperation]);
-    const returnedOperations = await operationStore.get(didUniqueSuffix);
-    checkEqualArray([anchoredUpdateOperation], returnedOperations);
+      // Deep clone the create request to strip off the `delta` property.
+      const clonedCreateRequestWithoutDelta = JsObject.deepCopyObject(createOperationData.operationRequest);
+      delete clonedCreateRequestWithoutDelta.delta;
+
+      // Create an anchored create operation without `delta` property in the operation buffer.
+      const anchoredOperationModelWithoutDelta = JsObject.deepCopyObject(anchoredOperationModel);
+      anchoredOperationModelWithoutDelta.operationBuffer = Buffer.from(JSON.stringify(clonedCreateRequestWithoutDelta));
+
+      // Insert the anchored operation without `delta` into DB first.
+      await operationStore.put([anchoredOperationModelWithoutDelta]);
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      const returnedOperations1 = await operationStore.get(didUniqueSuffix);
+      checkEqualArray([anchoredOperationModelWithoutDelta], returnedOperations1);
+
+      // Insert the anchored operation with `delta` into DB.
+      await operationStore.put([anchoredOperationModel]);
+      const returnedOperations2 = await operationStore.get(didUniqueSuffix);
+      checkEqualArray([anchoredOperationModel], returnedOperations2);
+    });
   });
 
   it('should get all operations in a batch put', async () => {
