@@ -1,3 +1,13 @@
+## [1.0.1](https://github.com/decentralized-identity/sidetree/compare/v1.0.0...v1.0.1) (2021-02-03)
+
+
+### Bug Fixes
+
+* **ref-imp:** fixed bug where overwriting a particial operation to MongoDB silently fails ([966d45f](https://github.com/decentralized-identity/sidetree/commit/966d45f9a0946b8fcec18298163d2c4bf5fa7cf6))
+* **ref-imp:** renamed put method IOperationStore to insertOrReplace ([32d7d18](https://github.com/decentralized-identity/sidetree/commit/32d7d181230761d5ad0e9f9da6cb78ff9ccab056))
+
+
+
 # [1.0.0](https://github.com/decentralized-identity/sidetree/compare/v0.12.1...v1.0.0) (2021-01-21)
 
 
