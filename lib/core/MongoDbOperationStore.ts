@@ -58,25 +58,21 @@ export default class MongoDbOperationStore implements IOperationStore {
     }
   }
 
-  /**
-   * Implement OperationStore.put
-   */
   public async put (operations: AnchoredOperationModel[]): Promise<void> {
-    const batch = this.collection!.initializeUnorderedBulkOp();
+    const bulkOperations = this.collection!.initializeUnorderedBulkOp();
 
     for (const operation of operations) {
       const mongoOperation = MongoDbOperationStore.convertToMongoOperation(operation);
-      batch.insert(mongoOperation);
+
+      bulkOperations.find({
+        didSuffix: operation.didUniqueSuffix,
+        txnNumber: operation.transactionNumber,
+        opIndex: operation.operationIndex,
+        type: operation.type
+      }).upsert().replaceOne(mongoOperation);
     }
 
-    try {
-      await batch.execute();
-    } catch (error) {
-      // Swallow duplicate insert errors (error code 11000); rethrow others
-      if (error.name !== 'BulkWriteError' || error.code !== 11000) {
-        throw error;
-      }
-    }
+    await bulkOperations.execute();
   }
 
   /**
