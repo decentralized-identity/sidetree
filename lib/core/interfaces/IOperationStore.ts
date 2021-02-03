@@ -7,10 +7,10 @@ import AnchoredOperationModel from '../models/AnchoredOperationModel';
 export default interface IOperationStore {
 
   /**
-   * Stores a batch of operations
-   * @param operations The list of operations to be stored, where the key of the map is the DID unique suffix.
+   * Inserts or replaces the list of anchored operations given.
+   * @param operations The list of anchored operations to be inserted or replaced.
    */
-  put (operations: AnchoredOperationModel[]): Promise<void>;
+  insertOrReplace (operations: AnchoredOperationModel[]): Promise<void>;
 
   /**
    * Gets all operations of the given DID unique suffix in ascending chronological order.

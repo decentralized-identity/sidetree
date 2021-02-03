@@ -130,7 +130,7 @@ describe('RequestHandler', () => {
       operationBuffer: createOperationBuffer,
       operationIndex: 0
     };
-    await operationStore.put([namedAnchoredCreateOperationModel]);
+    await operationStore.insertOrReplace([namedAnchoredCreateOperationModel]);
 
     // Trigger the batch writing to clear the operation queue for future tests.
     await batchScheduler.writeOperationBatch();

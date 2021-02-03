@@ -43,10 +43,7 @@ export default class MockOperationStore implements IOperationStore {
     this.didUpdatedSinceLastSort.set(operation.didUniqueSuffix, true);
   }
 
-  /**
-   * Implements OperationStore.put()
-   */
-  public async put (operations: AnchoredOperationModel[]): Promise<void> {
+  public async insertOrReplace (operations: AnchoredOperationModel[]): Promise<void> {
     for (const operation of operations) {
       await this.insert(operation);
     }
