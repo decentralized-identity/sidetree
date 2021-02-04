@@ -418,10 +418,14 @@ export default class BitcoinProcessor {
     moreTransactions: boolean,
     transactions: TransactionModel[]
   }> {
+    Logger.info(LogColor.lightBlue(`Transactions request: since transaction number ${LogColor.green(since)}, time hash '${LogColor.green(hash)}'...`));
+
     if ((since && !hash) ||
         (!since && hash)) {
       throw new RequestError(ResponseStatus.BadRequest);
-    } else if (since && hash) {
+    }
+
+    if (since && hash) {
       if (!await this.verifyBlock(TransactionNumber.getBlockNumber(since), hash)) {
         Logger.info('Requested transactions hash mismatched blockchain');
         throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.InvalidTransactionNumberOrTimeHash);
