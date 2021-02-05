@@ -11,10 +11,9 @@ import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 const databaseName = 'sidetree-test';
-const operationCollectionName = 'operations-test';
 
 async function createOperationStore (mongoDbConnectionString: string): Promise<IOperationStore> {
-  const operationStore = new MongoDbOperationStore(mongoDbConnectionString, databaseName, operationCollectionName);
+  const operationStore = new MongoDbOperationStore(mongoDbConnectionString, databaseName);
   await operationStore.initialize();
   return operationStore;
 }
@@ -107,8 +106,7 @@ describe('MongoDbOperationStore', async () => {
   it('should create collection when initialize is called', async () => {
     // Make a new instance of operation store and initialize
     const databaseName = 'test-new-db';
-    const collectionName = 'test-new-collection';
-    const emptyOperationStore = new MongoDbOperationStore(config.mongoDbConnectionString, databaseName, collectionName);
+    const emptyOperationStore = new MongoDbOperationStore(config.mongoDbConnectionString, databaseName);
     await emptyOperationStore.initialize();
 
     // Make connection to mongo db to verify collection exists
@@ -116,13 +114,13 @@ describe('MongoDbOperationStore', async () => {
     const db = client.db(databaseName);
     let collections = await db.collections();
     let collectionNames = collections.map(collection => collection.collectionName);
-    expect(collectionNames.includes(collectionName)).toBeTruthy();
+    expect(collectionNames.includes(MongoDbOperationStore.collectionName)).toBeTruthy();
 
     // clean up
-    await db.dropCollection(collectionName);
+    await db.dropCollection(MongoDbOperationStore.collectionName);
     collections = await db.collections();
     collectionNames = collections.map(collection => collection.collectionName);
-    expect(collectionNames.includes(collectionName)).toBeFalsy();
+    expect(collectionNames.includes(MongoDbOperationStore.collectionName)).toBeFalsy();
   });
 
   describe('insertOrReplace()', () => {
