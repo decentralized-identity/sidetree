@@ -6,7 +6,7 @@ We define a network suffix as follows for a given DID Method:
 
 `did:<method>:<network>:<didUniqueSuffix>`
 
-If no network suffix is provided, it is assumed that the "mainnet" or "production" network is to be used... for example, these DIDs should resolve to the same DID Document:
+If no network suffix is provided, it is assumed that the "mainnet" or "production" network is to be used... for example, these DIDs should resolve to the same DID state:
 
 ```
 did:elem:mainnet:EiD0x0JeWXQbVIpBpyeyF5FDdZN1U7enAfHnd13Qk_CYpQ
@@ -21,6 +21,6 @@ An ELEM DID on the Ethereum Ropsten testnet is defined as follows:
 
 `did:elem:ropsten:EiD0x0JeWXQbVIpBpyeyF5FDdZN1U7enAfHnd13Qk_CYpQ`
 
-:::warning Ledger Forking
-Implementers should be aware that if the underlying decentralized ledger system were to fork, the identifiers will also be forked. In this case, the a new identifier must be created either through an indication at the network layer or with a completely new method name to identify the decentralized identifiers of the forked network.
+:::warning Anchoring System Forking
+Implementers should be aware that if the underlying decentralized anchoring system were to fork, the identifiers will also be forked. In this case, the a new identifier must be created either through an indication at the network layer or with a completely new method name to identify the decentralized identifiers of the forked network.
 :::

@@ -7,7 +7,7 @@ The protocol defines the following three file structures, which house DID operat
 
 ### Core Index File
 
-Core Index Files contain [Create](#create), [Recover](#recover), and [Deactivate](#deactivate) operation values, as well as a CAS URI for the related [Provisional Index File](#provisional-index-file) (detailed below). As the name suggests, Core Index Files are anchored to the target ledger system via embedding a CAS URI in the ledger's transactional history.
+Core Index Files contain [Create](#create), [Recover](#recover), and [Deactivate](#deactivate) operation values, as well as a CAS URI for the related [Provisional Index File](#provisional-index-file) (detailed below). As the name suggests, Core Index Files are anchored to the target anchoring system via embedding a CAS URI in the anchoring system's transactional history.
 
 ::: example
 ```json
@@ -197,7 +197,7 @@ In this version of the protocol, [Provisional Proof Files](#provisional-proof-fi
 
 ### Chunk Files
 
-Chunk Files are JSON Documents, compressed via the [COMPRESSION_ALGORITHM](#compression-algorithm), that contain Sidetree Operation source data, which are composed of delta-based CRDT entries that modify the state of a Sidetree identifier's DID Document.
+Chunk Files are JSON Documents, compressed via the [COMPRESSION_ALGORITHM](#compression-algorithm), that contain Sidetree Operation source data, which are composed of delta-based CRDT entries that modify the state of a Sidetree identifier's DID state.
 
 For this version of the protocol, there will only exist a single Chunk File that contains all the state modifying data for all operations in the included set. Future versions of the protocol will separate the total set of included operations into multiple chunks, each with their own Chunk File.
 

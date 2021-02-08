@@ -2,7 +2,9 @@
 
 ## DID State Patches
 
-Sidetree defines a general format for patching DID State, called _Patch Actions_, for describing mutations of a DID's metadata state. Sidetree further defines a standard set of _Patch Actions_ (below) implementers MAY use to facilitate patching within their implementations. Support of the standard set of _Patch Actions_ defined herein IS NOT required, but implementers ****MUST**** use the _Patch Action_ format for defining patch mechanisms within their implementation. The general _Patch Action_ format is defined as follows:
+Sidetree defines a delta-based [Conflict-Free Replicated Data Type](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) system, wherein the metadata in a Sidetree-based implementation is controlled by the cryptographic PKI material of individual entities in the system, represented by DIDs. While the most common form of state associated with the DIDs in a Sidetree-based implementation is a [DID Document](https://w3c.github.io/did-core/), Sidetree can be used to maintain any type of DID-associated state.
+
+Sidetree specifies a general format for patching the state associated with a DID, called _Patch Actions_, which define how to deterministic mutate a DID's associated state. Sidetree further specifies a standard set of _Patch Actions_ (below) implementers MAY use to facilitate DID state patching within their implementations. Support of the standard set of _Patch Actions_ defined herein IS NOT required, but implementers ****MUST**** use the _Patch Action_ format for defining patch mechanisms within their implementation. The general _Patch Action_ format is defined as follows:
 
 ```json
 {
