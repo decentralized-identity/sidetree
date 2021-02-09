@@ -105,6 +105,21 @@ If the  DID was determined to be _Not Found_ or _Unresolvable_, return a respons
 1. Generate a JSON object for the _Resolution Result_, structured in accordance with the [Decentralized Identifier Resolution](https://w3c-ccg.github.io/did-resolution/#example-14-example-did-resolution-result) specification.
 2. Set the `didDocument` property of the _Resolution Result_ object to the resolved DID Document generated via the [Operation Compilation](#operation-compilation) process.
 5. The _Resolution Result_ object ****MUST**** include a `didDocumentMetadata` property, and its value ****MUST**** be an object composed of the following properties:
+    ::: example DID Document Metadata
+    ```json
+    "didDocumentMetadata": {
+      "deactivated": true,
+      "canonicalId": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
+      "equivalentId": ["did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg"],
+      "method": {
+        "published": true,
+        "recoveryCommitment": "EiBfOZdMtU6OBw8Pk879QtZ-2J-9FbbjSZyoaA_bqD4zhA",
+        "updateCommitment": "EiDOrcmPtfMHuwIWN6YoihdeIPxOKDHy3D6sdMXu_7CN0w"
+      }
+    }
+    ```
+    :::
+
     - `deactivated` - This property ****MUST**** be present if the resolved DID is determined to be in a deactivated state, and it ****MUST**** be set to the boolean value `true`. If the resolved DID is not in a deactivated state, this value ****MUST**** be set to the boolean value `false`.
     - `canonicalId` - If canonical representation of the resolved DID exists, the implementation ****MUST**** include the `canonicalId` property, and the presence and value of the `canonicalId` property is determined as follows:
         1. Presence and value of the `canonicalId` property:
@@ -119,6 +134,7 @@ If the  DID was determined to be _Not Found_ or _Unresolvable_, return a respons
         1. The object ****MUST**** include a `published` property with a boolean value. If the compiled DID state is flagged as _Unpublished_ and/or _Not Found_ (per the [Operation Compilation](#operation-compilation) process), the `published` property ****MUST**** be set to `false`, otherwise, set the value to `true` if a valid anchoring entry was located for the DID.
         2. The object ****MUST**** include an `updateCommitment` property, and its value ****MUST**** be the `updateCommitment` hash value expected to be fulfilled in with the next `updateKey` revealed in the next [Update](#update) operation.
         3.  The object ****MUST**** include an `recoveryCommitment` property, and its value ****MUST**** be the `recoveryCommitment` hash value expected to be fulfilled in with the next `recoveryKey` revealed in the next [Recovery](#recover) operation.
+
 
 #### Unresolvable DIDs
 
