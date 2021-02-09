@@ -34,4 +34,4 @@ Versions of the Sidetree reference implementation are also provided as npm modul
 
 ### New Version Activation
 
-New versions of the protocol, or modifications to parameter values by implementers, ****MUST**** be activated at a specified [_Ledger Time_](#ledger-time) so all nodes can remain in sync by enforcing the same ruleset and parameters beginning at the same logical starting point. All transactions that occur after the specified [_Ledger Time_](#ledger-time) will adhere to the associated version's rules and parameters until a newer version of the protocol is defined and implemented at a future [_Ledger Time_](#ledger-time).
+New versions of the protocol, or modifications to parameter values by implementers, ****MUST**** be activated at a specified [_Anchor Time_](#anchor-time) so all nodes can remain in sync by enforcing the same ruleset and parameters beginning at the same logical starting point. All transactions that occur after the specified [_Anchor Time_](#anchor-time) will adhere to the associated version's rules and parameters until a newer version of the protocol is defined and implemented at a future [_Anchor Time_](#anchor-time).

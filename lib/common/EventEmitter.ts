@@ -1,35 +1,37 @@
 import IEventEmitter from './interfaces/IEventEmitter';
 import LogColor from './LogColor';
+import Logger from './Logger';
 
 /**
  * Event emitter used in Sidetree.
  * Intended to be machine readable for triggering custom handlers.
  */
 export default class EventEmitter {
-  // Default to basic console log.
-  private static singleton: IEventEmitter = {
-    emit: async (eventCode, eventData?) => {
-      if (eventData === undefined) {
-        console.log(LogColor.lightBlue(`Event emitted: ${LogColor.green(eventCode)}`));
-      } else {
-        console.log(LogColor.lightBlue(`Event emitted: ${LogColor.green(eventCode)}: ${JSON.stringify(eventData)}`));
-      }
-    }
-  };
+  private static customEvenEmitter: IEventEmitter;
 
   /**
-   * Overrides the default event emitter if given.
+   * Initializes with custom event emitter if given.
    */
   static initialize (customEventEmitter?: IEventEmitter) {
     if (customEventEmitter !== undefined) {
-      EventEmitter.singleton = customEventEmitter;
+      EventEmitter.customEvenEmitter = customEventEmitter;
+      Logger.info('Custom event emitter given.');
     }
   }
 
   /**
    * Emits an event.
    */
-  public static async emit (eventName: string, eventData?: {[property: string]: any}): Promise<void> {
-    await EventEmitter.singleton.emit(eventName, eventData);
+  public static async emit (eventCode: string, eventData?: {[property: string]: any}): Promise<void> {
+    if (EventEmitter.customEvenEmitter !== undefined) {
+      await EventEmitter.customEvenEmitter.emit(eventCode, eventData);
+    }
+
+    // Always log the event using the logger.
+    if (eventData === undefined) {
+      Logger.info(LogColor.lightBlue(`Event emitted: ${LogColor.green(eventCode)}`));
+    } else {
+      Logger.info(LogColor.lightBlue(`Event emitted: ${LogColor.green(eventCode)}: ${JSON.stringify(eventData)}`));
+    }
   }
 }

@@ -64,8 +64,8 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
       const version = versionModel.version;
 
       const MongoDbOperationQueue = await this.loadDefaultExportsForVersion(version, 'MongoDbOperationQueue');
-      const operationQueue = new MongoDbOperationQueue(this.config.mongoDbConnectionString, this.config.databaseName);
-      await operationQueue.initialize();
+      const operationQueue = new MongoDbOperationQueue();
+      await operationQueue.initialize(this.config.mongoDbConnectionString, this.config.databaseName);
 
       const TransactionProcessor = await this.loadDefaultExportsForVersion(version, 'TransactionProcessor');
       const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, this);

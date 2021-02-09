@@ -7,7 +7,7 @@ The protocol defines the following three file structures, which house DID operat
 
 ### Core Index File
 
-Core Index Files contain [Create](#create), [Recover](#recover), and [Deactivate](#deactivate) operation values, as well as a CAS URI for the related [Provisional Index File](#provisional-index-file) (detailed below). As the name suggests, Core Index Files are anchored to the target ledger system via embedding a CAS URI in the ledger's transactional history.
+Core Index Files contain [Create](#create), [Recover](#recover), and [Deactivate](#deactivate) operation values, as well as a CAS URI for the related [Provisional Index File](#provisional-index-file) (detailed below). As the name suggests, Core Index Files are anchored to the target anchoring system via embedding a CAS URI in the anchoring system's transactional history.
 
 ::: example
 ```json
@@ -62,12 +62,12 @@ The [Core Index File](#core-index-file) JSON document is composed as follows:
       1. The `operations` object ****MUST**** include a `recover` property, and its value ****MUST**** be an array.
       2. For each [Recovery](#recover) operation to be included in the `recover` array, herein referred to as [_Core Index File Recovery Entries_](#core-index-file-recovery-entry){id="core-index-file-recovery-entry"}, use the following process to compose and include entries:
           - The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An [Core Index File](#core-index-file) ****MUST NOT**** contain more than one operation of any type with the same [DID Suffix](#did-suffix).
-          - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [hashed](#multihash) reveal value of the last update commitment.
+          - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [`REVEAL_VALUE`](#reveal-value) of the last update commitment.
     - If there are any [Deactivate](#deactivate) operations to be included in the Core Index File:
       1. The `operations` object ****MUST**** include a `deactivate` property, and its value ****MUST**** be an array.
       2. For each [Deactivate](#deactivate) operation to be included in the `deactivate` array, use the following process to compose and include entries:
           - The object ****MUST**** contain a `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An [Core Index File](#core-index-file) ****MUST NOT**** contain more than one operation of any type with the same [DID Suffix](#did-suffix).
-          - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [hashed](#multihash) reveal value of the last update commitment.
+          - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [`REVEAL_VALUE`](#reveal-value) of the last update commitment.
 
 ### Provisional Index File
 
@@ -106,7 +106,7 @@ The [Provisional Index File](#provisional-index-file) JSON document is composed 
       1. The `operations` object ****MUST**** include an `update` property, and its value ****MUST**** be an array.
       2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Provisional Index File Update Entries](#provisional-index-file-update-entry){id="provisional-index-file-update-entry"}, use the following process to compose and include entries:
           - The object ****MUST**** contain an `didSuffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to, with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
-          - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [hashed](#multihash) reveal value of the last update commitment, with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
+          - The object ****MUST**** contain a `revealValue` property, and its value ****MUST**** be the [`REVEAL_VALUE`](#reveal-value) of the last update commitment, with a maximum length as specified by the [`MAX_OPERATION_HASH_LENGTH`](#max-operation-hash-length).
 
 ### Core Proof File
 
@@ -197,7 +197,7 @@ In this version of the protocol, [Provisional Proof Files](#provisional-proof-fi
 
 ### Chunk Files
 
-Chunk Files are JSON Documents, compressed via the [COMPRESSION_ALGORITHM](#compression-algorithm), that contain Sidetree Operation source data, which are composed of delta-based CRDT entries that modify the state of a Sidetree identifier's DID Document.
+Chunk Files are JSON Documents, compressed via the [COMPRESSION_ALGORITHM](#compression-algorithm), that contain Sidetree Operation source data, which are composed of delta-based CRDT entries that modify the state of a Sidetree identifier's DID state.
 
 For this version of the protocol, there will only exist a single Chunk File that contains all the state modifying data for all operations in the included set. Future versions of the protocol will separate the total set of included operations into multiple chunks, each with their own Chunk File.
 

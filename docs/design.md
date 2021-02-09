@@ -27,14 +27,14 @@ Sidetree specification defines the following mechanisms to enable scaling, while
 
 #### Maximum batch size
    
-   By defining a maximum number of operations per batch, the strategy circumvents participants to anchor arbitrarily large trees on the system. At its core, this mitigation strategy forces the attacker to deal with the organic economic pressure exerted by the underlying chain's transactional unit cost. Each instantiation of a Sidetree-based DID Method may select a different maximum batch size; the size for the default configuration is TBD. 
+   By defining a maximum number of operations per batch, the strategy circumvents participants to anchor arbitrarily large trees on the system. At its core, this mitigation strategy forces the attacker to deal with the organic economic pressure exerted by the underlying anchoring system's transactional unit cost. Each instantiation of a Sidetree-based DID Method may select a different maximum batch size; the size for the default configuration is TBD. 
 
 #### Proof of Fee
 
-   Each Sidetree transaction on the target chain is required to include a deterministic fee, based on the number of DID operations they seek to include via the on-chain transaction.
+   Each Sidetree entry on the target anchoring system is required to include a deterministic fee, based on the number of DID operations they seek to include via the anchoring system entry.
 
 #### One Operation per DID per Batch
-  Only one operation per DID per batch is allowed, this prevents the operation chain of any DID from growing at an intractable rate.
+  Only one operation per DID per batch is allowed, to prevent DIDs from accumulating an inordinate amount of state.
 
 #### Commitment and Reveal for Operations
   Upon DID creation, the create operation payload must include:

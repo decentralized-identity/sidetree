@@ -43,4 +43,8 @@ export default class MockOperationQueue implements IOperationQueue {
   async contains (didUniqueSuffix: string): Promise<boolean> {
     return this.operations.has(didUniqueSuffix);
   }
+
+  async getSize (): Promise<number> {
+    return this.operations.size;
+  }
 }

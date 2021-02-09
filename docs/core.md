@@ -16,13 +16,13 @@ A full node offers the largest set of features and highest resolution performanc
 
 ### Light Node
 
-A light node is a node that retains the ability to independently resolve DIDs without relying on a trusted party or trusted assertions by other nodes, while minimizing the amount of bandwidth and data required to do so. Light nodes run a copy of the target system's blockchain node and fetch only minimal Sidetree data required to create an independent lookup table that enables just-in-time resolution of DIDs.
+A light node is a node that retains the ability to independently resolve DIDs without relying on a trusted party or trusted assertions by other nodes, while minimizing the amount of bandwidth and data required to do so. Light nodes fetch and maintain only the minimum Sidetree data required to create an independent DID-indexed lookup table that enables just-in-time resolution of DIDs.
 
 > NOTE: Light node support is not yet implemented.
 
 ## Observer
 
-The _Observer_ watches the public blockchain to identify Sidetree operations, then parses the operations into data structures that can be used for efficient DID resolutions.
+The _Observer_ watches the target anchoring system to identify Sidetree operations, then parses the operations into data structures that can be used for efficient DID resolutions.
 The _Observer_ defers heavy processing such as signature validations to the time of DID resolution.
 
 ## Versioning

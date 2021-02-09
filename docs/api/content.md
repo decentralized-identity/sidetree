@@ -1,6 +1,6 @@
 ## REST API
 
-The following sections define the Sidetree resolution and operations endpoints. Please refer to the companion [Sidetree REST API](https://identity.foundation/sidetree/swagger/) specification for additional information, as well as REST API definitions for blockchain and CAS components.
+The following sections define the Sidetree resolution and operations endpoints. Please refer to the companion [Sidetree REST API](https://identity.foundation/sidetree/swagger/) specification for additional information, as well as REST API definitions for the anchoring and CAS components.
 
 ### Sidetree Resolution
 
@@ -17,12 +17,14 @@ Sidetree defines `published`, `updateCommitment`, and `recoveryCommitment` metho
 ::: example
 ```json
 {
-    "@context": "https://www.w3.org/ns/did-resolution/v1",
+    "@context": "https://w3id.org/did-resolution/v1",
     "didDocument": DID_DOCUMENT_OBJECT,
-    "methodMetadata": {
-        "published": boolean,
-        "updateCommitment": UPDATE_COMMITMENT,
-        "recoveryCommitment": RECOVERY_COMMITMENT
+    "didDocumentMetadata": {
+        "method": {
+            "published": boolean,
+            "updateCommitment": UPDATE_COMMITMENT,
+            "recoveryCommitment": RECOVERY_COMMITMENT
+        }
     }
 }
 ```
@@ -36,13 +38,15 @@ A resolution is requested as follows:
 3. If the DID does not exist and valid initial state was provided:
    - The server ****MUST**** respond with HTTP Status Code 200.
    - The server ****MUST**** include the `didDocument` property, with its value set to the initial DID document that is constructed from the initial state.
-   - The server ****MUST**** include the resolution response object `methodMetadata` composed of a `published` property with value `false`.
+   - The server ****MUST**** include the resolution response object `didDocumentMetadata` composed of a `method` object, which includes a `published` property with value `false`.
 4. If the DID does exist and has not been deactivated:
    - The server ****MUST**** respond with HTTP Status Code 200.
    - The server ****MUST**** include the `didDocument` property, with its value set to the latest DID document.
-   - The server ****MUST**** include the resolution response object `methodMetadata` composed of a `published` property with value `true`.
+   - The server ****MUST**** include the resolution response object `didDocumentMetadata` composed of a `method` object which includes a `published` property with value `true`.
 5. If the DID does exist and has been deactivated:
-    - The server ****MUST**** respond with HTTP Status Code 410.
+    - The server ****MUST**** respond with HTTP Status Code 200.
+    - The server ****MUST**** include the `didDocument` property, with its value set to a valid empty DID document including the populated `id` property.
+    - The server ****MUST**** include the resolution response object `didDocumentMetadata` which includes a `deactivated` property with value `true`.
 6. Otherwise, for failure, the server ****MUST**** respond with an appropriate HTTP Status Code (400, 401, 404, 500).
 
 ### Sidetree Operations

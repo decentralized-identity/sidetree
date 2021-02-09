@@ -1,6 +1,6 @@
 {
   "name": "@decentralized-identity/sidetree",
-  "version": "0.12.1",
+  "version": "1.0.1",
   "description": "Node.js implementation of Sidetree.",
   "repository": "https://github.com/decentralized-identity/sidetree",
   "license": "Apache-2.0",
@@ -18,7 +18,6 @@
     "multihashes": "0.4.14",
     "node-fetch": "2.6.1",
     "priorityqueue": "1.0.0",
-    "spec-up": "0.9.101",
     "time-span": "3.1.0",
     "uri-js": "4.4.0",
     "yieldable-json": "1.1.0"
@@ -52,6 +51,7 @@
     "jasmine-reporters": "2.3.2",
     "jasmine-spec-reporter": "4.2.1",
     "nyc": "15.0.1",
+    "spec-up": "0.9.103",
     "ts-node": "8.3.0",
     "tslint": "5.11.0",
     "tslint-config-standard": "8.0.1",

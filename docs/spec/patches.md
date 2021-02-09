@@ -2,7 +2,9 @@
 
 ## DID State Patches
 
-Sidetree defines a general format for patching DID State, called _Patch Actions_, for describing mutations of a DID's metadata state. Sidetree further defines a standard set of _Patch Actions_ (below) implementers MAY use to facilitate patching within their implementations. Support of the standard set of _Patch Actions_ defined herein IS NOT required, but implementers ****MUST**** use the _Patch Action_ format for defining patch mechanisms within their implementation. The general _Patch Action_ format is defined as follows:
+Sidetree defines a delta-based [Conflict-Free Replicated Data Type](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) system, wherein the metadata in a Sidetree-based implementation is controlled by the cryptographic PKI material of individual entities in the system, represented by DIDs. While the most common form of state associated with the DIDs in a Sidetree-based implementation is a [DID Document](https://w3c.github.io/did-core/), Sidetree can be used to maintain any type of DID-associated state.
+
+Sidetree specifies a general format for patching the state associated with a DID, called _Patch Actions_, which define how to deterministic mutate a DID's associated state. Sidetree further specifies a standard set of _Patch Actions_ (below) implementers MAY use to facilitate DID state patching within their implementations. Support of the standard set of _Patch Actions_ defined herein IS NOT required, but implementers ****MUST**** use the _Patch Action_ format for defining patch mechanisms within their implementation. The general _Patch Action_ format is defined as follows:
 
 ```json
 {
@@ -55,7 +57,7 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
     2. The object ****MUST**** include a `type` property, and its value ****SHOULD**** be the type string of a registered [Cryptographic Suite](https://w3c-ccg.github.io/ld-cryptosuite-registry/) that supports JWK representations - for example:
         - `EcdsaSecp256k1VerificationKey2019`
         - `JsonWebKey2020`
-    3. The object ****MUST**** include a `publicKeyJwk` property, and its value ****MUST**** be a public key expressed as a [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation for a [`KEY_ALGORITHM`](#key-algorithm) supported by the implementation. The key represented by the JWK object ****MUST**** be projected into the `assertionMethod` array of the DID Document upon resolution. If the value is not a compliant JWK representation, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
+    3. The object ****MUST**** include a `publicKeyJwk` property, and its value ****MUST**** be a public key expressed as a [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation for a [`KEY_ALGORITHM`](#key-algorithm) supported by the implementation. The key represented by the JWK object ****MUST**** be projected into the `verificationMethod` array of the DID Document upon resolution. If the value is not a compliant JWK representation, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
     4. The object ****MAY**** include a `purposes` property, and if included, its value ****MUST**** be an array of one or more of the strings listed below. If the value is not of the correct type or contains any string not listed below, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
         - **`authentication`**: a reference to the key's `id` ****MUST**** be included in the `authentication` array of the resolved _DID Document_.
         - **`keyAgreement`**: a reference to the key's `id` ****MUST**** be included in the `keyAgreement` array of the resolved _DID Document_.

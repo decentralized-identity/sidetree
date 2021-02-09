@@ -216,7 +216,7 @@ describe('TransactionProcessor', () => {
       spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile');
       spyOn(transactionProcessor as any, 'downloadAndVerifyProvisionalIndexFile').and.throwError('any unexpected error');
       const composeAnchoredOperationModelsSpy = spyOn(transactionProcessor as any, 'composeAnchoredOperationModels').and.returnValue([]);
-      const operationStoreSpy = spyOn(operationStore, 'put');
+      const operationStoreSpy = spyOn(operationStore, 'insertOrReplace');
 
       const anyTransactionModel = OperationGenerator.generateTransactionModel();
       const transactionProcessedCompletely = await transactionProcessor.processTransaction(anyTransactionModel);
@@ -231,7 +231,7 @@ describe('TransactionProcessor', () => {
       spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile');
       spyOn(transactionProcessor as any, 'downloadAndVerifyProvisionalIndexFile').and.callFake(() => { throw new SidetreeError(ErrorCode.CasFileNotFound); });
       const composeAnchoredOperationModelsSpy = spyOn(transactionProcessor as any, 'composeAnchoredOperationModels').and.returnValue([]);
-      const operationStoreSpy = spyOn(operationStore, 'put');
+      const operationStoreSpy = spyOn(operationStore, 'insertOrReplace');
 
       const anyTransactionModel = OperationGenerator.generateTransactionModel();
       const transactionProcessedCompletely = await transactionProcessor.processTransaction(anyTransactionModel);
@@ -246,7 +246,7 @@ describe('TransactionProcessor', () => {
       spyOn(transactionProcessor as any, 'downloadAndVerifyCoreProofFile');
       spyOn(transactionProcessor as any, 'downloadAndVerifyProvisionalIndexFile').and.callFake(() => { throw new SidetreeError(ErrorCode.ChunkFileDeltasNotArrayOfObjects); });
       const composeAnchoredOperationModelsSpy = spyOn(transactionProcessor as any, 'composeAnchoredOperationModels').and.returnValue([]);
-      const operationStoreSpy = spyOn(operationStore, 'put');
+      const operationStoreSpy = spyOn(operationStore, 'insertOrReplace');
 
       const anyTransactionModel = OperationGenerator.generateTransactionModel();
       const transactionProcessedCompletely = await transactionProcessor.processTransaction(anyTransactionModel);

@@ -7,6 +7,7 @@ import * as generatedFixture from '../vectors/generated.json';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
+import Did from '../../lib/core/versions/latest/Did';
 import DidState from '../../lib/core/models/DidState';
 import Document from '../utils/Document';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
@@ -54,10 +55,11 @@ describe('Resolver', () => {
         transactionTime: 1,
         operationIndex: 1
       };
-      await operationStore.put([anchoredOperationModel]);
+      await operationStore.insertOrReplace([anchoredOperationModel]);
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const did = await Did.create(`did:sidetree:${didUniqueSuffix}`, 'sidetree');
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, did, published);
       Fixture.fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/afterCreate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterCreate);
     });
@@ -74,7 +76,7 @@ describe('Resolver', () => {
         transactionTime: 1,
         operationIndex: 1
       };
-      await operationStore.put([anchoredOperationModel]);
+      await operationStore.insertOrReplace([anchoredOperationModel]);
 
       const updateOperation = Buffer.from(JSON.stringify(generatedFixture.update.operationRequest));
       const anchoredUpdateOperation: AnchoredOperationModel = {
@@ -85,11 +87,12 @@ describe('Resolver', () => {
         transactionNumber: 2,
         operationIndex: 2
       };
-      await operationStore.put([anchoredUpdateOperation]);
+      await operationStore.insertOrReplace([anchoredUpdateOperation]);
 
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const did = await Did.create(`did:sidetree:${didUniqueSuffix}`, 'sidetree');
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, did, published);
       Fixture.fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterUpdate);
     });
@@ -106,16 +109,17 @@ describe('Resolver', () => {
         transactionTime: 1,
         operationIndex: 1
       };
-      await operationStore.put([anchoredOperationModel]);
+      await operationStore.insertOrReplace([anchoredOperationModel]);
 
       const recoverOperationBuffer = Buffer.from(JSON.stringify(generatedFixture.recover.operationRequest));
       const recoverOperation = await RecoverOperation.parse(recoverOperationBuffer);
       const anchoredRecoverOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
-      await operationStore.put([anchoredRecoverOperation]);
+      await operationStore.insertOrReplace([anchoredRecoverOperation]);
 
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const did = await Did.create(`did:sidetree:${didUniqueSuffix}`, 'sidetree');
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, did, published);
       Fixture.fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterRecover);
     });
@@ -132,7 +136,7 @@ describe('Resolver', () => {
         transactionTime: 1,
         operationIndex: 1
       };
-      await operationStore.put([anchoredOperationModel]);
+      await operationStore.insertOrReplace([anchoredOperationModel]);
 
       const updateOperation = Buffer.from(JSON.stringify(generatedFixture.update.operationRequest));
       const anchoredUpdateOperation: AnchoredOperationModel = {
@@ -143,21 +147,22 @@ describe('Resolver', () => {
         transactionNumber: 2,
         operationIndex: 2
       };
-      await operationStore.put([anchoredUpdateOperation]);
+      await operationStore.insertOrReplace([anchoredUpdateOperation]);
 
       const recoverOperationBuffer = Buffer.from(JSON.stringify(generatedFixture.recover.operationRequest));
       const recoverOperation0 = await RecoverOperation.parse(recoverOperationBuffer);
       const anchoredRecoverOperation0 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation0, 3, 3, 3);
-      await operationStore.put([anchoredRecoverOperation0]);
+      await operationStore.insertOrReplace([anchoredRecoverOperation0]);
 
       const deactivateOperationBuffer = Buffer.from(JSON.stringify(generatedFixture.deactivate.operationRequest));
       const deactivateOperation = await DeactivateOperation.parse(deactivateOperationBuffer);
       const anchoredDeactivateOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperation, 4, 4, 4);
-      await operationStore.put([anchoredDeactivateOperation]);
+      await operationStore.insertOrReplace([anchoredDeactivateOperation]);
 
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const published = true;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
+      const did = await Did.create(`did:sidetree:${didUniqueSuffix}`, 'sidetree');
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, did, published);
       Fixture.fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterDeactivate);
     });
@@ -187,7 +192,7 @@ describe('Resolver', () => {
       };
 
       const didUniqueSuffix = createOperation.didUniqueSuffix;
-      await operationStore.put([anchoredOperationModel]);
+      await operationStore.insertOrReplace([anchoredOperationModel]);
 
       // Create an update operation and insert it to the operation store.
       const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
@@ -208,7 +213,7 @@ describe('Resolver', () => {
         transactionNumber: 2,
         operationIndex: 2
       };
-      await operationStore.put([anchoredUpdateOperation1PriorRecovery]);
+      await operationStore.insertOrReplace([anchoredUpdateOperation1PriorRecovery]);
 
       // Create another update operation and insert it to the operation store.
       const updatePayload2PriorRecovery = await OperationGenerator.generateUpdateOperationRequestForServices(
@@ -228,7 +233,7 @@ describe('Resolver', () => {
         transactionNumber: 3,
         operationIndex: 3
       };
-      await operationStore.put([anchoredUpdateOperation2PriorRecovery]);
+      await operationStore.insertOrReplace([anchoredUpdateOperation2PriorRecovery]);
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
       let didState = await resolver.resolve(didUniqueSuffix) as DidState;
@@ -252,7 +257,7 @@ describe('Resolver', () => {
       const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationJson));
       const recoverOperation = await RecoverOperation.parse(recoverOperationBuffer);
       const anchoredRecoverOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 4, 4, 4);
-      await operationStore.put([anchoredRecoverOperation]);
+      await operationStore.insertOrReplace([anchoredRecoverOperation]);
 
       // Create an update operation after the recover operation.
       const [newKey2ForUpdate1AfterRecovery] = await OperationGenerator.generateKeyPair(`newKey2Updte1PostRec`);
@@ -273,7 +278,7 @@ describe('Resolver', () => {
         transactionNumber: 5,
         operationIndex: 5
       };
-      await operationStore.put([anchoredUpdateOperation1AfterRecovery]);
+      await operationStore.insertOrReplace([anchoredUpdateOperation1AfterRecovery]);
 
       // Create another update and insert it to the operation store.
       const updatePayload2AfterRecovery = await OperationGenerator.generateUpdateOperationRequestForServices(
@@ -293,7 +298,7 @@ describe('Resolver', () => {
         transactionNumber: 6,
         operationIndex: 6
       };
-      await operationStore.put([anchoredUpdateOperation2AfterRecovery]);
+      await operationStore.insertOrReplace([anchoredUpdateOperation2AfterRecovery]);
 
       // Validate recover operation getting applied.
       didState = await resolver.resolve(didUniqueSuffix) as DidState;
@@ -319,7 +324,7 @@ describe('Resolver', () => {
     it('should apply a subsequent update that uses a different hash algorithm correctly.', async () => {
       ProtocolParameters.hashAlgorithmsInMultihashCode = [18, 22];
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
-      await operationStore.put([createOperationData.anchoredOperationModel]);
+      await operationStore.insertOrReplace([createOperationData.anchoredOperationModel]);
 
       // Create an update operation with a DIFFERENT hash algorithm.
       const didSuffix = createOperationData.anchoredOperationModel.didUniqueSuffix;
@@ -333,7 +338,7 @@ describe('Resolver', () => {
         multihashAlgorithmForRevealValue
       );
       const anchoredUpdateOperation = await OperationGenerator.createAnchoredOperationModelFromOperationModel(updateOperationData.updateOperation, 2, 2, 2);
-      await operationStore.put([anchoredUpdateOperation]);
+      await operationStore.insertOrReplace([anchoredUpdateOperation]);
 
       const didState = await resolver.resolve(didSuffix) as DidState;
       expect(didState.document.publicKeys.length).toEqual(2);

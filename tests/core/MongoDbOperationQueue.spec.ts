@@ -9,8 +9,8 @@ import SidetreeError from '../../lib/common/SidetreeError';
  * Creates a MongoDbOperationQueue and initializes it.
  */
 async function createOperationQueue (storeUri: string, databaseName: string): Promise<MongoDbOperationQueue> {
-  const operationQueue = new MongoDbOperationQueue(storeUri, databaseName);
-  await operationQueue.initialize();
+  const operationQueue = new MongoDbOperationQueue();
+  await operationQueue.initialize(storeUri, databaseName);
   return operationQueue;
 }
 
@@ -144,5 +144,13 @@ describe('MongoDbOperationQueue', async () => {
         throw error; // Unexpected behavior, throw to fail the test.
       }
     }
+  });
+
+  it('should get queue size correctly.', async () => {
+    const operationCount = 3;
+    await generateAndQueueOperations(operationQueue, operationCount);
+
+    const size = await operationQueue.getSize();
+    expect(size).toEqual(3);
   });
 });

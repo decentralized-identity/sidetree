@@ -1,3 +1,31 @@
+## [1.0.1](https://github.com/decentralized-identity/sidetree/compare/v1.0.0...v1.0.1) (2021-02-03)
+
+
+### Bug Fixes
+
+* **ref-imp:** fixed bug where overwriting a particial operation to MongoDB silently fails ([966d45f](https://github.com/decentralized-identity/sidetree/commit/966d45f9a0946b8fcec18298163d2c4bf5fa7cf6))
+* **ref-imp:** renamed put method IOperationStore to insertOrReplace ([32d7d18](https://github.com/decentralized-identity/sidetree/commit/32d7d181230761d5ad0e9f9da6cb78ff9ccab056))
+
+
+
+# [1.0.0](https://github.com/decentralized-identity/sidetree/compare/v0.12.1...v1.0.0) (2021-01-21)
+
+
+### Bug Fixes
+
+* **ref-imp:** [#997](https://github.com/decentralized-identity/sidetree/issues/997) - increment updateCommitment if failed to apply an update patch ([9258b84](https://github.com/decentralized-identity/sidetree/commit/9258b844d07446b7c1e1c3a4cabf396f242d90bc))
+* **spec:** fixed incorrect documentation on `method` DID Document metadata property ([#1003](https://github.com/decentralized-identity/sidetree/issues/1003)) ([17133cc](https://github.com/decentralized-identity/sidetree/commit/17133ccb91c33acc9a2b77949dd5869ac5414e1a))
+
+
+### Features
+
+* **ref-imp:** [#440](https://github.com/decentralized-identity/sidetree/issues/440) - added custom logger support ([c2d086a](https://github.com/decentralized-identity/sidetree/commit/c2d086aebc1598fe0ba92a9bcc02de2b4f79e1c1))
+* **ref-imp:** [#989](https://github.com/decentralized-identity/sidetree/issues/989) - added event emitter support ([099e52a](https://github.com/decentralized-identity/sidetree/commit/099e52a71d9ba8f777c4a111dd99f814829d995e))
+* **ref-imp:** added a lib to fetch operation queue size for monitoring ([3956109](https://github.com/decentralized-identity/sidetree/commit/39561094161acf75a703bab2fd7ddcd8d8b71750))
+* **ref-imp:** added a number of events to the core service + fix to Observer ([4a3575e](https://github.com/decentralized-identity/sidetree/commit/4a3575e89513ab1b6838e96991f1fe55218467cd))
+
+
+
 ## [0.12.1](https://github.com/decentralized-identity/sidetree/compare/v0.9.1...v0.12.1) (2020-12-14)
 
 

@@ -23,20 +23,15 @@ interface IMongoOperation {
  * a MongoDB database.
  */
 export default class MongoDbOperationStore implements IOperationStore {
-  private collection: Collection<any> | undefined;
+  /** MongoDB collection name under the database where the operations are stored. */
+  public static readonly collectionName: string = 'operations';
 
-  /**
-   * MongoDB collection name under the database where the operations are stored
-   */
-  private readonly operationCollectionName: string;
+  private collection: Collection<any> | undefined;
 
   constructor (
     private serverUrl: string,
-    private databaseName: string,
-    operationCollectionName?: string
-  ) {
-    this.operationCollectionName = operationCollectionName ? operationCollectionName : 'operations';
-  }
+    private databaseName: string
+  ) { }
 
   /**
    * Initialize the MongoDB operation store.
@@ -48,35 +43,31 @@ export default class MongoDbOperationStore implements IOperationStore {
     const collectionNames = collections.map(collection => collection.collectionName);
 
     // If the operation collection exists, use it; else create it then use it.
-    if (collectionNames.includes(this.operationCollectionName)) {
-      this.collection = db.collection(this.operationCollectionName);
+    if (collectionNames.includes(MongoDbOperationStore.collectionName)) {
+      this.collection = db.collection(MongoDbOperationStore.collectionName);
     } else {
-      this.collection = await db.createCollection(this.operationCollectionName);
+      this.collection = await db.createCollection(MongoDbOperationStore.collectionName);
       // create an index on didSuffix, txnNumber, opIndex, and type to make DB operations more efficient.
       // This is an unique index, so duplicate inserts are rejected/ignored.
       await this.collection.createIndex({ didSuffix: 1, txnNumber: 1, opIndex: 1, type: 1 }, { unique: true });
     }
   }
 
-  /**
-   * Implement OperationStore.put
-   */
-  public async put (operations: AnchoredOperationModel[]): Promise<void> {
-    const batch = this.collection!.initializeUnorderedBulkOp();
+  public async insertOrReplace (operations: AnchoredOperationModel[]): Promise<void> {
+    const bulkOperations = this.collection!.initializeUnorderedBulkOp();
 
     for (const operation of operations) {
       const mongoOperation = MongoDbOperationStore.convertToMongoOperation(operation);
-      batch.insert(mongoOperation);
+
+      bulkOperations.find({
+        didSuffix: operation.didUniqueSuffix,
+        txnNumber: operation.transactionNumber,
+        opIndex: operation.operationIndex,
+        type: operation.type
+      }).upsert().replaceOne(mongoOperation);
     }
 
-    try {
-      await batch.execute();
-    } catch (error) {
-      // Swallow duplicate insert errors (error code 11000); rethrow others
-      if (error.name !== 'BulkWriteError' || error.code !== 11000) {
-        throw error;
-      }
-    }
+    await bulkOperations.execute();
   }
 
   /**
