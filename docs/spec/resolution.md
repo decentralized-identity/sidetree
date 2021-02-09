@@ -4,14 +4,10 @@
 
 ### Operation Compilation
 
-::: todo
-  Distinguish between Not Found and No DID Doc states, with the former reflected in a 404 response. Clean up API doc.
-:::
-
 1. Upon invocation of resolution, retrieve all observed operations for the [DID Unique Suffix](#did-unique-suffix) of the DID URI being resolved.
 2. If record of the DID being published has been observed, proceed to Step 3. If there is no observed record of the DID being published, skip all remaining [Operation Compilation](#operation-compilation) steps and process the DID as follows:
 
-    1. If the DID URI is a [_Short-Form DID URI_](#short-form-did), abort resolution and return _Unresolvable_.
+    1. If the DID URI is a [_Short-Form DID URI_](#short-form-did), abort resolution and return _Not Found_.
     2. If the DID URI is a [_Long-Form DID URI_](#long-form-did-uris), process as follows:
         1. Isolate the last colon-separated (`:`) segment of the DID URI.
         2. Using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), decode the value. If the values fail to properly decode in accordance with the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), abort resolution and return _Unresolvable_.
@@ -19,7 +15,7 @@
         4.  Use the [Hashing Process](#hashing-process) to generate a hash of the canonicalized [_Create Operation Suffix Data Object_](#create-suffix-data-object) and ensure it matches the [DID Unique Suffix](#did-unique-suffix), if the values do not match, abort resolution and return _Unresolvable_.
         5. Validate the resulting object in accordance with the [_Create Operation Suffix Data Object_](#create-suffix-data-object) schema. If the value is found to be a valid [_Create Operation Suffix Data Object_](#create-suffix-data-object). If the value fails validation, abort resolution and return _Unresolvable_.
         6. Validate the [_Create Operation Delta Object_](#create-delta-object) (which is present in a [_Chunk File Delta Entry_](#chunk-file-delta-entry) for published, anchored DIDs). If the value is found to be a valid [_Create Operation Delta Object_](#create-delta-object). If the value fails validation, abort resolution and return _Unresolvable_.
-        7. If all steps above are successful, internally flag the state of the DID as _Unpublished_ and continue to [Create operation processing](#create-operation-processing) as if the values decoded and validated in the steps above represent the only operation associated with the DID.
+        7. If all steps above are successful, flag the DID as _Unpublished_ and continue to [Create operation processing](#create-operation-processing) as if the values decoded and validated in the steps above represent the only operation associated with the DID.
 
 3. [Constructing the _Operation Hash Map_](#operation-hash-map-construction){id="operation-hash-map-construction"}: generate a [_Create Operation Pool_](#create-operation-pool){id="create-operation-pool"}, which will house references to any Create operations processed in the steps below, and begin iterating through the operations present in the DID's _Operation Storage_ area as follows:
       1. Type-specific operation evaluation:
@@ -39,7 +35,7 @@
       2. Ensure a key exists in the _Operation Hash Map_ corresponding to the _Map Hash_, and that the corresponding value is an array. If no property exists for the _Map Hash_, create one and let its value be an array.
       3. Insert the entry into the array of the _Map Hash_ at its proper position in ascending [`Anchor Time`](#anchor-time) order.
 
-4. [Create operation processing](#create-operation-processing){id="create-operation-processing"}: If no operations are present in the [_Create Operation Pool_](#create-operation-pool), cease resolution of the DID and declare the DID _Unresolvable_. If the [_Create Operation Pool_](#create-operation-pool) contains operation entries, process them as follows:
+4. [Create operation processing](#create-operation-processing){id="create-operation-processing"}: If no operations are present in the [_Create Operation Pool_](#create-operation-pool), cease resolution of the DID and return _Unresolvable_. If the [_Create Operation Pool_](#create-operation-pool) contains operation entries, process them as follows:
     1. Store the value of the `recoveryCommitment` property from the entry's [_Create Operation Suffix Data Object_](#create-suffix-data-object) as the _Next Recovery Commitment_ for use in processing the next Recovery operation.
     2. Retrieve the [_Chunk File Delta Entry_](#chunk-file-delta-entry) corresponding to the operation and proceed to Step 3. If the [_Chunk File Delta Entry_](#chunk-file-delta-entry) is not present because the associated [Chunk File](#chunk-files) has not yet been retrieved and processed (i.e. node is a [_Light Node_](#light-node) implementation, file was previously unavailable, etc.), perform the following steps:
         1. Using the [`CAS_PROTOCOL`](#cas-protocol), fetch the [Chunk File](#chunk-files) using the associated _Chunk File URI_. If the file cannot be retrieved, proceed to [recovery and deactivate operation processing](#recovery-deactivate-operation-processing).
@@ -104,7 +100,7 @@
 
 The following describes how to construct [Decentralized Identifier Resolution](#https://w3c-ccg.github.io/did-resolution/)-compliant _Resolution Result_ based on a DID resolved via the [Operation Compilation](#operation-compilation) process described in the section above.
 
-If the compiled DID ****was not**** determined to be _Unresolvable_, as defined in the [Operation Compilation](#operation-compilation) process above, proceed as follows:
+If the  DID was determined to be _Not Found_ or _Unresolvable_, return a response consistent with those states. If the compiled DID was not determined to be _Not Found_ or _Unresolvable_ (per the [Operation Compilation](#operation-compilation) process above), proceed as follows:
 
 1. Generate a JSON object for the _Resolution Result_, structured in accordance with the [Decentralized Identifier Resolution](https://w3c-ccg.github.io/did-resolution/#example-14-example-did-resolution-result) specification.
 2. Set the `didDocument` property of the _Resolution Result_ object to the resolved DID Document generated via the [Operation Compilation](#operation-compilation) process.
@@ -120,7 +116,7 @@ If the compiled DID ****was not**** determined to be _Unresolvable_, as defined 
     - `equivalentId` - If equivalent representations of the resolved DID exist, the implementation ****MUST**** include the `equivalentId` property, and the presence and value of the `equivalentId` property is determined as follows:
         - If the DID being resolved is a [_Long-Form DID_](#long-form-did-uris) representation, the `equivalentId` property ****MUST**** be included in the `didDocumentMetadata` object, and its array value ****MUST**** include the [_Short-Form DID_](#short-form-did) representation.
     - `method` - Its value ****MUST**** be an object composed of the following values:
-        1. The object ****MUST**** include a `published` property with a boolean value. If the compiled DID state is flagged as _Unpublished_ and/or _Unresolvable_ (per the [Operation Compilation](#operation-compilation) process), the `published` property ****MUST**** be set to `false`, otherwise, set the value to `true`.
+        1. The object ****MUST**** include a `published` property with a boolean value. If the compiled DID state is flagged as _Unpublished_ and/or _Not Found_ (per the [Operation Compilation](#operation-compilation) process), the `published` property ****MUST**** be set to `false`, otherwise, set the value to `true` if a valid anchoring entry was located for the DID.
         2. The object ****MUST**** include an `updateCommitment` property, and its value ****MUST**** be the `updateCommitment` hash value expected to be fulfilled in with the next `updateKey` revealed in the next [Update](#update) operation.
         3.  The object ****MUST**** include an `recoveryCommitment` property, and its value ****MUST**** be the `recoveryCommitment` hash value expected to be fulfilled in with the next `recoveryKey` revealed in the next [Recovery](#recover) operation.
 

@@ -1,7 +1,7 @@
-Sidetree
+Sidetree v1.0.0
 ==================
 
-**Specification Status:** Editor's Draft
+**Specification Status:** Working Group Approved Draft
 
 **Latest published version:**
   [identity.foundation/sidetree/spec](https://identity.foundation/sidetree/spec)
