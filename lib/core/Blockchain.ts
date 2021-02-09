@@ -102,7 +102,16 @@ export default class Blockchain implements IBlockchain {
     Logger.info(`Fetch response: ${response.status}'.`);
 
     const responseBodyBuffer = await ReadableStream.readAll(response.body);
-    const responseBody = JSON.parse(responseBodyBuffer.toString());
+
+    let responseBody;
+    try {
+      responseBody = JSON.parse(responseBodyBuffer.toString());
+    } catch {
+      throw new SidetreeError(
+        CoreErrorCode.BlockchainReadResponseBodyNotJson,
+        `Blockchain read response body not JSON: ${responseBodyBuffer}`
+      );
+    }
 
     if (response.status === HttpStatus.BAD_REQUEST &&
         responseBody.code === SharedErrorCode.InvalidTransactionNumberOrTimeHash) {
@@ -110,9 +119,10 @@ export default class Blockchain implements IBlockchain {
     }
 
     if (response.status !== HttpStatus.OK) {
-      Logger.error(`Blockchain read error response status: ${response.status}`);
-      Logger.error(`Blockchain read error body: ${responseBody}`);
-      throw new SidetreeError(CoreErrorCode.BlockchainReadResponseNotOk);
+      throw new SidetreeError(
+        CoreErrorCode.BlockchainReadResponseNotOk,
+        `Blockchain read HTTP status ${response.status}. Body: ${responseBodyBuffer}`
+      );
     }
 
     return responseBody;

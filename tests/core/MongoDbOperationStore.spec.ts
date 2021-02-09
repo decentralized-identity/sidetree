@@ -1,5 +1,6 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import JsObject from '../../lib/core/versions/latest/util/JsObject';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import { MongoClient } from 'mongodb';
 import MongoDb from '../common/MongoDb';
@@ -10,10 +11,9 @@ import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 const databaseName = 'sidetree-test';
-const operationCollectionName = 'operations-test';
 
 async function createOperationStore (mongoDbConnectionString: string): Promise<IOperationStore> {
-  const operationStore = new MongoDbOperationStore(mongoDbConnectionString, databaseName, operationCollectionName);
+  const operationStore = new MongoDbOperationStore(mongoDbConnectionString, databaseName);
   await operationStore.initialize();
   return operationStore;
 }
@@ -70,6 +70,7 @@ function checkEqual (operation1: AnchoredOperationModel, operation2: AnchoredOpe
   expect(operation1.transactionTime).toEqual(operation2.transactionTime);
   expect(operation1.didUniqueSuffix).toEqual(operation2.didUniqueSuffix);
   expect(operation1.type).toEqual(operation2.type);
+  expect(operation1.operationBuffer).toEqual(operation2.operationBuffer);
 }
 
 // Check if two operation arrays are equal
@@ -105,8 +106,7 @@ describe('MongoDbOperationStore', async () => {
   it('should create collection when initialize is called', async () => {
     // Make a new instance of operation store and initialize
     const databaseName = 'test-new-db';
-    const collectionName = 'test-new-collection';
-    const emptyOperationStore = new MongoDbOperationStore(config.mongoDbConnectionString, databaseName, collectionName);
+    const emptyOperationStore = new MongoDbOperationStore(config.mongoDbConnectionString, databaseName);
     await emptyOperationStore.initialize();
 
     // Make connection to mongo db to verify collection exists
@@ -114,89 +114,73 @@ describe('MongoDbOperationStore', async () => {
     const db = client.db(databaseName);
     let collections = await db.collections();
     let collectionNames = collections.map(collection => collection.collectionName);
-    expect(collectionNames.includes(collectionName)).toBeTruthy();
+    expect(collectionNames.includes(MongoDbOperationStore.collectionName)).toBeTruthy();
 
     // clean up
-    await db.dropCollection(collectionName);
+    await db.dropCollection(MongoDbOperationStore.collectionName);
     collections = await db.collections();
     collectionNames = collections.map(collection => collection.collectionName);
-    expect(collectionNames.includes(collectionName)).toBeFalsy();
+    expect(collectionNames.includes(MongoDbOperationStore.collectionName)).toBeFalsy();
   });
 
-  it('should throw error if batch put execution throws', async () => {
-    spyOn((operationStore as any)['collection'], 'initializeUnorderedBulkOp').and.returnValue({
-      execute: () => { throw new Error('Expected test error'); },
-      insert: () => {
-        // do nothing
-      }
+  describe('insertOrReplace()', () => {
+    it('should be able to insert an create operation successfully.', async () => {
+      const operationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
+      const anchoredOperationModel = operationData.anchoredOperationModel;
+      await operationStore.insertOrReplace([anchoredOperationModel]);
+      const returnedOperations = await operationStore.get(anchoredOperationModel.didUniqueSuffix);
+      checkEqualArray([anchoredOperationModel], returnedOperations);
     });
 
-    try {
-      await operationStore.put([{} as any]);
-      fail('Expected to fial but did not');
-    } catch (error) {
-      expect(error).toEqual(new Error('Expected test error'));
-    }
-  });
+    it('should be able to insert an update operation successfully.', async () => {
+      // Use a create operation to generate a DID
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
+      const anchoredOperationModel = createOperationData.anchoredOperationModel;
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
 
-  it('should get a put create operation', async () => {
-    const operationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const anchoredOperationModel = operationData.anchoredOperationModel;
-    await operationStore.put([anchoredOperationModel]);
-    const returnedOperations = await operationStore.get(anchoredOperationModel.didUniqueSuffix);
-    checkEqualArray([anchoredOperationModel], returnedOperations);
-  });
+      // Generate an update operation.
+      const operationRequest = await OperationGenerator.generateUpdateOperationRequestForServices(
+        didUniqueSuffix,
+        createOperationData.signingPublicKey.publicKeyJwk,
+        createOperationData.signingPrivateKey,
+        OperationGenerator.generateRandomHash(),
+        'someID',
+        []
+      );
+      const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
+      const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
+        operationModel, 1, 1, 0
+      );
 
-  it('should get a put update operation', async () => {
-    // Use a create operation to generate a DID
-    const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const anchoredOperationModel = createOperationData.anchoredOperationModel;
-    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      await operationStore.insertOrReplace([anchoredUpdateOperation]);
+      const returnedOperations = await operationStore.get(didUniqueSuffix);
+      checkEqualArray([anchoredUpdateOperation], returnedOperations);
+    });
 
-    // Generate an update operation.
-    const operationRequest = await OperationGenerator.generateUpdateOperationRequestForServices(
-      didUniqueSuffix,
-      createOperationData.signingPublicKey.publicKeyJwk,
-      createOperationData.signingPrivateKey,
-      OperationGenerator.generateRandomHash(),
-      'someID',
-      []
-    );
-    const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
-    const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
-      operationModel, 1, 1, 0
-    );
+    it('should replace an existing operations successfully.', async () => {
+      // Use a create operation to generate a DID
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
+      const anchoredOperationModel = createOperationData.anchoredOperationModel;
 
-    await operationStore.put([anchoredUpdateOperation]);
-    const returnedOperations = await operationStore.get(didUniqueSuffix);
-    checkEqualArray([anchoredUpdateOperation], returnedOperations);
-  });
+      // Deep clone the create request to strip off the `delta` property.
+      const clonedCreateRequestWithoutDelta = JsObject.deepCopyObject(createOperationData.operationRequest);
+      delete clonedCreateRequestWithoutDelta.delta;
 
-  it('should ignore duplicate updates', async () => {
-    // Use a create operation to generate a DID
-    const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const anchoredOperationModel = createOperationData.anchoredOperationModel;
-    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      // Create an anchored create operation without `delta` property in the operation buffer.
+      const anchoredOperationModelWithoutDelta = JsObject.deepCopyObject(anchoredOperationModel);
+      anchoredOperationModelWithoutDelta.operationBuffer = Buffer.from(JSON.stringify(clonedCreateRequestWithoutDelta));
 
-    // Generate an update operation.
-    const operationRequest = await OperationGenerator.generateUpdateOperationRequestForServices(
-      didUniqueSuffix,
-      createOperationData.signingPublicKey.publicKeyJwk,
-      createOperationData.signingPrivateKey,
-      OperationGenerator.generateRandomHash(),
-      'someId',
-      []
-    );
-    const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
-    const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
-      operationModel, 1, 1, 0
-    );
+      // Insert the anchored operation without `delta` into DB first.
+      await operationStore.insertOrReplace([anchoredOperationModelWithoutDelta]);
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      const returnedOperations1 = await operationStore.get(didUniqueSuffix);
+      checkEqualArray([anchoredOperationModelWithoutDelta], returnedOperations1);
 
-    await operationStore.put([anchoredUpdateOperation]);
-    // Insert duplicate operation
-    await operationStore.put([anchoredUpdateOperation]);
-    const returnedOperations = await operationStore.get(didUniqueSuffix);
-    checkEqualArray([anchoredUpdateOperation], returnedOperations);
+      // Insert the anchored operation with `delta` into DB.
+      await operationStore.insertOrReplace([anchoredOperationModel]);
+      const returnedOperations2 = await operationStore.get(didUniqueSuffix);
+      checkEqualArray([anchoredOperationModel], returnedOperations2);
+    });
   });
 
   it('should get all operations in a batch put', async () => {
@@ -209,7 +193,7 @@ describe('MongoDbOperationStore', async () => {
 
     const chainSize = 10;
     const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
-    await operationStore.put(operationChain);
+    await operationStore.insertOrReplace(operationChain);
 
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
@@ -229,7 +213,7 @@ describe('MongoDbOperationStore', async () => {
     // construct an operation chain with duplicated operations
     const batchWithDuplicates = operationChain.concat(operationChain);
 
-    await operationStore.put(batchWithDuplicates);
+    await operationStore.insertOrReplace(batchWithDuplicates);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
   });
@@ -245,7 +229,7 @@ describe('MongoDbOperationStore', async () => {
     const chainSize = 10;
     const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
 
-    await operationStore.put(operationChain);
+    await operationStore.insertOrReplace(operationChain);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
 
@@ -264,7 +248,7 @@ describe('MongoDbOperationStore', async () => {
 
     const chainSize = 10;
     const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
-    await operationStore.put(operationChain);
+    await operationStore.insertOrReplace(operationChain);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
 
@@ -285,7 +269,7 @@ describe('MongoDbOperationStore', async () => {
 
     const chainSize = 10;
     const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
-    await operationStore.put(operationChain);
+    await operationStore.insertOrReplace(operationChain);
     let returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
 
@@ -310,7 +294,7 @@ describe('MongoDbOperationStore', async () => {
 
     // Insert operations in reverse transaction time order
     for (let i = chainSize - 1; i >= 0; i--) {
-      await operationStore.put([operationChain[i]]);
+      await operationStore.insertOrReplace([operationChain[i]]);
     }
 
     const returnedOperations = await operationStore.get(didUniqueSuffix);
@@ -329,7 +313,7 @@ describe('MongoDbOperationStore', async () => {
 
       const chainSize = 10;
       const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
-      await operationStore.put(operationChain);
+      await operationStore.insertOrReplace(operationChain);
       const returnedOperations = await operationStore.get(didUniqueSuffix);
       checkEqualArray(operationChain, returnedOperations);
 
@@ -355,7 +339,7 @@ describe('MongoDbOperationStore', async () => {
       const txnNumber = 1;
       const operationChain = await createOperationChain(
         anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey, txnNumber);
-      await operationStore.put(operationChain);
+      await operationStore.insertOrReplace(operationChain);
       const returnedOperations = await operationStore.get(didUniqueSuffix);
       checkEqualArray(operationChain, returnedOperations);
 

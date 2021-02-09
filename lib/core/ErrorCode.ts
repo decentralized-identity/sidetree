@@ -7,6 +7,7 @@ export default {
   BlockchainGetLockResponseNotOk: 'blockchain_get_lock_response_not_ok',
   BlockchainGetWriterLockResponseNotOk: 'blockchain_get_writer_lock_response_not_ok',
   BlockchainReadInvalidArguments: 'blockchain_read_invalid_arguments',
+  BlockchainReadResponseBodyNotJson: 'blockchain_read_response_body_not_json',
   BlockchainReadResponseNotOk: 'blockchain_read_response_not_ok',
   BlockchainWriteResponseNotOk: 'blockchain_write_response_not_ok',
   VersionManagerVersionStringNotFound: 'version_manager_version_string_not_found',

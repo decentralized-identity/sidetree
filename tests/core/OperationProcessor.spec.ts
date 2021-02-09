@@ -152,7 +152,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should return a DID Document for resolve(did) for a registered DID', async () => {
-    await operationStore.put([createOp]);
+    await operationStore.insertOrReplace([createOp]);
 
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -163,12 +163,12 @@ describe('OperationProcessor', async () => {
   });
 
   it('should ignore a duplicate create operation', async () => {
-    await operationStore.put([createOp]);
+    await operationStore.insertOrReplace([createOp]);
 
     // Insert a duplicate create op with a different transaction time.
     const duplicateOperation = await CreateOperation.parse(createOp.operationBuffer);
     const duplicateNamedAnchoredCreateOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(duplicateOperation, 1, 1, 0);
-    await operationStore.put([duplicateNamedAnchoredCreateOperationModel]);
+    await operationStore.insertOrReplace([duplicateNamedAnchoredCreateOperationModel]);
 
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -179,7 +179,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should process update to remove a public key correctly', async () => {
-    await operationStore.put([createOp]);
+    await operationStore.insertOrReplace([createOp]);
 
     const patches = [
       {
@@ -206,7 +206,7 @@ describe('OperationProcessor', async () => {
       transactionNumber: 1,
       operationIndex: 0
     };
-    await operationStore.put([updateOp]);
+    await operationStore.insertOrReplace([updateOp]);
 
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -219,7 +219,7 @@ describe('OperationProcessor', async () => {
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
-    await operationStore.put(ops);
+    await operationStore.insertOrReplace(ops);
 
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -231,7 +231,7 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
 
     for (let i = numberOfUpdates; i >= 0; --i) {
-      await operationStore.put([ops[i]]);
+      await operationStore.insertOrReplace([ops[i]]);
     }
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -250,7 +250,7 @@ describe('OperationProcessor', async () => {
       operationStore = new MockOperationStore();
       resolver = new Resolver(versionManager, operationStore);
       const permutedOps = permutation.map(i => ops[i]);
-      await operationStore.put(permutedOps);
+      await operationStore.insertOrReplace(permutedOps);
       const didState = await resolver.resolve(didUniqueSuffix);
       expect(didState).toBeDefined();
       validateDocumentAfterUpdates(didState!.document, numberOfUpdates);
@@ -260,7 +260,7 @@ describe('OperationProcessor', async () => {
   it('should process deactivate operation correctly.', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
-    await operationStore.put(ops);
+    await operationStore.insertOrReplace(ops);
 
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -269,7 +269,7 @@ describe('OperationProcessor', async () => {
     const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, recoveryPrivateKey);
     const anchoredDeactivateOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(
       deactivateOperationData.deactivateOperation, numberOfUpdates + 1, numberOfUpdates + 1, 0);
-    await operationStore.put([anchoredDeactivateOperation]);
+    await operationStore.insertOrReplace([anchoredDeactivateOperation]);
 
     const deactivatedDidState = await resolver.resolve(didUniqueSuffix);
     expect(deactivatedDidState).toBeDefined();
@@ -281,19 +281,19 @@ describe('OperationProcessor', async () => {
   it('should ignore a deactivate operation of a non-existent did', async () => {
     const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, recoveryPrivateKey);
     const anchoredDeactivateOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperationData.deactivateOperation, 1, 1, 0);
-    await operationStore.put([anchoredDeactivateOperation]);
+    await operationStore.insertOrReplace([anchoredDeactivateOperation]);
 
     const didDocumentAfterDeactivate = await resolver.resolve(didUniqueSuffix);
     expect(didDocumentAfterDeactivate).toBeUndefined();
   });
 
   it('should ignore a deactivate operation with invalid signature', async () => {
-    await operationStore.put([createOp]);
+    await operationStore.insertOrReplace([createOp]);
 
     // Intentionally signing with signing (wrong) key.
     const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, signingPrivateKey);
     const anchoredDeactivateOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperationData.deactivateOperation, 1, 1, 0);
-    await operationStore.put([anchoredDeactivateOperation]);
+    await operationStore.insertOrReplace([anchoredDeactivateOperation]);
 
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -309,7 +309,7 @@ describe('OperationProcessor', async () => {
 
     // elide i = 0, the create operation
     for (let i = 1; i < ops.length; ++i) {
-      await operationStore.put([ops[i]]);
+      await operationStore.insertOrReplace([ops[i]]);
     }
 
     const didDocument = await resolver.resolve(didUniqueSuffix);
@@ -317,7 +317,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should ignore update operation with the incorrect updateKey', async () => {
-    await operationStore.put([createOp]);
+    await operationStore.insertOrReplace([createOp]);
 
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const [invalidKey] = await OperationGenerator.generateKeyPair('invalidKey');
@@ -329,7 +329,7 @@ describe('OperationProcessor', async () => {
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
     const updateOperation = await UpdateOperation.parse(updateOperationBuffer);
     const anchoredUpdateOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(updateOperation, 1, 1, 0);
-    await operationStore.put([anchoredUpdateOperation]);
+    await operationStore.insertOrReplace([anchoredUpdateOperation]);
 
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -340,7 +340,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should ignore update operation with an invalid signature', async () => {
-    await operationStore.put([createOp]);
+    await operationStore.insertOrReplace([createOp]);
 
     const [, anyIncorrectSigningPrivateKey] = await OperationGenerator.generateKeyPair('key1');
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
@@ -351,7 +351,7 @@ describe('OperationProcessor', async () => {
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
     const updateOperation = await UpdateOperation.parse(updateOperationBuffer);
     const anchoredUpdateOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(updateOperation, 1, 1, 0);
-    await operationStore.put([anchoredUpdateOperation]);
+    await operationStore.insertOrReplace([anchoredUpdateOperation]);
 
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -364,7 +364,7 @@ describe('OperationProcessor', async () => {
   it('should resolve as undefined if all operation of a DID is rolled back.', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
-    await operationStore.put(ops);
+    await operationStore.insertOrReplace(ops);
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
 
