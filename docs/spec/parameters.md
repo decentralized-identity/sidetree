@@ -14,7 +14,7 @@ Each version of the protocol will define a set of protocol rules and parameters 
 | `CAS_URI_ALGORITHM` { #cas-uri-algorithm }       | Algorithm for generating unique content-bound identifiers for the implementation-selected CAS protocol                      |           IPFS CID |
 | `COMPRESSION_ALGORITHM` { #compression-algorithm } | File compression algorithm                             |                        ZIP |
 | `REVEAL_VALUE` { #reveal-value } | Cryptographic hash of the commitment value. |                                        SHA256 Multihash |
-| `GENESIS_TIME` { #genesis-time }                 | The point in the target ledger's transaction history at which Sidetree implementation is first activated (e.g. block number in a blockchain).    |             630000 |
+| `GENESIS_TIME` { #genesis-time }                 | The point in the target anchoring system's transaction history at which Sidetree implementation is first activated (e.g. block number in a blockchain).    |             630000 |
 | `MAX_CORE_INDEX_FILE_SIZE` { #max-core-index-file-size } | Maximum compressed [Core Index File](#core-index-file) size. |  1 MB (zipped) |
 | `MAX_PROVISIONAL_INDEX_FILE_SIZE` { #max-provisional-index-file-size } | Maximum compressed Provisional Index File size.|  1 MB (zipped) |
 | `MAX_PROOF_FILE_SIZE` { #max-proof-file-size }   | Maximum compressed Proof File size.                      |           2.5 MB  (zipped) |

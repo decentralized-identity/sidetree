@@ -2,9 +2,9 @@
 
 ### Transaction Anchoring
 
-Once an Core Index File, Provisional Index File, and associated Chunk Files have been assembled for a given set of operations, a reference to the [Core Index File](#core-index-file) must be embedded within the target ledger to enter the set of operations into the Sidetree implementation's global state. The following process:
+Once an Core Index File, Provisional Index File, and associated Chunk Files have been assembled for a given set of operations, a reference to the [Core Index File](#core-index-file) must be embedded within the target anchoring system to enter the set of operations into the Sidetree implementation's global state. The following process:
 
-1. Generate a transaction for the underlying ledger
+1. Generate a transaction for the underlying anchoring system
 2. Generate and include the following value, herein referred to as the [_Anchor String_](#anchor-string){id="anchor-string"}, within the transaction:
     1. Generate a numerical string (`'732'`) that represents the total number of operations present in the [Core Index File](#core-index-file) and [Provisional Index File](#provisional-index-file), herein referred to as the _Operation Count_.
     2. Using the [`CAS_URI_ALGORITHM`](#cas-uri-algorithm), generate a CID for the Core Index File, herein referred to as the _Core Index File CAS URI_.
@@ -12,27 +12,27 @@ Once an Core Index File, Provisional Index File, and associated Chunk Files have
         ```js
         "10000" + "." + "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
         ```
-    4. Embed the _Anchor String_ in the transaction such that it can be located and parsed by any party that traverses the history of the target ledger.
+    4. Embed the _Anchor String_ in the transaction such that it can be located and parsed by any party that traverses the history of the target anchoring system.
 2. If the implementation implements a [per-op fee](#proof-of-fee), ensure the transaction includes the fee amount required for the number of operations being anchored.
-3. Encode the transaction with any other data or values required for inclusion by the target ledger, and broadcast it.
+3. Encode the transaction with any other data or values required for inclusion by the target anchoring system, and broadcast it.
 
 ### CAS File Propagation
 
 To ensure other nodes of the implementation can retrieve the [operation files](#file-structures) required to ingest the included operations and update the states of the DIDs it contains, the implementer must ensure that the files associated with a given set of operations being anchored are available to peers seeking to request and replicate them across the CAS storage layer. Use the following procedure for propagating transaction-anchored CAS files:
 
-1. If the underlying ledger is subject to an anchoring inclusion delay (e.g. the interval between blocks in a blockchain), implementers ****SHOULD**** wait until they receive a confirmation of inclusion (whatever that means for the target ledger) before exposing/propagating the [operation files](#file-structures) across the CAS network. (more about the reason for this in the note below)
+1. If the underlying anchoring system is subject to an anchoring inclusion delay (e.g. the interval between blocks in a blockchain), implementers ****SHOULD**** wait until they receive a confirmation of inclusion (whatever that means for the target anchoring system) before exposing/propagating the [operation files](#file-structures) across the CAS network. (more about the reason for this in the note below)
 2. After confirmation is received, implementers ****SHOULD**** use the most effective means of proactive propagation that the [`CAS_PROTOCOL`](#cas-protocol) supports.
 3. A Sidetree-based implementation node that anchors operations should not assume other nodes on the CAS network will indefinitely retain and propagate the [files](#file-structures) for a given set of operations they anchor. A node ****SHOULD**** retain and propagate any files related to the operations it anchors.
 
 :::note CAS propagation delay
-Most ledgers feature some delay between the broadcast of a transaction and the recorded inclusion of the transaction in the ledger's history. Because operation data included in the CAS files contains revealed commitment values for operations, propagating those files before confirmation of transaction inclusion exposes revealed commitment values to external entities who may download them prior to inclusion in the ledger. This means an attacker who learns of the revealed commitment value can craft invalid transactions that could be included before the legitimate operation the user is attempting to anchor. While this has no affect on proof-of-control security for a DID, an observing node would have to check the signatures of fraudulent transactions before the legitimate transaction is found, which could result in slower resolution processing for the target DID.
+Most ledgers feature some delay between the broadcast of a transaction and the recorded inclusion of the transaction in the anchoring system's history. Because operation data included in the CAS files contains revealed commitment values for operations, propagating those files before confirmation of transaction inclusion exposes revealed commitment values to external entities who may download them prior to inclusion in the anchoring system. This means an attacker who learns of the revealed commitment value can craft invalid transactions that could be included before the legitimate operation the user is attempting to anchor. While this has no affect on proof-of-control security for a DID, an observing node would have to check the signatures of fraudulent transactions before the legitimate transaction is found, which could result in slower resolution processing for the target DID.
 :::
 
 ### Transaction Processing
 
-Regardless of the ledger system an implementer chooses, the implementer ****MUST**** be able to sequence Sidetree-specific transactions within it in a deterministic order, such that any observer can derive the same order if the same logic is applied. The implementer MUST, either at the native transaction level or by some means of logical evaluation, assign Sidetree-specific transactions a [_Transaction Number_](#transaction-number). [_Transaction Numbers_](#transaction-number) ****MUST**** be assigned to all Sidetree-specific transactions present in the underlying ledger after [`GENESIS_TIME`](#genesis-time), regardless of whether or not they are valid.
+Regardless of the anchoring system an implementer chooses, the implementer ****MUST**** be able to sequence Sidetree-specific transactions within it in a deterministic order, such that any observer can derive the same order if the same logic is applied. The implementer MUST, either at the native transaction level or by some means of logical evaluation, assign Sidetree-specific transactions a [_Transaction Number_](#transaction-number). [_Transaction Numbers_](#transaction-number) ****MUST**** be assigned to all Sidetree-specific transactions present in the underlying anchoring system after [`GENESIS_TIME`](#genesis-time), regardless of whether or not they are valid.
 
-1. An implementer ****MUST**** develop implementation-specific logic that enables deterministic ordering and iteration of all protocol-related transactions in the underlying ledger, such that all operators of the implementation process them in the same order.
+1. An implementer ****MUST**** develop implementation-specific logic that enables deterministic ordering and iteration of all protocol-related transactions in the underlying anchoring system, such that all operators of the implementation process them in the same order.
 2. Starting at [`GENESIS_TIME`](#genesis-time), begin iterating transactions using the implementation-specific logic.
 3. For each transaction found during iteration that is determined to be a protocol-related transaction, process the transaction as follows:
     1. Assign the transaction a _Transaction Number_.

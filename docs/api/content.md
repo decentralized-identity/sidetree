@@ -1,6 +1,6 @@
 ## REST API
 
-The following sections define the Sidetree resolution and operations endpoints. Please refer to the companion [Sidetree REST API](https://identity.foundation/sidetree/swagger/) specification for additional information, as well as REST API definitions for blockchain and CAS components.
+The following sections define the Sidetree resolution and operations endpoints. Please refer to the companion [Sidetree REST API](https://identity.foundation/sidetree/swagger/) specification for additional information, as well as REST API definitions for the anchoring and CAS components.
 
 ### Sidetree Resolution
 
