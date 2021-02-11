@@ -28,3 +28,15 @@ The fund allocated for transaction fees for subsequent re-locking of the initial
 
 > Developer's note:
 This allotted amount is locked together with value time lock for simplicity of re-lock implementation. If this allotted amount is depleted due to subsequent re-locks, the remaining locked amount will be released back to wallet, and a new lock will be created with this allotted amount added to it again.
+
+## Events
+
+### `bitcoin_processor_databases_revert`
+Occurs every time the databases are reverted due to a bitcoin reorg.
+
+Event data:
+```json
+{
+  "blockHeight": "The block height that the databases are reverted to.",
+}
+```

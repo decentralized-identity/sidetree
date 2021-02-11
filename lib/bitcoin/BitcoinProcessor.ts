@@ -8,8 +8,9 @@ import BitcoinVersionModel from './models/BitcoinVersionModel';
 import BlockMetadata from './models/BlockMetadata';
 import BlockMetadataWithoutNormalizedFee from './models/BlockMetadataWithoutNormalizedFee';
 import ErrorCode from './ErrorCode';
+import EventEmitter from '../common/EventEmitter';
 import IBitcoinConfig from './IBitcoinConfig';
-import { ISidetreeLogger } from '..';
+import { ISidetreeEventEmitter, ISidetreeLogger } from '..';
 import LockMonitor from './lock/LockMonitor';
 import LockResolver from './lock/LockResolver';
 import LogColor from '../common/LogColor';
@@ -31,6 +32,7 @@ import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import VersionManager from './VersionManager';
+import EventCode from './EventCode';
 
 /**
  * Object representing a blockchain time and hash
@@ -153,8 +155,9 @@ export default class BitcoinProcessor {
   /**
    * Initializes the Bitcoin processor
    */
-  public async initialize (versionModels: BitcoinVersionModel[], customLogger?: ISidetreeLogger) {
+  public async initialize (versionModels: BitcoinVersionModel[], customLogger?: ISidetreeLogger, customEventEmitter?: ISidetreeEventEmitter) {
     Logger.initialize(customLogger);
+    EventEmitter.initialize(customEventEmitter);
 
     await this.versionManager.initialize(versionModels, this.config, this.blockMetadataStore);
     await this.serviceStateStore.initialize();
@@ -752,11 +755,15 @@ export default class BitcoinProcessor {
    * @returns A known valid block before the fork. `undefined` if no known valid block can be found.
    */
   private async revertDatabases (): Promise<IBlockInfo | undefined> {
+    Logger.info(`Reverting databases...`);
     const exponentiallySpacedBlocks = await this.blockMetadataStore.lookBackExponentially();
     const lastKnownValidBlock = await this.firstValidBlock(exponentiallySpacedBlocks);
+    const lastKnownValidBlockHeight = lastKnownValidBlock ? lastKnownValidBlock.height : undefined;
 
-    await this.trimDatabasesToBlock(lastKnownValidBlock ? lastKnownValidBlock.height : undefined);
+    Logger.info(LogColor.lightBlue(`Reverting database to ${LogColor.green(lastKnownValidBlockHeight || 'genesis')} block...`));
+    await this.trimDatabasesToBlock(lastKnownValidBlockHeight);
 
+    EventEmitter.emit(EventCode.BitcoinProcessorDatabasesRevert, { blockHeight: lastKnownValidBlockHeight });
     return lastKnownValidBlock;
   }
 
