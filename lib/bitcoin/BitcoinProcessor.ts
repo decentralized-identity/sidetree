@@ -1,4 +1,5 @@
 import * as timeSpan from 'time-span';
+import { ISidetreeEventEmitter, ISidetreeLogger } from '..';
 import BitcoinBlockDataIterator from './BitcoinBlockDataIterator';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
@@ -8,9 +9,9 @@ import BitcoinVersionModel from './models/BitcoinVersionModel';
 import BlockMetadata from './models/BlockMetadata';
 import BlockMetadataWithoutNormalizedFee from './models/BlockMetadataWithoutNormalizedFee';
 import ErrorCode from './ErrorCode';
+import EventCode from './EventCode';
 import EventEmitter from '../common/EventEmitter';
 import IBitcoinConfig from './IBitcoinConfig';
-import { ISidetreeEventEmitter, ISidetreeLogger } from '..';
 import LockMonitor from './lock/LockMonitor';
 import LockResolver from './lock/LockResolver';
 import LogColor from '../common/LogColor';
@@ -32,7 +33,6 @@ import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import VersionManager from './VersionManager';
-import EventCode from './EventCode';
 
 /**
  * Object representing a blockchain time and hash
