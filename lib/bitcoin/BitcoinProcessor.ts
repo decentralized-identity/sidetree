@@ -674,7 +674,10 @@ export default class BitcoinProcessor {
       } else {
         await this.processTransactions(startingBlock);
       }
+
+      EventEmitter.emit(EventCode.BitcoinProcessorObservingLoopSuccessful);
     } catch (error) {
+      EventEmitter.emit(EventCode.BitcoinProcessorObservingLoopFailed);
       Logger.error(error);
     } finally {
       this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval, interval);

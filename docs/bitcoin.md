@@ -40,3 +40,18 @@ Event data:
   "blockHeight": "The block height that the databases are reverted to.",
 }
 ```
+
+### `bitcoin_processor_observing_loop_failed`
+Occurs every time the bitcoin processor fails an observing loop.
+
+Event data: none
+
+### `bitcoin_processor_observing_loop_success`
+Occurs every time the bitcoin processor successfully completes a processing loop.
+
+Event data:
+```json
+{
+  "batchSize": "The size of the batch written.",
+}
+```
