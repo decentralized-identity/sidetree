@@ -49,9 +49,4 @@ Event data: none
 ### `bitcoin_processor_observing_loop_success`
 Occurs every time the bitcoin processor successfully completes a processing loop.
 
-Event data:
-```json
-{
-  "batchSize": "The size of the batch written.",
-}
-```
+Event data: none
