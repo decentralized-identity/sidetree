@@ -28,7 +28,7 @@ Sidetree specifies a general format for patching the state associated with a DID
 
 ### Standard Patch Actions
 
-The following set of standard _Patch Actions_ are specified to help align on a common set of _Patch Actions_ that provide a predictable usage patter across Sidetree-based DID Method implementations.
+The following set of standard _Patch Actions_ are specified to help align on a common set of _Patch Actions_ that provide a predictable usage pattern across Sidetree-based DID Method implementations.
 
 #### `add-public-keys`
 
