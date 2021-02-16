@@ -97,3 +97,26 @@ The [_Long-Form DID URI_](#long-form-did) variant of Sidetree-based DIDs support
 - Signing and verifying credentials signed against unpublished DIDs.
 - After publication and propagation are complete, authenticating with either the [_Short-Form DID URI_](#short-form-did) or [_Long-Form DID URI_](#long-form-did).
 - After publication and propagation are complete, signing and verifying credentials signed against either the [_Short-Form DID URI_](#short-form-did) or [_Long-Form DID URI_](#long-form-did).
+
+### Method defined DID URI components
+
+An implementor ****MAY**** define additional components in their method's DID URI composition.
+For example, a method may define [versioning structures](#method-versioning), hints for the anchoring system to lookup transactions or CAS data, etc.
+
+Example of a DID URI that contains a method-specified versioned network followed by the [DID Suffix](#did-suffix).
+
+```javascript
+did:example-method:testnet:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg
+```
+
+Example of a DID URI that contains a method-specified DHT-based discovery followed by an anchoring hint and the [DID Suffix](#did-suffix).
+
+```javascript
+did:example-method:ipfs:bafkreiatkubvbkdidscmqynkyls3iqawdqvthi7e6mbky2amuw3inxsi3y:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg
+```
+
+Example of a DID URI that contains a method-specified Web-based discovery followed by an anchoring hint and the [DID Suffix](#did-suffix).
+
+```javascript
+did:example-method:webcas:example.com:bafkreiatkubvbkdidscmqynkyls3iqawdqvthi7e6mbky2amuw3inxsi3y:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg
+```
