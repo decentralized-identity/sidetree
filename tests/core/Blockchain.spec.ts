@@ -12,6 +12,18 @@ import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 
 describe('Blockchain', async () => {
   describe('startPeriodicCachedBlockchainTimeRefresh', () => {
+    it('should call periodicallyRefreshCachedBlockchainTime().', async () => {
+      const blockchainClient = new Blockchain('Unused URI');
+      const periodicallyRefreshCachedBlockchainTimeSpy =
+        spyOn(blockchainClient as any, 'periodicallyRefreshCachedBlockchainTime');
+
+      blockchainClient.startPeriodicCachedBlockchainTimeRefresh();
+
+      expect(periodicallyRefreshCachedBlockchainTimeSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('periodicallyRefreshCachedBlockchainTime', () => {
     beforeEach(() => {
       // Freeze time
       jasmine.clock().install();
@@ -22,17 +34,30 @@ describe('Blockchain', async () => {
       jasmine.clock().uninstall();
     });
 
-    it('should setInterval correctly', () => {
+    it('should trigger another blockchain time refresh.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
       const getLatestTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue({} as any);
 
-      blockchainClient.startPeriodicCachedBlockchainTimeRefresh();
-      // Time is frozen so it should not have have been called.
       expect(getLatestTimeSpy).not.toHaveBeenCalled();
-      // Time is advanced by (refresh time + 1), so the getLatestTimeSpy should be called once.
-      jasmine.clock().tick(Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000 + 1);
+
+      await (blockchainClient as any).periodicallyRefreshCachedBlockchainTime();
       expect(getLatestTimeSpy).toHaveBeenCalledTimes(1);
-      // Time is advanced by (refresh time) again, so getLatestTimeSpy should be called another time.
+
+      // Time is advanced by refresh time, so the getLatestTimeSpy should be called again.
+      jasmine.clock().tick(Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
+      expect(getLatestTimeSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should trigger another blockchain time refresh even if exception is thrown.', async () => {
+      const blockchainClient = new Blockchain('Unused URI');
+      const getLatestTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.throwError('any error');
+
+      expect(getLatestTimeSpy).not.toHaveBeenCalled();
+
+      await (blockchainClient as any).periodicallyRefreshCachedBlockchainTime();
+      expect(getLatestTimeSpy).toHaveBeenCalledTimes(1);
+
+      // Time is advanced by refresh time, so the getLatestTimeSpy should be called again.
       jasmine.clock().tick(Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
       expect(getLatestTimeSpy).toHaveBeenCalledTimes(2);
     });

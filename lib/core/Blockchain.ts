@@ -55,10 +55,23 @@ export default class Blockchain implements IBlockchain {
   }
 
   /**
-   * The function that starts periodically anchoring operation batches to blockchain.
+   * Starts periodically refreshing the cached blockchain time.
    */
   public startPeriodicCachedBlockchainTimeRefresh () {
-    setInterval(async () => this.getLatestTime(), Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
+    this.periodicallyRefreshCachedBlockchainTime();
+  }
+
+  private async periodicallyRefreshCachedBlockchainTime () {
+    try {
+      await this.getLatestTime();
+    } catch (error) {
+      EventEmitter.emit(EventCode.ObserverProcessingLoopFailed);
+      Logger.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
+      Logger.error(error);
+    } finally {
+      Logger.info(`Waiting for ${Blockchain.cachedBlockchainTimeRefreshInSeconds} seconds before refresh blockchain time again.`);
+      setTimeout(async () => this.periodicallyRefreshCachedBlockchainTime(), Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
+    }
   }
 
   public async write (anchorString: string, minimumFee: number): Promise<void> {
