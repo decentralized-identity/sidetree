@@ -65,9 +65,7 @@ export default class Blockchain implements IBlockchain {
     try {
       await this.getLatestTime();
     } catch (error) {
-      EventEmitter.emit(EventCode.ObserverProcessingLoopFailed);
-      Logger.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
-      Logger.error(error);
+      Logger.error(`Encountered error fetching latest blockchain time: ${error}`);
     } finally {
       Logger.info(`Waiting for ${Blockchain.cachedBlockchainTimeRefreshInSeconds} seconds before refresh blockchain time again.`);
       setTimeout(async () => this.periodicallyRefreshCachedBlockchainTime(), Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
