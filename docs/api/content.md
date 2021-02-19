@@ -44,7 +44,9 @@ A resolution is requested as follows:
    - The server ****MUST**** include the `didDocument` property, with its value set to the latest DID document.
    - The server ****MUST**** include the resolution response object `didDocumentMetadata` composed of a `method` object which includes a `published` property with value `true`.
 5. If the DID does exist and has been deactivated:
-    - The server ****MUST**** respond with HTTP Status Code 410.
+    - The server ****MUST**** respond with HTTP Status Code 200.
+    - The server ****MUST**** include the `didDocument` property, with its value set to a valid empty DID document including the populated `id` property.
+    - The server ****MUST**** include the resolution response object `didDocumentMetadata` which includes a `deactivated` property with value `true`.
 6. Otherwise, for failure, the server ****MUST**** respond with an appropriate HTTP Status Code (400, 401, 404, 500).
 
 ### Sidetree Operations
