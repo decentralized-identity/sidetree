@@ -64,7 +64,7 @@ A Sidetree-based DID Method ****MAY**** require validation for rejecting stale o
 An operation is considered stale relative to the timing information provided by the underlying anchoring system.
 When an operation is stale according to the DID method’s parameters, the operation is deemed as invalid.
 During processing, if the DID method validates stale operations, the DID owner's operation time range is compared to the anchoring system’s timing information.
-Operations that are anchored prior to `anchorFrom` are deemed invalid, if `anchorFrom` is set (or implicitly defined).
+Operations that are anchored prior to `anchorFrom` are deemed invalid, if `anchorFrom` is set.
 Operations that are anchored after `anchorUntil` are deemed invalid, if `anchorUntil` is set (or implicitly defined).
 If the operation is deemed invalid, skip the entry and iterate forward to the next entry.
 
