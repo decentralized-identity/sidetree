@@ -1,6 +1,6 @@
 ## JSON Web Signatures
 
-Sidetree relies on JSON Web Signatures for authentication and integrity protection of [DID Operations](https://identity.foundation/sidetree/spec/#did-operations), accept for Create, with contains key material and is self certifying.
+Sidetree relies on JSON Web Signatures for authentication and integrity protection of [DID Operations](https://identity.foundation/sidetree/spec/#did-operations), except for Create, with contains key material and is self certifying.
 
 ### Signing
 
