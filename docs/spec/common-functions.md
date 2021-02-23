@@ -28,4 +28,12 @@ The following steps define the [commitment scheme](#commitment-scheme) for gener
 2. Canonicalize the [JWK](https://tools.ietf.org/html/rfc7517) encoded public key using the implementation's [`JSON_CANONICALIZATION_SCHEME`](#json-canonicalization-scheme).
 3. Use the implementation's [`HASH_PROTOCOL`](#hash-protocol) to the hash the canonicalized public key to generate the [`REVEAL_VALUE`](#reveal-value), then hash the resulting hash value again using the implementation's [`HASH_PROTOCOL`](#hash-protocol) to produce the [public key commitment](#public-key-commitment).
 
+For maximum forward cryptographic security, implementers ****SHOULD NOT**** re-use public keys across different commitment invocations.
 Implementers ****MUST NOT**** re-use public key JWK payloads across different commitment invocations.
+
+#### JWK Nonce
+
+Implementors ****MAY**** define the `nonce` property in the public key JWK payload.
+The `nonce` property enables the re-use of public keys across commitments without re-using the public key JWK payloads.
+If the `nonce` property is defined by the implementor, the DID Owner ****MAY**** populate the `nonce` property in the public key JWK payload.
+If the `nonce` property is populated, the value of the `nonce` property ****MUST**** contain `NONCE_SIZE` bits and be encoded using with Base64URL encoding.
