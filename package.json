@@ -51,7 +51,7 @@
     "jasmine-reporters": "2.3.2",
     "jasmine-spec-reporter": "4.2.1",
     "nyc": "15.0.1",
-    "spec-up": "0.10.0",
+    "spec-up": "0.10.1",
     "ts-node": "8.3.0",
     "tslint": "5.11.0",
     "tslint-config-standard": "8.0.1",
