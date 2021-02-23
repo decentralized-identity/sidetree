@@ -16,6 +16,8 @@ Example of Short-Form DID URI:
 did:sidetree:EiDahaOGH-liLLdDtTxEAdc8i-cfCz-WUcQdRJheMVNn3A
 ```
 
+An implementor ****MAY**** define additional components in their method's DID URI composition.
+
 ::: note
 Many implementations have multiple active network instances of their DID Method (e.g. mainnet and testnet). How different network instances of a DID Method are represented in the DID URI string is method-specific. Many methods choose to use the base format above (`did:METHOD`) as their primary/mainnet network, and add an additional segment after the `:METHOD` segment to denote other network instances, for example: `did:METHOD:testnet`. DID Methods ****SHOULD**** clearly describe parsing rules for distinguishing between their different network instances.
 :::
