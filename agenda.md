@@ -29,11 +29,69 @@ Please note that we might not notice a pullrequest in time, but you are free to 
 <details>
 <summary> Topics for upcoming meetings</summary>
 
-* 
+* Add a way to set `controller`? (Lionello Lunesu)
 
 
 
 </details>
+
+## Meeting - 02 March 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+- [x] Daniel Buchner
+- [x] Andreas Freund
+- [x] Lionello Lunesu
+
+### Agenda
+
+- Welcome / Introductions
+- ION dashboard demo
+- Open PRs
+- Tag spec v1.0. Agreed to tag EOD today.
+- Spec followup: need to add references.
+- Discussion of v1.1 (time permitting)
+
+## Meeting - 23 Feb 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+- [x] Daniel Buchner
+
+
+### Agenda
+
+- Welcome / Introductions
+- "Spec v1" tagged issues
+- Open PRs
+
+## Meeting - 16 Feb 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+- [x] Daniel Buchner
+
+
+### Agenda
+
+- Welcome / Introductions
+- "Spec v1" tagged issues
+- Open PRs
+
+
+## Meeting - 9 Feb 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Daniel Buchner
+
+
+### Agenda
+
+- Welcome / Introductions
+- Sidetree spec finalized
+- Notes on KERI folks' review of the spec
+- Plans for implementation launch
+
 
 ## Meeting - 18 Jan 2021 - (1500 ET)
  
