@@ -10,8 +10,8 @@ info:
 tags:
   - name: Sidetree
     description: APIs for interacting with the Sidetree Node.
-  - name: Blockchain
-    description: APIs for interacting with the Blockchain system.
+  - name: Anchor
+    description: APIs for interacting with the Anchor system.
   - name: Content Addressed Storage
     description: APIs for interacting with the CAS system.
 paths:
@@ -93,20 +93,20 @@ paths:
         '500':
           description: Server Error        
 
-  /blockchain/time:
+  /anchor/time:
     get:
       tags:
-        - Blockchain
-      summary: Gets the latest logical blockchain time. This API allows the Observer and Batch Writer to determine protocol version to be used.
+        - Anchor
+      summary: Gets the latest logical anchor time. This API allows the Observer and Batch Writer to determine protocol version to be used.
       operationId: getTime
-      description: A blockchain time hash must not be predictable/pre-computable, a canonical implementation would be to use the block number as the time and the block hash as the time hash. It is intentional that the concepts related to blockchain blocks are hidden from the layers above.
+      description: A anchor time hash must not be predictable/pre-computable, a canonical implementation would be to use the block number as the time and the block hash as the time hash. It is intentional that the concepts related to anchor blocks are hidden from the layers above.
       responses:
         '200':
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlockchainTimeResponse'
+                $ref: '#/components/schemas/AnchorTimeResponse'
         '400':
           description: Bad Request
         '401':
@@ -115,20 +115,20 @@ paths:
           description: Not Found
         '500':
           description: Server Error
-  /blockchain/time/{time-hash}:
+  /anchor/time/{time-hash}:
     get:
       tags:
-        - Blockchain
-      summary: Gets the latest logical blockchain time. This API allows the Observer and Batch Writer to determine protocol version to be used.
+        - Anchor
+      summary: Gets the latest logical anchor time. This API allows the Observer and Batch Writer to determine protocol version to be used.
       operationId: getTimeByHash
-      description: A blockchain time hash must not be predictable/pre-computable, a canonical implementation would be to use the block number as the time and the block hash as the time hash. It is intentional that the concepts related to blockchain blocks are hidden from the layers above.
+      description: A anchor time hash must not be predictable/pre-computable, a canonical implementation would be to use the block number as the time and the block hash as the time hash. It is intentional that the concepts related to anchor blocks are hidden from the layers above.
       parameters:
         - in: path
           required: true
           name: time-hash
           schema:
             type: string
-          description: The hash associated with the blockchain time
+          description: The hash associated with the anchor time
           example: "0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5"
       responses:
         '200':
@@ -136,7 +136,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlockchainTimeResponse'
+                $ref: '#/components/schemas/AnchorTimeResponse'
         '400':
           description: Bad Request
         '401':
@@ -145,10 +145,10 @@ paths:
           description: Not Found
         '500':
           description: Server Error
-  /blockchain/transactions:
+  /anchor/transactions:
     get:
       tags:
-        - Blockchain
+        - Anchor
       summary: Fetches Sidetree transactions in chronological order.
       operationId: getTransactions
       description: "Note: The call may not return all Sidetree transactions in one batch, in which case the caller can use the transaction number of the last transaction in the returned batch to fetch subsequent transactions."
@@ -165,7 +165,7 @@ paths:
           name: transaction-time-hash
           schema:
             type: string
-          description: MUST BE given if since parameter is specified. This is the hash associated with the time the transaction specified by the since parameter is anchored on blockchain. Multiple transactions can have the same transaction time and thus the same transaction time hash. The transaction time hash helps the blockchain layer detect block reorganizations (temporary forks); HTTP 400 Bad Request with invalid_transaction_number_or_time_hash as the code parameter value in a JSON body is returned on such events.
+          description: MUST BE given if since parameter is specified. This is the hash associated with the time the transaction specified by the since parameter is anchored on anchor. Multiple transactions can have the same transaction time and thus the same transaction time hash. The transaction time hash helps the anchor layer detect block reorganizations (temporary forks); HTTP 400 Bad Request with invalid_transaction_number_or_time_hash as the code parameter value in a JSON body is returned on such events.
           example: "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253"
       responses:
         '200':
@@ -173,7 +173,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlockchainTransactions'
+                $ref: '#/components/schemas/AnchorTransactions'
         '400':
           description: >
             Bad Request
@@ -193,21 +193,21 @@ paths:
           description: Server Error
     post:
       tags:
-        - Blockchain
-      summary: Writes a Sidetree transaction to the underlying blockchain.
-      operationId: writeBlockchainTransaction
+        - Anchor
+      summary: Writes a Sidetree transaction to the underlying anchor.
+      operationId: writeAnchorTransaction
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BlockchainWriteRequest'
+              $ref: '#/components/schemas/AnchorWriteRequest'
       responses:
         '200':
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlockchainTransaction'
+                $ref: '#/components/schemas/AnchorTransaction'
         '400':
           description: >
             Bad Request
@@ -229,10 +229,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /blockchain/transactions/first-valid:
+  /anchor/transactions/first-valid:
     post:
       tags:
-        - Blockchain
+        - Anchor
       summary: Get first valid Sidetree transaction
       operationId: getFirstValidTransactions
       description: Given a list of Sidetree transactions, returns the first transaction in the list that is valid. Returns 404 NOT FOUND if none of the given transactions are valid. This API is primarily used by the Sidetree core library to determine a transaction that can be used as a marker in time to reprocess transactions in the event of a block reorganization (temporary fork).
@@ -243,7 +243,7 @@ paths:
             schema:
               type: array
               items:
-                $ref: '#/components/schemas/BlockchainTransaction'
+                $ref: '#/components/schemas/AnchorTransaction'
               example: [
                 {
                   "transaction_number": 19,
@@ -279,7 +279,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlockchainTransaction'
+                $ref: '#/components/schemas/AnchorTransaction'
         '400':
           description: Bad Request
         '401':
@@ -288,11 +288,11 @@ paths:
           description: Not Found
         '500':
           description: Server Error
-  /blockchain/fee:
+  /anchor/fee:
     get:
       tags:
-        - Blockchain
-      summary: Fetches the normalized transaction fee used for proof-of-fee calculation, given the blockchain time.
+        - Anchor
+      summary: Fetches the normalized transaction fee used for proof-of-fee calculation, given the anchor time.
       operationId: getFee
       responses:
         '200':
@@ -300,7 +300,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlockchainFeeResponse'
+                $ref: '#/components/schemas/AnchorFeeResponse'
         '400':
           description: Bad Request
         '401':
@@ -309,10 +309,10 @@ paths:
           description: Not Found
         '500':
           description: Server Error
-  /blockchain/locks/{lock-identifier}:
+  /anchor/locks/{lock-identifier}:
     get:
       tags:
-        - Blockchain
+        - Anchor
       summary: Fetches the lock object used for value-time-lock calculation, given the lock identifier.
       operationId: getLock
       parameters:
@@ -328,11 +328,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlockchainLock'
+                $ref: '#/components/schemas/AnchorLock'
         '400':
           description: >
             Bad Request
-              * `blockchain_time_out_of_range` - Blockchain time given is out of computable range.
+              * `anchor_time_out_of_range` - Anchor time given is out of computable range.
           content:
             application/json:
               schema:
@@ -343,7 +343,7 @@ paths:
           description: >
             Not Found
               * `value_time_lock_not_found` - Lock not found.
-              * `value_time_lock_in_pending_state` - If there is a lock but is not confirmed on the blockchain yet.
+              * `value_time_lock_in_pending_state` - If there is a lock but is not confirmed on the anchor yet.
           content:
             application/json:
               schema:
@@ -356,10 +356,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /blockchain/writer-lock:
+  /anchor/writer-lock:
     get:
       tags:
-        - Blockchain
+        - Anchor
       operationId: getWriterLock
       responses:
         '200':
@@ -367,7 +367,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlockchainLock'
+                $ref: '#/components/schemas/AnchorLock'
         '400':
           description: Bad Request
         '401':
@@ -376,18 +376,18 @@ paths:
           description: >
             Not Found
               * `value_time_lock_not_found` - Lock not found.
-              * `value_time_lock_in_pending_state` - If there is a lock but is not confirmed on the blockchain yet.
+              * `value_time_lock_in_pending_state` - If there is a lock but is not confirmed on the anchor yet.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Server Error
-  /blockchain/version:
+  /anchor/version:
     get:
       tags:
-        - Blockchain
-      operationId: getBlockchainVersion
+        - Anchor
+      operationId: getAnchorVersion
       responses:
         '200':
           description: Success
@@ -579,7 +579,7 @@ components:
           type: string
           description: The JWS object as defined in Anchor File for Deactivate operations.
       description: Deactivate operation.
-    BlockchainTransaction:
+    AnchorTransaction:
       type: object
       properties:
         transaction_number:
@@ -587,13 +587,13 @@ components:
           description: A monotonically increasing number (need NOT be by 1) that identifies a Sidtree transaction.
         transaction_time:
           type: number
-          description: The logical blockchain time this transaction is anchored. Used for protocol version selection.
+          description: The logical anchor time this transaction is anchored. Used for protocol version selection.
         transaction_time_hash:
           type: string
           description: The hash associated with the transaction time.
         anchor_string:
           type: string
-          description: The string written to the blockchain for this transaction.
+          description: The string written to the anchor for this transaction.
         transaction_fee_paid:
           type: string
           description: A number representing the fee paid for this transaction.
@@ -619,22 +619,22 @@ components:
           type: string
           description: Hash of data written to CAS
           example: "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
-    BlockchainTimeResponse:
+    AnchorTimeResponse:
       type: object
       properties:
         time:
           type: string
-          description: The logical blockchain time.
+          description: The logical anchor time.
           example: "545236"
         hash:
           type: string
-          description: The hash associated with the blockchain time.
+          description: The hash associated with the anchor time.
           example: "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
         previous_hash:
           type: string
-          description: The hash associated with the previous blockchain time.
+          description: The hash associated with the previous anchor time.
           example: "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
-    BlockchainTransactions:
+    AnchorTransactions:
       type: object
       properties:
         more_transactions:
@@ -644,7 +644,7 @@ components:
         transactions:
           type: array
           items:
-            $ref: '#/components/schemas/BlockchainTransaction'
+            $ref: '#/components/schemas/AnchorTransaction'
           description: The transactions array must always end with a complete block of data, but can start in the middle of a block if since query parameter is provided.
       example: {
         "more_transactions": false,
@@ -669,21 +669,21 @@ components:
           }
         ]
       }
-    BlockchainWriteRequest:
+    AnchorWriteRequest:
       type: object
       description: if with the given fee (derived from minimumFee) this node will exceed the spending limit as configured in the parameters.
       properties:
         anchor_string:
           type: string
-          description: The string to be written to the blockchain for this transaction.
+          description: The string to be written to the anchor for this transaction.
         minimum_fee:
           type: string
-          description: A number representing the minimum transaction fee to be paid to write this transaction to the blockchain. The actual fee is dynamically calculated and can be higher than this amount (but not lower).
+          description: A number representing the minimum transaction fee to be paid to write this transaction to the anchor. The actual fee is dynamically calculated and can be higher than this amount (but not lower).
       example: {
         "minimum_fee": 200000,
         "anchor_string": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
       }
-    BlockchainFeeResponse:
+    AnchorFeeResponse:
       type: object
       properties:
         normalized_transaction_fee:
@@ -692,7 +692,7 @@ components:
       example: {
         "normalized_transaction_fee": 200000
       }
-    BlockchainLock:
+    AnchorLock:
       type: object
       properties:
         amount_locked:
@@ -729,7 +729,7 @@ components:
           - value_time_lock_not_found
           - value_time_lock_in_pending_state
           - normalized_fee_cannot_be_computed
-          - blockchain_time_out_of_range
+          - anchor_time_out_of_range
           - spending_cap_per_period_reached
           - not_enough_balace_for_write
           - invalid_transaction_number_or_time_hash
