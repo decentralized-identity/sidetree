@@ -2,10 +2,10 @@ openapi: 3.0.0
 # Added by API Auto Mocking Plugin
 servers:
   - description: SwaggerHub API Auto Mocking
-    url: https://virtserver.swaggerhub.com/sidetree/0.0.1
+    url: https://virtserver.swaggerhub.com/sidetree/v1
 info:
   description: This is an experimental Open API Specification for the Sidetree Protocol.
-  version: "0.0.1"
+  version: "1.0.0"
   title: Sidetree REST API
 tags:
   - name: Sidetree
