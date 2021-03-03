@@ -65,6 +65,10 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
         - **`capabilityDelegation`**: a reference to the key's `id` ****MUST**** be included in the `capabilityDelegation` array of the resolved _DID Document_.
         - **`capabilityInvocation`**: a reference to the key's `id` ****MUST**** be included in the `capabilityInvocation` array of the resolved _DID Document_.
     
+````note
+An implementor may support transformations from `publicKeyJwk` to other representations required by a particular Cryptographic Suite.
+For example, an implementor may support projecting `publicKeyBase58` into the resolution result for the `Ed25519VerificationKey2018` suite or `publicKeyMultibase` for the `Ed25519VerificationKey2020` suite.
+````
 
 #### `remove-public-keys`
 
