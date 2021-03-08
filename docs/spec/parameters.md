@@ -24,4 +24,4 @@ Each version of the protocol will define a set of protocol rules and parameters 
 | `MAX_DELTA_SIZE` { #max-delta-size }             | Maximum canonicalized operation delta buffer size.       |                1,000 bytes |
 | `MAX_OPERATION_COUNT`       | Maximum number of operations per batch.                                       |                 10,000 ops |
 | `MAX_OPERATION_HASH_LENGTH` { #max-operation-hash-length } | Maximum length of all hashes in CAS URI files. |    SHA256 Multihash (0x12) |
-| `NONCE_SIZE` {#nonce-size}                       | The number of bits in nonce values.                      |                   128 bits |
+| `NONCE_SIZE` {#nonce-size}                       | The number of bytes (octets) in nonce values.            |                   16 bytes |

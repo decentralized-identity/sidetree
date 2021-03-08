@@ -2,7 +2,7 @@
 
 | Term                  | Description                                                                    |
 |-----------------------|--------------------------------------------------------------------------------|
-| Anchoring System { #anchoring-system }  | A decentralized sequencing oracle (e.g. Bitcoin) that can be used to determine the order of PKI state transformations for Decentralized Identifiers (DIDs), which can be deterministically verified to derive the current PKI state of DIDs. |
+| Anchoring System { #anchoring-system }  | A decentralized sequencing oracle (e.g. Bitcoin, Ethereum, distributed ledgers, witness-based approaches) that can be used to determine the order of PKI state transformations for Decentralized Identifiers (DIDs), which can be deterministically verified to derive the current PKI state of DIDs. |
 | Witness System  { #witness-system }  | Synonym for [Anchoring System](#anchoring-system), see above.  |
 | Core Index File  | JSON Document containing proving and index data for Create, Recovery, and Deactivate operations, and a CAS URI for the associated Provisional Index File. This file is anchored to the target anchoring system. |
 | Provisional Index File  | JSON Document containing Update operation proving and index data, as well as CAS URI for Chunk File chunks.                   |

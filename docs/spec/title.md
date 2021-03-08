@@ -18,6 +18,7 @@ Sidetree v1.0.0
 ~ [Isaac Chen](https://www.linkedin.com/in/isaac-chen-921079127/) (Microsoft)
 ~ [Christian Lundkvist](https://www.linkedin.com/in/chrislun/) (Consensys)
 ~ [Kyle Den Hartog](https://www.linkedin.com/in/kyledenhartog/) (Mattr)
+~ [Tobias Looker](https://www.linkedin.com/in/tplooker/) (Mattr)
 
 **Participate:**
 ~ [GitHub repo](https://github.com/decentralized-identity/sidetree)
