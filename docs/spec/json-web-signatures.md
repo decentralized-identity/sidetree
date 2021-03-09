@@ -54,9 +54,9 @@ A [Deactivate Operation](https://identity.foundation/sidetree/spec/#deactivate) 
 ### Operation Anchoring Time Ranges
 
 A Sidetree-based DID Method ****MAY**** define the `anchorFrom` and/or `anchorUntil` properties as part of the operation’s data object payload.
-If `anchorFrom` is defined by the implementor, a DID owner ****MAY**** include the earliest allowed anchoring time for their operation in the `anchorFrom` property of the operation’s data object payload.
+If `anchorFrom` is defined by the implementer, a DID owner ****MAY**** include the earliest allowed anchoring time for their operation in the `anchorFrom` property of the operation’s data object payload.
 The `anchorFrom` property is conceptually similar to the [RFC7519](https://tools.ietf.org/html/rfc7519) `nbf` and `iat` claims.
-If `anchorUntil` is defined by the implementor, a DID owner ****MAY**** include the latest allowed anchoring time for their operation in the `anchorUntil` property of the operation’s data object payload.
+If `anchorUntil` is defined by the implementer, a DID owner ****MAY**** include the latest allowed anchoring time for their operation in the `anchorUntil` property of the operation’s data object payload.
 The `anchorUntil` property is conceptually similar to the [RFC7519](https://tools.ietf.org/html/rfc7519) `exp` claim.
 These properties contain numeric values; but note that anchoring systems may have differing mechanisms of time (as defined by the method).
 
@@ -69,5 +69,5 @@ Operations that are anchored after `anchorUntil` are deemed invalid, if `anchorU
 If the operation is deemed invalid, skip the entry and iterate forward to the next entry.
 
 A Sidetree-based DID Method ****MAY**** constrain the range between `anchorFrom` and `anchorUntil` using a delta defined by the implementation.
-The implementor ****MAY**** also implicitly define the `anchorUntil` using the `anchorFrom` plus a delta defined by the implementation.
+The implementer ****MAY**** also implicitly define the `anchorUntil` using the `anchorFrom` plus a delta defined by the implementation.
 The delta ****MAY**** be defined as the `MAX_OPERATION_TIME_DELTA` protocol parameter.
