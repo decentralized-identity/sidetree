@@ -17,7 +17,7 @@
 | DID Document          | JSON Document containing public key references, service endpoints, and other PKI metadata that corresponds to a given DID (as defined in the [W3C DID Specification](https://w3c.github.io/did-core/)). This is the most common form of DID state used in Sidetree implementations. |
 | DID Suffix { #did-suffix }  | The unique identifier string within a DID URI. e.g. The unique suffix of `did:sidetree:123` would be `123`. |
 | DID Suffix Data       | Data required to deterministically generate a DID.                             |
-| Multihash  { #multihash }            | Protocol for differentiating outputs from common cryptographic hash functions, addressing size + encoding considerations: https://multiformats.io/multihash/ |
+| Multihash  { #multihash }            | Protocol for differentiating outputs from common cryptographic hash functions, addressing size and encoding considerations: https://multiformats.io/multihash/ |
 | DID Operation         | Set of delta-based CRDT patches that modify a DID's state data when applied.                                               |
 | Operation Request     | JWS formatted request sent to a _Sidetree Node_ to include a _DID Operation_ in a batch of operations.     |
 | Update Key Pair {#update-key-pair}| A cryptographic key used to produce an _Update Request_ JWS. Public key representation MUST be used to produce _Update Request_ commitment.     |
