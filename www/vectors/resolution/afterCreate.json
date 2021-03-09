@@ -18,7 +18,7 @@
     "verificationMethod": [
       {
         "id": "#publicKeyModel1Id",
-        "controller": "",
+        "controller": "did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
