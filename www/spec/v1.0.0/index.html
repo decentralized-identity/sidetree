@@ -377,10 +377,10 @@ If the <code>nonce</code> property is populated, the value of the <code>nonce</c
 <li>The Sidetree nodes themselves, which interact with the anchoring system to anchor operations, fetch and replicate data from the CAS network, and process operations in accordance with the protocol deterministic ruleset.</li>
 <li>An integrated Content-Addressable Storage (CAS) network layer Sidetree nodes use to distribute and replicate DID operation files.</li>
 </ol>
-<img src="/diagrams/sidetree-system.svg" style="display: block; margin: 0 auto; padding: 1em 0; width: 100%; max-width: 620px;" />
+<img src="diagrams/sidetree-system.svg" style="display: block; margin: 0 auto; padding: 1em 0; width: 100%; max-width: 620px;" />
 <h2 id="file-structures"><a class="toc-anchor" href="#file-structures" >§</a> File Structures</h2>
 <p>The protocol defines the following three file structures, which house DID operation data and are designed to support key functionality to enable light node configurations, minimize permanently retained data, and ensure performant resolution of DIDs.</p>
-<img src="/diagrams/file-topology.svg" style="display: block; margin: 0 auto; padding: 2em 0; width: 100%; max-width: 620px;" />
+<img src="diagrams/file-topology.svg" style="display: block; margin: 0 auto; padding: 2em 0; width: 100%; max-width: 620px;" />
 <h3 id="core-index-file"><a class="toc-anchor" href="#core-index-file" >§</a> Core Index File</h3>
 <p>Core Index Files contain <a href="#create" >Create</a>, <a href="#recover" >Recover</a>, and <a href="#deactivate" >Deactivate</a> operation values, as well as a CAS URI for the related <a href="#provisional-index-file" >Provisional Index File</a> (detailed below). As the name suggests, Core Index Files are anchored to the target anchoring system via embedding a CAS URI in the anchoring system’s transactional history.</p>
 <div id="example-1" class="notice example"><a class="notice-link" href="#example-1">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
