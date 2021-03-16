@@ -31,7 +31,7 @@ This allotted amount is locked together with value time lock for simplicity of r
 
 ## Events
 
-### `bitcoin_processor_databases_revert`
+### `bitcoin_databases_revert`
 Occurs every time the databases are reverted due to a bitcoin reorg.
 
 Event data:
@@ -41,12 +41,37 @@ Event data:
 }
 ```
 
-### `bitcoin_processor_observing_loop_failed`
-Occurs every time the bitcoin processor fails an observing loop.
+### `bitcoin_lock_monitor_lock_released`
+Occurs every time the lock monitor releases a value lock.
 
 Event data: none
 
-### `bitcoin_processor_observing_loop_success`
-Occurs every time the bitcoin processor successfully completes a processing loop.
+### `bitcoin_lock_monitor_lock_renewed`
+Occurs every time the lock monitor renews an existing lock.
+
+Event data: none
+
+### `bitcoin_lock_monitor_new_lock`
+Occurs every time the lock monitor creates a new lock.
+
+Event data: none
+
+### `bitcoin_lock_monitor_loop_failure`
+Occurs every time the lock monitor loop fails.
+
+Event data: none
+
+### `bitcoin_lock_monitor_loop_success`
+Occurs every time the lock monitor loop succeeds.
+
+Event data: none
+
+### `bitcoin_observing_loop_failure`
+Occurs every time the bitcoin observing loop fails.
+
+Event data: none
+
+### `bitcoin_observing_loop_success`
+Occurs every time the bitcoin observing loop succeeds.
 
 Event data: none
