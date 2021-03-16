@@ -53,9 +53,9 @@ export default class BatchScheduler {
 
       const batchSize = await batchWriter.write();
 
-      EventEmitter.emit(EventCode.BatchWriterProcessingLoopSuccess, { batchSize });
+      EventEmitter.emit(EventCode.SidetreeBatchWriterLoopSuccess, { batchSize });
     } catch (error) {
-      EventEmitter.emit(EventCode.BatchWriterProcessingLoopFailed);
+      EventEmitter.emit(EventCode.SidetreeBatchWriterLoopFailure);
       Logger.error('Unexpected and unhandled error during batch writing, investigate and fix:');
       Logger.error(error);
     } finally {

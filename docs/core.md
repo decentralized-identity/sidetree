@@ -694,12 +694,12 @@ HTTP/1.1 200 OK
 
 ## Core Service Events
 
-### `batch_writer_processing_loop_failed`
+### `sidetree_batch_writer_loop_failure`
 Occurs every time the batch writer fails a processing loop.
 
 Event data: none
 
-### `batch_writer_processing_loop_success`
+### `sidetree_batch_writer_loop_success`
 Occurs every time the batch writer completes a processing loop.
 
 Event data:
@@ -709,7 +709,7 @@ Event data:
 }
 ```
 
-### `blockchain_time_changed`
+### `sidetree_blockchain_time_changed`
 Occurs every time the underlying blockchain time changes.
 
 Event data:
@@ -719,7 +719,7 @@ Event data:
 }
 ```
 
-### `download_manager_download`
+### `sidetree_download_manager_download`
 Occurs every time an asynchronous content download has occurred regardless of success.
 
 Event data:
@@ -729,12 +729,12 @@ Event data:
 }
 ```
 
-### `observer_processing_loop_failed`
+### `sidetree_observer_loop_failure`
 Occurs every time the observer fails a processing loop.
 
 Event data: none
 
-### `observer_processing_loop_success`
+### `sidetree_observer_loop_success`
 Occurs every time the observer completes a processing loop.
 
 Event data: none
