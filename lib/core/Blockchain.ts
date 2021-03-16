@@ -191,7 +191,7 @@ export default class Blockchain implements IBlockchain {
 
     // Emit a time change event.
     if (newBlockchainTimeModel.time !== this.cachedBlockchainTime.time) {
-      EventEmitter.emit(EventCode.BlockchainTimeChanged, { time: newBlockchainTimeModel.time });
+      EventEmitter.emit(EventCode.SidetreeBlockchainTimeChanged, { time: newBlockchainTimeModel.time });
     }
 
     // Update the cached blockchain time every time blockchain time is fetched over the network.
