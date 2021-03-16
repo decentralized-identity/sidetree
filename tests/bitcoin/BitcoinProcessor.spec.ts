@@ -12,7 +12,6 @@ import BlockMetadataWithoutNormalizedFee from '../../lib/bitcoin/models/BlockMet
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import IBitcoinConfig from '../../lib/bitcoin/IBitcoinConfig';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
-import Logger from '../../lib/common/Logger';
 import RequestError from '../../lib/bitcoin/RequestError';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
@@ -194,7 +193,6 @@ describe('BitcoinProcessor', () => {
 
       const bitcoinProcessor = new BitcoinProcessor(config);
       expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
-      expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
       expect((bitcoinProcessor as any).config.transactionPollPeriodInSeconds).toEqual(60);
       expect((bitcoinProcessor as any).config.sidetreeTransactionPrefix).toEqual(config.sidetreeTransactionPrefix);
       expect(bitcoinProcessor['transactionStore']['databaseName']).toEqual(config.databaseName);
@@ -230,7 +228,6 @@ describe('BitcoinProcessor', () => {
 
       const bitcoinProcessor = new BitcoinProcessor(config);
       expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
-      expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
       expect((bitcoinProcessor as any).config.transactionPollPeriodInSeconds).toEqual(60);
       expect((bitcoinProcessor as any).config.sidetreeTransactionPrefix).toEqual(config.sidetreeTransactionPrefix);
       expect(bitcoinProcessor['transactionStore']['databaseName']).toEqual(config.databaseName);
@@ -809,13 +806,10 @@ describe('BitcoinProcessor', () => {
         transactionFee: bitcoinFee,
         serializedTransactionObject: 'string'
       }));
-      const loggerErrorSpy = spyOn(Logger, 'error').and.callFake((message: string) => {
-        expect(message).toContain('fund your wallet');
-      });
+
       await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
-      expect(loggerErrorSpy).toHaveBeenCalled();
       expect(monitorAddSpy).toHaveBeenCalled();
       done();
     });
