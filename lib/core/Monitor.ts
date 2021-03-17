@@ -1,5 +1,8 @@
+import BatchWriter from './versions/latest/BatchWriter';
+import Blockchain from './Blockchain';
 import Config from './models/Config';
 import MongoDbOperationQueue from './versions/latest/MongoDbOperationQueue';
+import VersionManager from './VersionManager';
 
 /**
  * An class to monitor the Core.
@@ -9,7 +12,7 @@ export default class Monitor {
 
   private operationQueue: MongoDbOperationQueue;
 
-  public constructor () {
+  public constructor (private versionManager: VersionManager, private blockchain: Blockchain) {
     this.operationQueue = new MongoDbOperationQueue();
   }
 
@@ -20,8 +23,16 @@ export default class Monitor {
   /**
    * Gets the size of the operation queue.
    */
-  public async getOperationQueueSize (): Promise<number> {
-    const queueSize = await this.operationQueue.getSize();
-    return queueSize;
+  public async getOperationQueueSize (): Promise<any> {
+    const operationQueueSize = await this.operationQueue.getSize();
+
+    return { operationQueueSize };
+  }
+
+  public async getWriterMaxBatchSize (): Promise<any> {
+    const currentLock = await this.blockchain.getWriterValueTimeLock();
+    const writerMaxBatchSize = BatchWriter.getNumberOfOperationsAllowed(this.versionManager, currentLock);
+
+    return { writerMaxBatchSize };
   }
 }

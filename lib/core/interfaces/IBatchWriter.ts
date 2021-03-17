@@ -4,7 +4,7 @@
 export default interface IBatchWriter {
   /**
    * Writes one or more batches of batches of operations to content addressable storage and blockchain.
-   * @returns The size of the batch written, 0 if no batch is written.
+   * @returns The number of operations written.
    */
   write (): Promise<number>;
 }

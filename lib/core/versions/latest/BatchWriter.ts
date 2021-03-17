@@ -36,7 +36,7 @@ export default class BatchWriter implements IBatchWriter {
   public async write (): Promise<number> {
     const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
     const currentLock = await this.blockchain.getWriterValueTimeLock();
-    const numberOfOpsAllowed = this.getNumberOfOperationsAllowed(currentLock);
+    const numberOfOpsAllowed = BatchWriter.getNumberOfOperationsAllowed(this.versionMetadataFetcher, currentLock);
 
     // Get the batch of operations to be anchored on the blockchain.
     const queuedOperations = await this.operationQueue.peek(numberOfOpsAllowed);
@@ -142,9 +142,12 @@ export default class BatchWriter implements IBatchWriter {
     return provisionalIndexFileUri;
   }
 
-  private getNumberOfOperationsAllowed (valueTimeLock: ValueTimeLockModel | undefined): number {
+  /**
+   * Gets the maximum number of operations allowed to be written with the given value time lock.
+   */
+  public static getNumberOfOperationsAllowed (versionMetadataFetcher: IVersionMetadataFetcher, valueTimeLock: ValueTimeLockModel | undefined): number {
     const maxNumberOfOpsAllowedByProtocol = ProtocolParameters.maxOperationsPerBatch;
-    const maxNumberOfOpsAllowedByLock = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLock, this.versionMetadataFetcher);
+    const maxNumberOfOpsAllowedByLock = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLock, versionMetadataFetcher);
 
     if (maxNumberOfOpsAllowedByLock > maxNumberOfOpsAllowedByProtocol) {
       // eslint-disable-next-line max-len
