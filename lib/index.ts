@@ -6,6 +6,7 @@ import ISidetreeCas from './core/interfaces/ICas';
 import ISidetreeEventEmitter from './common/interfaces/IEventEmitter';
 import ISidetreeLogger from './common/interfaces/ILogger';
 import SidetreeBitcoinEventCode from './bitcoin/EventCode';
+import SidetreeBitcoinMonitor from './bitcoin/Monitor';
 import SidetreeBitcoinProcessor from './bitcoin/BitcoinProcessor';
 import SidetreeBitcoinVersionModel from './bitcoin/models/BitcoinVersionModel';
 import SidetreeConfig from './core/models/Config';
@@ -33,6 +34,7 @@ export {
   ISidetreeBitcoinConfig,
   ISidetreeBitcoinWallet,
   SidetreeBitcoinEventCode,
+  SidetreeBitcoinMonitor,
   SidetreeBitcoinProcessor,
   SidetreeBitcoinVersionModel
 };
