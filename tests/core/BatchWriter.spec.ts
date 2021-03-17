@@ -32,7 +32,7 @@ describe('BatchWriter', () => {
       const mockOpsByLock = ProtocolParameters.maxOperationsPerBatch;
       spyOn(blockchain, 'getFee').and.returnValue(Promise.resolve(100)); // Any fee, unused.
       spyOn(blockchain, 'getWriterValueTimeLock').and.returnValue(Promise.resolve(undefined)); // Any value, unused.
-      spyOn(batchWriter as any, 'getNumberOfOperationsAllowed').and.returnValue(mockOpsByLock);
+      spyOn(BatchWriter, 'getNumberOfOperationsAllowed').and.returnValue(mockOpsByLock);
 
       const chunkFileCreateBufferSpy = spyOn(ChunkFile, 'createBuffer');
       const casWriteSpy = spyOn(cas, 'write');
@@ -62,7 +62,7 @@ describe('BatchWriter', () => {
       spyOn(blockchain, 'getWriterValueTimeLock').and.returnValue(Promise.resolve(valueLock));
 
       const mockOpsByLock = ProtocolParameters.maxOperationsPerBatch;
-      spyOn(batchWriter as any, 'getNumberOfOperationsAllowed').and.returnValue(mockOpsByLock);
+      spyOn(BatchWriter, 'getNumberOfOperationsAllowed').and.returnValue(mockOpsByLock);
 
       // Simulate any operation in queue.
       const createOperationData = await OperationGenerator.generateCreateOperation();
@@ -105,7 +105,8 @@ describe('BatchWriter', () => {
       const mockOpsByLock = ProtocolParameters.maxOperationsPerBatch - 1;
       spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOperationsAllowed').and.returnValue(mockOpsByLock);
 
-      const actual = batchWriter['getNumberOfOperationsAllowed'](undefined);
+      const unusedVersionMetadataFetcher = { } as any;
+      const actual = BatchWriter.getNumberOfOperationsAllowed(unusedVersionMetadataFetcher, undefined);
       expect(actual).toEqual(mockOpsByLock);
     });
 
@@ -113,7 +114,8 @@ describe('BatchWriter', () => {
       const mockOpsByLock = ProtocolParameters.maxOperationsPerBatch + 123;
       spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOperationsAllowed').and.returnValue(mockOpsByLock);
 
-      const actual = batchWriter['getNumberOfOperationsAllowed'](undefined);
+      const unusedVersionMetadataFetcher = { } as any;
+      const actual = BatchWriter.getNumberOfOperationsAllowed(unusedVersionMetadataFetcher, undefined);
       expect(actual).toEqual(ProtocolParameters.maxOperationsPerBatch);
     });
 
