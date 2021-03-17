@@ -163,9 +163,9 @@ export default class Observer {
       // Continue onto processing unresolvable transactions if any.
       await this.processUnresolvableTransactions();
 
-      EventEmitter.emit(EventCode.SidetreeBatchWriterLoopSuccess);
+      EventEmitter.emit(EventCode.SidetreeObserverLoopSuccess);
     } catch (error) {
-      EventEmitter.emit(EventCode.SidetreeBatchWriterLoopFailure);
+      EventEmitter.emit(EventCode.SidetreeObserverLoopFailure);
       Logger.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
       Logger.error(error);
     } finally {
