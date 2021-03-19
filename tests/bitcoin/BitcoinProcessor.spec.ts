@@ -646,30 +646,21 @@ describe('BitcoinProcessor', () => {
       }
     });
 
-    it('should fail if verifyBlock fails after transactionStore query', async (done) => {
+    it('should return no transactions if bitcoin service is in a forked state.', async () => {
       const expectedHeight = randomNumber();
       const expectedHash = randomString();
       const expectedTransactionNumber = TransactionNumber.construct(expectedHeight, 0);
-      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValues(Promise.resolve(true), Promise.resolve(false));
-      const getTransactionsSinceMock = spyOn(bitcoinProcessor, 'getTransactionsSince' as any).and.returnValue([[], 0]);
-      const mockLastProcessedBlock = {
-        height: 1234,
-        hash: 'some hash',
-        previousHash: 'previous hash'
-      };
-      blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(mockLastProcessedBlock));
 
-      try {
-        await bitcoinProcessor.transactions(expectedTransactionNumber, expectedHash);
-        fail('expected to throw');
-      } catch (error) {
-        expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(SharedErrorCode.InvalidTransactionNumberOrTimeHash);
-        expect(getTransactionsSinceMock).toHaveBeenCalled();
-        expect(verifyMock).toHaveBeenCalledTimes(2);
-      } finally {
-        done();
-      }
+      blockMetadataStoreGetLastSpy.and.returnValues(Promise.resolve('unused'));
+
+      // The 2nd return value simulates a forked state in the bitcoin service.
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValues(Promise.resolve(true), Promise.resolve(false));
+
+      const response = await bitcoinProcessor.transactions(expectedTransactionNumber, expectedHash);
+      expect(blockMetadataStoreGetLastSpy).toHaveBeenCalledTimes(1);
+      expect(verifyMock).toHaveBeenCalledTimes(2);
+      expect(response.moreTransactions).toBeFalsy();
+      expect(response.transactions.length).toEqual(0);
     });
 
     it('should make moreTransactions true when last block processed is not reached', async (done) => {
