@@ -191,6 +191,8 @@ export default class Observer {
    * Waits until all unresolvable transactions due for retry are processed.
    */
   private async processUnresolvableTransactions () {
+    Logger.info(`Processing previously unresolvable transactions if any...`);
+
     const endTimer = timeSpan();
     const unresolvableTransactions = await this.unresolvableTransactionStore.getUnresolvableTransactionsDueForRetry();
     Logger.info(`Fetched ${unresolvableTransactions.length} unresolvable transactions to retry in ${endTimer.rounded()} ms.`);

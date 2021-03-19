@@ -449,6 +449,17 @@ export default class BitcoinProcessor {
       };
     }
 
+    // NOTE: this conditional block is technically an optional optimization,
+    // but it is a useful one especially when Bitcoin service's observing loop wait period is longer than that of the Core service's observing loop:
+    // This prevents Core from repeatedly reverting its DB after detecting a fork then repopulating its DB with forked/invalid data again.
+    if (!await this.verifyBlock(lastProcessedBlock.height, lastProcessedBlock.hash)) {
+      Logger.info('Bitcoin service in a forked state, not returning transactions until the DB is reverted to correct chain.');
+      return {
+        moreTransactions: false,
+        transactions: []
+      };
+    }
+
     const [transactions, lastBlockSeen] = await this.getTransactionsSince(since, lastProcessedBlock.height);
 
     // Add normalizedFee to transactions because internal to bitcoin, normalizedFee live in blockMetadata and have to be joined by block height
@@ -470,13 +481,6 @@ export default class BitcoinProcessor {
           throw new RequestError(ResponseStatus.ServerError, ErrorCode.BitcoinBlockMetadataNotFound);
         }
       }
-    }
-
-    // make sure the last processed block hasn't changed since before getting transactions
-    // if changed, then a block reorg happened.
-    if (!await this.verifyBlock(lastProcessedBlock.height, lastProcessedBlock.hash)) {
-      Logger.info('Requested transactions hash mismatched blockchain');
-      throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.InvalidTransactionNumberOrTimeHash);
     }
 
     // if last processed block has not been seen, then there are more transactions
