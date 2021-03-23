@@ -622,7 +622,8 @@ describe('BitcoinClient', async () => {
     it('should query for unspent output coins given an address', async (done) => {
       const coin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, 1);
 
-      const coinSpy = mockRpcCall('listunspent', [null, null, [walletAddressFromBitcoinClient.toString()]], [
+      const minimumConfirmations = 0;
+      const coinSpy = mockRpcCall('listunspent', [minimumConfirmations, null, [walletAddressFromBitcoinClient.toString()]], [
         {
           txId: coin.txId,
           outputIndex: coin.outputIndex,
@@ -638,7 +639,8 @@ describe('BitcoinClient', async () => {
     });
 
     it('should return empty if no coins were found', async (done) => {
-      const coinSpy = mockRpcCall('listunspent', [null, null, [walletAddressFromBitcoinClient.toString()]], []);
+      const minimumConfirmations = 0;
+      const coinSpy = mockRpcCall('listunspent', [minimumConfirmations, null, [walletAddressFromBitcoinClient.toString()]], []);
       const actual = await bitcoinClient['getUnspentOutputs'](walletAddressFromBitcoinClient);
       expect(coinSpy).toHaveBeenCalled();
       expect(actual).toEqual([]);
