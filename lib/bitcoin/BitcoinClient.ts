@@ -584,7 +584,7 @@ export default class BitcoinClient {
     freezeTransaction.fee(transactionFee);
 
     const payToScriptAddressString = payToScriptAddress.toString();
-    Logger.info(`Created freeze transaction and paid to new script address '${payToScriptAddressString}' with fee of ${transactionFee}.`);
+    Logger.info(`Created freeze transaction and locked BTC at new script address '${payToScriptAddressString}' with fee of ${transactionFee}.`);
 
     return [freezeTransaction, freezeScript];
   }
