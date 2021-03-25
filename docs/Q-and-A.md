@@ -5,6 +5,15 @@ Why should you read or step through the Q&A? To get a different angle to the sam
 
 <img src="./images/sidetree-logo.png" alt="Sidetree logo" border="0" width="150">
 
+This document relies on a [Glossary](./Glossary.md) file that has:
+- a alphabethically ordered list of **abbreviations**
+- a alphabethically ordered list of **definitions**
+
+**The questions are of a varied level: basic and detailed. The answers are mostly directed towards generally interested people and newbies.**\
+*Q = one star question. Novice to KERI, advanced in DIDs\
+**Q = two star question. Proficient in DIDs and advanced in `Sidetree`\
+***Q = three star question. Expert in DIDs and proficient in `Sidetree`
+
 ```
 {TBW} means: to be written
 ```
@@ -37,119 +46,40 @@ We've done our best to protect the privacy of the Github by investigating the im
 ### List of questions and definitions
 
 - [Definitions:](#definitions)
-      - [Authentic Chained Data Container Task Force](#authentic-chained-data-container-task-force)
-      - [Agent](#agent)
-      - [Agency](#agency)
-      - [Bidirectional model transformation](#bidirectional-model-transformation)
-      - [Claim](#claim)
-      - [Content-addressable hash](#content-addressable-hash)
-      - [Controller](#controller)
-      - [Cryptocurrency](#cryptocurrency)
-      - [Decentralized Identity](#decentralized-identity)
-      - [Delta-based](#delta-based)
-      - [Deterministic Ruleset (of Sidetree)](#deterministic-ruleset--of-sidetree)
-      - [Entropy](#entropy)
-      - [Entity](#entity)
-      - [Identity](#identity)
-      - [JSON Web Key](#json-web-key)
-      - [Key](#key)
-      - [Normative](#normative)
-      - [Non-normative](#non-normative)
-      - [Payload](#payload)
-      - [Public Key Infrastructure](#public-key-infrastructure)
-      - [Race condition](#race-condition)
-      - [Root of trust](#root-of-trust)
-      - [Secret](#secret)
-      - [Self Certifying Identifier](#self-certifying-identifier)
-      - [Self Sovereign Identity](#self-sovereign-identity)
-      - [Subject](#subject)
-      - [Transfer](#transfer)
-      - [Transferable identifier](#transferable-identifier)
-      - [Trust-over-IP](#trust-over-ip)
-      - [Validator](#validator)
-      - [Verifiable Credential](#verifiable-credential)
-      - [W3C DID](#w3c-did)
-      - [WebAssembly](#webassembly)
-      - [(Digital Identity) Wallet](#-digital-identity--wallet)
-- [Q&A section General](#qa-section-general)
-  * [What is Sidetree?](#what-is-sidetree)
-  * [What is the setting of sidetree?](#what-is-the-setting-of-sidetree)
-  * [How is the inner working of Sidetree?](#how-is-the-inner-working-of-sidetree)
-  * [For who is Sidetree?](#for-who-is-sidetree)
-  * [Why should we care about Sidetree or Self Sovereign Identity](#Why-should-we-care-about-Sidetree-or-Self-Sovereign-Identity)
-  * [Why use Sidetree?](#why-use-sidetree)
-  * [What is so unique to Sidetree?](#what-is-so-unique-to-sidetree)
-  * [Is Sidetree a DID?](#is-sidetree-a-did)
-  * [How does Sidetree match the `trust-over-ip` model and in the `W3C DID standardization`?](#how-does-sidetree-match-the--trust-over-ip--model-and-in-the--w3c-did-standardization)
-  * [Who is Sidetree? Is it a company or a not for profit?](#who-is-sidetree--is-it-a-company-or-a-not-for-profit)
-  * [In what programming languages is Sidetree available?](#in-what-programming-languages-is-sidetree-available)
-  * [Does Sidetree cooperate with other projects in the self-sovereign Identity field?](#does-sidetree-cooperate-with-other-projects-in-the-self-sovereign-identity-field)
-  * [Why is Microsoft so interested in supporting these developments?](#Why-is-Microsoft-so-interested-in-supporting-these-developments)
-  * [What's the diffrence between a `normative` and `non-normative` description or theory?](#what-s-the-diffrence-between-a--normative--and--non-normative--description-or-theory)
-  * [Is Sidetree privacy preserving / GPDR proof?](#is-sidetree-privacy-preserving---gpdr-proof)
-- [Q&A section Sidetree operational](#qa-section-sidetree-operational)
-  * [Where can I download Sidetree?](#where-can-i-download-sidetree)
-  * [Where can we find the code and how could a coder get started?](#where-can-we-find-the-code-and-how-could-a-coder-get-started)
-  * [What are the external dependencies of Sidetree?](#what-are-the-external-dependencies-of-sidetree)
-  * [In what can we find the efficiency booster that Sidetree promises to be?](#in-what-can-we-find-the-efficiency-booster-that-sidetree-promises-to-be)
-  * ["Process operations in accordance with the protocol deterministic ruleset." What does this mean?](#-process-operations-in-accordance-with-the-protocol-deterministic-ruleset--what-does-this-mean)
-  * [What would you see as the main drawback of Sidetree?](#what-would-you-see-as-the-main-drawback-of-sidetree)
-  * [How can it be one solution, fit for more DIDs?](#how-can-it-be-one-solution--fit-for-more-dids)
-  * [Where you would need something quite different than Sidetree to solve a similar problem?](#where-you-would-need-something-quite-different-than-sidetree-to-solve-a-similar-problem)
-  * [How does Sidetree scale](#how-does-sidetree-scale)
-  * [How does Sidetree keep data internally consistent over nodes?](#how-does-sidetree-keep-data-internally-consistent-over-nodes)
-  * [How does Sidetree keep identifiers secure?](#how-does-sidetree-keep-identifiers-secure)
-  * [How does Sidetree handle `race conditions`?](#how-does-sidetree-handle--race-conditions)
-  * [What are the security risks of Sidetree with regard to the identity protocol?](#what-are-the-security-risks-of-sidetree-with-regard-to-the-identity-protocol)
-  * [Is Sidetree post-quantum secure?](#is-sidetree-post-quantum-secure)
-  * [What happens if I or other people are offline?](#what-happens-if-i-or-other-people-are-offline)
-  * [How to handle multiple versions of Sidetree protocol. How to keep the network in sync?](#how-to-handle-multiple-versions-of-sidetree-protocol-how-to-keep-the-network-in-sync)
-      - [Version Segment Definitions:](#version-segment-definitions)
-      - [New Version Activation](#new-version-activation)
-  * [How to handle multiple formats of Sidetree JSON files through time. Will they be backwards compatible?](#how-to-handle-multiple-formats-of-sidetree-json-files-through-time-will-they-be-backwards-compatible)
-  * [Could Sidetree work with be pruned or charded blockchains?](#could-sidetree-work-with-be-pruned-or-charded-blockchains)
-  * [How to bootstrap Sidetree on the internet? Is it like fax machine; the more there are the more effective it is?](#how-to-bootstrap-sidetree-on-the-internet--is-it-like-fax-machine--the-more-there-are-the-more-effective-it-is)
-- [Q&A section Userinterface](#qa-section-userinterface)
-  * [What does Sidetree look like?](#what-does-sidetree-look-like)
-  * [Is there a Sidetree course or webinar available?](#is-there-a-sidetree-course-or-webinar-available)
-  * [Could Sidetree work for edge computers that need self sovereign identity? How to (selectively) share control with the owners of the device?](#could-sidetree-work-for-edge-computers-that-need-self-sovereign-identity--how-to--selectively--share-control-with-the-owners-of-the-device)
-- [Q&A section Root of trust](#qa-section-root-of-trust)
-  * [What do I need to trust in Sidetree?](#what-do-i-need-to-trust-in-sidetree)
-  * [How does Sidetree establish the root-of-trust that we need for SSI? How does the data persist?](#how-does-sidetree-establish-the-root-of-trust-that-we-need-for-ssi--how-does-the-data-persist)
-- [Q&A section Identifiers](#qa-section-identifiers)
-  * [How is a Sidetree identifier different than a regular identifier in DID methods?](#how-is-a-sidetree-identifier-different-than-a-regular-identifier-in-did-methods)
-  * [Is my Sidetree identifier public?](#is-my-sidetree-identifier-public)
-  * [Is a Sidetree identifier GPDR proof?](#is-a-sidetree-identifier-gpdr-proof)
-  * [Does Sidetree support transferable identifiers?](#does-sidetree-support-transferable-identifiers)
-  * [File structure](#file-structure)
-  * [What do we need IPFS for?](#what-do-we-need-ipfs-for)
-- [Q&A section Wallets](#qa-section-wallets)
-  * [Do I need a wallet for Sidetree?](#do-i-need-a-wallet-for-sidetree)
-  * [How can I backup the Sidetree identifiers in my wallet?](#how-can-i-backup-the-sidetree-identifiers-in-my-wallet)
-  * [Can I receive crypto money in my Sidetree wallet?](#can-i-receive-crypto-money-in-my-sidetree-wallet)
-  * [Does a Sidetree wallet store virtual credentials connect to my identifiers?](#does-a-sidetree-wallet-store-virtual-credentials-connect-to-my-identifiers)
-- [Q&A section Signatures](#qa-section-signatures)
-  * [Who can sign off my proofs and identifiers?](#who-can-sign-off-my-proofs-and-identifiers)
-  * [What is the practical use of signatures?](#what-is-the-practical-use-of-signatures)
-- [Q&A section Proofs](#qa-section-proofs)
-  * [What does Sidetree proof?](#what-does-sidetree-proof)
-  * [Do I need to show the full IPFS Sidetree database to anybody I transact with, even though I'd only like to show a part of it, for example a virtual credential?](#do-i-need-to-show-the-full-ipfs-sidetree-database-to-anybody-i-transact-with--even-though-i-d-only-like-to-show-a-part-of-it--for-example-a-virtual-credential)
-- [Q&A section Private Key Management](#qa-section-private-key-management)
-  * [How secure is the Sidetree infrastructure?](#how-secure-is-the-sidetree-infrastructure)
-  * [How multi-tasking is Sidetree?](#how-multi-tasking-is-sidetree)
-  * [Does your public-private-key format matter in Sidetree?](#does-your-public-private-key-format-matter-in-sidetree)
-  * [Not your keys, not your identity?](#not-your-keys--not-your-identity)
-  * [The wallet is there to store my Sidetree private keys safely, no?](#the-wallet-is-there-to-store-my-sidetree-private-keys-safely--no)
-  * [Are compound private keys (Shamir Secret Sharing) and multisignature schemes possible to create identifiers?](#are-compound-private-keys--shamir-secret-sharing--and-multisignature-schemes-possible-to-create-identifiers)
-  * [How to delegate control over my private keys that control my identifiers?](#how-to-delegate-control-over-my-private-keys-that-control-my-identifiers)
-- [Q&A section Blockchain](#qa-section-blockchain)
-  * [Does Sidetree use a blockchain?](#does-sidetree-use-a-blockchain)
-  * [What's the difference between Sidetree and blockchain?](#what-s-the-difference-between-sidetree-and-blockchain)
-  * [Why does Sidetree need a blockchain?](#why-does-sidetree-need-a-blockchain)
-- [Q&A section Agencies](#qa-section-agencies)
-  * [What does the governance framework of Sidetree look like?](#what-does-the-governance-framework-of-sidetree-look-like)
-
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+      - [Authentic Chained Data Container Task Force](./Glossary.md#authentic-chained-data-container-task-force)
+      - [Agent](./Glossary.md#agent)
+      - [Agency](./Glossary.md#agency)
+      - [Bidirectional model transformation](./Glossary.md#bidirectional-model-transformation)
+      - [Claim](./Glossary.md#claim)
+      - [Content-addressable hash](./Glossary.md#content-addressable-hash)
+      - [Controller](./Glossary.md#controller)
+      - [Cryptocurrency](./Glossary.md#cryptocurrency)
+      - [Decentralized Identity](./Glossary.md#decentralized-identity)
+      - [Delta-based](./Glossary.md#delta-based)
+      - [Deterministic Ruleset (of Sidetree)](./Glossary.md#deterministic-ruleset--of-sidetree)
+      - [Entropy](./Glossary.md#entropy)
+      - [Entity](./Glossary.md#entity)
+      - [Identity](./Glossary.md#identity)
+      - [JSON Web Key](./Glossary.md#json-web-key)
+      - [Key](./Glossary.md#key)
+      - [Normative](./Glossary.md#normative)
+      - [Non-normative](./Glossary.md#non-normative)
+      - [Payload](./Glossary.md#payload)
+      - [Public Key Infrastructure](./Glossary.md#public-key-infrastructure)
+      - [Race condition](./Glossary.md#race-condition)
+      - [Root of trust](./Glossary.md#root-of-trust)
+      - [Secret](./Glossary.md#secret)
+      - [Self Certifying Identifier](./Glossary.md#self-certifying-identifier)
+      - [Self Sovereign Identity](./Glossary.md#self-sovereign-identity)
+      - [Subject](./Glossary.md#subject)
+      - [Transfer](./Glossary.md#transfer)
+      - [Transferable identifier](./Glossary.md#transferable-identifier)
+      - [Trust-over-IP](./Glossary.md#trust-over-ip)
+      - [Validator](./Glossary.md#validator)
+      - [Verifiable Credential](./Glossary.md#verifiable-credential)
+      - [W3C DID](./Glossary.md#w3c-did)
+      - [WebAssembly](./Glossary.md#webassembly)
+      - [(Digital Identity) Wallet](./Glossary.md#-digital-identity--wallet)
 
 ## Knowledge you should be confidently applying
 - The definitions above
@@ -177,30 +107,6 @@ We've done our best to protect the privacy of the Github by investigating the im
 - [Blockchain](#qa-key-blockchain)
 - [Agencies](#qa-key-agencies)
 
-
-# Definitions
-
-## Abbreviations
-In alphabetic order:\
-ACDC = Authentic Chained Data Container Task Force
-BX = [Bidirectional model transformation](#bidirectional-model-transformation)
-CAS = Content Addressable Storage 
-DID = [Decentralized Identity](#decentralized-identity) or Digital Identity dependent of the context.\
-DIF = Decentralized Identity Foundation\
-DDO = DID Document, look up W3D DID standardization for more info\
-DHT = Distributed Hash Table\
-DIF = Decentralized Identity Foundation, https://identity.foundation\
-DKMI = Decentralized Key Mangement Infrastructure\
-JWK = [JSON Web Key](#json-web-key)
-IPv4 = standard Internet Protocol, version 4\
-PKI = [Public Key Infrastructure](#public-key-infrastructure)\
-PR = Pull Request; github terminology\
-SSSI = [Self Sovereign Identity](#self-sovereign-identity)\
-VC = Verifiable Credential, look up W3D DID standardization for more info\
-WASM = [WebAssembly](#WebAssembly)
-
-
-Definitions in alphabetic order:
 
 Terminology specific for Sidetree can be found [here](https://identity.foundation/sidetree/spec/#terminology). The following definitions are specificly listed to support the **Question and Answers** on a simpler level, and to be able to put Sidetree in relation to other fields of interest.
 
@@ -301,14 +207,6 @@ The root-of-trust is consistent attribution via verifiable integral non-repudiab
 
 #### Secret
 Information controlled by an identity. MAY be used to derive _key_s.
-
-#### Self Certifying Identifier
-In brief: A self-certifying identifier cryptographically binds an identifier to a key-pair.\
-A controller issues an own Identifier by binding a generated public private keypair to an identifier. After this a controller is able to sign the identifier and create a certificate. Also called a _cryptonym_. The simplest form of a self-certifying identifier includes either the public key or a unique fingerprint of the public key as a `prefix` in the identifier. Image from [KERI](https://github.com/decentralized-identity/keri):
-
-<img src="./images/sci_issue_bind.png" alt="Self Certifying Identifier issuance and binding" border="0" width="400">
-
-The root-of-trust is fully cryptographic, there is no infrastructure associated with it. If we start there we can build a secure system on top of that. It means SCI gives us strong bindings between the keypair, the controller and the identifier. And so it fixes the main weakness of any administratively issued identifier asserting the binding between the keypair and the identifier and between the controller and the identifier, replacing them with all cryptographically strong bindings.
 
 #### Self Sovereign Identity
 SSI is a new model for Internet-scale digital identity based on an emerging set of protocols, cutting edge cryptography and open standards. Technological and social movements have come together that make SSI possible.\
