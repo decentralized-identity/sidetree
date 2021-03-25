@@ -45,6 +45,7 @@ describe('Core', async () => {
       const batchSchedulerStartSpy = spyOn(core['batchScheduler'], 'startPeriodicBatchWriting');
       const blockchainStartSpy = spyOn(core['blockchain'], 'startPeriodicCachedBlockchainTimeRefresh');
       const downloadManagerStartSpy = spyOn(core['downloadManager'], 'start');
+      const monitorInitializeSpy = spyOn(core.monitor, 'initialize');
       await core.initialize();
       expect(serviceStateStoreInitializeSpy).toHaveBeenCalled();
       expect(transactionStoreInitSpy).toHaveBeenCalled();
@@ -57,6 +58,7 @@ describe('Core', async () => {
       expect(batchSchedulerStartSpy).toHaveBeenCalled();
       expect(blockchainStartSpy).toHaveBeenCalled();
       expect(downloadManagerStartSpy).toHaveBeenCalled();
+      expect(monitorInitializeSpy).toHaveBeenCalled();
     });
 
     it('should override the default logger/event emitter if custom logger/event emitter is given.', async () => {
@@ -73,6 +75,7 @@ describe('Core', async () => {
       spyOn(core['batchScheduler'], 'startPeriodicBatchWriting');
       spyOn(core['blockchain'], 'startPeriodicCachedBlockchainTimeRefresh');
       spyOn(core['downloadManager'], 'start');
+      spyOn(core.monitor, 'initialize');
 
       let customLoggerInvoked = false;
       const customLogger = {
@@ -116,6 +119,7 @@ describe('Core', async () => {
       spyOn(core['versionManager'], 'initialize');
       spyOn(core['blockchain'], 'startPeriodicCachedBlockchainTimeRefresh');
       spyOn(core['downloadManager'], 'start');
+      spyOn(core.monitor, 'initialize');
 
       await core.initialize();
       expect(observerStartSpy).not.toHaveBeenCalled();

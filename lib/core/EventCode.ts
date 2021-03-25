@@ -2,10 +2,10 @@
  * Event codes used by Sidetree core service.
  */
 export default {
-  BatchWriterProcessingLoopFailed: 'batch_writer_processing_loop_failed',
-  BatchWriterProcessingLoopSuccess: 'batch_writer_processing_loop_success',
-  BlockchainTimeChanged: 'blockchain_time_changed',
-  DownloadManagerDownload: 'download_manager_download',
-  ObserverProcessingLoopFailed: 'observer_processing_loop_failed',
-  ObserverProcessingLoopSuccess: 'observer_processing_loop_success'
+  SidetreeBatchWriterLoopFailure: 'sidetree_batch_writer_loop_failure',
+  SidetreeBatchWriterLoopSuccess: 'sidetree_batch_writer_loop_success',
+  SidetreeBlockchainTimeChanged: 'sidetree_blockchain_time_changed',
+  SidetreeDownloadManagerDownload: 'sidetree_download_manager_download',
+  SidetreeObserverLoopFailure: 'sidetree_observer_loop_failure',
+  SidetreeObserverLoopSuccess: 'sidetree_observer_loop_success'
 };

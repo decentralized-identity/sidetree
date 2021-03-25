@@ -1,4 +1,5 @@
 import * as timeSpan from 'time-span';
+import { ISidetreeEventEmitter, ISidetreeLogger } from '..';
 import BitcoinBlockDataIterator from './BitcoinBlockDataIterator';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
@@ -8,8 +9,9 @@ import BitcoinVersionModel from './models/BitcoinVersionModel';
 import BlockMetadata from './models/BlockMetadata';
 import BlockMetadataWithoutNormalizedFee from './models/BlockMetadataWithoutNormalizedFee';
 import ErrorCode from './ErrorCode';
+import EventCode from './EventCode';
+import EventEmitter from '../common/EventEmitter';
 import IBitcoinConfig from './IBitcoinConfig';
-import { ISidetreeLogger } from '..';
 import LockMonitor from './lock/LockMonitor';
 import LockResolver from './lock/LockResolver';
 import LogColor from '../common/LogColor';
@@ -18,6 +20,7 @@ import MongoDbBlockMetadataStore from './MongoDbBlockMetadataStore';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
 import MongoDbServiceStateStore from '../common/MongoDbServiceStateStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
+import Monitor from './Monitor';
 import RequestError from './RequestError';
 import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
@@ -62,11 +65,11 @@ export default class BitcoinProcessor {
   /** The first Sidetree block in Bitcoin's blockchain. */
   public readonly genesisBlockNumber: number;
 
+  /** Monitor of the running Bitcoin service. */
+  public monitor: Monitor;
+
   /** Store for the state of sidetree transactions. */
   private readonly transactionStore: MongoDbTransactionStore;
-
-  /** Days of notice before the wallet is depleted of all funds */
-  public lowBalanceNoticeDays: number;
 
   private versionManager: VersionManager;
 
@@ -110,7 +113,6 @@ export default class BitcoinProcessor {
       BitcoinClient.convertBtcToSatoshis(config.bitcoinFeeSpendingCutoff),
       this.transactionStore);
 
-    this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
     this.serviceInfoProvider = new ServiceInfoProvider('bitcoin');
 
     this.bitcoinClient =
@@ -148,13 +150,16 @@ export default class BitcoinProcessor {
       BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amount in satoshis
       this.versionManager
     );
+
+    this.monitor = new Monitor(this.bitcoinClient);
   }
 
   /**
    * Initializes the Bitcoin processor
    */
-  public async initialize (versionModels: BitcoinVersionModel[], customLogger?: ISidetreeLogger) {
+  public async initialize (versionModels: BitcoinVersionModel[], customLogger?: ISidetreeLogger, customEventEmitter?: ISidetreeEventEmitter) {
     Logger.initialize(customLogger);
+    EventEmitter.initialize(customEventEmitter);
 
     await this.versionManager.initialize(versionModels, this.config, this.blockMetadataStore);
     await this.serviceStateStore.initialize();
@@ -444,6 +449,17 @@ export default class BitcoinProcessor {
       };
     }
 
+    // NOTE: this conditional block is technically an optional optimization,
+    // but it is a useful one especially when Bitcoin service's observing loop wait period is longer than that of the Core service's observing loop:
+    // This prevents Core from repeatedly reverting its DB after detecting a fork then repopulating its DB with forked/invalid data again.
+    if (!await this.verifyBlock(lastProcessedBlock.height, lastProcessedBlock.hash)) {
+      Logger.info('Bitcoin service in a forked state, not returning transactions until the DB is reverted to correct chain.');
+      return {
+        moreTransactions: false,
+        transactions: []
+      };
+    }
+
     const [transactions, lastBlockSeen] = await this.getTransactionsSince(since, lastProcessedBlock.height);
 
     // Add normalizedFee to transactions because internal to bitcoin, normalizedFee live in blockMetadata and have to be joined by block height
@@ -465,13 +481,6 @@ export default class BitcoinProcessor {
           throw new RequestError(ResponseStatus.ServerError, ErrorCode.BitcoinBlockMetadataNotFound);
         }
       }
-    }
-
-    // make sure the last processed block hasn't changed since before getting transactions
-    // if changed, then a block reorg happened.
-    if (!await this.verifyBlock(lastProcessedBlock.height, lastProcessedBlock.hash)) {
-      Logger.info('Requested transactions hash mismatched blockchain');
-      throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.InvalidTransactionNumberOrTimeHash);
     }
 
     // if last processed block has not been seen, then there are more transactions
@@ -533,17 +542,7 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.SpendingCapPerPeriodReached);
     }
 
-    // Write a warning if the balance is running low
     const totalSatoshis = await this.bitcoinClient.getBalanceInSatoshis();
-
-    const estimatedBitcoinWritesPerDay = 6 * 24;
-    const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * transactionFee;
-    if (totalSatoshis < lowBalanceAmount) {
-      const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * transactionFee));
-      Logger.error(`Low balance (${daysLeft} days remaining), please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
-    }
-
-    // cannot make the transaction
     if (totalSatoshis < transactionFee) {
       const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`);
       Logger.error(error);
@@ -671,7 +670,10 @@ export default class BitcoinProcessor {
       } else {
         await this.processTransactions(startingBlock);
       }
+
+      EventEmitter.emit(EventCode.BitcoinObservingLoopSuccess);
     } catch (error) {
+      EventEmitter.emit(EventCode.BitcoinObservingLoopFailure);
       Logger.error(error);
     } finally {
       this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval, interval);
@@ -752,11 +754,15 @@ export default class BitcoinProcessor {
    * @returns A known valid block before the fork. `undefined` if no known valid block can be found.
    */
   private async revertDatabases (): Promise<IBlockInfo | undefined> {
+    Logger.info(`Reverting databases...`);
     const exponentiallySpacedBlocks = await this.blockMetadataStore.lookBackExponentially();
     const lastKnownValidBlock = await this.firstValidBlock(exponentiallySpacedBlocks);
+    const lastKnownValidBlockHeight = lastKnownValidBlock ? lastKnownValidBlock.height : undefined;
 
-    await this.trimDatabasesToBlock(lastKnownValidBlock ? lastKnownValidBlock.height : undefined);
+    Logger.info(LogColor.lightBlue(`Reverting database to ${LogColor.green(lastKnownValidBlockHeight || 'genesis')} block...`));
+    await this.trimDatabasesToBlock(lastKnownValidBlockHeight);
 
+    EventEmitter.emit(EventCode.BitcoinDatabasesRevert, { blockHeight: lastKnownValidBlockHeight });
     return lastKnownValidBlock;
   }
 

@@ -2,7 +2,7 @@
 
 | Term                  | Description                                                                    |
 |-----------------------|--------------------------------------------------------------------------------|
-| Anchoring System { #anchoring-system }  | A decentralized sequencing oracle (e.g. Bitcoin) that can be used to determine the order of PKI state transformations for Decentralized Identifiers (DIDs), which can be deterministically verified to derive the current PKI state of DIDs. |
+| Anchoring System { #anchoring-system }  | A decentralized sequencing oracle (e.g. Bitcoin, Ethereum, distributed ledgers, witness-based approaches) that can be used to determine the order of PKI state transformations for Decentralized Identifiers (DIDs), which can be deterministically verified to derive the current PKI state of DIDs. |
 | Witness System  { #witness-system }  | Synonym for [Anchoring System](#anchoring-system), see above.  |
 | Core Index File  | JSON Document containing proving and index data for Create, Recovery, and Deactivate operations, and a CAS URI for the associated Provisional Index File. This file is anchored to the target anchoring system. |
 | Provisional Index File  | JSON Document containing Update operation proving and index data, as well as CAS URI for Chunk File chunks.                   |
@@ -14,10 +14,10 @@
 | Commit Value { #commit-value }         | A chosen value that is used with a [commitment scheme](#commitment-scheme)                                 |
 | Commitment { #commitment }           | The output of a [commitment scheme](#commitment-scheme)                                              |
 | Commitment Scheme { #commitment-scheme }     | A cryptographic primative that allows one to commit to a chosen value, known as the [commit value](#commit-value) resulting in the generation of a [commitment](#commitment). A [commitment](#commitment) can then be shared without revealing the [commit value](#commit-value) forming a `proof of commitment` where the possessor of the [commit value](#commit-value) can then later reveal the [commit value](#commit-value) proving the original commitment.
-| DID Document          | JSON Document containing public key references, service endpoints, and other PKI metadata that corresponds to a given DID (as defined in the [W3C DID Specification](https://w3c.github.io/did-core/)). This is the most common form of DID state used in Sidetree-implementations. |
+| DID Document          | JSON Document containing public key references, service endpoints, and other PKI metadata that corresponds to a given DID (as defined in the [W3C DID Specification](https://w3c.github.io/did-core/)). This is the most common form of DID state used in Sidetree implementations. |
 | DID Suffix { #did-suffix }  | The unique identifier string within a DID URI. e.g. The unique suffix of `did:sidetree:123` would be `123`. |
 | DID Suffix Data       | Data required to deterministically generate a DID.                             |
-| Multihash  { #multihash }            | Protocol for differentiating outputs from common cryptographic hash functions, addressing size + encoding considerations: https://multiformats.io/multihash/ |
+| Multihash  { #multihash }            | Protocol for differentiating outputs from common cryptographic hash functions, addressing size and encoding considerations: https://multiformats.io/multihash/ |
 | DID Operation         | Set of delta-based CRDT patches that modify a DID's state data when applied.                                               |
 | Operation Request     | JWS formatted request sent to a _Sidetree Node_ to include a _DID Operation_ in a batch of operations.     |
 | Update Key Pair {#update-key-pair}| A cryptographic key used to produce an _Update Request_ JWS. Public key representation MUST be used to produce _Update Request_ commitment.     |

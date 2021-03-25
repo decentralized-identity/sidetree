@@ -35,6 +35,61 @@ Please note that we might not notice a pullrequest in time, but you are free to 
 
 </details>
 
+## Meeting - 02 March 2021 - (1500 ET)
+ 
+### Attendees
+- [] Troy Ronda
+- [] Daniel Buchner
+
+
+### Agenda
+
+- Welcome / Introductions
+- Open PRs
+- Tag spec v1
+- Discussion of v1.1 (time permitting)
+
+## Meeting - 23 Feb 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+- [x] Daniel Buchner
+
+
+### Agenda
+
+- Welcome / Introductions
+- "Spec v1" tagged issues
+- Open PRs
+
+## Meeting - 16 Feb 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+- [x] Daniel Buchner
+
+
+### Agenda
+
+- Welcome / Introductions
+- "Spec v1" tagged issues
+- Open PRs
+
+
+## Meeting - 9 Feb 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Daniel Buchner
+
+
+### Agenda
+
+- Welcome / Introductions
+- Sidetree spec finalized
+- Notes on KERI folks' review of the spec
+- Plans for implementation launch
+
+
 ## Meeting - 18 Jan 2021 - (1500 ET)
  
 ### Attendees

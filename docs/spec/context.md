@@ -10,7 +10,7 @@ For example:
 {
     "@context": [
         "https://www.w3.org/ns/did/v1", 
-        "https://identity.foundation/sidetree/context-v1.jsonld",
+        "https://identity.foundation/sidetree/contexts/v1"
         "https://example.com/method/specific.jsonld"
     ]
 }
@@ -26,7 +26,7 @@ For Example:
 {
     "@context": [
         "https://www.w3.org/ns/did/v1", 
-        "https://identity.foundation/sidetree/context-v1.jsonld"
+        "https://identity.foundation/sidetree/contexts/v1"
     ],
     "recovery": [{
       "id": "did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw",
@@ -52,7 +52,7 @@ For Example:
 {
     "@context": [
         "https://www.w3.org/ns/did/v1", 
-        "https://identity.foundation/sidetree/context-v1.jsonld"
+        "https://identity.foundation/sidetree/contexts/v1"
     ],
     "operation": [{
       "id": "did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw",

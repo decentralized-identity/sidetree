@@ -1,6 +1,6 @@
 ## JSON Web Signatures
 
-Sidetree relies on JSON Web Signatures for authentication and integrity protection of [DID Operations](https://identity.foundation/sidetree/spec/#did-operations), accept for Create, with contains key material and is self certifying.
+Sidetree relies on JSON Web Signatures for authentication and integrity protection of [DID Operations](https://identity.foundation/sidetree/spec/#did-operations), except for Create, with contains key material and is self certifying.
 
 ### Signing
 
@@ -44,9 +44,30 @@ A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) MUST b
 A [Deactivate Operation](https://identity.foundation/sidetree/spec/#deactivate) MUST by signed by the currently valid [Recovery Key Pair](#recovery-key-pair).
 
 ::: warning
-  Signatures on operations may be valid, but operations may be deemed invalid for other reasons (e.g. malformed delta payload).
+  Signatures on operations may be valid, but operations may be deemed invalid for other reasons (e.g. malformed delta payload or being stale).
 :::
 
 ::: warning
   It is not recommended to reuse verificationMethods for multiple verification relationships.
 :::
+
+### Operation Anchoring Time Ranges
+
+A Sidetree-based DID Method ****MAY**** define the `anchorFrom` and/or `anchorUntil` properties as part of the operation’s data object payload.
+If `anchorFrom` is defined by the implementer, a DID owner ****MAY**** include the earliest allowed anchoring time for their operation in the `anchorFrom` property of the operation’s data object payload.
+The `anchorFrom` property is conceptually similar to the [RFC7519](https://tools.ietf.org/html/rfc7519) `nbf` and `iat` claims.
+If `anchorUntil` is defined by the implementer, a DID owner ****MAY**** include the latest allowed anchoring time for their operation in the `anchorUntil` property of the operation’s data object payload.
+The `anchorUntil` property is conceptually similar to the [RFC7519](https://tools.ietf.org/html/rfc7519) `exp` claim.
+These properties contain numeric values; but note that anchoring systems may have differing mechanisms of time (as defined by the method).
+
+A Sidetree-based DID Method ****MAY**** require validation for rejecting stale operations.
+An operation is considered stale relative to the timing information provided by the underlying anchoring system.
+When an operation is stale according to the DID method’s parameters, the operation is deemed as invalid.
+During processing, if the DID method validates stale operations, the DID owner's operation time range is compared to the anchoring system’s timing information.
+Operations that are anchored prior to `anchorFrom` are deemed invalid, if `anchorFrom` is set.
+Operations that are anchored after `anchorUntil` are deemed invalid, if `anchorUntil` is set (or implicitly defined).
+If the operation is deemed invalid, skip the entry and iterate forward to the next entry.
+
+A Sidetree-based DID Method ****MAY**** constrain the range between `anchorFrom` and `anchorUntil` using a delta defined by the implementation.
+The implementer ****MAY**** also implicitly define the `anchorUntil` using the `anchorFrom` plus a delta defined by the implementation.
+The delta ****MAY**** be defined as the `MAX_OPERATION_TIME_DELTA` protocol parameter.

@@ -1,6 +1,8 @@
 import BitcoinClient from '../BitcoinClient';
 import BitcoinLockTransactionModel from '../models/BitcoinLockTransactionModel';
 import ErrorCode from '../ErrorCode';
+import EventCode from '../EventCode';
+import EventEmitter from '../../common/EventEmitter';
 import LockIdentifier from '../models/LockIdentifierModel';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
 import LockResolver from './LockResolver';
@@ -100,7 +102,9 @@ export default class LockMonitor {
       Logger.info(`Starting periodic polling for the lock monitor.`);
       await this.handlePeriodicPolling();
 
+      EventEmitter.emit(EventCode.BitcoinLockMonitorLoopSuccess);
     } catch (e) {
+      EventEmitter.emit(EventCode.BitcoinLockMonitorLoopFailure);
       const message = `An error occurred during periodic poll: ${SidetreeError.stringify(e)}`;
       Logger.error(message);
     } finally {
@@ -276,7 +280,10 @@ export default class LockMonitor {
     const height = await this.bitcoinClient.getCurrentBlockHeight();
     const lockTransaction = await this.bitcoinClient.createLockTransaction(totalLockAmount, this.versionManager.getLockDurationInBlocks(height));
 
-    return this.saveThenBroadcastTransaction(lockTransaction, SavedLockType.Create, desiredLockAmountInSatoshis);
+    const savedLockModel = await this.saveThenBroadcastTransaction(lockTransaction, SavedLockType.Create, desiredLockAmountInSatoshis);
+    EventEmitter.emit(EventCode.BitcoinLockMonitorNewLock);
+
+    return savedLockModel;
   }
 
   /**
@@ -311,6 +318,7 @@ export default class LockMonitor {
     // If we have gotten to here then we need to try renew.
     try {
       await this.renewLock(currentValueTimeLock, desiredLockAmountInSatoshis);
+      EventEmitter.emit(EventCode.BitcoinLockMonitorLockRenewed);
     } catch (e) {
 
       // If there is not enough balance for the relock then just release the lock. Let the next
@@ -383,7 +391,10 @@ export default class LockMonitor {
         currentLockIdentifier.transactionId,
         currentLockDuration);
 
-    return this.saveThenBroadcastTransaction(releaseLockTransaction, SavedLockType.ReturnToWallet, desiredLockAmountInSatoshis);
+    const savedLockModel = await this.saveThenBroadcastTransaction(releaseLockTransaction, SavedLockType.ReturnToWallet, desiredLockAmountInSatoshis);
+    EventEmitter.emit(EventCode.BitcoinLockMonitorLockReleased);
+
+    return savedLockModel;
   }
 
   private async saveThenBroadcastTransaction (
