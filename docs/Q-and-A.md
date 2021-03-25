@@ -11,7 +11,7 @@ This document relies on a [Glossary](./Glossary.md) file that has:
 Terminology specific for Sidetree can be found [here](https://identity.foundation/sidetree/spec/#terminology). The following definitions are specificly listed to support the *Question and Answers* below on a simpler level, and to be able to put Sidetree in relation to other fields of interest.
 
 **The questions are of a varied level: basic and detailed. The answers are mostly directed towards generally interested people and newbies.**\
-*Q = one star question. Novice to KERI, advanced in DIDs\
+*Q = one star question. Novice to `Sidetree`, advanced in DIDs\
 **Q = two star question. Proficient in DIDs and advanced in `Sidetree`\
 ***Q = three star question. Expert in DIDs and proficient in `Sidetree`
 
