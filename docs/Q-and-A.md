@@ -44,9 +44,10 @@ Sidetree's content is licensed under the [Apache License 2.0](https://github.com
 
 We've done our best to protect the privacy of the Github by investigating the images we used. We haven't come across personal identifiable information (pii). However, should we have made a mistake after all, please let us know and we'll correct this immediately.
 
-### List of questions and definitions
+### List of abbreviations and definitions
+- [Abbreviations](./Glossary.md#Abbreviations)
 
-- [Definitions:](#definitions)
+- [Definitions:](./Glossary.md#definitions)
       - [Authentic Chained Data Container Task Force](./Glossary.md#authentic-chained-data-container-task-force)
       - [Agent](./Glossary.md#agent)
       - [Agency](./Glossary.md#agency)
