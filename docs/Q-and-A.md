@@ -133,19 +133,19 @@ If you assert your identity and it's backed by strong cryptography, someone brow
 We're moving everything to a digital world, just like we don't have paper mail, we have email now. When those things happen, proofs like, 'do you own your car?' or 'the deed to your house', all that kind of stuff, when that starts getting digitized and tied to some identifier, it really better be an identifier that can't be taken from you at a whim, by either a company or some bad actor because that would be pretty scary.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
-## Why use Sidetree?
+## **Q:  Why use Sidetree?
 It is a DIDComm layer (2); which is layer 1 agnostic and uses Layer 1 very efficiently. Sidetree does not require trusted intermediaries, centralized authorities, special protocol tokens, or secondary consensus mechanisms, while preserving the core attributes of decentralization and immutability of the underlying ledger systems it is implemented on.
 _(@henkvancann)_
 
-## What is so unique to Sidetree?
+## **Q: What is so unique to Sidetree?
 Current approaches that utilize these ledger systems to create decentralized identifier networks suffer from severely limited transactional volumes and other performance issues. Sidetree is a ‘Layer 2’ protocol that runs atop decentralized ledger systems.\
 Sidetree has a very small footprint on Settlement Layer 1 of the trust-over-IP model. It stashes multiple layer 2 identity transactions into one layer 1 transaction; it's "Lightning-Network-like" in Bitcoin.
 
-## Is Sidetree a DID?
+##  *Q: Is Sidetree a DID?
 `Sidetree` is not a `DID` method. The related `DID` method is [`did:core`](https://www.w3.org/TR/did-core/) Implementations of the protocol can be codified as their own distinct DID Methods and registered in the W3C DID Method Registry; e.g. [`did:ion`]().\
 _(@henkvancann)_
 
-## How does Sidetree match the `trust-over-ip` model and in the `W3C DID standardization`?
+##  **Q: How does Sidetree match the `trust-over-ip` model and in the `W3C DID standardization`?
 [Trust-over-IP](#trust-over-ip):
 - Sidetree's goal is {TBW}
 - Layer 1 (settlement layer): blockchain agnostic and databases to register identities and settle 'transactions' between between, `DDO`s, and `VC`s, Sidetree uses {TBW}
@@ -155,7 +155,7 @@ _(@henkvancann)_
 - Layer 4 (application layer): {TBW}
 _(@henkvancann)_
 
-## Who is Sidetree? Is it a company or a not for profit?
+##  *Q: Who is Sidetree? Is it a company or a not for profit?
 Sidetree sits under the *Decentralized Identity Foundation*, [DIF](https://identity.foundation), and within that in the *Identity and Discovery* Workgroup.
 Due to its licensing structure, Sidetree isn't owned by anyone and everyone at the same time. The Intellectual Property Right of Sidetree is hosted with `DIF`. It is an open source project.
 
@@ -165,7 +165,7 @@ On github Sidetree is - and will become even more - a thickening bunch of reposi
  Lastly, Microsoft is an important promotor of Sidetree and employer of some contributors.
  _(@henkvancann)_
 
- ## Why is a company like Microsoft working on decentralized IDs using Bitcoin? 
+ ##  *Q: Why is a company like Microsoft working on decentralized IDs using Bitcoin? 
 _What are the feelings with Bitcoin around Microsoft? Is there a general kind of acceptance and like about it?_
 
 Not everyone is into Bitcoin, I would say the majority aren't. They don't care, they're product people, they want to get something done. They do understand that there's one system out there that's just stood and just embattled the test of time. So that part is like sort of empirical; you can't really argue with that part. There are believers among the people who do believe in Bitcoin.
@@ -174,14 +174,14 @@ But I'd say the majority, they believe in decentralizing. The reason they believ
 
 The alternative is you could go set up some private permission blockchain or something, but that's only as decentralized as whoever is running those few nodes that gets to decide everything. That's not really something we're interested in, because it's not significantly differentiated from the centralized identity systems we provide today. It's just not something that might be good for people; to get people involved in a system where they could be shut off.
 
-## In what programming languages is Sidetree available?
+##  *Q: In what programming languages is Sidetree available?
 There are two JavaScript implementations that I know about. The reference implementation hosted at DIF and also https://github.com/transmute-industries/sidetree.js. Sidetree has also been implemented in Go: https://github.com/trustbloc/sidetree-core-go. 
 _(@troyronda)_
 
-## Does Sidetree cooperate with other projects in the self-sovereign Identity field?
+##  *Q: Does Sidetree cooperate with other projects in the self-sovereign Identity field?
 Yes, Sidetree sits under the *Decentralized Identity Foundation*, [DIF](https://identity.foundation), and is part of the *Identity and Discovery* Workgroup. {TBW There are also non-formal relation with the newly launched trust-over-ip foundation?, how / where does Sidetree fit in trust-over-ip?
 
-## Why is Microsoft so interested in supporting these developments?
+##  *Q: Why is Microsoft so interested in supporting these developments?
 _What's the value to Microsoft in working on this?_
 
 There's a lot of things you just can't do with an identity safely unless people own their own IDs. So they can't find moneyed special deals with say just LinkedIn or just any email provider, or something like that, that might have a specific integration. It actually unlocks the ability to do a lot of different things, like do digital diplomas at scale, to do credentialing for skills and stuff like that, at scale.
@@ -189,10 +189,10 @@ There's a lot of things you just can't do with an identity safely unless people 
 In a way that's also standardized, like right now, it's just like people can issue these badges, there's different badge protocols. But it's pretty ad hoc, there's no real systemic way of find them and verify them and it's kind of a mess. So in order for us to unlock a ton of business opportunity in LinkedIn, in other investments we've made, things like GitHub and all these other things, you have to have users owning their own ID. It can't be a Microsoft-owned ID or it's just not safe to do these certain use cases.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
-## What's the diffrence between a `normative` and `non-normative` description or theory?
+## **Q: What's the diffrence between a `normative` and `non-normative` description or theory?
 See the [definitions](#normative) section for what both are. For example, theories of ethics are generally `normative` - you should not kill, you should help that person, etc. Economics is most commonly `non-normative` - instead of asking “how should this person choose which goods to buy?”, we are often more interested in “how does this person choose which commodities they buy?”.
 
-## Is Sidetree privacy preserving / GPDR proof?
+## **Q: Is Sidetree privacy preserving / GPDR proof?
 These are the information-hiding measures taken in the protocol to facilitate compliance with privacy rules:
 - No sensitive data on layer 1, which can be an open public blockchain
 - THe content in the CAS layer 2, example IPFS, works with `commitments`. A commitment can be shared without revealing the commit value.
@@ -201,18 +201,18 @@ These are the information-hiding measures taken in the protocol to facilitate co
 {TBW : unclear wether `Deactivate` obeys the right to be forgotten}\
 _(@henkvancann)_
 
-## Is there like a central, GitHub repository that someone or some group of people are responsible for?
+## **Q: Is there like a central, GitHub repository that someone or some group of people are responsible for?
 it is in the Decentralized Identity Foundation's GitHub depository, [Sidetree](https://github.com/decentralized-identity/sidetree) is the name of it. So you can contribute code there, you can read every line of code. There's no code insertions after the fact, like every bit of every piece of code that we run, as an ION node, is there. So it's totally inspectable.
 
 # Q&A section Sidetree operational
 
-## Where can I download Sidetree?
+## *Q:  Where can I download Sidetree?
 On (sub)page(s of) [github](https://github.com/decentralized-identity/sidetree)
 
-## Where can we find the code and how could a coder get started?
+##  *Q: Where can we find the code and how could a coder get started?
 The homepage on github [README.md](../README.md) pretty much sums up all the possibilities to download the available code and how developers can engage in the development process currently. We welcome contributions.
 
-## What are the external dependencies of Sidetree?
+##  **Q: What are the external dependencies of Sidetree?
 _I hear ya: "Sidetree is able to do all this **without requiring** trusted intermediaries, centralized authorities, special protocol tokens, or secondary consensus mechanisms, while preserving the core attributes of decentralization and immutability of the underlying ledger systems it is implemented on." But what does Sidetree require instead?_
 Sidetree is dependent of:
 1. Proper IPFS data management and Identity and Access Management via API keys?
@@ -222,31 +222,32 @@ Sidetree is dependent of:
 5. {TBW}
 _(@henkvancann)_
 
-## In what can we find the efficiency booster that Sidetree promises to be?
+##  **Q: In what can we find the efficiency booster that Sidetree promises to be?
 Sidetree nodes that participate in writing operations into the overlay network do so by **anchoring** Content-Addressable Storage (`CAS`) (e.g. IPFS) references to **aggregated** bundles of operations in an underlying ledger.
 
-## "Process operations in accordance with the protocol deterministic ruleset." What does this mean?
+##  ***Q: "Process operations in accordance with the protocol deterministic ruleset." What does this mean?
 Read this [section](https://identity.foundation/sidetree/spec/#late-publishing) that illustrates a DID owner, Alice, creating forks by creating and anchoring operations in the past that she does not expose to the network. Known as _Late Publishing_ of a DID operation.\
 This type of processing guarantees only one `fork` of a DID’s state history can ever be valid.
 
-## What would you see as the main drawback of Sidetree?
+##  *Q: What would you see as the main drawback of Sidetree?
 There aren't many. Sidetree has Self-Certifying Identifiers, however they are non-transferable. {Right?}
 _(@henkvancann)_
 
-## How can it be one solution, fit for more DIDs? 
-DID Methods based on the Sidetree protocol all share the same identifier format. The unique identifier segment of a Sidetree-based DID, known as the DID Suffix, is derived by using the Hashing Process to generate a hash value from the canonicalized Create Operation Suffix Data Object. The DID Suffix is cryptographically bound to the initial PKI state of the DID, which means Sidetree DIDs are [self-certifying](#self-certifying-identifier).
+##  *Q: How can it be one solution, fit for more DIDs? 
+DID Methods based on the Sidetree protocol all share the same identifier format. The unique identifier segment of a Sidetree-based DID, known as the DID Suffix, is derived by using the Hashing Process to generate a hash value from the canonicalized Create Operation Suffix Data Object. The DID Suffix is cryptographically bound to the initial PKI state of the DID, which means Sidetree DIDs are also self-certified.
 
-## Where you would need something quite different than Sidetree to solve a similar problem?
-{TBW}
+## *Q: Where you would need something quite different than Sidetree to solve a similar problem?
+In a private situation with no self sovereignty. A Certification Authority in combination with a federated setup could do, like it has done the past decades. But in that SSI become Self Service Identity at best, because the Identifiers are owned and controlled by a third party.
+_(@henkvancann)_
 
-## How does Sidetree scale
+## **Q: How does Sidetree scale
 This image speaks a thousand words:\
 <img src="./images/Sidetree-file-structure.png" alt="Sidetree file structure" border="0" width="500">
 Sidetree is a lean and mean structure. The content of Sidetree mainly consists of JSON files of hashes, signatures and other cryptographical proofs and pointers. And it connects to other highly scaleable technologies, like IPFS and blockchains.\
 <img src="./images/sidetree-logo.png" alt="Sidetree logo" border="0" width="100" align="right">
 The importance of this structure for scaleability is rewarded in the Sidetree-logo.
 
-## How does Sidetree keep data internally consistent over nodes?
+## ***Q: How does Sidetree keep data internally consistent over nodes?
 In brief: By using **delta-based** Conflict-Free Replicated Data Types. _(@henkvancann)_
 
 Despite early availability on the market, `BX` tools did not gain much user appreciation because of semantic issues. A user should clearly understand the behavior of synchronization procedures implemented by a tool. The majority of algebraic BX frameworks are _state-based_. Synchronizing operations take the states of models before and after update as input, and produce new states of models as output. This design assumes that model alignment, i.e., discovering relations (deltas) between models,
@@ -257,24 +258,30 @@ To separate delta discovery and propagation, several researchers proposed to bui
 To summarize: Sidetree keeps data consitent by using a delta-based tree-oriented framework and performs _symmetric_-`BX`information sharing.\
 _(@henkvancann)_
 
-## How does Sidetree keep identifiers secure?
+## **Q:  How does Sidetree keep identifiers secure?
  - Internally by commitment schemes
  - Externally by stressing the importance of proper key management
 
-## How does Sidetree handle `race conditions`?
+## **Q: How does Sidetree handle `race conditions`?
+[What is a race condition?](https://www.baeldung.com/cs/race-conditions)\
 {TBW} 
 
-## What are the security risks of Sidetree with regard to the identity protocol?
+## **Q: What are the security risks of Sidetree with regard to the identity protocol?
 Harm that can be done to the a `controller`: {TBW}\
 Harm that can be done to a `verifier`: {TBW} 
 
-## Is Sidetree post-quantum secure?
+## *Q: Is Sidetree post-quantum secure?
+To answer this question we need to have a look at the building blocks of Sidetree that could be vulnreable to Quantum computing attacks.
+- PKI
+- bitcoin blockchain
+- Signatures
 {TBW}
 
-## What happens if I or other people are offline?
+## **Q: What happens to Sidetree identifiers if I or other people are offline?
+_What about the liveliness of Sidetree?_
 {TBW}
 
-## How to handle multiple versions of Sidetree protocol. How to keep the network in sync?
+## **Q: How to handle multiple versions of Sidetree protocol. How to keep the network in sync?
 The rules and parameters of the Sidetree protocol may change in the future, resulting in new versions of the specification. 
 #### Version Segment Definitions:
 1. Major: Major protocol evolution, with breaking protocol advancements so large they warrant incrementing the major version.
@@ -448,18 +455,24 @@ To store transactions between - and changes to DDO's. Sidetree is a Layer 2 solu
 ## Does your public-private-key format matter in Sidetree?
 {TBW}
 
-## Not your keys, not your identity?
+## *Q: Not your keys, not your identity?
+Depends. You can be the subject of an identifier and have no control over the indentifier whatsoever. This is practically the case for all login + usernames you "have" to enter the websites of your service providers. You don't own those identifiers and these identifiers can easily be taken away from you with all the related data and social connections. Example: a Twitter ban.
+
+SSI means control over your own identifier. Two nuances: 
+- You can own an identifier you're not subject of. Beware that privacy rules and regulations are very strict and demanding.
+- You can be the owner, controller and subject at the same time. With great sovereignty comes great responsibility.
 {TBW}
 
-## The wallet is there to store my Sidetree private keys safely, no?
+## *Q: The wallet is there to store my Sidetree private keys safely, no?
 {TBW}
-## Are compound private keys (Shamir Secret Sharing) and multisignature schemes possible to create identifiers?
+## ***Q: Are compound private keys (Shamir Secret Sharing) and multisignature schemes possible to create identifiers?
 {TBW}
-## How to delegate control over my private keys that control my identifiers?
+## **Q: How to delegate control over my private keys that control my identifiers?
 {TBW}
+
 # Q&A section Blockchain
 
-## what does an ID system gain from a blockchain?
+## *Q: what does an ID system gain from a blockchain?
 I would actually harken back to what Satoshi first called Bitcoin before it was blockchain, which was timechain. It turns out that `PKI`, which is public key infrastructure and that's like the thing that backs identifiers. I'll give you an analogy of what one is today. An existing example is the DNS system.
 
 The identifier is a domain name and then the backing PKI data is your zone file in DNS that lists your named servers, routing information, then there's the certificate of authorities that have the sort of the backing cryptography. So that's an example of a PKI system. Every PKI system, if it isn't centralized, like a system where they just kind of decree that this users is usurped, if you want to decentralize that, the most important piece is having a global immutable append-only log, because everyone needs to see the state of some identifier. Like if Alice creates an ID and she initially associates, say her phone that she has at the time with her ID and a public key on it, when she goes to get a new phone, she's going to switch that key up.
@@ -467,30 +480,30 @@ The identifier is a domain name and then the backing PKI data is your zone file 
 So everyone needs to be able to see that event, globally and deterministically, or else someone could masquerade as Alice. They could say, "Well, I have her old key so I'm her." You have to have this sort of linear chronology of what happened when, it's a state machine. So what a blockchain does, really elegantly that we never had before, is it's an oracle for entering events into a chronology. That's exactly what we use it for. In its most primitive sense, we use Bitcoin to enter in events in a chronology that nodes sort of watch for and compute so they all can understand the state of every ID that's anchored in Bitcoin. So it's very important.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
-## So why would we pick Bitcoin versus some other blockchain, like Ethereum or Hyperledger?
+## *Q: So why would we pick Bitcoin versus some other blockchain, like Ethereum or Hyperledger?
 Sidetree is settlement layer agnostic. There are different reasons to use either one of those platforms. For ION example we argue that because we're not actually concerned with any of the super sexy smart contracts. What we most care about is entering stuff in the most immutable, hardened record imaginable and right now, that's Bitcoin. It's pretty hard to argue that isn't Bitcoin, so that's why we use it, is because it has those attributes and it suffices, it does exactly what we need it to do. [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner).
 
 There are also Sidetree implementations on Ethereum and Hyperledger Fabric:
  - Ethereum: https://github.com/decentralized-identity/element
  - Hyperledger Fabric: https://github.com/trustbloc/sidetree-fabric
 
-## Does Sidetree use a blockchain?
+## *Q: Does Sidetree use a blockchain?
 Yes, it needs a global blockchain to provide an ordered settlement layer 1 that has reached consensus over the unique representation of the "truth". Sidetree sits on top of this Layer 1, in layer 2 of the `ToIP model` and is blockchain agnostic.\
 <img src="./images/Trust-over-IP.jpeg" alt="Trust-over-IP model" border="0" width="500">
 _(@henkvancann)_
 
-## What's the difference between Sidetree and blockchain?
+## *Q: What's the difference between Sidetree and blockchain?
 Lots, it's a totally different beast. There are only a few similarities, for the record:
 - THe tree-like structure of Side-tree resembles the Merkletree in which blockchain tend to store proofs of transactions (hashes)
 - Core Proof Files form the signature-chained backbone for the state lineages of all DIDs in the system. 
 
-## Why does Sidetree need a blockchain? 
+## *Q: Why does Sidetree need a blockchain? 
 _...when it has nodes in a network that could federatively establish consensus?_
 
 The ledger (blockchain) acts as a linear chronological sequencing oracle, which the Sidetree protocol leverages to **order** DID PKI operations in an **immutable** history all observing nodes can **replay** and validate. It is this ability to replay the precise sequence of DID PKI state change events, and process those events using a common set of deterministic rules, that allows Sidetree nodes to achieve a consistent view of DIDs and their DID Document states, without requiring any additional consensus mechanism.
 The underlaying blockchain provides the consensus mechanism to come to immutable time-stamped ordering.
 
-## Every time I want to verify an ID, does something happen on the Bitcoin blockchain? 
+## *Q: Every time I want to verify an ID, does something happen on the Bitcoin blockchain? 
 _Therefore, do I have to pay some kind of transaction fee?_
 
 No, so one thing that's an interesting about this. When we talk about `PKI` systems, and I'll use the analogy of DNS:\
@@ -501,18 +514,18 @@ When it does, that look up doesn't incur any Bitcoin cost or anything like that,
 So that entire activity happened at a third layer like well above, it doesn't touch any blockchain stuff at all.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
-## Will Sidetree put more sensitive data on a public blockchain, like Bitcoin? 
+## **Q: Will Sidetree put more sensitive data on a public blockchain, like Bitcoin? 
 
 Any other data than just identifiers, that you'd want to expose has nothing to do with ION or Bitcoin. None of that is embedded in Bitcoin. That's completely off and on regular infrastructure. It's up to you what you want to disclose. So when I say registry of IDs, it's mean that ION essentially provides you the ability to iterate over every ID that's been entered into the system. This is pretty cool and it has some interesting applications. One application that I like to throw out there that Devs might resonate with a little bit is like `npm`.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 # Q&A section Agencies
 
-## What does the governance framework of Sidetree look like?
+## **Q: What does the governance framework of Sidetree look like?
 > Decentralized systems must coordinate across multiple parties, all acting independently in their own self-interest. This means that the rules of engagement and interaction must be spelled out and agreed to ahead of time, with incentives, disincentives, consequences, processes, and procedures made clear.
 {TBW}
 DRAFT BY _(@henkvancann)_
 
-## Sidetree is like a better version of two-factor authentication?
+## *Q: Sidetree is like a better version of two-factor authentication?
 Yeah, a better version of two-factor authentication. It gives us an opportunity to do things potentially in the future, better underpinning for things like DNS. It is a global registry, at least ION has the ability to be and I know that sounds scary, it's a global registry of IDs, but when I say registry, what I mean is, every ID in ION is, you know at least the identifier. You might not know anything else about the ID, you don't know that it's a person or a dog on the internet, or anything like that. But you know the ID and the keys. So if you ever ran into that person, you could at least like say, "Hey, prove you're you."\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
@@ -550,5 +563,5 @@ An example of generating an ION DID with the ION.js library:
 
 <img src="./images/generate-ion-did-jslib.png" alt="generate ION DID example JS library.png" border="0" width="500">
 
-## Who owns the DIDs generated with ION?
+## *Q: Who owns the DIDs generated with ION?
 Ownership of your DIDs is based on keys you generate locally, and all ION operations are signed with those keys, so even if you use our node for anchoring DID operations (or any other node), you are always in sole control.
