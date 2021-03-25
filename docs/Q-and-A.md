@@ -535,7 +535,7 @@ Yeah, a better version of two-factor authentication. It gives us an opportunity 
 ION has its own repository under [DIF](https://identity.foundation/ion). This section intents to clear up the difference between ION and Sidetree and how they relate.
 
 ## *Q:  What is ION?
-<img src="./images/what-is-Sidetree.png" alt="What is Sidetree" border="0" width="500">
+<img src="./images/what-is-ION.png" alt="What is ION?" border="0" width="500">
 
 ION is based on Sidetree - standard.
 
