@@ -405,7 +405,8 @@ Oh yeah, it has this potential. I mean if carriers were able to tie your account
 {TBW}
 
 ## Is my Sidetree identifier public?
-{TBW}
+This is a choice. Sidetree could settle the identifiers on a private blockchain, whose network consist of a few federated nodes. If you anchor your Sidetree implementation to a public blockchain like Ethereum or Bitcoin, your identifiers are public. However, the linked data can be hashed and put behind a authentication wall (login + username + 2FA).\
+_(@henkvancann)_
 
 ## Is a Sidetree identifier GPDR proof?
 {TBW}
