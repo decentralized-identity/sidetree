@@ -1,7 +1,7 @@
 Sidetree v1.0.0
 ==================
 
-**Specification Status:** Working Group Approved Draft
+**Specification Status:** DIF Ratified Specification
 
 **Latest published version:**
   [identity.foundation/sidetree/spec](https://identity.foundation/sidetree/spec)
