@@ -319,6 +319,15 @@ So we're putting out the install guides, there are `Docker` containers for quick
 ## Am I creating value for Microsoft while I contribute to Sidetree? And they will sell it on their behalf?
 We're really wanting to encourage people to install and help us, especially if you're technically capable, or you're a coder or have some aptitude. Kick the tires on it, let us know, find bugs, this is for everyone! This is a public utility, we're not trying to make money on this at all, and so just help it be the best it can be.
 
+## ***Q: How expensive the side tree is to maintain?
+In terms of node operation cost, in a light node configuration you could support 40 billion DIDs within ~2TB of space. The protocol is not computationally intense, it's skewed toward bandwidth and storage.
+
+#### *Q: Can you ELI5 for us please... Having trouble wrapping my head around the applications
+ELI5=Explain Like I'm 5 years old, [more here](https://www.howtogeek.com/694298/what-does-eli5-mean-and-how-do-you-use-it/)
+
+If you have a DID linked to a personal datastore, people would be able to follow your DID instead of something like a Twitter ID, and pull tweets directly from your datastore. This means apps cannot block your ID or censor your posts. It's the foundation of decentralized apps.
+_(@csuwildcat)_
+
 # Q&A section Userinterface
 
 ## What does Sidetree look like?
@@ -577,7 +586,7 @@ An example of generating an ION DID with the ION.js library:
 Ownership of your DIDs is based on keys you generate locally, and all ION operations are signed with those keys, so even if you use our node for anchoring DID operations (or any other node), you are always in sole control.\
 (_@csuwildcat_)
 
-## ***Q: Back in the day you had plans to run it on top of the casa node, any plans to make this work on top of projects like [Umbrel](https://blocktalk.co/2021/03/25/how-to-set-up-full-bitcoin-node-umbrel/)?
+## ***Q: Any plans to make this work on top of bitcoin full nodes?; on top of projects like [Umbrel](https://blocktalk.co/2021/03/25/how-to-set-up-full-bitcoin-node-umbrel/)?
 I haven't had time to sort out getting it packaged for this. Would love some help with that from the community, else it will probably take a couple months before we can dig out.\
 (_@csuwildcat_)
 
@@ -591,3 +600,7 @@ _Do you happen to know of a link to any documentation about that?_
 
 This one class invocation will instantly create you an unpublished DID: [here](https://t.co/eBY4wR2kTk?amp=1)\
 (_@csuwildcat_)
+
+## *Q: How does it work? You need bitcoin transactions for DID, right? So how do BTC transaction fees come into play?
+ION doesn't bloat the bitcoin blockchain. It gathers multple proofs of identifier events and anchors them with one single small transaction (and dito fee) on the bitcoin blockchain.
+(_@henkvancann_)
