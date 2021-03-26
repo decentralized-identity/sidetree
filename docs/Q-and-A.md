@@ -541,7 +541,14 @@ ION has its own repository under [DIF](https://identity.foundation/ion). This se
 ION is based on Sidetree - standard.
 
 ## *Q: Who owns ION?
-Just like Sidetree ION is [open source](https://github.com/decentralized-identity/ion/blob/master/LICENSE). Microsoft is an important sponsor.
+Just like Sidetree ION is [open source](https://github.com/decentralized-identity/ion/blob/master/LICENSE). Microsoft has been an important sustaining sponsor, but no more than that.
+
+#### I will never enter a project where Microsoft is involved, they will never be decentralized?!
+_"Bill Gates does not enter projects of this nature just because he's a good person."_
+
+In brief: ION is free, open source, uncensorable. Full stop.
+
+_@csuwildcat_ [on twitter](https://twitter.com/csuwildcat/status/1375125876736548870): "It's a deterministic protocol that only requires math + an internet connection, that's it. There are no authorities, intermediaries, validators, or other points of centralization in ION, so the only thing you need to trust is literally math itself. Have a look at the code and see."
 
 ## *Q: When has ION been launched?
 March 2021 on the [Microsoft site](https://techcommunity.microsoft.com/t5/identity-standards-blog/ion-we-have-liftoff/ba-p/1441555): "We are excited to share that v1 of ION is complete and has been launched on Bitcoin mainnet".\
@@ -567,4 +574,20 @@ An example of generating an ION DID with the ION.js library:
 <img src="./images/generate-ion-did-jslib.png" alt="generate ION DID example JS library.png" border="0" width="500">
 
 ## *Q: Who owns the DIDs generated with ION?
-Ownership of your DIDs is based on keys you generate locally, and all ION operations are signed with those keys, so even if you use our node for anchoring DID operations (or any other node), you are always in sole control.
+Ownership of your DIDs is based on keys you generate locally, and all ION operations are signed with those keys, so even if you use our node for anchoring DID operations (or any other node), you are always in sole control.\
+(_@csuwildcat_)
+
+## ***Q: Back in the day you had plans to run it on top of the casa node, any plans to make this work on top of projects like [Umbrel](https://blocktalk.co/2021/03/25/how-to-set-up-full-bitcoin-node-umbrel/)?
+I haven't had time to sort out getting it packaged for this. Would love some help with that from the community, else it will probably take a couple months before we can dig out.\
+(_@csuwildcat_)
+
+## **Q:  What would be the specs for an ION node, excluding Bitcoin Core ressources consumption?
+Not much, basically just storage growth as the network is utilized. There's hardly any computation on operation ingest, so it's not going to hit a CPU hard.\
+For example: with 40 billion DIDs in the system (basically all of humanity using ION), it would require around 2-3TB of space, but wouldn't noticeably rev compute on an i3 from 2017.\
+(_@csuwildcat_)
+
+## ***Q: What would be the quickest way for me to learn more about 'unpublished' DIDs? 
+_Do you happen to know of a link to any documentation about that?_
+
+This one class invocation will instantly create you an unpublished DID: [here](https://t.co/eBY4wR2kTk?amp=1)\
+(_@csuwildcat_)
