@@ -25,7 +25,7 @@ Terminology specific for Sidetree can be found [here](https://identity.foundatio
   * [Actions you should be comfortable with](#actions-you-should-be-comfortable-with)
 - [Jump table to categories](#jump-table-to-categories)
 
-Inspired by [specifications](https://identity.foundation/sidetree/spec/) and questions raised during DIF Sidetree WG meetings, but also issues created and handled [here](https://github.com/decentralized-identity/sidetree/issues) and the progress made, here on Github (Turn on 'Watch' if you want to be notified of conversations).
+Inspired by [specifications](https://identity.foundation/sidetree/docs/spec/) and questions raised during DIF Sidetree WG meetings, but also issues created and handled [here](https://github.com/decentralized-identity/sidetree/issues) and the progress made, here on Github (Turn on 'Watch' if you want to be notified of conversations).
 
 Beware: A Q&A is always *work in progress*. Tips & help welcome.
 
