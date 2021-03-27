@@ -30,7 +30,7 @@ Inspired by [specifications](https://identity.foundation/sidetree/spec/) and que
 Beware: A Q&A is always *work in progress*. Tips & help welcome.
 
 ### Disclaimer
-None of the respondents in the **open** repo and presentations have been explicitly named as a source, except for ***@csuwildcat*** (Daniel Buchner, expert), ***@thehenrytsai*** (Henry Tsai, expert) and ***@henkvancann*** (noob). 
+None of the respondents in the **open** repo and presentations have been explicitly named as a source, except for ***@csuwildcat*** (Daniel Buchner, expert), ***@thehenrytsai*** (Henry Tsai, expert) and ***@henkvancann*** (documentation). 
 
 If there is no reference added to the answers, then its content stems from either one or more of these sources
 - [Specifications]https://identity.foundation/sidetree/spec/
@@ -544,6 +544,8 @@ Yeah, a better version of two-factor authentication. It gives us an opportunity 
 
 ION has its own repository under [DIF](https://identity.foundation/ion). This section intents to clear up the difference between ION and Sidetree and how they relate.
 
+Most Question and Answers about ION are located in its own [github repo](https://github.com/decentralized-identity/ion/blob/master/docs/Q-and-A.md. Below a basic selection to start off with.)
+
 ## *Q:  What is ION?
 <img src="./images/what-is-ION.png" alt="What is ION?" border="0" width="500">
 
@@ -551,23 +553,6 @@ ION is based on Sidetree - standard.
 
 ## *Q: Who owns ION?
 Just like Sidetree ION is [open source](https://github.com/decentralized-identity/ion/blob/master/LICENSE). Microsoft has been an important sustaining sponsor, but no more than that.
-
-#### I will never enter a project where Microsoft is involved, they will never be decentralized?!
-_"Bill Gates does not enter projects of this nature just because he's a good person."_
-
-In brief: ION is free, open source, uncensorable. Full stop.
-
-_@csuwildcat_ [on twitter](https://twitter.com/csuwildcat/status/1375125876736548870): "It's a deterministic protocol that only requires math + an internet connection, that's it. There are no authorities, intermediaries, validators, or other points of centralization in ION, so the only thing you need to trust is literally math itself. Have a look at the code and see."
-
-## *Q: When has ION been launched?
-March 2021 on the [Microsoft site](https://techcommunity.microsoft.com/t5/identity-standards-blog/ion-we-have-liftoff/ba-p/1441555): "We are excited to share that v1 of ION is complete and has been launched on Bitcoin mainnet".\
-[Continues on twitter](https://twitter.com/csuwildcat/status/1375125876736548870): "This is the culmination of 10 years of work, beginning in 2011 when a few of us at Mozilla set aside some of our time to explore the core concepts of Decentralized Identity."\
-(_@csuwildcat_)
-
-## *Q: Why is ION so special?
-The reason is two-fold:
-- It settles on the bitcoin blockchain, the most secure open public blockchain, which isn't owned by anybody and everybody at the same time, the transactions and events with ION identifiers are uncensorable, and immutablably anchored to the bitcoin blockchain. ION does not bloat the bitcoin blockchain because it periodically only settles a very small proof (hash) of a large ION data structure on the blockchain.
-- ION preserves privacy of the people, things and organisation behind the identifiers. It's highly interoperable and fits within the DID standardization of W3C.
 
 ## **Q: Is ION the only Sidetree implementation?
 No,  Sidetree enables scalable DID networks (i.e. ION, Element, Orb) to be built atop any decentralized event record system (e.g. blockchains). 
@@ -578,35 +563,14 @@ We have contributed an open source library for generating DIDs and have opened u
 - [Use the lower-level SDK](https://github.com/decentralized-identity/ion-sdk)
 - [Anchor DIDs you generate](https://github.com/decentralized-identity/ion-tools)
 
-An example of generating an ION DID with the ION.js library:
-
-<img src="./images/generate-ion-did-jslib.png" alt="generate ION DID example JS library.png" border="0" width="500">
-
 ## *Q: Who owns the DIDs generated with ION?
 Ownership of your DIDs is based on keys you generate locally, and all ION operations are signed with those keys, so even if you use our node for anchoring DID operations (or any other node), you are always in sole control.\
 (_@csuwildcat_)
 
-## ***Q: Any plans to make this work on top of bitcoin full nodes?; on top of projects like [Umbrel](https://blocktalk.co/2021/03/25/how-to-set-up-full-bitcoin-node-umbrel/)?
-I haven't had time to sort out getting it packaged for this. Would love some help with that from the community, else it will probably take a couple months before we can dig out.\
-(_@csuwildcat_)
-
-## **Q:  What would be the specs for an ION node, excluding Bitcoin Core ressources consumption?
-Not much, basically just storage growth as the network is utilized. There's hardly any computation on operation ingest, so it's not going to hit a CPU hard.\
-For example: with 40 billion DIDs in the system (basically all of humanity using ION), it would require around 2-3TB of space, but wouldn't noticeably rev compute on an i3 from 2017.\
-(_@csuwildcat_)
-
-## ***Q: What would be the quickest way for me to learn more about 'unpublished' DIDs? 
-_Do you happen to know of a link to any documentation about that?_
-
-This one class invocation will instantly create you an unpublished DID: [here](https://t.co/eBY4wR2kTk?amp=1)\
-(_@csuwildcat_)
-
 ## *Q: How does it work? You need bitcoin transactions for DID, right? So how do BTC transaction fees come into play?
-ION doesn't bloat the bitcoin blockchain. It gathers multple proofs of identifier events and anchors them with one single small transaction (and dito fee) on the bitcoin blockchain.
+ION doesn't bloat the bitcoin blockchain. It gathers multple proofs of identifier events and anchors them with one single small transaction (and dito fee) on the bitcoin blockchain.\
 (_@henkvancann_)
 
 #### *Q: Who pays the fee if it's all decentralised?
-Node operators who anchor operation batches must pay BTC txn fees. Current we cover the cost for folks who want to anchor via our node, but you can just do it on your own node at home if you want. Ops are signed with keys only you hold, so it's not like another node has your keys.
-
-## **Q: How to install my ION node on a Raspberry Pi 4?
-https://matthijs.hoekstraonline.net/2021/03/25/running-an-ion-node-on-your-raspberry-4/
+Node operators who anchor operation batches must pay BTC txn fees. Current we cover the cost for folks who want to anchor via our node, but you can just do it on your own node at home if you want. Ops are signed with keys only you hold, so it's not like another node has your keys.\
+(_@csuwildcat_)
