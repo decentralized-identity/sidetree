@@ -8,7 +8,7 @@ Why should you read or step through the Q&A? To get a different angle to the sam
 This document relies on a [Glossary](./Glossary.md) file that has:
 - a alphabethically ordered list of **abbreviations**
 - a alphabethically ordered list of **definitions**
-Terminology specific for Sidetree can be found [here](https://identity.foundation/sidetree/spec/#terminology). The following definitions are specificly listed to support the *Question and Answers* below on a simpler level, and to be able to put Sidetree in relation to other fields of interest.
+Terminology specific for Sidetree can be found [here](https://identity.foundation/docs/sidetree/spec/#terminology). The following definitions are specificly listed to support the *Question and Answers* below on a simpler level, and to be able to put Sidetree in relation to other fields of interest.
 
 **The questions are of a varied level: basic and detailed. The answers are mostly directed towards generally interested people and newbies.**\
 *Q = one star question. Novice to `Sidetree`, advanced in DIDs\
@@ -33,7 +33,7 @@ Beware: A Q&A is always *work in progress*. Tips & help welcome.
 None of the respondents in the **open** repo and presentations have been explicitly named as a source, except for ***@csuwildcat*** (Daniel Buchner, expert), ***@thehenrytsai*** (Henry Tsai, expert) and ***@henkvancann*** (noob). 
 
 If there is no reference added to the answers, then its content stems from either one or more of these sources
-- [Spec]https://identity.foundation/sidetree/spec/
+- [Spec]https://identity.foundation/sidetree/docs/spec/
 - [Github Sidetree](https://github.com/decentralized-identity/sidetree)
 - [What bitcoin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 - it's Daniel Buchner or Henry Tsai who answered the question. 
@@ -564,7 +564,7 @@ March 2021 on the [Microsoft site](https://techcommunity.microsoft.com/t5/identi
 [Continues on twitter](https://twitter.com/csuwildcat/status/1375125876736548870): "This is the culmination of 10 years of work, beginning in 2011 when a few of us at Mozilla set aside some of our time to explore the core concepts of Decentralized Identity."\
 (_@csuwildcat_)
 
-## Why is ION so special?
+## *Q: Why is ION so special?
 The reason is two-fold:
 - It settles on the bitcoin blockchain, the most secure open public blockchain, which isn't owned by anybody and everybody at the same time, the transactions and events with ION identifiers are uncensorable, and immutablably anchored to the bitcoin blockchain. ION does not bloat the bitcoin blockchain because it periodically only settles a very small proof (hash) of a large ION data structure on the blockchain.
 - ION preserves privacy of the people, things and organisation behind the identifiers. It's highly interoperable and fits within the DID standardization of W3C.
@@ -604,3 +604,9 @@ This one class invocation will instantly create you an unpublished DID: [here](h
 ## *Q: How does it work? You need bitcoin transactions for DID, right? So how do BTC transaction fees come into play?
 ION doesn't bloat the bitcoin blockchain. It gathers multple proofs of identifier events and anchors them with one single small transaction (and dito fee) on the bitcoin blockchain.
 (_@henkvancann_)
+
+#### *Q: Who pays the fee if it's all decentralised?
+Node operators who anchor operation batches must pay BTC txn fees. Current we cover the cost for folks who want to anchor via our node, but you can just do it on your own node at home if you want. Ops are signed with keys only you hold, so it's not like another node has your keys.
+
+## **Q: How to install my ION node on a Raspberry Pi 4?
+https://matthijs.hoekstraonline.net/2021/03/25/running-an-ion-node-on-your-raspberry-4/
