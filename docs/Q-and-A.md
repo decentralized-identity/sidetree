@@ -8,7 +8,7 @@ Why should you read or step through the Q&A? To get a different angle to the sam
 This document relies on a [Glossary](./Glossary.md) file that has:
 - a alphabethically ordered list of **abbreviations**
 - a alphabethically ordered list of **definitions**
-Terminology specific for Sidetree can be found [here](https://identity.foundation/docs/sidetree/spec/#terminology). The following definitions are specificly listed to support the *Question and Answers* below on a simpler level, and to be able to put Sidetree in relation to other fields of interest.
+Terminology specific for Sidetree can be found [here](https://identity.foundation/sidetree/spec/#terminology). The following definitions are specificly listed to support the *Question and Answers* below on a simpler level, and to be able to put Sidetree in relation to other fields of interest.
 
 **The questions are of a varied level: basic and detailed. The answers are mostly directed towards generally interested people and newbies.**\
 *Q = one star question. Novice to `Sidetree`, advanced in DIDs\
@@ -25,7 +25,7 @@ Terminology specific for Sidetree can be found [here](https://identity.foundatio
   * [Actions you should be comfortable with](#actions-you-should-be-comfortable-with)
 - [Jump table to categories](#jump-table-to-categories)
 
-Inspired by [specifications](https://identity.foundation/sidetree/docs/spec/) and questions raised during DIF Sidetree WG meetings, but also issues created and handled [here](https://github.com/decentralized-identity/sidetree/issues) and the progress made, here on Github (Turn on 'Watch' if you want to be notified of conversations).
+Inspired by [specifications](https://identity.foundation/sidetree/spec/) and questions raised during DIF Sidetree WG meetings, but also issues created and handled [here](https://github.com/decentralized-identity/sidetree/issues) and the progress made, here on Github (Turn on 'Watch' if you want to be notified of conversations).
 
 Beware: A Q&A is always *work in progress*. Tips & help welcome.
 
@@ -33,7 +33,7 @@ Beware: A Q&A is always *work in progress*. Tips & help welcome.
 None of the respondents in the **open** repo and presentations have been explicitly named as a source, except for ***@csuwildcat*** (Daniel Buchner, expert), ***@thehenrytsai*** (Henry Tsai, expert) and ***@henkvancann*** (noob). 
 
 If there is no reference added to the answers, then its content stems from either one or more of these sources
-- [Spec]https://identity.foundation/sidetree/docs/spec/
+- [Specifications]https://identity.foundation/sidetree/spec/
 - [Github Sidetree](https://github.com/decentralized-identity/sidetree)
 - [What bitcoin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 - it's Daniel Buchner or Henry Tsai who answered the question. 
