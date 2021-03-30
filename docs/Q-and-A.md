@@ -20,7 +20,7 @@ Terminology specific for Sidetree can be found [here](https://identity.foundatio
 ```
 - [Q&A about Sidetree](#qa-about-sidetree)
     + [Disclaimer](#disclaimer)
-    + [List of questions and definitions](#list-of-questions-and-definitions)
+    + [List of abbreviations and definitions](#list-of-abbreviations-and-definitions)
   * [Knowledge you should be confidently applying](#knowledge-you-should-be-confidently-applying)
   * [Actions you should be comfortable with](#actions-you-should-be-comfortable-with)
 - [Jump table to categories](#jump-table-to-categories)
@@ -105,7 +105,7 @@ We've done our best to protect the privacy of the Github by investigating the im
 - [Signatures](#qa-section-signatures)
 - [Proofs](#qa-section-proofs)
 - [Private Key Management](#qa-section-private-key-management)
-- [Blockchain](#qa-section-key-blockchain)
+- [Blockchain](#qa-section-blockchain)
 - [Agencies](#qa-section-key-agencies)
 - [ION](#qa-section-ION)
 
