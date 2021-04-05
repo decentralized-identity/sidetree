@@ -116,6 +116,11 @@ Sidetree is a protocol for creating scalable decentralized public key infrastruc
 
 ## What is the setting of sidetree?
 The protocol allows users to create _globally unique, user-controlled identifiers_ and manage their associated metadata, all _without the need for centralized authorities_ or trusted third parties. The syntax of the identifier and accompanying data model used by the protocol is conformant to that defined by W3C Decentralized Identifiers. Implementations of the protocol can be codified as their own distinct DID Methods and registered in the W3C DID Method Registry.
+
+## What is in the name 'Sidetree'?
+The name “Sidetree” combines two hints as to its technical inspirations and superpowers. Each Sidetree network functions as a kind of identity-specific “sidechain” periodically pinned to an underlying chain in much the same way that so-called “Layer 2 Networks”.  These include the Lightning network running atop Bitcoin.\
+(_@bumblefudge_)
+
 ## How is the inner working of Sidetree?
 <img src="../www/diagrams/architecture.png" alt="Architecture of Sidetree" border="0" width="400">
 
@@ -507,10 +512,15 @@ Yes, it needs a global blockchain to provide an ordered settlement layer 1 that 
 <img src="./images/Trust-over-IP.jpeg" alt="Trust-over-IP model" border="0" width="500">
 _(@henkvancann)_
 
-## *Q: What's the difference between Sidetree and blockchain?
+## **Q: What's the difference between Sidetree and blockchain?
 Lots, it's a totally different beast. There are only a few similarities, for the record:
 - THe tree-like structure of Side-tree resembles the Merkletree in which blockchain tend to store proofs of transactions (hashes)
-- Core Proof Files form the signature-chained backbone for the state lineages of all DIDs in the system. 
+- Core Proof Files form the signature-chained backbone for the state lineages of all DIDs in the system.
+_(@henkvancann)_
+
+The pinning mechanism making the periodic anchoring possible in Sidetree relies on “merkle trees,” which are basically cryptographic data structures compressing large volumes of transaction data into a single “merkle root.” This allows massive batching and pooling of transactions, and allows a different set of security and privacy guarantees to be layered on top of those of the anchor point.  
+Out of this combination of sidechains and merkle trees evolved the concept of Sidetree-- a protocol first proposed by Microsoft’s Daniel Buchner, and incubated with major contributions and iterative thinking in the DIF community.\
+(_@bumblefudge_)
 
 ## *Q: Why does Sidetree need a blockchain? 
 _...when it has nodes in a network that could federatively establish consensus?_
