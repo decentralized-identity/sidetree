@@ -111,9 +111,8 @@ We've done our best to protect the privacy of the Github by investigating the im
 
 # Q&A section General
 
-## What is Sidetree?
+## *Q: What is Sidetree?
 Sidetree is a protocol for creating scalable decentralized public key infrastructure (DPKI) networks that can run atop of any existing decentralized ledger system (e.g. Bitcoin) and be as open, public, and permissionless as the underlying ledger they utilize.
-
 
 ## What is the setting of sidetree?
 The protocol allows users to create _globally unique, user-controlled identifiers_ and manage their associated metadata, all _without the need for centralized authorities_ or trusted third parties. The syntax of the identifier and accompanying data model used by the protocol is conformant to that defined by W3C Decentralized Identifiers. Implementations of the protocol can be codified as their own distinct DID Methods and registered in the W3C DID Method Registry.
@@ -145,6 +144,11 @@ Sidetree has a very small footprint on Settlement Layer 1 of the trust-over-IP m
 ##  *Q: Is Sidetree a DID?
 `Sidetree` is not a `DID` method. The related `DID` method is [`did:core`](https://www.w3.org/TR/did-core/) Implementations of the protocol can be codified as their own distinct DID Methods and registered in the W3C DID Method Registry; e.g. [`did:ion`]().\
 _(@henkvancann)_
+
+#### **Q: What is the relationship between Sidetee and DIDs?
+Decentralized identifiers (DIDs) enable a person or entity to securely and directly “anchor” their data-sharing activities to a shared ledger securely by cryptography. The first generation of DID systems accomplished this with a 1-to-1 relationship between “blockchain addresses” (cryptographic identities) and the more flexible, powerful addresses called DIDs. These latter functioned as privacy-preserving extensions of the blockchain addresses to which they were closely coupled. In this way, each DID effortlessly inherited the formidable security guarantees of those blockchains-- but in many cases, they also inherited scalability problems and economic models that were a bad fit for many DID use-cases.\
+Sidetree is a systematic, carefully-engineered protocol that loosens that coupling between blockchain anchor-points and DID networks anchored to them, replacing a 1-to-1 relationship with a 1-to-many relationship. Depending on the use-case and implementation strategies chosen, the protocol can optimize for scalable performance, for developer-friendly ergonomics and software development kits (SDK), for the portability of DIDs and networks of DIDs across multiple anchoring systems, and even for high availability in contexts where a global blockchain cannot be relied upon directly.\
+(_@bumblefudge_)
 
 ##  **Q: How does Sidetree match the `trust-over-ip` model and in the `W3C DID standardization`?
 [Trust-over-IP](#trust-over-ip):
