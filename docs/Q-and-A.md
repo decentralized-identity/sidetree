@@ -103,7 +103,6 @@ We've done our best to protect the privacy of the Github by investigating the im
 - [Identifiers](#qa-section-identifiers)
 - [Wallets](#qa-section-wallets)
 - [Signatures](#qa-section-signatures)
-- [Proofs](#qa-section-proofs)
 - [Private Key Management](#qa-section-private-key-management)
 - [Blockchain](#qa-section-blockchain)
 - [Agencies](#qa-section-key-agencies)
@@ -441,10 +440,16 @@ To store transactions between - and changes to DDO's. Sidetree is a Layer 2 solu
 # Q&A section Wallets
 
 ## Do I need a wallet for Sidetree?
-{TBW}
+Yes and No.\
+Yes, Sidetree allows for personal key management and any user that want to have all the autonomous sovereign features of dfigital identity need a wallet to store and manage the keys of their identifiers safely.\
+No, if you rely on a custodial service for the inception and management of your digital identifiers, then you won't need a wallet of your own. The big relevant question in that situation is: why would you use Sidetree in the first place id you're not planning to be autonomous.
+_(@henkvancann)_
 
 ## How can I backup the Sidetree identifiers in my wallet?
+There is a distintion between the private keys controlling the Sidetree identifiers and the digital data related to the identifiers, like DIDs, DDO's and VCs.
+
 {TBW}
+
 ## Can I receive crypto money in my Sidetree wallet?
 {TBW}
 ## Does a Sidetree wallet store virtual credentials connect to my identifiers?
@@ -457,11 +462,6 @@ To store transactions between - and changes to DDO's. Sidetree is a Layer 2 solu
 ## What is the practical use of signatures?
 {TBW}
 
-# Q&A section Proofs
-
-## What does Sidetree proof?
-{TBW}
-
 ## Do I need to show the full IPFS Sidetree database to anybody I transact with, even though I'd only like to show a part of it, for example a virtual credential?
 {TBW}
 
@@ -470,8 +470,6 @@ To store transactions between - and changes to DDO's. Sidetree is a Layer 2 solu
 ## How secure is the Sidetree infrastructure?
 {TBW}
 
-## How multi-tasking is Sidetree?
-{TBW}
 ## Does your public-private-key format matter in Sidetree?
 {TBW}
 
