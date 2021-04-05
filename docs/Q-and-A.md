@@ -407,70 +407,74 @@ So why would we pick Bitcoin versus some other blockchain?
 Well because we're not actually concerned with any of the super sexy smart contracts, and other stuff. Not to say that there's less interesting stuff in Bitcoin, but we just don't care about features like that, which are not applicable for us. What we most care about is entering stuff in the most immutable, hardened record imaginable and right now, that's Bitcoin. It's pretty hard to argue that isn't Bitcoin, so that's why we use it, is because it has those attributes and it suffices, it does exactly what we need it to do.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
-## What do I need to trust in Sidetree?
+## *Q: What do I need to trust in Sidetree?
 {TBW}
 
-## How does Sidetree establish the root-of-trust that we need for SSI? How does the data persist?
+## **Q: How does Sidetree establish the root-of-trust that we need for autonomous identifiers? How does the data persist?
 {TBW}
 
 # Q&A section Identifiers
 
-## DIDs based on Sidetree could stop SIM-swapping?
+## **Q: DIDs based on Sidetree could stop SIM-swapping?
 Oh yeah, it has this potential. I mean if carriers were able to tie your account to a DID or something hardened, literally an attacker would have to physically come take from you, just like they would have to take your Bitcoin, absolutely! I don't think we have this sort of transient ID problem where it can just be like one button push from an operator on their end switches your account.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
-## How is a Sidetree identifier different than a regular identifier in DID methods?
+## **Q: How is a Sidetree identifier different than a regular identifier in DID methods?
 {TBW}
 
-## Is my Sidetree identifier public?
+## *Q: Is my Sidetree identifier public?
 This is a choice. Sidetree could settle the identifiers on a private blockchain, whose network consist of a few federated nodes. If you anchor your Sidetree implementation to a public blockchain like Ethereum or Bitcoin, your identifiers are public. However, the linked data can be hashed and put behind a authentication wall (login + username + 2FA).\
 _(@henkvancann)_
 
-## Is a Sidetree identifier GPDR proof?
+## *Q: Is a Sidetree identifier GPDR proof?
 {TBW}
 
-## Does Sidetree support transferable identifiers?
+## **Q: Does Sidetree support transferable identifiers?
 {TBW}
 
 # File structure
 
-## What do we need IPFS for?
+## *Q: What do we need IPFS for?
 To store transactions between - and changes to DDO's. Sidetree is a Layer 2 solution on top of a Layer 1 settlement layer: a blockchain of choice.
 
 # Q&A section Wallets
 
-## Do I need a wallet for Sidetree?
+## *Q: Do I need a wallet for Sidetree?
 Yes and No.\
 Yes, Sidetree allows for personal key management and any user that want to have all the autonomous sovereign features of dfigital identity need a wallet to store and manage the keys of their identifiers safely.\
 No, if you rely on a custodial service for the inception and management of your digital identifiers, then you won't need a wallet of your own. The big relevant question in that situation is: why would you use Sidetree in the first place id you're not planning to be autonomous.
 _(@henkvancann)_
 
-## How can I backup the Sidetree identifiers in my wallet?
+## *Q: How can I backup the Sidetree identifiers in my wallet?
 There is a distintion between the private keys controlling the Sidetree identifiers and the digital data related to the identifiers, like DIDs, DDO's and VCs.
 
+To backup the private keys controlling the identifiers there are various ways to backup a crypto wallet: create a backup file, backup the seed, export a specific private key from the set, etc.\
+{TBW How to backup the DIDs based on Sidetree, are there general recommendations to be made?}
+_(@henkvancann)_
 {TBW}
 
-## Can I receive crypto money in my Sidetree wallet?
+## *Q: Can I receive crypto money in my Sidetree wallet?
 {TBW}
-## Does a Sidetree wallet store virtual credentials connect to my identifiers?
+## **Q: Does a Sidetree wallet store virtual credentials connect to my identifiers?
+
 {TBW}
 
 # Q&A section Signatures
 
-## Who can sign off my proofs and identifiers?
+## **Q: Who can sign off my proofs and identifiers?
 {TBW}
-## What is the practical use of signatures?
+## *Q What is the practical use of signatures?
 {TBW}
 
-## Do I need to show the full IPFS Sidetree database to anybody I transact with, even though I'd only like to show a part of it, for example a virtual credential?
+## **Q: Do I need to show the full IPFS Sidetree database to anybody I transact with, even though I'd only like to show a part of it, for example a virtual credential?
 {TBW}
 
 # Q&A section Private Key Management
 
-## How secure is the Sidetree infrastructure?
+## *Q: How secure is the Sidetree infrastructure?
 {TBW}
 
-## Does your public-private-key format matter in Sidetree?
+## **Q: Does your public-private-key format matter in Sidetree?
 {TBW}
 
 ## *Q: Not your keys, not your identity?
