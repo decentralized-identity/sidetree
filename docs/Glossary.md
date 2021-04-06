@@ -19,7 +19,7 @@ PKI = [Public Key Infrastructure](#public-key-infrastructure)\
 PR = Pull Request; github terminology\
 SDK = Software Development Kit\
 SSI = [Self Sovereign Identity](#self-sovereign-identity)\
-VC = Verifiable Credential, look up W3D DID standardization for more info\
+VC = Verifiable Credential, look up W3C Verifiable Credentials for more info\
 WASM = [WebAssembly](#WebAssembly)
 
 ## Definitions in alphabetic order
