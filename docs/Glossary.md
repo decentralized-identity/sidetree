@@ -45,6 +45,7 @@ An assertion of the truth of something, typically one which is disputed or in do
 
 #### Content-addressable hash
 Content addressing is a way to find data in a network using its content rather than its location. The way we do is by taking the content of the content and hashing it. Try uploading an image to IPFS and get the hash using the below button. In the IPFS ecosystem, this hash is called Content Identifier, or CID.
+
 #### Controller
 The entity that has the ability to make changes to an _identity_, _cryptocurrency_ or v_erifiable credential_. 
 
