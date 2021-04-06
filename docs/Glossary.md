@@ -19,7 +19,7 @@ PKI = [Public Key Infrastructure](#public-key-infrastructure)\
 PR = Pull Request; github terminology\
 SDK = Software Development Kit\
 SSI = [Self Sovereign Identity](#self-sovereign-identity)\
-VC = Verifiable Credential, look up W3D DID standardization for more info\
+VC = Verifiable Credential, look up W3C Verifiable Credentials for more info\
 WASM = [WebAssembly](#WebAssembly)
 
 ## Definitions in alphabetic order
@@ -45,6 +45,7 @@ An assertion of the truth of something, typically one which is disputed or in do
 
 #### Content-addressable hash
 Content addressing is a way to find data in a network using its content rather than its location. The way we do is by taking the content of the content and hashing it. Try uploading an image to IPFS and get the hash using the below button. In the IPFS ecosystem, this hash is called Content Identifier, or CID.
+
 #### Controller
 The entity that has the ability to make changes to an _identity_, _cryptocurrency_ or v_erifiable credential_. 
 
@@ -84,7 +85,8 @@ A unique entity. Typically represented with a unique identifier.
 A JSON Web Key (JWK) is a JavaScript Object Notation (JSON) data structure that represents a cryptographic key. [More info](https://tools.ietf.org/html/rfc7517).\
 The following **example** JWK declares that the key is an Elliptic Curve key, it is used with the P-256 Elliptic Curve, and its x and y coordinates are the base64url-encoded values shown.  A key identifier is also provided for the key:
 ```
-     {"kty":"EC",
+     {
+      "kty":"EC",
       "crv":"P-256",
       "x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",
       "y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0",
