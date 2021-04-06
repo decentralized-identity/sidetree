@@ -84,7 +84,8 @@ A unique entity. Typically represented with a unique identifier.
 A JSON Web Key (JWK) is a JavaScript Object Notation (JSON) data structure that represents a cryptographic key. [More info](https://tools.ietf.org/html/rfc7517).\
 The following **example** JWK declares that the key is an Elliptic Curve key, it is used with the P-256 Elliptic Curve, and its x and y coordinates are the base64url-encoded values shown.  A key identifier is also provided for the key:
 ```
-     {"kty":"EC",
+     {
+      "kty":"EC",
       "crv":"P-256",
       "x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",
       "y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0",
