@@ -99,7 +99,8 @@ A mechanism for granting or restricing access to something. MAY be used to issue
 
 #### Merkle tree
 <img src="./images/merkle-tree.jpg" alt="Merkle tree illustration" border="0" width="500">
-A cryptographic data structure compressing large volumes of transaction data into a single “merkle root.” This allows massive batching and pooling of transactions, and allows a different set of security and privacy guarantees to be layered on top of those of the anchor point.\
+A cryptographic data structure compressing large volumes of transaction data into a single “merkle root.” This allows massive batching and pooling of transactions, and allows a different set of security and privacy guarantees to be layered on top of those of the anchor point.
+
 [More on Merkle trees in Wikipedia](https://en.wikipedia.org/wiki/Merkle_tree)
 
 #### Normative
