@@ -64,6 +64,7 @@ We've done our best to protect the privacy of the Github by investigating the im
       - [Identity](./Glossary.md#identity)
       - [JSON Web Key](./Glossary.md#json-web-key)
       - [Key](./Glossary.md#key)
+      - [Merkle tree](./Glossary.md#merkle-tree)
       - [Normative](./Glossary.md#normative)
       - [Non-normative](./Glossary.md#non-normative)
       - [Payload](./Glossary.md#payload)
