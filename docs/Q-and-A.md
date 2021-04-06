@@ -511,7 +511,9 @@ There are also Sidetree implementations on Ethereum and Hyperledger Fabric:
  - Hyperledger Fabric: https://github.com/trustbloc/sidetree-fabric
 
 ## *Q: Does Sidetree use a blockchain?
-Yes, it needs a global blockchain to provide an ordered settlement layer 1 that has reached consensus over the unique representation of the "truth". Sidetree sits on top of this Layer 1, in layer 2 of the `ToIP model` and is blockchain agnostic.\
+Yes, it could use a global blockchain to provide an ordered settlement layer 1 that has reached consensus over the unique representation of the "truth". Sidetree sits on top of this Layer 1, in layer 2 of the `ToIP model` and is blockchain agnostic.\
+A Sidetree based on other consensus mechanisms and roots-of-trust would, in theory, be possible (if not exactly efficient!), and blockchain-like data structures such as Amazon's QLDB would also work.
+
 <img src="./images/Trust-over-IP.jpeg" alt="Trust-over-IP model" border="0" width="500">
 _(@henkvancann)_
 
