@@ -98,7 +98,9 @@ The following **example** JWK declares that the key is an Elliptic Curve key, it
 A mechanism for granting or restricing access to something. MAY be used to issue and prove, MAY be used to transfer and control over _identity_ and _cryptocurrency_. [More](https://en.wikipedia.org/wiki/Key_(cryptography))
 
 #### Merkle tree
-A cryptographic data structure compressing large volumes of transaction data into a single “merkle root.” This allows massive batching and pooling of transactions, and allows a different set of security and privacy guarantees to be layered on top of those of the anchor point.
+<img src="./images/merkle-tree.jpg" alt="Merkle tree illustration" border="0" width="500">
+A cryptographic data structure compressing large volumes of transaction data into a single “merkle root.” This allows massive batching and pooling of transactions, and allows a different set of security and privacy guarantees to be layered on top of those of the anchor point.\
+[More on Merkle trees in Wikipedia](https://en.wikipedia.org/wiki/Merkle_tree)
 
 #### Normative
 In general, we call a theory “normative” if it, in some sense, tells you what you should do - what action you should take. If it includes a usable procedure for determining the optimal action in a given scenario. [Souce](https://www.quora.com/What-is-the-difference-between-normative-and-non-normative?share=1).
