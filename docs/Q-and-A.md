@@ -464,7 +464,10 @@ Well because we're not actually concerned with any of the super sexy smart contr
 {TBW}
 
 ## **Q: How does Sidetree establish the root-of-trust that we need for autonomous identifiers? How does the data persist?
-{TBW}
+A Sidetree client manages keys and performs document operations on behalf of a DID owner. The Sidetree client needs to comply to [guidelines](https://github.com/decentralized-identity/sidetree/blob/master/docs/spec/guidelines.md#sidetree-operations) to securely, successfully manage a user's DIDs.
+
+It is advised that clients managing DIDs try as best as possible to separate the concepts of Update and Recovery keys. Compromise or loss of Update keys does not permanently imperil a user's control over their DID, where a loss or compromise of a Recovery key will, As such, it is important to create appropriate protections and processes for securing and using each type of key, commensurate with their level of control and risk.\
+(_@csuwildcat_)
 
 # Q&A section Identifiers
 
