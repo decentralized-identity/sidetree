@@ -697,6 +697,13 @@ HTTP/1.1 200 OK
 ### `sidetree_batch_writer_loop_failure`
 Occurs every time the batch writer fails a processing loop.
 
+Event data:
+```json
+{
+  "code": "Optional error code of the failure. Dependent on blockchain service implementation."
+}
+```
+
 Event data: none
 
 ### `sidetree_batch_writer_loop_success`
@@ -705,7 +712,7 @@ Occurs every time the batch writer completes a processing loop.
 Event data:
 ```json
 {
-  "batchSize": "The size of the batch written.",
+  "batchSize": "The size of the batch written."
 }
 ```
 

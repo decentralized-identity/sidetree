@@ -188,7 +188,7 @@ describe('Blockchain', async () => {
       expect(fetchSpy).toHaveBeenCalled();
     });
 
-    it('should throw if writing anchor string returned an error.', async () => {
+    it('should throw SidetreeError with correct error code if blockchain service returns an unexpected error.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
       const mockFetchResponse = {
         status: 500,
@@ -198,19 +198,27 @@ describe('Blockchain', async () => {
       };
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
 
-      try {
-        await blockchainClient.write('Unused anchor string.', 100);
-      } catch (error) {
-        // Throwing error is the expected case.
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => blockchainClient.write('Unused anchor string.', 100),
+        CoreErrorCode.BlockchainWriteUnexpectedError
+      );
+    });
 
-        if (error.code !== CoreErrorCode.BlockchainWriteResponseNotOk) {
-          fail();
+    it('should throw SidetreeError with correct error code if blockchain service returns a known Sidetree error.', async () => {
+      const blockchainClient = new Blockchain('Unused URI');
+      const dummyErrorCode = 'dummy error code';
+      const mockFetchResponse = {
+        status: 500,
+        body: {
+          read: () => { return JSON.stringify({ code: dummyErrorCode }); }
         }
+      };
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
 
-        return;
-      }
-
-      fail();
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => blockchainClient.write('Unused anchor string.', 100),
+        dummyErrorCode
+      );
     });
   });
 

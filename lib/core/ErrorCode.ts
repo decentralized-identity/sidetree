@@ -9,7 +9,7 @@ export default {
   BlockchainReadInvalidArguments: 'blockchain_read_invalid_arguments',
   BlockchainReadResponseBodyNotJson: 'blockchain_read_response_body_not_json',
   BlockchainReadResponseNotOk: 'blockchain_read_response_not_ok',
-  BlockchainWriteResponseNotOk: 'blockchain_write_response_not_ok',
+  BlockchainWriteUnexpectedError: 'blockchain_write_unexpected_error',
   VersionManagerVersionStringNotFound: 'version_manager_version_string_not_found',
   VersionManagerVersionMetadataIncorrectType: 'version_manager_version_metadata_incorrect_type'
 };
