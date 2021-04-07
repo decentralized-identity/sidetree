@@ -115,7 +115,7 @@ We've done our best to protect the privacy of the Github by investigating the im
 Sidetree is a protocol for creating scalable decentralized public key infrastructure ([DPKI](./Glossary.md#public-key-infrastructure)) networks that can run atop of any existing decentralized ledger system (e.g. Bitcoin) and be as open, public, and permissionless as the underlying ledger they utilize.
 
 #### **Q: Why only a protocol, why scalable, why decentralized, why a ledger, why permissionless, why open and public?
-1. Sidetree is a _protocol_ because we need it to be multi applicable
+1. Sidetree is a _protocol_ because we need it to be multi applicable. Implementers will be provided with software tools and toolkits and the protocol has both `normative` and non-normative guidelines.
 2. The _scalability_ feature is needed because of the astronomical numbers that are associated with digital identifiers, the numerous life events of each identifier and the mulitple use of each individual identifier. Every individual, group or thing on earth can have multiple identifiers associated with them.
 3. Privacy and guarding control over are the main drivers for the deer wish to _decentralize_ identifiers. If you don’t like being tracked and you don’t like anybody else controlling your identity, decentralization is the way to go. 
 4. A global _ledger_ is needed as a single source of truth.
@@ -237,7 +237,8 @@ These are the information-hiding measures taken in the protocol to facilitate co
 _(@henkvancann)_
 
 ## **Q: Is there like a central, GitHub repository that someone or some group of people are responsible for?
-it is in the Decentralized Identity Foundation's GitHub depository, [Sidetree](https://github.com/decentralized-identity/sidetree) is the name of it. So you can contribute code there, you can read every line of code. There's no code insertions after the fact, like every bit of every piece of code that we run, as an ION node, is there. So it's totally inspectable.
+it is in the Decentralized Identity Foundation's GitHub depository, [Sidetree](https://github.com/decentralized-identity/sidetree) is the name of it. So you can contribute code there, you can read every line of code. There's no code insertions after the fact, like every bit of every piece of code that we run, as an ION node, is there. So it's totally inspectable.\
+[Contribution guidelines for the project](https://github.com/decentralized-identity/sidetree/blob/master/docs/contribution-guidlines.md).
 
 # Q&A section Sidetree operational
 
@@ -364,13 +365,13 @@ _(@csuwildcat)_
 
 # Q&A section Userinterface
 
-## What does Sidetree look like?
+## *Q: What does Sidetree look like?
 Currently `Sidetree` is just code, that can be tested and executed in a terminal on the command line. Private key management of Sidetree will look like `wallets`.\
 {TBW}\
 _(@henkvancann)_
 
 
-## How does it actually work in terms of me as an individual? Could I have multiple IDs? Could I bind my ID to a bitcoin public address?
+## *Q: How does it actually work in terms of me as an individual? Could I have multiple IDs? Could I bind my ID to a bitcoin public address?
 Yeah, so you can actually have as many IDs as you want in the system. You could have thousands for instance. Actually, there's this concept that we kind of play around with that is, you're going to have probably a couple persona IDs, so well-known persona IDs. This is great for a lot of people. You want a couple IDs in the world that people know are for example Peter, like when Peter signs this with this ID, that's Peter. It's not anyone else, it's not any scammers, imposters, that's him. There's a lot of public stuff you'll tie to that.
 
 You might tie your resume, your podcast, like signed statements you make, like public things you say. That's all good, we all want that and most users want that. Then you have a ton of identifiers, like maybe 99% of them, that we call peer-wise or pairwise identifiers. Where you meet someone, or a company or an app, you get engaged with, where you want to create an ID just for that connection. So that when you create the ID it keeps that connection sort of silent and private between you two, so you're not leaking information.
@@ -382,7 +383,7 @@ So this stuff is actually all built on standards, DIDs are represented by this t
 Then you can also put endpoints that point to certain things. So you can have an endpoint that points to your Twitter profile or you can have an endpoint that points to a personal data store with encrypted data. That's kind of the more future-looking stuff, when we start getting into apps.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
-## Will I have some interface for managing all my IDs because it will come down to usability for adoption long-term by the general public?
+## **Q: Will I have some interface for managing all my IDs because it will come down to usability for adoption long-term by the general public?
 _I would want something like a one-pass or a Dashlane where I can just manage all my IDs in a single location. Is that coming? Is that coming now or is that coming later?_
 
 We're integrating DIDs into our authenticator app called _Microsoft Authenticator_. If you're familiar with like Google Authenticator or some of the other things, right now it handles 2FA and it's got like your passcodes for your `2FA` stuff for apps. We're adding the ID supports so you'll be able to get DIDs. We're not even like up-levelling the content of the DIDs so you don't have to be super technical, it's going to just get IDs for you when you make new connections, help you manage those keys instate.
@@ -390,21 +391,23 @@ We're integrating DIDs into our authenticator app called _Microsoft Authenticato
 We're going to be doing everything we can to augment that process to make it as easy for the average person as possible.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
-## Is it mandatory to work with Microsoft (Authenticator)?
+#### **Q: Is it mandatory to work with Microsoft (Authenticator)?
 You don't have to get Microsoft's wallet. The cool thing about the DID system we're building on Bitcoin, you can have an open source wallet that you go download and all the libraries, everything to create these. IDs are completely untethered from any company. So you could say, _"You know what? I don't trust you Microsoft! I'm going to go get this like completely opensource GPL3 thing that I see out there on GitHub and I'm going to run that"_ and that's perfectly fine. In fact, we encourage it.
 
-## Is there a Sidetree course or webinar available?
+## *Q: Is there a Sidetree course or webinar available?
 These could be some interesting sources:
 - [What bitcoin Did 231 podcast](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 - [Daniel Buchner's very quick run down Jan 2021](https://www.youtube.com/watch?v=dZTmGPiLBv8)
 - [Orie Steele's SSI Meetup](https://www.youtube.com/watch?v=mk4w2tBTgdE)
 Technical folks could also browse through the closed and open [issues](https://github.com/decentralized-identity/sidetree/issues) to get an idea of what has been achieved in the project.
 
-#### Element-DID playground based on Sidetree
+#### **Q: DO you have a virtual playground available for Sidetree? 
+Element-DID playground based on Sidetree
+
 https://element-did.com Element DID creation, based on a PPK inception, resulting in a Self Sovereign Identifier that will be anchored through Sidetree on Ethereum.\
 _(@henkvancann)_
 
-## Could Sidetree work for edge computers that need self sovereign identity? How to (selectively) share control with the owners of the device?
+## *Q: Could Sidetree work for edge computers that need self sovereign identity? How to (selectively) share control with the owners of the device?
 What a Sidetree based DID schema like ION provides you to do, is the ability to create identifiers that aren't just for humans or companies, you can create identifiers for intangible, non-living things, like a package. So instead, I can go get a DID for my package and I could put the service endpoint to point to GitHub. From there, I can go scan ION and find all the packets and all the IDs in the system that declare themselves to be say packages and create a decentralized version of npm where I'm no longer reliant on npm happening to exist or to believe my packet is worth indexing. I can create that index myself. I can present the same sort of userinterface you would see on `npm`, but I don't need a centralized identity in the middle of that.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)\
 {TBW}
@@ -412,7 +415,7 @@ What a Sidetree based DID schema like ION provides you to do, is the ability to 
 
 # Q&A section Root of trust
 
-## What does an ID system gain from a blockchain?
+## **Q: What does an ID system gain from a blockchain?
 Because there's lots of bullshit going around about people using blockchains for all sorts of nonsense. I would actually harken back to what Satoshi first called Bitcoin before it was blockchain, which was **timechain**. It turns out that `PKI` backs identifiers. An analogy of what one is, is the DNS system.
 
 The identifier in the DNS system is a domain name and then the backing PKI data is your zone file in DNS that lists your named servers, routing information. Then there's the _certificate of authorities_ that have a sort of the backing cryptography. So this is an example of a PKI system. 
@@ -423,7 +426,7 @@ If Alice creates an ID and she initially associates her phone with using her ID 
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
 
-## What is it about Bitcoin? 
+## *Q: What is it about Bitcoin that seems to fit well with Sidetree? 
 _This stuff can be done on Ethereum and other blockchains as well, but just specifically, what is it about Bitcoin that enables this to make it possible to create these IDs?_
 
 First we need to understand [what does an ID system gain from a blockchain](what-does-an-id-system-gain-from-a-blockchain). In brief: it's an oracle for entering events into a chronology. That's exactly what we use the Bitcoin network for. In its most primitive sense, we use Bitcoin to enter in events in a chronology that nodes sort of watch for and compute so they all can understand the state of every ID that's anchored in Bitcoin. So it's very important. 
@@ -453,10 +456,15 @@ This is a choice. Sidetree could settle the identifiers on a private blockchain,
 _(@henkvancann)_
 
 ## *Q: Is a Sidetree identifier GPDR proof?
-{TBW}
+Yes, in essence the sidetree protocol has the ability to support all functional features that the management of subject identifiers need, according to the GDPR and contemporary privacy rules, performed by owners, controllers and data-processors. For example the right to be forgotten and the right to be deleted.\
+_(@henkvancann)_
 
 ## **Q: Does Sidetree support transferable identifiers?
-{TBW}
+A user can transfer the root-of-trust of an identifier (its public private key pair) to another physical wallet. However you can't rotate the keys of a Sidetree identifier, it's a persistent identifier.
+{TBW, pls check correctness of answer}
+
+A Sidetree implementation anchors its identifier in ledger systems of choice. That means once that choice has been made you can't transfer the full identity event history of that specific identifier
+{TBW, pls check correctness of answer}
 
 # File structure
 
@@ -467,7 +475,7 @@ To store transactions between - and changes to DDO's. Sidetree is a Layer 2 solu
 
 ## *Q: Do I need a wallet for Sidetree?
 Yes and No.\
-Yes, Sidetree allows for personal key management and any user that want to have all the autonomous sovereign features of dfigital identity need a wallet to store and manage the keys of their identifiers safely.\
+Yes, Sidetree allows for personal key management and any user that want to have all the autonomous sovereign features of digital identity need a wallet to store and manage the keys of their identifiers safely.\
 No, if you rely on a custodial service for the inception and management of your digital identifiers, then you won't need a wallet of your own. The big relevant question in that situation is: why would you use Sidetree in the first place id you're not planning to be autonomous.
 _(@henkvancann)_
 
@@ -490,7 +498,7 @@ _(@henkvancann)_
 ## **Q: Who can sign off my proofs and identifiers?
 {TBW}
 ## *Q What is the practical use of signatures?
-{TBW}
+Sidetree relies on JSON Web Signatures for authentication and integrity protection of DID Operations, except for Create, with contains key material and is self certifying. [More](https://identity.foundation/sidetree/spec/#json-web-signatures) on JSON Web Signatures.
 
 ## **Q: Do I need to show the full IPFS Sidetree database to anybody I transact with, even though I'd only like to show a part of it, for example a virtual credential?
 {TBW}
@@ -501,7 +509,7 @@ _(@henkvancann)_
 {TBW}
 
 ## **Q: Does your public-private-key format matter in Sidetree?
-{TBW}
+Yes, Sidetree uses [JSON Web key format]().
 
 ## *Q: Not your keys, not your identity?
 Depends. You can be the subject of an identifier and have no control over the indentifier whatsoever. This is practically the case for all login + usernames you "have" to enter the websites of your service providers. You don't own those identifiers and these identifiers can easily be taken away from you with all the related data and social connections. Example: a Twitter ban.
@@ -512,7 +520,9 @@ SSI means control over your own identifier. Two nuances:
 {TBW}
 
 ## *Q: The wallet is there to store my Sidetree private keys safely, no?
-{TBW}
+Newly created key material (private and public keys, signatures) in Sidetree is self certifying. The root-of-trust is indeed in the wallet you use to manage the private keys. Whether the wallet stores them safely is mainly dependent of its users behaviour and to a much lesser extent the technical security of a wallet (can it be comprimised?).\
+(_@henkvancann_)
+
 ## ***Q: Are compound private keys (Shamir Secret Sharing) and multisignature schemes possible to create identifiers?
 {TBW}
 ## **Q: How to delegate control over my private keys that control my identifiers?
