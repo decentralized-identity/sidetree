@@ -2,6 +2,7 @@
  * Error codes used by Sidetree core service.
  */
 export default {
+  BatchSchedulerWriteUnexpectedError: 'batch_scheduler_write_unexpected_error',
   BlockchainGetFeeResponseNotOk: 'blockchain_get_fee_response_not_ok',
   BlockchainGetLatestTimeResponseNotOk: 'blockchain_get_latest_time_response_not_ok',
   BlockchainGetLockResponseNotOk: 'blockchain_get_lock_response_not_ok',

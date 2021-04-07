@@ -700,7 +700,7 @@ Occurs every time the batch writer fails a processing loop.
 Event data:
 ```json
 {
-  "code": "Optional error code of the failure. Dependent on blockchain service implementation."
+  "code": "Error code of the failure. Dependent on blockchain service implementation."
 }
 ```
 

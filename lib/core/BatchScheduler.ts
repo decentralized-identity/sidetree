@@ -57,9 +57,12 @@ export default class BatchScheduler {
 
       EventEmitter.emit(EventCode.SidetreeBatchWriterLoopSuccess, { batchSize });
     } catch (error) {
-      let loopFailureEventData;
+      // Default the error to unexpected error.
+      const loopFailureEventData = { code: ErrorCode.BatchSchedulerWriteUnexpectedError };
+
+      // Only overwrite the error code if this is a concrete known error.
       if (error instanceof SidetreeError && error.code !== ErrorCode.BlockchainWriteUnexpectedError) {
-        loopFailureEventData = { code: error.code };
+        loopFailureEventData.code = error.code;
       } else {
         Logger.error('Unexpected and unhandled error during batch writing, investigate and fix:');
         Logger.error(error);
