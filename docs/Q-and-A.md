@@ -123,15 +123,28 @@ Sidetree is a protocol for creating scalable decentralized public key infrastruc
 6. Lastly Sidetree needs to be open and public and at the same the protocol and its applications need to hide and protect all sensitive identity related data. This seems to contradict each other. However in Sidetree it is doable. Cryptography and the protocol safeguard privacy and the _open public_ characteristic offers availability and inclusion at the same time.
 (_@henkvancann_)
 
-## What is the setting of sidetree?
+## **Q: What is the setting of sidetree?
 The protocol allows users to create _globally unique, user-controlled identifiers_ and manage their associated metadata, all _without the need for centralized authorities_ or trusted third parties. The syntax of the identifier and accompanying data model used by the protocol is conformant to that defined by W3C Decentralized Identifiers. Implementations of the protocol can be codified as their own distinct DID Methods and registered in the W3C DID Method Registry.
 
-## What is in the name 'Sidetree'?
+## *Q: What is in the name 'Sidetree'?
 The name “Sidetree” combines two hints as to its technical inspirations and superpowers. Each Sidetree network functions as a kind of identity-specific “sidechain” periodically pinned to an underlying chain in much the same way that so-called “Layer 2 Networks”.  These include the Lightning network running atop Bitcoin.\
 (_@bumblefudge_)
 
-## How is the inner working of Sidetree?
+## **Q: How is the inner working of Sidetree?
 <img src="../www/diagrams/architecture.png" alt="Architecture of Sidetree" border="0" width="400">
+
+## *Q: What are the main components of a sidetree system?
+The figure below illustrates the three primary components of a Sidetree-based DID system:
+1. Single source of truth
+2. Safe-guarded recording of events
+3. Access to (proofs of) stored data with a time stamp
+<img src="./images/sidetree-system.png" alt="System components of Sidetree" border="0" width="400">
+
+#### **Q What exactly does a "system" mean in Sidetree?
+It is a DID overlay network. 
+- The underlying anchoring system that serves as the global anchoring and linear sequencing system for DID operations.
+- The Sidetree nodes themselves, which interact with the anchoring system to anchor operations, fetch and replicate data from the CAS network, and process operations in accordance with the protocol deterministic ruleset.
+- An integrated Content-Addressable Storage (CAS) network layer Sidetree nodes use to distribute and replicate DID operation files.
 
 ## For who is Sidetree?
 Any team or organisation that wants to create an DID based on Sidetree, because of its typical Layer 2 properties, not bloating any Layer 1 solution. Laying a foundation for layer 3 development,  in the DID to be developed,  that will result in W3C DID compliant VCs.
