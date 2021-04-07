@@ -469,9 +469,21 @@ A Sidetree implementation anchors its identifier in ledger systems of choice. Th
 # File structure
 
 ## *Q: What do we need IPFS for?
-To store transactions between - and changes to DDO's. Sidetree is a Layer 2 solution on top of a Layer 1 settlement layer: a blockchain of choice.
+To store transactions between - and changes to DDO's. Sidetree is a Layer 2 solution on top of a Layer 1 settlement layer: a blockchain of choice.\
+_(@henkvancann)_
 
 # Q&A section Wallets
+
+## *Q: Where can I buy Sidetree coin?
+Sidetree is not a crypto currency, neither will implementation of Sidetree be a crypto currency.  Sidetree is a protocol for digital identity using decentralized identifiers.\
+_(@henkvancann)_
+
+## **Q: Why does Sidetree mention fees?
+_....if it is not a crypto currency system?_
+
+It's an optional feature for implementors. Sidetree implementers may choose to implement protective mechanisms designed to strengthen a Sidetree network against low-cost spurious operations. These mechanisms are primarily designed for open, permissionless implementations utilizing public blockchains that feature native crypto-economic systems.\
+[More on fees](https://identity.foundation/sidetree/spec/#proof-of-fee)\
+_(@henkvancann)_
 
 ## *Q: Do I need a wallet for Sidetree?
 Yes and No.\
