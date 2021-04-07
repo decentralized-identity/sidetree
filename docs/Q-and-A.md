@@ -120,7 +120,8 @@ Sidetree is a protocol for creating scalable decentralized public key infrastruc
 3. Privacy and guarding control over are the main drivers for the deer wish to _decentralize_ identifiers. If you don’t like being tracked and you don’t like anybody else controlling your identity, decentralization is the way to go. 
 4. A global _ledger_ is needed as a single source of truth.
 5. Permissioned identifiers are limited to a certain domain of application. Sidetree does not want to confine itself and will be as _permissionless_ as the underlaying ledger.
-6. Lastly Sidetree needs to be open and public and at the same the protocol and its applications need to hide and protect all sensitive identity related data. This seems to contradict each other. However in Sidetree it is doable. Cryptography and the protocol safeguard privacy and the open public characteristic offers availability and inclusion at the same time.
+6. Lastly Sidetree needs to be open and public and at the same the protocol and its applications need to hide and protect all sensitive identity related data. This seems to contradict each other. However in Sidetree it is doable. Cryptography and the protocol safeguard privacy and the _open public_ characteristic offers availability and inclusion at the same time.
+(_@henkvancann_)
 
 ## What is the setting of sidetree?
 The protocol allows users to create _globally unique, user-controlled identifiers_ and manage their associated metadata, all _without the need for centralized authorities_ or trusted third parties. The syntax of the identifier and accompanying data model used by the protocol is conformant to that defined by W3C Decentralized Identifiers. Implementations of the protocol can be codified as their own distinct DID Methods and registered in the W3C DID Method Registry.
@@ -157,8 +158,11 @@ Sidetree has a very small footprint on Settlement Layer 1 of the trust-over-IP m
 ##  *Q: Is Sidetree a DID?
 `Sidetree` is not a `DID` method. The related `DID` method is [`did:core`](https://www.w3.org/TR/did-core/) Implementations of the protocol can be codified as their own distinct DID Methods and registered in the W3C DID Method Registry; e.g. [`did:ion`]().\
 _(@henkvancann)_
+#### **Q: How does Sidetree technically relate to DID methods?
+Sidetree-based DID Method implementations are overlay networks composed of independent peer nodes (Sidetree nodes) that interact with an underlying decentralized anchoring system to write, observe, and process replicated DID PKI state operations using deterministic protocol rules that produce an eventually strongly consistent view of all DIDs in the network.\
+[More at source](https://identity.foundation/sidetree/spec/#introduction)
 
-#### **Q: What is the relationship between Sidetee and DIDs?
+#### **Q: What is the functional relationship between Sidetee and DIDs?
 Decentralized identifiers (DIDs) enable a person or entity to securely and directly “anchor” their data-sharing activities to a shared ledger securely by cryptography. The first generation of DID systems accomplished this with a 1-to-1 relationship between “blockchain addresses” (cryptographic identities) and the more flexible, powerful addresses called DIDs. These latter functioned as privacy-preserving extensions of the blockchain addresses to which they were closely coupled. In this way, each DID effortlessly inherited the formidable security guarantees of those blockchains-- but in many cases, they also inherited scalability problems and economic models that were a bad fit for many DID use-cases.\
 Sidetree is a systematic, carefully-engineered protocol that loosens that coupling between blockchain anchor-points and DID networks anchored to them, replacing a 1-to-1 relationship with a 1-to-many relationship. Depending on the use-case and implementation strategies chosen, the protocol can optimize for scalable performance, for developer-friendly ergonomics and software development kits (SDK), for the portability of DIDs and networks of DIDs across multiple anchoring systems, and even for high availability in contexts where a global blockchain cannot be relied upon directly.\
 (_@bumblefudge_)
