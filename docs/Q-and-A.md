@@ -338,7 +338,7 @@ New Version Activation is **necessary for Minor and Major version segments**; th
 _(@henkvancann)_
 
 ## How to handle multiple formats of Sidetree JSON files through time. Will they be backwards compatible?
-
+{TBW}
 
 ## Could Sidetree work with be pruned or charded blockchains?
 No, any node needs a full copy of the blockchain that serves as a settlement layer 1. The reason is ordering of operation on DID is done via consensus of the blockchain.\
@@ -369,6 +369,23 @@ ELI5=Explain Like I'm 5 years old, [more here](https://www.howtogeek.com/694298/
 
 If you have a DID linked to a personal datastore, people would be able to follow your DID instead of something like a Twitter ID, and pull tweets directly from your datastore. This means apps cannot block your ID or censor your posts. It's the foundation of decentralized apps.
 _(@csuwildcat)_
+
+## *Q: Are there examples of Sidetree based identity systems and/or implementors?
+
+### Transmute
+Transmute maintains Sidetree ledger adapters for Ethereum, Amazon QLDB, Bitcoin and Hyperledger Fabric. They also support interoperability tests with DID Key, the Universal Wallet Interop Spec, the VC HTTP API, and Traceability Vocabulary. Transmute has built Sidetree.js, an implementation of the Sidetree protocol based on the DIF’s codebase that focuses on modularity: it is a Typescript monorepo where each component of a Sidetree node (Ledger, Content Addressable Storage, Cache database) can be substituted with different implementations that use a common interface.
+
+## SecureKey 
+has created a ledger-agnostic [Go implementation](https://github.com/trustbloc/sidetree-core-go) of Sidetree along with [Orb](https://github.com/trustbloc/orb) and [Hyperledger Fabric](https://github.com/trustbloc/sidetree-fabric) variations built on top. [Did:orb](https://trustbloc.github.io/did-method-orb/) enables independent organizations to create decentralized identifiers that are propagated across a decentralized network without reliance on a common blockchain. By extending Sidetree into a Fediverse of interconnected registries, Orb provides the foundation for building digital ecosystems on top of decentralized identifiers using a federated, replicated and scalable approach.
+
+### Microsoft
+Microsoft is a primary contributor to [ION](https://identity.foundation/ion/), an open source, public, permissionless implementation of Sidetree on Bitcoin. 
+There are several repos and utilities that make working with ION easier, including:
+- [ION GitHub repo](https://github.com/decentralized-identity/ion) - main repo for ION node code
+- [ION Tools](https://www.npmjs.com/package/@decentralized-identity/ion-tools) - JavaScript libs for Node.js/browsers that makes using DIDs and interacting with the ION network easier
+- [ION Install Guide](https://identity.foundation/ion/install-guide/) - step-by-step guide for installing an ION node
+- [ION Explorer](https://identity.foundation/ion/explorer/) - graphical interface for viewing DID and other info about the ION network.
+In this Q&A there is a [section on ION](#qa-section-ION) that provides basic first answers.
 
 # Q&A section Userinterface
 
