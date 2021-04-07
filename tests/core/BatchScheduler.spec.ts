@@ -38,7 +38,7 @@ describe('BatchScheduler', async () => {
     expect(batchWriter.invocationCount).toBeGreaterThanOrEqual(2);
   });
 
-  it('should emit batch write even with specific code SidetreeError is thrown.', async () => {
+  it('should emit failure event with specific code if known SidetreeError is thrown.', async () => {
     const blockchain = new MockBlockchain();
 
     const dummyErrorCode = 'any error code';
