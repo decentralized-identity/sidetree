@@ -133,6 +133,9 @@ The name “Sidetree” combines two hints as to its technical inspirations and 
 ## **Q: How is the inner working of Sidetree?
 <img src="../www/diagrams/architecture.png" alt="Architecture of Sidetree" border="0" width="400">
 
+#### ***Q: Why have the concept of index files?
+It would be ideal to be able to fetch metadata about the batched operations efficiently, without needing to download the entire batched operation. This design is needed for the implementation of "light nodes".
+
 ## *Q: What are the main components of a sidetree system?
 The figure below illustrates the three primary components of a Sidetree-based DID system:
 1. Single source of truth
@@ -237,8 +240,12 @@ These are the information-hiding measures taken in the protocol to facilitate co
 _(@henkvancann)_
 
 ## **Q: Is there like a central, GitHub repository that someone or some group of people are responsible for?
+_Could we contribute to the repository?_
+
 it is in the Decentralized Identity Foundation's GitHub depository, [Sidetree](https://github.com/decentralized-identity/sidetree) is the name of it. So you can contribute code there, you can read every line of code. There's no code insertions after the fact, like every bit of every piece of code that we run, as an ION node, is there. So it's totally inspectable.\
-[Contribution guidelines for the project](https://github.com/decentralized-identity/sidetree/blob/master/docs/contribution-guidlines.md).
+- [Contribution guidelines for the project](https://github.com/decentralized-identity/sidetree/blob/master/docs/contribution-guidlines.md).
+- [The Sidetree release process](https://github.com/decentralized-identity/sidetree/blob/master/docs/release-process.md)
+- [The Sidetree coding style guide](https://github.com/decentralized-identity/sidetree/blob/master/docs/styleguide.md)
 
 # Q&A section Sidetree operational
 
@@ -506,6 +513,9 @@ _(@henkvancann)_
 {TBW}
 
 # Q&A section Signatures
+
+## **Q: Why is Sidetree not checking signatures at observation time for all updates, recoveries, and deactivates?
+Because signature checks are computationally expensive, so we defer such compute until resolution time.
 
 ## **Q: Who can sign off my proofs and identifiers?
 {TBW}
