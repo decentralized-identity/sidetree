@@ -112,7 +112,15 @@ We've done our best to protect the privacy of the Github by investigating the im
 # Q&A section General
 
 ## *Q: What is Sidetree?
-Sidetree is a protocol for creating scalable decentralized public key infrastructure (DPKI) networks that can run atop of any existing decentralized ledger system (e.g. Bitcoin) and be as open, public, and permissionless as the underlying ledger they utilize.
+Sidetree is a protocol for creating scalable decentralized public key infrastructure ([DPKI](./Glossary.md#public-key-infrastructure)) networks that can run atop of any existing decentralized ledger system (e.g. Bitcoin) and be as open, public, and permissionless as the underlying ledger they utilize.
+
+#### **Q: Why only a protocol, why scalable, why decentralized, why a ledger, why permissionless, why open and public?
+1. Sidetree is a _protocol_ because we need it to be multi applicable
+2. The _scalability_ feature is needed because of the astronomical numbers that are associated with digital identifiers, the numerous life events of each identifier and the mulitple use of each individual identifier. Every individual, group or thing on earth can have multiple identifiers associated with them.
+3. Privacy and guarding control over are the main drivers for the deer wish to _decentralize_ identifiers. If you don’t like being tracked and you don’t like anybody else controlling your identity, decentralization is the way to go. 
+4. A global _ledger_ is needed as a single source of truth.
+5. Permissioned identifiers are limited to a certain domain of application. Sidetree does not want to confine itself and will be as _permissionless_ as the underlaying ledger.
+6. Lastly Sidetree needs to be open and public and at the same the protocol and its applications need to hide and protect all sensitive identity related data. This seems to contradict each other. However in Sidetree it is doable. Cryptography and the protocol safeguard privacy and the open public characteristic offers availability and inclusion at the same time.
 
 ## What is the setting of sidetree?
 The protocol allows users to create _globally unique, user-controlled identifiers_ and manage their associated metadata, all _without the need for centralized authorities_ or trusted third parties. The syntax of the identifier and accompanying data model used by the protocol is conformant to that defined by W3C Decentralized Identifiers. Implementations of the protocol can be codified as their own distinct DID Methods and registered in the W3C DID Method Registry.
