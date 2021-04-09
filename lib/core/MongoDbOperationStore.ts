@@ -57,7 +57,12 @@ export default class MongoDbOperationStore extends MongoDbStore implements IOper
    * Gets all operations of the given DID unique suffix in ascending chronological order.
    */
   public async get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]> {
-    const mongoOperations = await this.collection!.find({ didSuffix: didUniqueSuffix }).sort({ txnNumber: 1, opIndex: 1 }).toArray();
+    const mongoOperations = await this.collection!
+      .find({ didSuffix: didUniqueSuffix })
+      .sort({ txnNumber: 1, opIndex: 1 })
+      .maxTimeMS(MongoDbStore.defaultQueryTimeoutInMilliseconds)
+      .toArray();
+
     return mongoOperations.map((operation) => { return MongoDbOperationStore.convertToAnchoredOperationModel(operation); });
   }
 
