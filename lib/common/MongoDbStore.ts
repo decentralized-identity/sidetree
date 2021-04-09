@@ -5,6 +5,9 @@ import Logger from '../common/Logger';
  * Base class that contains the common MongoDB collection setup.
  */
 export default class MongoDbStore {
+
+  public static readonly defaultQueryTimeoutInMilliseconds = 10000;
+
   /** MondoDB instance. */
   protected db: Db | undefined;
   /** MongoDB collection */
