@@ -595,21 +595,22 @@ A Sidetree based on other consensus mechanisms and roots-of-trust would, in theo
 
 ## **Q: What's the difference between Sidetree and blockchain?
 Lots, it's a totally different beast. There are only a few similarities, for the record:
-- THe tree-like structure of Side-tree resembles the Merkle tree in which blockchain tend to store proofs of identifier events (hashes)
+- The tree-like structure of Side-tree resembles the Merkle tree in which blockchain tend to store proofs of transaction hashes, and Side tree in turn stores identifier events (hashes).
 - Core Proof Files form the signature-chained backbone for the state lineages of all DIDs in the system.
 _(@henkvancann)_
 
 Sidetree is however NOT a Merkel Tree system - it doesn't use these Merkle trees anywhere. It's literally just ipfs files of highly compact lists of data that interlink to each other.
 (_@csuwildcat_)
 
-#### **Q: what's the "tree" in Sidetree if it is not a Merkle tree system?
+## **Q: what's the "tree" in Sidetree if it is not a Merkle tree system?
 The tree in _Merkle tree_ stems from the fact that the leaves are all content hashes and the branches 2 hashes combined to a single higher level hash.\
 That makes a _Merkle tree_ traversable in logN complexity (telephone book like search) to detect why a root hash fails.
 
 Sidetree uses IPFS which in turn uses [Merkle DAGs](https://docs.ipfs.io/concepts/merkle-dag/#merkle-distributed-acyclic-graphs-dags)
 **Merkle DAGs are similar to Merkle trees**, but there are no balance requirements, and every node can carry a payload. In DAGs, several branches can re-converge or, in other words, a node can have several parents.
 
-The tree in Side tree refers to {TBW prio 2}\
+The tree like structure of Side tree resembles the Merkle tree in which blockchain tend to store proofs of transaction hashes, and Side tree in turn stores identifier events (hashes).\
+{TBW prio 2}\
 _(@henkvancann)_
 
 ## *Q: Why does Sidetree need a blockchain? 
