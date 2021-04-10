@@ -242,7 +242,7 @@ _(@henkvancann)_
 ## **Q: Is there like a central, GitHub repository that someone or some group of people are responsible for?
 _Could we contribute to the repository?_
 
-it is in the Decentralized Identity Foundation's GitHub depository, [Sidetree](https://github.com/decentralized-identity/sidetree) is the name of it. So you can contribute code there, you can read every line of code. There's no code insertions after the fact, like every bit of every piece of code that we run, as an ION node, is there. So it's totally inspectable.\
+it is in the Decentralized Identity Foundation's GitHub depository, [Sidetree](https://github.com/decentralized-identity/sidetree) is the name of it. So you can contribute code there, you can read every line of code. There's no code insertions after the fact, like every bit of every piece of code that we run, as an ION node, is there. So it's totally inspectable.
 - [Contribution guidelines for the project](https://github.com/decentralized-identity/sidetree/blob/master/docs/contribution-guidlines.md).
 - [The Sidetree release process](https://github.com/decentralized-identity/sidetree/blob/master/docs/release-process.md)
 - [The Sidetree coding style guide](https://github.com/decentralized-identity/sidetree/blob/master/docs/styleguide.md)
@@ -356,7 +356,7 @@ So our target hardware has been this little 2017 Intel NUC that I bought for $40
 
 ## What do you need to do?
 _to operate Sidetree or on sidetree based DIDs like ION?_\
-So we're putting out the install guides, there are `Docker` containers for quick install. See more on [github]((https://github.com/decentralized-identity/sidetree)
+So we're putting out the install guides, there are `Docker` containers for quick install. See more on [github](https://github.com/decentralized-identity/sidetree)
 
 ## Am I creating value for Microsoft while I contribute to Sidetree? And they will sell it on their behalf?
 We're really wanting to encourage people to install and help us, especially if you're technically capable, or you're a coder or have some aptitude. Kick the tires on it, let us know, find bugs, this is for everyone! This is a public utility, we're not trying to make money on this at all, and so just help it be the best it can be.
@@ -595,13 +595,22 @@ A Sidetree based on other consensus mechanisms and roots-of-trust would, in theo
 
 ## **Q: What's the difference between Sidetree and blockchain?
 Lots, it's a totally different beast. There are only a few similarities, for the record:
-- THe tree-like structure of Side-tree resembles the Merkletree in which blockchain tend to store proofs of transactions (hashes)
+- THe tree-like structure of Side-tree resembles the Merkle tree in which blockchain tend to store proofs of identifier events (hashes)
 - Core Proof Files form the signature-chained backbone for the state lineages of all DIDs in the system.
 _(@henkvancann)_
 
-The pinning mechanism making the periodic anchoring possible in Sidetree relies on “merkle trees,” which are basically cryptographic data structures compressing large volumes of transaction data into a single “merkle root.” This allows massive batching and pooling of transactions, and allows a different set of security and privacy guarantees to be layered on top of those of the anchor point.  
-Out of this combination of sidechains and merkle trees evolved the concept of Sidetree-- a protocol first proposed by Microsoft’s Daniel Buchner, and incubated with major contributions and iterative thinking in the DIF community.\
-(_@bumblefudge_)
+Sidetree is however NOT a Merkel Tree system - it doesn't use these Merkle trees anywhere. It's literally just ipfs files of highly compact lists of data that interlink to each other.
+(_@csuwildcat_)
+
+#### **Q: what's the "tree" in Sidetree if it is not a Merkle tree system?
+The tree in _Merkle tree_ stems from the fact that the leaves are all content hashes and the branches 2 hashes combined to a single higher level hash.\
+That makes a _Merkle tree_ traversable in logN complexity (telephone book like search) to detect why a root hash fails.
+
+Sidetree uses IPFS which in turn uses [Merkle DAGs](https://docs.ipfs.io/concepts/merkle-dag/#merkle-distributed-acyclic-graphs-dags)
+**Merkle DAGs are similar to Merkle trees**, but there are no balance requirements, and every node can carry a payload. In DAGs, several branches can re-converge or, in other words, a node can have several parents.
+
+The tree in Side tree refers to {TBW prio 2}\
+_(@henkvancann)_
 
 ## *Q: Why does Sidetree need a blockchain? 
 _...when it has nodes in a network that could federatively establish consensus?_
