@@ -217,7 +217,7 @@ There are two JavaScript implementations that I know about. The reference implem
 _(@troyronda)_
 
 ##  *Q: Does Sidetree cooperate with other projects in the self-sovereign Identity field?
-Yes, Sidetree sits under the *Decentralized Identity Foundation*, [DIF](https://identity.foundation), and is part of the *Identity and Discovery* Workgroup. {TBW There are also non-formal relation with the newly launched trust-over-ip foundation?, how / where does Sidetree fit in trust-over-ip?
+Yes, Sidetree sits under the *Decentralized Identity Foundation*, [DIF](https://identity.foundation), and is part of the *Identity and Discovery* Workgroup. {TBW prio 3: There are also non-formal relation with the newly launched trust-over-ip foundation?}
 
 ##  *Q: Why is Microsoft so interested in supporting these developments?
 _What's the value to Microsoft in working on this?_
@@ -413,8 +413,6 @@ _(@henkvancann)_
 ## *Q: Could Sidetree work for edge computers that need self sovereign identity? How to (selectively) share control with the owners of the device?
 What a Sidetree based DID schema like ION provides you to do, is the ability to create identifiers that aren't just for humans or companies, you can create identifiers for intangible, non-living things, like a package. So instead, I can go get a DID for my package and I could put the service endpoint to point to GitHub. From there, I can go scan ION and find all the packets and all the IDs in the system that declare themselves to be say packages and create a decentralized version of npm where I'm no longer reliant on npm happening to exist or to believe my packet is worth indexing. I can create that index myself. I can present the same sort of userinterface you would see on `npm`, but I don't need a centralized identity in the middle of that.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)\
-{TBW}
-
 
 # Q&A section Root of trust
 
@@ -439,9 +437,6 @@ So why would we pick Bitcoin versus some other blockchain?
 Well because we're not actually concerned with any of the super sexy smart contracts, and other stuff. Not to say that there's less interesting stuff in Bitcoin, but we just don't care about features like that, which are not applicable for us. What we most care about is entering stuff in the most immutable, hardened record imaginable and right now, that's Bitcoin. It's pretty hard to argue that isn't Bitcoin, so that's why we use it, is because it has those attributes and it suffices, it does exactly what we need it to do.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
-## *Q: What do I need to trust in Sidetree?
-{TBW}
-
 ## **Q: How does Sidetree establish the root-of-trust that we need for autonomous identifiers? How does the data persist?
 A Sidetree client manages keys and performs document operations on behalf of a DID owner. The Sidetree client needs to comply to [guidelines](https://github.com/decentralized-identity/sidetree/blob/master/docs/spec/guidelines.md#sidetree-operations) to securely, successfully manage a user's DIDs.
 
@@ -454,9 +449,6 @@ It is advised that clients managing DIDs try as best as possible to separate the
 Oh yeah, it has this potential. I mean if carriers were able to tie your account to a DID or something hardened, literally an attacker would have to physically come take from you, just like they would have to take your Bitcoin, absolutely! I don't think we have this sort of transient ID problem where it can just be like one button push from an operator on their end switches your account.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
 
-## **Q: How is a Sidetree identifier different than a regular identifier in DID methods?
-{TBW}
-
 ## *Q: Is my Sidetree identifier public?
 This is a choice. Sidetree could settle the identifiers on a private blockchain, whose network consist of a few federated nodes. If you anchor your Sidetree implementation to a public blockchain like Ethereum or Bitcoin, your identifiers are public. However, the linked data can be hashed and put behind a authentication wall (login + username + 2FA).\
 _(@henkvancann)_
@@ -466,11 +458,13 @@ Yes, in essence the sidetree protocol has the ability to support all functional 
 _(@henkvancann)_
 
 ## **Q: Does Sidetree support transferable identifiers?
-A user can transfer the root-of-trust of an identifier (its public private key pair) to another physical wallet. However you can't rotate the keys of a Sidetree identifier, it's a persistent identifier.
-{TBW, pls check correctness of answer}
+A user can transfer the root-of-trust of an identifier (its public private key pair) to another physical wallet. However you can't rotate the keys of a Sidetree identifier, it's a persistent identifier.\
+_(@henkvancann)_\
+{TBW prio 1, pls check correctness of answer}
 
-A Sidetree implementation anchors its identifier in ledger systems of choice. That means once that choice has been made you can't transfer the full identity event history of that specific identifier
-{TBW, pls check correctness of answer}
+A Sidetree implementation anchors its identifier in ledger systems of choice. That means once that choice has been made you can't transfer the full identity event history of that specific identifier.\
+_(@henkvancann)_\
+{TBW prio 1, pls check correctness of answer}
 
 # File structure
 
@@ -501,33 +495,18 @@ _(@henkvancann)_
 There is a distintion between the private keys controlling the Sidetree identifiers and the digital data related to the identifiers, like DIDs, DDO's and VCs.
 
 To backup the private keys controlling the identifiers there are various ways to backup a crypto wallet: create a backup file, backup the seed, export a specific private key from the set, etc.\
-{TBW How to backup the DIDs based on Sidetree, are there general recommendations to be made?}
+{TBW prio 2: How to backup the DIDs based on Sidetree, are there general recommendations to be made?}\
 _(@henkvancann)_
-{TBW}
-
-## *Q: Can I receive crypto money in my Sidetree wallet?
-{TBW}
-## **Q: Does a Sidetree wallet store virtual credentials connect to my identifiers?
-
-{TBW}
 
 # Q&A section Signatures
 
 ## **Q: Why is Sidetree not checking signatures at observation time for all updates, recoveries, and deactivates?
 Because signature checks are computationally expensive, so we defer such compute until resolution time.
 
-## **Q: Who can sign off my proofs and identifiers?
-{TBW}
 ## *Q What is the practical use of signatures?
 Sidetree relies on JSON Web Signatures for authentication and integrity protection of DID Operations, except for Create, with contains key material and is self certifying. [More](https://identity.foundation/sidetree/spec/#json-web-signatures) on JSON Web Signatures.
 
-## **Q: Do I need to show the full IPFS Sidetree database to anybody I transact with, even though I'd only like to show a part of it, for example a virtual credential?
-{TBW}
-
 # Q&A section Private Key Management
-
-## *Q: How secure is the Sidetree infrastructure?
-{TBW}
 
 ## **Q: Does your public-private-key format matter in Sidetree?
 Yes, Sidetree uses [JSON Web key format]().
@@ -537,17 +516,13 @@ Depends. You can be the subject of an identifier and have no control over the in
 
 SSI means control over your own identifier. Two nuances: 
 - You can own an identifier you're not subject of. Beware that privacy rules and regulations are very strict and demanding.
-- You can be the owner, controller and subject at the same time. With great sovereignty comes great responsibility.
-{TBW}
+- You can be the owner, controller and subject at the same time. With great sovereignty comes great responsibility.\
+(_@henkvancann_)\
+{TBW prio 3}
 
 ## *Q: The wallet is there to store my Sidetree private keys safely, no?
 Newly created key material (private and public keys, signatures) in Sidetree is self certifying. The root-of-trust is indeed in the wallet you use to manage the private keys. Whether the wallet stores them safely is mainly dependent of its users behaviour and to a much lesser extent the technical security of a wallet (can it be comprimised?).\
 (_@henkvancann_)
-
-## ***Q: Are compound private keys (Shamir Secret Sharing) and multisignature schemes possible to create identifiers?
-{TBW}
-## **Q: How to delegate control over my private keys that control my identifiers?
-{TBW}
 
 # Q&A section Blockchain
 
@@ -617,12 +592,8 @@ So that entire activity happened at a third layer like well above, it doesn't to
 
 Any other data than just identifiers, that you'd want to expose has nothing to do with ION or Bitcoin. None of that is embedded in Bitcoin. That's completely off and on regular infrastructure. It's up to you what you want to disclose. So when I say registry of IDs, it's mean that ION essentially provides you the ability to iterate over every ID that's been entered into the system. This is pretty cool and it has some interesting applications. One application that I like to throw out there that Devs might resonate with a little bit is like `npm`.\
 [Source: What bitocin Did 231](https://www.whatbitcoindid.com/wbd231-daniel-buchner)
-# Q&A section Agencies
 
-## **Q: What does the governance framework of Sidetree look like?
-> Decentralized systems must coordinate across multiple parties, all acting independently in their own self-interest. This means that the rules of engagement and interaction must be spelled out and agreed to ahead of time, with incentives, disincentives, consequences, processes, and procedures made clear.
-{TBW}
-DRAFT BY _(@henkvancann)_
+# Q&A section Agencies
 
 ## *Q: Sidetree is like a better version of two-factor authentication?
 Yeah, a better version of two-factor authentication. It gives us an opportunity to do things potentially in the future, better underpinning for things like DNS. It is a global registry, at least ION has the ability to be and I know that sounds scary, it's a global registry of IDs, but when I say registry, what I mean is, every ID in ION is, you know at least the identifier. You might not know anything else about the ID, you don't know that it's a person or a dog on the internet, or anything like that. But you know the ID and the keys. So if you ever ran into that person, you could at least like say, "Hey, prove you're you."\
