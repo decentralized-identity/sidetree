@@ -90,12 +90,12 @@ We've done our best to protect the privacy of the Github by investigating the im
 - Bitcoin Improvement Protocols: BIP32, BIP39, BIP44, BIP47, BIP49, BIP84, BIP174
 - hierarchical deterministic derivation paths
 - Base58
-- Eliptic curves
-- {TBW}
+- IPFS
+- TBW {prio 2}
 ## Actions you should be comfortable with
 - Amend knowledge and keep existing knowledge up to date
 - create a key pair safely and back it up safely
-- {TBW}
+- TBW {prio 2}
 
 # Jump table to categories
 - [General](#qa-section-general)
@@ -112,7 +112,7 @@ We've done our best to protect the privacy of the Github by investigating the im
 # Q&A section General
 
 ## *Q: What is Sidetree?
-Sidetree is a protocol for creating scalable decentralized public key infrastructure ([DPKI](./Glossary.md#public-key-infrastructure)) networks that can run atop of any existing decentralized ledger system (e.g. Bitcoin) and be as open, public, and permissionless as the underlying ledger they utilize.
+Sidetree is a protocol for creating a scalable decentralized public key infrastructure ([DPKI](./Glossary.md#public-key-infrastructure)) networks that can run atop of any existing decentralized ledger system (e.g. Bitcoin) and be as open, public, and permissionless as the underlying ledger they utilize.
 
 #### **Q: Why only a protocol, why scalable, why decentralized, why a ledger, why permissionless, why open and public?
 1. Sidetree is a _protocol_ because we need it to be multi applicable. Implementers will be provided with software tools and toolkits and the protocol has both `normative` and non-normative guidelines.
@@ -185,12 +185,12 @@ Sidetree is a systematic, carefully-engineered protocol that loosens that coupli
 
 ##  **Q: How does Sidetree match the `trust-over-ip` model and in the `W3C DID standardization`?
 [Trust-over-IP](#trust-over-ip):
-- Sidetree's goal is {TBW}
-- Layer 1 (settlement layer): blockchain agnostic and databases to register identities and settle 'transactions' between between, `DDO`s, and `VC`s, Sidetree uses {TBW}
+- Sidetree's goal is to offer a scalable decentralized public key infrastructure
+- Layer 1 (settlement layer): blockchain agnostic and databases to register identities and settle 'transactions' between between, `DDO`s, and `VC`s, Sidetree implementations use bitcoin and ethereum in 2021.
 _(@henkvancann)_
-- Layer 2 (communication layer): {TBW}
-- Layer 3 (transaction layer): {TBW}
-- Layer 4 (application layer): {TBW}
+- Layer 2 (communication layer): Examples are DID:ION and DID:ORB.
+- Layer 3 (transaction layer): {TBW prio 2}
+- Layer 4 (application layer): {TBW prio 3}
 _(@henkvancann)_
 
 ##  *Q: Who is Sidetree? Is it a company or a not for profit?
@@ -236,7 +236,7 @@ These are the information-hiding measures taken in the protocol to facilitate co
 - THe content in the CAS layer 2, example IPFS, works with `commitments`. A commitment can be shared without revealing the commit value.
 - Files-structures are designed to minimize permanently retained data
 - Operation Request of type Recover or Deactivate
-{TBW : unclear wether `Deactivate` obeys the right to be forgotten}\
+{TBW prio 2: unclear wether `Deactivate` obeys the right to be forgotten}\
 _(@henkvancann)_
 
 ## **Q: Is there like a central, GitHub repository that someone or some group of people are responsible for?
@@ -257,12 +257,13 @@ The homepage on github [README.md](../README.md) pretty much sums up all the pos
 
 ##  **Q: What are the external dependencies of Sidetree?
 _I hear ya: "Sidetree is able to do all this **without requiring** trusted intermediaries, centralized authorities, special protocol tokens, or secondary consensus mechanisms, while preserving the core attributes of decentralization and immutability of the underlying ledger systems it is implemented on." But what does Sidetree require instead?_
+
 Sidetree is dependent of:
 1. Proper IPFS data management and Identity and Access Management via API keys?
 2. Reasonable fees and confirmation-times on layer 1
 3. Mining and governance of the layer 1 blockchain it settles on.
 4. Ongoing development and blockchain maintenance for safety of the records now and in the future.
-5. {TBW}
+5. {TBW prio 2}
 _(@henkvancann)_
 
 ##  **Q: In what can we find the efficiency booster that Sidetree promises to be?
@@ -305,25 +306,6 @@ _(@henkvancann)_
  - Internally by commitment schemes
  - Externally by stressing the importance of proper key management
 
-## **Q: How does Sidetree handle `race conditions`?
-[What is a race condition?](https://www.baeldung.com/cs/race-conditions)\
-{TBW} 
-
-## **Q: What are the security risks of Sidetree with regard to the identity protocol?
-Harm that can be done to the a `controller`: {TBW}\
-Harm that can be done to a `verifier`: {TBW} 
-
-## *Q: Is Sidetree post-quantum secure?
-To answer this question we need to have a look at the building blocks of Sidetree that could be vulnreable to Quantum computing attacks.
-- PKI
-- bitcoin blockchain
-- Signatures
-{TBW}
-
-## **Q: What happens to Sidetree identifiers if I or other people are offline?
-_What about the liveliness of Sidetree?_
-{TBW}
-
 ## **Q: How to handle multiple versions of Sidetree protocol. How to keep the network in sync?
 The rules and parameters of the Sidetree protocol may change in the future, resulting in new versions of the specification. 
 #### Version Segment Definitions:
@@ -336,9 +318,6 @@ New versions of the protocol, or modifications to parameter values by implemente
 All transactions that occur after the specified Ledger Time will adhere to the associated version’s rules and parameters until a newer version of the protocol is defined and implemented at a future Ledger Time.\
 New Version Activation is **necessary for Minor and Major version segments**; the ones with breaking protocol advancements, and protocol forking changes, or security patches.
 _(@henkvancann)_
-
-## How to handle multiple formats of Sidetree JSON files through time. Will they be backwards compatible?
-{TBW}
 
 ## Could Sidetree work with be pruned or charded blockchains?
 No, any node needs a full copy of the blockchain that serves as a settlement layer 1. The reason is ordering of operation on DID is done via consensus of the blockchain.\
@@ -390,8 +369,8 @@ In this Q&A there is a [section on ION](#qa-section-ION) that provides basic fir
 # Q&A section Userinterface
 
 ## *Q: What does Sidetree look like?
-Currently `Sidetree` is just code, that can be tested and executed in a terminal on the command line. Private key management of Sidetree will look like `wallets`.\
-{TBW}\
+Currently `Sidetree` is just code, that can be tested and executed in a terminal on the command line or in a browser with programcode available on a webserver. Private key management of Sidetree will look like `wallets`.\
+{TBW prio 2}\
 _(@henkvancann)_
 
 
