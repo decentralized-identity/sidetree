@@ -609,6 +609,10 @@ That makes a _Merkle tree_ traversable in logN complexity (telephone book like s
 Sidetree uses IPFS which in turn uses [Merkle DAGs](https://docs.ipfs.io/concepts/merkle-dag/#merkle-distributed-acyclic-graphs-dags)
 **Merkle DAGs are similar to Merkle trees**, but there are no balance requirements, and every node can carry a payload. In DAGs, several branches can re-converge or, in other words, a node can have several parents.
 
+ However, the structure of those files happening to be broken down into any subsequent tree structure isn't relied upon by the protocol. Meaning that non-DAG alternatives to IPFS could work and it would still be `Sidetree` conformant.
+ You could use a `CAS` that just compressed and cached the source data in place, hashed it, and request by that hash. The reason it's called the `Content-Addressable Storage (CAS)` component in Sidetree is because all it needs is content addressablility. \
+ (_@csuwildcat_) and (_@bumblefudge_)
+
 The tree like structure of Side tree resembles the Merkle tree in which blockchain tend to store proofs of transaction hashes, and Side tree in turn stores identifier events (hashes).\
 {TBW prio 2}\
 _(@henkvancann)_
