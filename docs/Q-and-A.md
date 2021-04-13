@@ -194,7 +194,7 @@ _(@henkvancann)_
 _(@henkvancann)_
 
 ##  *Q: Who is Sidetree? Is it a company or a not for profit?
-Sidetree sits under the *Decentralized Identity Foundation*, [DIF](https://identity.foundation), and within that in the *Identity and Discovery* Workgroup.
+Sidetree sits under the *Decentralized Identity Foundation*, [DIF](https://identity.foundation), and within that Sidetree is in the Sidetree WG of DIF.
 Due to its licensing structure, Sidetree isn't owned by anyone and everyone at the same time. The Intellectual Property Right of Sidetree is hosted with `DIF`. It is an open source project.
 
 On github Sidetree is - and will become even more - a thickening bunch of repositories:
