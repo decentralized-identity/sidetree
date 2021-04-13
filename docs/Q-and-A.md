@@ -116,7 +116,7 @@ Sidetree is a protocol for creating a scalable decentralized public key infrastr
 1. Sidetree is a _protocol_ because we need it to be multi applicable. Implementers will be provided with software tools and toolkits and the protocol has both `normative` and non-normative guidelines.
 2. The _scalability_ feature is needed because of the astronomical numbers that are associated with digital identifiers, the numerous life events of each identifier and the mulitple use of each individual identifier. Every individual, group or thing on earth can have multiple identifiers associated with them.
 3. Privacy and guarding control over are the main drivers for the deer wish to _decentralize_ identifiers. If you don’t like being tracked and you don’t like anybody else controlling your identity, decentralization is the way to go. 
-4. A global _ledger_ is needed as a single point of definition.
+4. A single global ledger is not needed for a Sidetree implementation. Some sidetree implementations make this choice (e.g., did:ion) while other Sidetree implementations make more ad-hoc choices (e.g., did:orb).
 5. Permissioned identifiers are limited to a certain domain of application. Sidetree does not want to confine itself and will be as _permissionless_ as the underlaying ledger.
 6. Lastly Sidetree needs to be open and public and at the same the protocol and its applications need to hide and protect all sensitive identity related data. This seems to contradict each other. However in Sidetree it is doable. Cryptography and the protocol safeguard privacy and the _open public_ characteristic offers availability and inclusion at the same time.
 (_@henkvancann_)
