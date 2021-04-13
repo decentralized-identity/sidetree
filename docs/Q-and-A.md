@@ -48,7 +48,6 @@ We've done our best to protect the privacy of the Github by investigating the im
 - [Abbreviations](./Glossary.md#Abbreviations)
 
 - [Definitions:](./Glossary.md#definitions)
-      - [Authentic Chained Data Container Task Force](./Glossary.md#authentic-chained-data-container-task-force)
       - [Agent](./Glossary.md#agent)
       - [Agency](./Glossary.md#agency)
       - [Bidirectional model transformation](./Glossary.md#bidirectional-model-transformation)
@@ -87,7 +86,6 @@ We've done our best to protect the privacy of the Github by investigating the im
 - The definitions above
 - W3C DIDs
 - Public private key pairs
-- Bitcoin Improvement Protocols: BIP32, BIP39, BIP44, BIP47, BIP49, BIP84, BIP174
 - hierarchical deterministic derivation paths
 - Base58
 - IPFS
