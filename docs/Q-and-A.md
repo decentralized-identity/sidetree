@@ -259,7 +259,7 @@ The homepage on github [README.md](../README.md) pretty much sums up all the pos
 _I hear ya: "Sidetree is able to do all this **without requiring** trusted intermediaries, centralized authorities, special protocol tokens, or secondary consensus mechanisms, while preserving the core attributes of decentralization and immutability of the underlying ledger systems it is implemented on." But what does Sidetree require instead?_
 
 Sidetree is dependent of:
-1. Proper IPFS data management and Identity and Access Management via API keys?
+1. A content addressable storage layer (e.g., IPFS)
 2. Reasonable fees and confirmation-times on layer 1
 3. Consensus, transaction validation and governance in general of the layer 1 blockchain it settles on.
 4. Ongoing development and blockchain maintenance for safety of the records now and in the future.
