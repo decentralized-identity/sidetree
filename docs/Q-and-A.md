@@ -145,7 +145,7 @@ The figure below illustrates the three primary components of a Sidetree-based DI
 
 #### **Q What exactly does a "system" mean in Sidetree?
 It is a DID overlay network. 
-- The underlying anchoring system that serves as the global anchoring and linear sequencing system for DID operations.
+- The underlying anchoring system that serves as the anchoring and linear sequencing system for DID operations.
 - The Sidetree nodes themselves, which interact with the anchoring system to anchor operations, fetch and replicate data from the CAS network, and process operations in accordance with the protocol deterministic ruleset.
 - An integrated Content-Addressable Storage (CAS) network layer Sidetree nodes use to distribute and replicate DID operation files.
 
