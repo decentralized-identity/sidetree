@@ -118,7 +118,7 @@ Sidetree is a protocol for creating a scalable decentralized public key infrastr
 1. Sidetree is a _protocol_ because we need it to be multi applicable. Implementers will be provided with software tools and toolkits and the protocol has both `normative` and non-normative guidelines.
 2. The _scalability_ feature is needed because of the astronomical numbers that are associated with digital identifiers, the numerous life events of each identifier and the mulitple use of each individual identifier. Every individual, group or thing on earth can have multiple identifiers associated with them.
 3. Privacy and guarding control over are the main drivers for the deer wish to _decentralize_ identifiers. If you don’t like being tracked and you don’t like anybody else controlling your identity, decentralization is the way to go. 
-4. A global _ledger_ is needed as a single source of truth.
+4. A global _ledger_ is needed as a single point of definition.
 5. Permissioned identifiers are limited to a certain domain of application. Sidetree does not want to confine itself and will be as _permissionless_ as the underlaying ledger.
 6. Lastly Sidetree needs to be open and public and at the same the protocol and its applications need to hide and protect all sensitive identity related data. This seems to contradict each other. However in Sidetree it is doable. Cryptography and the protocol safeguard privacy and the _open public_ characteristic offers availability and inclusion at the same time.
 (_@henkvancann_)
@@ -138,7 +138,7 @@ It would be ideal to be able to fetch metadata about the batched operations effi
 
 ## *Q: What are the main components of a sidetree system?
 The figure below illustrates the three primary components of a Sidetree-based DID system:
-1. Single source of truth
+1. Single point of definition
 2. Safe-guarded recording of events
 3. Access to (proofs of) stored data with a time stamp
 <img src="./images/sidetree-system.png" alt="System components of Sidetree" border="0" width="400">
