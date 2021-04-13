@@ -571,7 +571,8 @@ Sidetree is however NOT a Merkel Tree system - it doesn't use these Merkle trees
 The Merkle tree concept* has been the inspiration for Daniel Buchner, but he soon abandonned the idea of using Merkletree in the Sidetree architecture.
 Nowadays the 'tree' in Sidetree refers too:
 1. Sidetree Implementations like Orb might have a tree structure in their `CAS`
-2. If you put any anchoring system upright and imagine the hash chained Linked lists that Sidetree anchors to the trunk of these anchoring systems... ok, maybe a bit far fetched, but you could imagine a tree growing?!
+2. If you put any anchoring system upright and imagine the hash chained Linked lists that Sidetree anchors to the trunk of these anchoring systems... could imagine a tree growing?
+<img src="./images/Sidetree-file-structure.png" alt="Sidetree file structure" border="0" width="300">
 
 Sidetree uses IPFS which in turn uses [Merkle DAGs](https://docs.ipfs.io/concepts/merkle-dag/#merkle-distributed-acyclic-graphs-dags)
 
