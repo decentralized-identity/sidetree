@@ -261,7 +261,7 @@ _I hear ya: "Sidetree is able to do all this **without requiring** trusted inter
 Sidetree is dependent of:
 1. Proper IPFS data management and Identity and Access Management via API keys?
 2. Reasonable fees and confirmation-times on layer 1
-3. Mining and governance of the layer 1 blockchain it settles on.
+3. Consensus, transaction validation and governance in general of the layer 1 blockchain it settles on.
 4. Ongoing development and blockchain maintenance for safety of the records now and in the future.
 5. {TBW prio 2}
 _(@henkvancann)_
