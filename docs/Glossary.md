@@ -4,7 +4,6 @@ There is seperate section [terminology](./spec/terminology.md) is a separate fil
 
 ## Abbreviations
 In alphabetic order:\
-ACDC = Authentic Chained Data Container Task Force
 BX = [Bidirectional model transformation](#bidirectional-model-transformation)
 CAS = Content Addressable Storage 
 DID = [Decentralized Identity](#decentralized-identity) or Digital Identity dependent of the context.\
@@ -25,10 +24,6 @@ WASM = [WebAssembly](#WebAssembly)
 ## Definitions in alphabetic order
 
 Terminology specific for Sidetree can be found [here](https://identity.foundation/sidetree/spec/#terminology). The following definitions are specificly listed to support the [Question and Answers](Q-and-A.md) on a simpler level, and to be able to put Sidetree in relation to other fields of interest.
-
-
-#### Authentic Chained Data Container Task Force
-Or ACDC. The purpose of the Authentic Chained Data Container (ACDC) Task Force  is to draft a TSS (ToIP Standard Specification) that defines the standard requirements for the semantics of Authentic Provenance Chaining of Authentic Data Containers. [See more](https://wiki.trustoverip.org/display/HOME/ACDC+%28Authentic+Chained+Data+Container%29+Task+Force)
 
 #### Agent
 A representative for an _identity_. MAY require the use of a _wallet_. MAY support _transfer_
