@@ -540,6 +540,8 @@ Sidetree is settlement layer agnostic. There are different reasons to use either
 There are also Sidetree implementations on Ethereum and Hyperledger Fabric:
  - Ethereum: https://github.com/decentralized-identity/element
  - Hyperledger Fabric: https://github.com/trustbloc/sidetree-fabric
+ 
+ And there is also an ad-hoc network variation called orb: https://github.com/trustbloc/orb
 
 ## *Q: Does Sidetree use a blockchain?
 Yes, it could use a global blockchain to provide an ordered settlement layer 1 that has reached consensus over the unique representation of the "truth". Sidetree sits on top of this Layer 1, in layer 2 of the `ToIP model` and is blockchain agnostic. _(@henkvancann)_\
