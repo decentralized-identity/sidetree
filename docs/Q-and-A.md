@@ -166,21 +166,15 @@ It is a DIDComm layer (2); which is layer 1 agnostic and uses Layer 1 very effic
 _(@henkvancann)_
 
 ## **Q: What is so unique to Sidetree?
-Massively Parallel 
+Compared to other architectures in the space Sidetree is:
+1. Massive parallel processing power
+2. Strongly intrinsically consistent
+3. Users of identity system based on Sidetree control their own history
 
-Processing 
-Strongly intrinsically consistent
+Sidetree uniquely provides a Content Adressable structure for distributed systems.
 
-Resolution
-
-Control their own history
-
-CAS structure distributed systems 
-
-ORB has a tree structure in the CAS
-
-Current approaches that utilize these ledger systems to create decentralized identifier networks suffer from severely limited transactional volumes and other performance issues. Sidetree is a ‘Layer 2’ protocol that runs atop decentralized ledger systems.\
-Sidetree has a very small footprint on anchoring - or settlement - Layers ("Layer 1"). It stashes multiple layer 2 identity transactions into one layer 1 transaction; it's "Lightning-Network-like" in Bitcoin.\
+Current approaches that utilize these ledger systems to create decentralized identifier networks suffer from severely limited transactional volumes and other performance issues. Sidetree is a ‘Layer 2’ protocol that runs atop decentralized anchoring systems.\
+Sidetree has a very small footprint on anchoring - or settlement - Layers ("Layer 1"). It stashes multiple layer 2 identity transactions into one layer 1 transaction; it's "Lightning-Network-like" in Bitcoin. Within DIF we call this the (Public) Trust Layer.\
 _(@henkvancann)_
 
 ##  *Q: Is Sidetree a DID?
@@ -198,6 +192,8 @@ Sidetree is a systematic, carefully-engineered protocol that loosens that coupli
 ##  **Q: How does Sidetree match the `trust-over-ip` model and in the `W3C DID standardization`?
 The DIF interoperability model looks like this:
 <img src="./images/layers-of-SSI-interop.png" alt="Layers of SSI interopability" border="0" width="600"> 
+Another relevant piece to consider as soon as comparisons with third party models come up, is the
+[DIF Cross Community Architecture Survey](https://github.com/decentralized-identity/decentralized-identity.github.io/blob/master/assets/crosscommunity-architecture-survey-oct-2020.pdf)
 
 Comparison to the Trust over IP Foundation model:
 - Sidetree's goal is to offer a scalable decentralized public key infrastructure
