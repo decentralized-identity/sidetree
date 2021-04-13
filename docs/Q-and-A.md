@@ -75,7 +75,6 @@ We've done our best to protect the privacy of the Github by investigating the im
       - [Subject](./Glossary.md#subject)
       - [Transfer](./Glossary.md#transfer)
       - [Transferable identifier](./Glossary.md#transferable-identifier)
-      - [Trust-over-IP](./Glossary.md#trust-over-ip)
       - [Validator](./Glossary.md#validator)
       - [Verifiable Credential](./Glossary.md#verifiable-credential)
       - [W3C DID](./Glossary.md#w3c-did)
@@ -89,11 +88,10 @@ We've done our best to protect the privacy of the Github by investigating the im
 - hierarchical deterministic derivation paths
 - Base58
 - IPFS
-- TBW {prio 2}
+
 ## Actions you should be comfortable with
 - Amend knowledge and keep existing knowledge up to date
 - create a key pair safely and back it up safely
-- TBW {prio 2}
 
 # Jump table to categories
 - [General](#qa-section-general)
@@ -147,8 +145,10 @@ It is a DID overlay network.
 - The Sidetree nodes themselves, which interact with the anchoring system to anchor operations, fetch and replicate data from the CAS network, and process operations in accordance with the protocol deterministic ruleset.
 - An integrated Content-Addressable Storage (CAS) network layer Sidetree nodes use to distribute and replicate DID operation files.
 
+<img src="./images/layers-of-SSI-interop.png" alt="Layers of SSI interopability" border="0" width="600"> 
+
 ## For who is Sidetree?
-Any team or organisation that wants to create an DID based on Sidetree, because of its typical Layer 2 properties, not bloating any Layer 1 solution. Laying a foundation for layer 3 development,  in the DID to be developed,  that will result in W3C DID compliant VCs.
+Any team or organisation that wants to create an DID based on Sidetree, because of its typical Layer 2 properties, not bloating any Layer 1 solution. Laying a foundation for layer 3 development, in the DID to be developed, that will result in W3C DID compliant VCs.
 _(@henkvancann)_
 
 ## Why should we care about Sidetree or Self Sovereign Identity
@@ -166,6 +166,19 @@ It is a DIDComm layer (2); which is layer 1 agnostic and uses Layer 1 very effic
 _(@henkvancann)_
 
 ## **Q: What is so unique to Sidetree?
+Massively Parallel 
+
+Processing 
+Strongly intrinsically consistent
+
+Resolution
+
+Control their own history
+
+CAS structure distributed systems 
+
+ORB has a tree structure in the CAS
+
 Current approaches that utilize these ledger systems to create decentralized identifier networks suffer from severely limited transactional volumes and other performance issues. Sidetree is a ‘Layer 2’ protocol that runs atop decentralized ledger systems.\
 Sidetree has a very small footprint on anchoring - or settlement - Layers ("Layer 1"). It stashes multiple layer 2 identity transactions into one layer 1 transaction; it's "Lightning-Network-like" in Bitcoin.\
 _(@henkvancann)_
@@ -183,10 +196,12 @@ Sidetree is a systematic, carefully-engineered protocol that loosens that coupli
 (_@bumblefudge_)
 
 ##  **Q: How does Sidetree match the `trust-over-ip` model and in the `W3C DID standardization`?
-[Trust-over-IP](#trust-over-ip):
+The DIF interoperability model looks like this:
+<img src="./images/layers-of-SSI-interop.png" alt="Layers of SSI interopability" border="0" width="600"> 
+
+Comparison to the Trust over IP Foundation model:
 - Sidetree's goal is to offer a scalable decentralized public key infrastructure
 - Layer 1 (settlement layer): blockchain agnostic and databases to register identities and settle 'transactions' between between, `DDO`s, and `VC`s, Sidetree implementations use bitcoin and ethereum in 2021.
-_(@henkvancann)_
 - Layer 2 (communication layer): Examples are DID:ION and DID:ORB.
 - Layer 3 (transaction layer): {TBW prio 2}
 - Layer 4 (application layer): {TBW prio 3}
@@ -557,19 +572,21 @@ Sidetree is however NOT a Merkel Tree system - it doesn't use these Merkle trees
 (_@csuwildcat_)
 
 ## **Q: what's the "tree" in Sidetree if it is not a Merkle tree system?
-The tree in _Merkle tree_ stems from the fact that the leaves are all content hashes and the branches 2 hashes combined to a single higher level hash.\
-That makes a _Merkle tree_ traversable in logN complexity (telephone book like search) to detect why a root hash fails.
+The Merkle tree concept* has been the inspiration for Daniel Buchner, but he soon abandonned the idea of using Merkletree in the Sidetree architecture.
+Nowadays the 'tree' in Sidetree refers too:
+1. Sidetree Implementations like Orb might have a tree structure in their `CAS`
+2. If you put any anchoring system upright and imagine the hash chained Linked lists that Sidetree anchors to the trunk of these anchoring systems... ok, maybe a bit far fetched, but you could imagine a tree growing?!
 
 Sidetree uses IPFS which in turn uses [Merkle DAGs](https://docs.ipfs.io/concepts/merkle-dag/#merkle-distributed-acyclic-graphs-dags)
+
+\* The tree in _Merkle tree_ stems from the fact that the leaves are all content hashes and the branches 2 hashes combined to a single higher level hash, finally ending in a Merkle root the highest level hash.
+
 **Merkle DAGs are similar to Merkle trees**, but there are no balance requirements, and every node can carry a payload. In DAGs, several branches can re-converge or, in other words, a node can have several parents.
 
  However, the structure of those files happening to be broken down into any subsequent tree structure isn't relied upon by the protocol. Meaning that non-DAG alternatives to IPFS could work and it would still be `Sidetree` conformant.
  You could use a `CAS` that just compressed and cached the source data in place, hashed it, and request by that hash. The reason it's called the `Content-Addressable Storage (CAS)` component in Sidetree is because all it needs is content addressablility. \
  (_@csuwildcat_) and (_@bumblefudge_)
 
-The tree like structure of Side tree resembles the Merkle tree in which blockchain tend to store proofs of transaction hashes, and Side tree in turn stores identifier events (hashes).\
-{TBW prio 2}\
-_(@henkvancann)_
 
 ## *Q: Why does Sidetree need a blockchain? 
 _...when it has nodes in a network that could federatively establish consensus?_
