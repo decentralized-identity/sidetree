@@ -1,6 +1,7 @@
-import { Binary, Collection, Long, MongoClient } from 'mongodb';
+import { Binary, Collection, Long } from 'mongodb';
 import AnchoredOperationModel from './models/AnchoredOperationModel';
 import IOperationStore from './interfaces/IOperationStore';
+import MongoDbStore from '../common/MongoDbStore';
 import OperationType from './enums/OperationType';
 
 /**
@@ -22,35 +23,17 @@ interface IMongoOperation {
  * Implementation of OperationStore that stores the operation data in
  * a MongoDB database.
  */
-export default class MongoDbOperationStore implements IOperationStore {
+export default class MongoDbOperationStore extends MongoDbStore implements IOperationStore {
   /** MongoDB collection name under the database where the operations are stored. */
   public static readonly collectionName: string = 'operations';
 
-  private collection: Collection<any> | undefined;
+  constructor (serverUrl: string, databaseName: string) {
+    super(serverUrl, MongoDbOperationStore.collectionName, databaseName);
+  }
 
-  constructor (
-    private serverUrl: string,
-    private databaseName: string
-  ) { }
-
-  /**
-   * Initialize the MongoDB operation store.
-   */
-  public async initialize (): Promise<void> {
-    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
-    const db = client.db(this.databaseName);
-    const collections = await db.collections();
-    const collectionNames = collections.map(collection => collection.collectionName);
-
-    // If the operation collection exists, use it; else create it then use it.
-    if (collectionNames.includes(MongoDbOperationStore.collectionName)) {
-      this.collection = db.collection(MongoDbOperationStore.collectionName);
-    } else {
-      this.collection = await db.createCollection(MongoDbOperationStore.collectionName);
-      // create an index on didSuffix, txnNumber, opIndex, and type to make DB operations more efficient.
-      // This is an unique index, so duplicate inserts are rejected/ignored.
-      await this.collection.createIndex({ didSuffix: 1, txnNumber: 1, opIndex: 1, type: 1 }, { unique: true });
-    }
+  protected async createIndex (collection: Collection) {
+    // This is an unique index, so duplicate inserts are rejected/ignored.
+    await collection.createIndex({ didSuffix: 1, txnNumber: 1, opIndex: 1, type: 1 }, { unique: true });
   }
 
   public async insertOrReplace (operations: AnchoredOperationModel[]): Promise<void> {
@@ -74,7 +57,12 @@ export default class MongoDbOperationStore implements IOperationStore {
    * Gets all operations of the given DID unique suffix in ascending chronological order.
    */
   public async get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]> {
-    const mongoOperations = await this.collection!.find({ didSuffix: didUniqueSuffix }).sort({ txnNumber: 1, opIndex: 1 }).toArray();
+    const mongoOperations = await this.collection!
+      .find({ didSuffix: didUniqueSuffix })
+      .sort({ txnNumber: 1, opIndex: 1 })
+      .maxTimeMS(MongoDbStore.defaultQueryTimeoutInMilliseconds)
+      .toArray();
+
     return mongoOperations.map((operation) => { return MongoDbOperationStore.convertToAnchoredOperationModel(operation); });
   }
 

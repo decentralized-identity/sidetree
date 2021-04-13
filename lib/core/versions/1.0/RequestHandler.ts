@@ -213,7 +213,7 @@ export default class RequestHandler implements IRequestHandler {
    * @returns [DID state, published]
    */
   private async resolveLongFormDid (did: Did): Promise<[DidState | undefined, boolean]> {
-    Logger.info(`Handling long-form DID resolution of DID '${did}'...`);
+    Logger.info(`Handling long-form DID resolution of DID '${did.longForm}'...`);
 
     // Attempt to resolve the DID by using operations found from the network first.
     let didState = await this.resolver.resolve(did.uniqueSuffix);

@@ -1,9 +1,11 @@
 import * as timeSpan from 'time-span';
+import ErrorCode from './ErrorCode';
 import EventCode from './EventCode';
 import EventEmitter from '../common/EventEmitter';
 import IBlockchain from './interfaces/IBlockchain';
 import IVersionManager from './interfaces/IVersionManager';
 import Logger from '../common/Logger';
+import SidetreeError from '../common/SidetreeError';
 
 /**
  * Class that performs periodic writing of batches of Sidetree operations to CAS and blockchain.
@@ -55,9 +57,18 @@ export default class BatchScheduler {
 
       EventEmitter.emit(EventCode.SidetreeBatchWriterLoopSuccess, { batchSize });
     } catch (error) {
-      EventEmitter.emit(EventCode.SidetreeBatchWriterLoopFailure);
-      Logger.error('Unexpected and unhandled error during batch writing, investigate and fix:');
-      Logger.error(error);
+      // Default the error to unexpected error.
+      const loopFailureEventData = { code: ErrorCode.BatchSchedulerWriteUnexpectedError };
+
+      // Only overwrite the error code if this is a concrete known error.
+      if (error instanceof SidetreeError && error.code !== ErrorCode.BlockchainWriteUnexpectedError) {
+        loopFailureEventData.code = error.code;
+      } else {
+        Logger.error('Unexpected and unhandled error during batch writing, investigate and fix:');
+        Logger.error(error);
+      }
+
+      EventEmitter.emit(EventCode.SidetreeBatchWriterLoopFailure, loopFailureEventData);
     } finally {
       Logger.info(`End batch writing. Duration: ${endTimer.rounded()} ms.`);
 

@@ -85,10 +85,26 @@ export default class Blockchain implements IBlockchain {
     };
     const response = await this.fetch(this.transactionsUri, requestParameters);
 
+    // Throw error with meaningful code if possible.
     if (response.status !== HttpStatus.OK) {
+      const body = response.body.read().toString();
       Logger.error(`Blockchain write error response status: ${response.status}`);
-      Logger.error(`Blockchain write error body: ${response.body.read()}`);
-      throw new SidetreeError(CoreErrorCode.BlockchainWriteResponseNotOk);
+      Logger.error(`Blockchain write error body: ${body}`);
+
+      let parsedBody;
+      try {
+        parsedBody = JSON.parse(body);
+      } catch {
+        // Continue even if JSON parsing fails. We are just trying to parse the body as an object if possible.
+      }
+
+      // Throw Sidetree error with specific code if given.
+      if (parsedBody !== undefined && parsedBody.code !== undefined) {
+        throw new SidetreeError(parsedBody.code, 'Remote blockchain service returned a known write error.');
+      }
+
+      // Else throw generic sidetree error.
+      throw new SidetreeError(CoreErrorCode.BlockchainWriteUnexpectedError, 'Remote blockchain service returned an unexpected write error.');
     }
   }
 
