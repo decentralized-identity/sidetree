@@ -137,6 +137,7 @@ export default class SidetreeTransactionParser {
           Logger.warn(`Transaction fetch timed out for transaction id: ${transactionId}`);
         } else {
           // other errors mean the transaction is bad
+          shouldRetry = false;
           Logger.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
         }
       }
