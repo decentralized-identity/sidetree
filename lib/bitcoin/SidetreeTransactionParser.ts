@@ -2,6 +2,9 @@ import BitcoinClient from './BitcoinClient';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
+import EventCode from './EventCode';
+import EventEmitter from '../common/EventEmitter';
+import { FetchError } from 'node-fetch';
 import Logger from '../common/Logger';
 import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionModel from './models/SidetreeTransactionModel';
@@ -119,14 +122,26 @@ export default class SidetreeTransactionParser {
   }
 
   private async fetchOutput (transactionId: string, outputIndexToFetch: number): Promise<BitcoinOutputModel | undefined> {
-    try {
-      const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
-
-      return transaction.outputs[outputIndexToFetch];
-    } catch (e) {
-      Logger.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
-      return undefined;
-    }
+    let shouldRetry = false;
+    let output;
+    do {
+      try {
+        const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
+        output = transaction.outputs[outputIndexToFetch];
+        shouldRetry = false;
+      } catch (e) {
+        if (e instanceof FetchError && e.type === 'request-timeout') {
+          // timeout should retry until success.
+          shouldRetry = true;
+          EventEmitter.emit(EventCode.BitcoinTransactionParserTransactionFetchFailure);
+          Logger.warn(`Transaction fetch timed out for transaction id: ${transactionId}`);
+        } else {
+          // other errors mean the transaction is bad
+          Logger.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
+        }
+      }
+    } while (shouldRetry);
+    return output;
   }
 
   private getPublicKeyHashIfValidScript (scriptAsm: string): string | undefined {

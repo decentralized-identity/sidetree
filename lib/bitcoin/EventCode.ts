@@ -9,5 +9,6 @@ export default {
   BitcoinLockMonitorLoopFailure: `bitcoin_lock_monitor_loop_failure`,
   BitcoinLockMonitorLoopSuccess: `bitcoin_lock_monitor_loop_success`,
   BitcoinObservingLoopFailure: 'bitcoin_observing_loop_failure',
-  BitcoinObservingLoopSuccess: `bitcoin_observing_loop_success`
+  BitcoinObservingLoopSuccess: `bitcoin_observing_loop_success`,
+  BitcoinTransactionParserTransactionFetchFailure: 'bitcoin_transaction_parser_transaction_fetch_failure'
 };
