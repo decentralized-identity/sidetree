@@ -13,7 +13,7 @@
     "chalk": "4.0.0",
     "cids": "1.1.4",
     "http-status": "1.3.2",
-    "jose": "1.25.0",
+    "jose": "1.28.1",
     "mongodb": "3.6.4",
     "multihashes": "0.4.14",
     "node-fetch": "2.6.1",
