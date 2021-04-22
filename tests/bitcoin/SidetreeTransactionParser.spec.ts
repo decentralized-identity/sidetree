@@ -253,41 +253,18 @@ describe('SidetreeTransactionParser', () => {
       done();
     });
 
-    it('should keep retrying ig a timeout exception is thrown', async () => {
-      const mockTxn: BitcoinTransactionModel = {
-        id: 'id',
-        blockHash: 'block-hash',
-        confirmations: 5,
-        inputs: [],
-        outputs: [
-          { satoshis: 50, scriptAsmAsString: 'script asm 1' },
-          { satoshis: 10, scriptAsmAsString: 'script asm 2' }
-        ]
-      };
-
-      let counter = 0;
-
-      const getRawTransactionSpy = spyOn(sidetreeTxnParser['bitcoinClient'], 'getRawTransaction').and.callFake(async () => {
-        counter++;
-
-        // after after 2 reties, it will return a transaction
-        if (counter > 2) {
-          return mockTxn;
-        }
-        throw new FetchError('mocked test error', 'request-timeout');
+    it('should throw if fetch throws', async () => {
+      const mockError = new FetchError('mocked test error', 'request-timeout');
+      spyOn(sidetreeTxnParser['bitcoinClient'], 'getRawTransaction').and.callFake(async () => {
+        throw mockError;
       });
 
-      await sidetreeTxnParser['fetchOutput']('txn id', 1);
-      // fail twice and the 3rd one returns a transaction
-      expect(getRawTransactionSpy).toHaveBeenCalledTimes(3);
-    });
-
-    it('should return undefined if any non-timeout exception is thrown.', async (done) => {
-      spyOn(sidetreeTxnParser['bitcoinClient'], 'getRawTransaction').and.throwError('some error');
-
-      const actual = await sidetreeTxnParser['fetchOutput']('txn id', 1);
-      expect(actual).toBeUndefined();
-      done();
+      try {
+        await sidetreeTxnParser['fetchOutput']('txn id', 1);
+        fail();
+      } catch (e) {
+        expect(e).toEqual(mockError);
+      }
     });
   });
 
