@@ -2,8 +2,6 @@ import BitcoinClient from './BitcoinClient';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
-import EventCode from './EventCode';
-import EventEmitter from '../common/EventEmitter';
 import Logger from '../common/Logger';
 import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionModel from './models/SidetreeTransactionModel';
@@ -125,8 +123,7 @@ export default class SidetreeTransactionParser {
       const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
       return transaction.outputs[outputIndexToFetch];
     } catch (e) {
-      Logger.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
-      EventEmitter.emit(EventCode.BitcoinTransactionParserFailure);
+      Logger.error(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
       throw e;
     }
   }
