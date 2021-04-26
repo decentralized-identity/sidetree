@@ -15,7 +15,7 @@ describe('RecoverOperation', async () => {
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
 
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
-        'unused-DID-unique-suffix',
+        'EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg',
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey
@@ -33,7 +33,7 @@ describe('RecoverOperation', async () => {
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
 
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
-        'unused-DID-unique-suffix',
+        'EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg',
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey
@@ -61,10 +61,53 @@ describe('RecoverOperation', async () => {
       (recoverOperationRequest.didSuffix as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
-      await expectAsync(RecoverOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix));
+      await expectAsync(RecoverOperation
+        .parse(operationBuffer))
+        .toBeRejectedWith(new SidetreeError(`The recover request didSuffix must be a string but is of number type.`));
       done();
     });
 
+    it('should throw if didUniqueSuffix is undefined.', async (done) => {
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+      const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
+
+      const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
+        'unused-DID-unique-suffix',
+        recoveryPrivateKey,
+        newRecoveryPublicKey,
+        newSigningPublicKey
+      );
+
+      (recoverOperationRequest.didSuffix as any) = undefined; // Intentionally undefined.
+
+      const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
+      await expectAsync(RecoverOperation
+        .parse(operationBuffer))
+        .toBeRejectedWith(new SidetreeError(`The recover request didSuffix must be a string but is of undefined type.`));
+      done();
+    });
+
+    it('should throw if didUniqueSuffix is not multihash.', async (done) => {
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+      const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
+
+      const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
+        'unused-DID-unique-suffix',
+        recoveryPrivateKey,
+        newRecoveryPublicKey,
+        newSigningPublicKey
+      );
+
+      (recoverOperationRequest.didSuffix as any) = 'thisIsNotMultiHash'; // Intentionally not multihash.
+
+      const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
+      await expectAsync(RecoverOperation
+        .parse(operationBuffer))
+        .toBeRejectedWith(new SidetreeError(`Given recover request didSuffix string 'thisIsNotMultiHash' is not a multihash.`));
+      done();
+    });
   });
 
   describe('parseObject()', async () => {

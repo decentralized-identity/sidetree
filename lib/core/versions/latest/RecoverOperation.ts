@@ -56,10 +56,7 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);
     }
 
-    if (typeof operationObject.didSuffix !== 'string') {
-      throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
-    }
-
+    InputValidator.validateEncodedMultihash(operationObject.didSuffix, 'recover request didSuffix');
     InputValidator.validateEncodedMultihash(operationObject.revealValue, 'recover request reveal value');
 
     const signedDataJws = Jws.parseCompactJws(operationObject.signedData);

@@ -11,7 +11,7 @@ describe('UpdateOperation', async () => {
     it('parse as expected', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
-        'unused-DID-unique-suffix',
+        'EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg',
         signingPublicKey.publicKeyJwk,
         signingPrivateKey,
         OperationGenerator.generateRandomHash(),
@@ -33,16 +33,54 @@ describe('UpdateOperation', async () => {
         'opaque-unused-document-patch'
       );
 
-      (updateOperationRequest.didSuffix as any) = 123;
+      (updateOperationRequest.didSuffix as any) = 123; // Intentionally not string
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
-      await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix));
+      await expectAsync(UpdateOperation
+        .parse(operationBuffer))
+        .toBeRejectedWith(new SidetreeError(`The update request didSuffix must be a string but is of number type.`));
+    });
+
+    it('should throw if didUniqueSuffix is undefined.', async () => {
+      const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
+      const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
+        'unused-DID-unique-suffix',
+        signingPublicKey.publicKeyJwk,
+        signingPrivateKey,
+        'unusedNextUpdateCommitmentHash',
+        'opaque-unused-document-patch'
+      );
+
+      (updateOperationRequest.didSuffix as any) = undefined; // Intentionally undefined
+
+      const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
+      await expectAsync(UpdateOperation
+        .parse(operationBuffer))
+        .toBeRejectedWith(new SidetreeError(`The update request didSuffix must be a string but is of undefined type.`));
+    });
+
+    it('should throw if didUniqueSuffix is not multihash.', async () => {
+      const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
+      const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
+        'unused-DID-unique-suffix',
+        signingPublicKey.publicKeyJwk,
+        signingPrivateKey,
+        'unusedNextUpdateCommitmentHash',
+        'opaque-unused-document-patch'
+      );
+
+      (updateOperationRequest.didSuffix as any) = 'thisIsNotMultihash'; // Intentionally not multihash
+
+      const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
+      await expectAsync(UpdateOperation
+        .parse(operationBuffer))
+        .toBeRejectedWith(new SidetreeError(`Given update request didSuffix string 'thisIsNotMultihash' is not a multihash.`));
     });
 
     it('should throw if operation type is incorrect', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
-        'unused-DID-unique-suffix',
+        'EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg',
         signingPublicKey.publicKeyJwk,
         signingPrivateKey,
         'unusedNextUpdateCommitmentHash',
