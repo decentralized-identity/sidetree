@@ -317,7 +317,7 @@ describe('CoreIndexFile', async () => {
   });
 
   describe('createModel()', async () => {
-    it('should created an core index file model correctly.', async () => {
+    it('should create a core index file model correctly.', async () => {
       const provisionalIndexFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557cr2i';
       const coreProofFileUri = 'bafkreid5uh2g5gbbhvpza4mwfwbmigy43rar2xkalwtvc7v34b4557aaaa';
 
@@ -328,11 +328,11 @@ describe('CoreIndexFile', async () => {
       // Recover operation.
       const [, anyRecoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const recoverOperationData = await OperationGenerator.generateRecoverOperation(
-        { didUniqueSuffix: 'anyDid1', recoveryPrivateKey: anyRecoveryPrivateKey });
+        { didUniqueSuffix: 'EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg', recoveryPrivateKey: anyRecoveryPrivateKey });
       const recoverOperation = recoverOperationData.recoverOperation;
 
       // Deactivate operation.
-      const deactivateOperationData = await OperationGenerator.createDeactivateOperation('anyDid2', anyRecoveryPrivateKey);
+      const deactivateOperationData = await OperationGenerator.createDeactivateOperation('EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWf', anyRecoveryPrivateKey);
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
       const coreIndexFileModel = await CoreIndexFile.createModel(

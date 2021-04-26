@@ -53,11 +53,8 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationTypeIncorrect);
     }
 
-    if (typeof operationObject.didSuffix !== 'string') {
-      throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrInvalidDidUniqueSuffix);
-    }
-
-    InputValidator.validateEncodedMultihash(operationObject.revealValue, `deactivate request reveal value`);
+    InputValidator.validateEncodedMultihash(operationObject.didSuffix, 'deactivate request didSuffix');
+    InputValidator.validateEncodedMultihash(operationObject.revealValue, 'deactivate request reveal value');
 
     const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
     const signedDataModel = await DeactivateOperation.parseSignedDataPayload(

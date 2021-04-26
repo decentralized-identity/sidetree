@@ -11,8 +11,7 @@ import SidetreeTransactionModel from './models/SidetreeTransactionModel';
  */
 export default class SidetreeTransactionParser {
 
-  public constructor (private bitcoinClient: BitcoinClient, private sidetreePrefix: string) {
-  }
+  public constructor (private bitcoinClient: BitcoinClient, private sidetreePrefix: string) { }
 
   /**
    * Parses the given transaction and returns the sidetree transaction object.

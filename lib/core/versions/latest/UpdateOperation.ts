@@ -56,10 +56,7 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
     }
 
-    if (typeof operationObject.didSuffix !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
-    }
-
+    InputValidator.validateEncodedMultihash(operationObject.didSuffix, 'update request didSuffix');
     InputValidator.validateEncodedMultihash(operationObject.revealValue, 'update request reveal value');
 
     const signedData = Jws.parseCompactJws(operationObject.signedData);

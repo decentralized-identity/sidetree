@@ -13,7 +13,7 @@ describe('CoreProofFile', async () => {
       const didOfDeactivate1 = OperationGenerator.generateRandomHash();
       const didOfDeactivate2 = OperationGenerator.generateRandomHash();
 
-      const recoverOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix: 'unused', recoveryPrivateKey: anyPrivateKey });
+      const recoverOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix: 'EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg', recoveryPrivateKey: anyPrivateKey });
       const deactivateOperationData1 = await OperationGenerator.createDeactivateOperation(didOfDeactivate1, anyPrivateKey);
       const deactivateOperationData2 = await OperationGenerator.createDeactivateOperation(didOfDeactivate2, anyPrivateKey);
 
