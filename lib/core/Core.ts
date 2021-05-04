@@ -11,6 +11,7 @@ import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbServiceStateStore from '../common/MongoDbServiceStateStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
+import Monitor from './Monitor';
 import Observer from './Observer';
 import Resolver from './Resolver';
 import ResponseModel from '../common/models/ResponseModel';
@@ -24,6 +25,9 @@ import VersionModel from './models/VersionModel';
  * The core class that is instantiated when running a Sidetree node.
  */
 export default class Core {
+  /** Monitor of the running Core service. */
+  public monitor: Monitor;
+
   private serviceStateStore: MongoDbServiceStateStore<ServiceStateModel>;
   private transactionStore: MongoDbTransactionStore;
   private unresolvableTransactionStore: MongoDbUnresolvableTransactionStore;
@@ -61,6 +65,8 @@ export default class Core {
       this.unresolvableTransactionStore,
       config.observingIntervalInSeconds
     );
+
+    this.monitor = new Monitor(this.versionManager, this.blockchain);
   }
 
   /**
@@ -102,6 +108,8 @@ export default class Core {
 
     this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
     this.downloadManager.start();
+
+    await this.monitor.initialize(this.config);
   }
 
   /**

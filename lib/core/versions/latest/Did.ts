@@ -38,7 +38,7 @@ export default class Did {
     // TODO https://github.com/decentralized-identity/sidetree/issues/470 add network prefix to the didPrefix string
 
     if (!did.startsWith(didPrefix)) {
-      throw new SidetreeError(ErrorCode.DidIncorrectPrefix);
+      throw new SidetreeError(ErrorCode.DidIncorrectPrefix, `Expected DID prefix ${didPrefix} not given in DID.`);
     }
 
     const didWithoutPrefix = did.split(didPrefix)[1];

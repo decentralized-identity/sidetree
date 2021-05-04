@@ -132,7 +132,7 @@ export default class DownloadManager {
     const fetchResult = this.completedDownloads.get(handle);
     this.completedDownloads.delete(handle);
 
-    EventEmitter.emit(EventCode.DownloadManagerDownload, { code: fetchResult!.code });
+    EventEmitter.emit(EventCode.SidetreeDownloadManagerDownload, { code: fetchResult!.code });
     return fetchResult!;
   }
 

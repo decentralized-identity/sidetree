@@ -1,8 +1,11 @@
 import * as retry from 'async-retry';
 import BatchScheduler from '../../lib/core/BatchScheduler';
+import EventCode from '../../lib/core/EventCode';
+import EventEmitter from '../../lib/common/EventEmitter';
 import MockBatchWriter from '../mocks/MockBatchWriter';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockVersionManager from '../mocks/MockVersionManager';
+import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('BatchScheduler', async () => {
   it('should periodically invoke batch writer.', async () => {
@@ -33,5 +36,20 @@ describe('BatchScheduler', async () => {
     batchScheduler.stopPeriodicBatchWriting();
 
     expect(batchWriter.invocationCount).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should emit failure event with specific code if known SidetreeError is thrown.', async () => {
+    const blockchain = new MockBlockchain();
+
+    const dummyErrorCode = 'any error code';
+    const versionManager = new MockVersionManager();
+    spyOn(versionManager, 'getBatchWriter').and.callFake(() => { throw new SidetreeError(dummyErrorCode); });
+
+    const eventEmitterEmitSpy = spyOn(EventEmitter, 'emit');
+    const batchScheduler = new BatchScheduler(versionManager, blockchain, 1);
+
+    await batchScheduler.writeOperationBatch();
+
+    expect(eventEmitterEmitSpy).toHaveBeenCalledWith(EventCode.SidetreeBatchWriterLoopFailure, { code: dummyErrorCode });
   });
 });

@@ -5,10 +5,13 @@ import Logger from '../common/Logger';
  * Base class that contains the common MongoDB collection setup.
  */
 export default class MongoDbStore {
+
+  public static readonly defaultQueryTimeoutInMilliseconds = 10000;
+
   /** MondoDB instance. */
   protected db: Db | undefined;
   /** MongoDB collection */
-  protected collection: Collection<any> | undefined;
+  protected collection!: Collection<any>;
 
   /**
    * Constructs a `MongoDbStore`;
@@ -31,7 +34,7 @@ export default class MongoDbStore {
    * 2. Some cloud MongoDB services such as CosmosDB will lead to `MongoError: ns not found` connectivity error.
    */
   public async clearCollection () {
-    await this.collection!.deleteMany({ }); // Empty filter removes all entries in collection.
+    await this.collection.deleteMany({ }); // Empty filter removes all entries in collection.
   }
 
   /**
@@ -59,7 +62,7 @@ export default class MongoDbStore {
 
   /**
    * Create the indices required by the collection passed.
-   * To be overridden by inherited classes if needed.
+   * To be overridden by inherited classes if a collection index is needed.
    */
   protected async createIndex (_collection: Collection): Promise<void> {
   }

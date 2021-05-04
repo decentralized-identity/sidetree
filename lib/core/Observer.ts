@@ -163,9 +163,9 @@ export default class Observer {
       // Continue onto processing unresolvable transactions if any.
       await this.processUnresolvableTransactions();
 
-      EventEmitter.emit(EventCode.ObserverProcessingLoopSuccess);
+      EventEmitter.emit(EventCode.SidetreeObserverLoopSuccess);
     } catch (error) {
-      EventEmitter.emit(EventCode.ObserverProcessingLoopFailed);
+      EventEmitter.emit(EventCode.SidetreeObserverLoopFailure);
       Logger.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
       Logger.error(error);
     } finally {
@@ -191,6 +191,8 @@ export default class Observer {
    * Waits until all unresolvable transactions due for retry are processed.
    */
   private async processUnresolvableTransactions () {
+    Logger.info(`Processing previously unresolvable transactions if any...`);
+
     const endTimer = timeSpan();
     const unresolvableTransactions = await this.unresolvableTransactionStore.getUnresolvableTransactionsDueForRetry();
     Logger.info(`Fetched ${unresolvableTransactions.length} unresolvable transactions to retry in ${endTimer.rounded()} ms.`);

@@ -13,7 +13,7 @@ describe('DeactivateOperation', async () => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
       const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
-        'unused-DID-unique-suffix',
+        'EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg',
         recoveryPrivateKey
       );
 
@@ -27,7 +27,7 @@ describe('DeactivateOperation', async () => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
       const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
-        'unused-DID-unique-suffix',
+        'EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg',
         recoveryPrivateKey
       );
 
@@ -46,7 +46,7 @@ describe('DeactivateOperation', async () => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
       const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
-        'unused-DID-unique-suffix',
+        'EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg',
         recoveryPrivateKey
       );
 
@@ -69,7 +69,39 @@ describe('DeactivateOperation', async () => {
 
       const operationBuffer = Buffer.from(JSON.stringify(deactivateOperationRequest));
       await expectAsync(DeactivateOperation
-        .parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationMissingOrInvalidDidUniqueSuffix));
+        .parse(operationBuffer)).toBeRejectedWith(new SidetreeError(`The deactivate request didSuffix must be a string but is of number type.`));
+      done();
+    });
+
+    it('should throw if didUniqueSuffix is undefined.', async (done) => {
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+
+      const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
+        'unused-DID-unique-suffix',
+        recoveryPrivateKey
+      );
+
+      (deactivateOperationRequest.didSuffix as any) = undefined; // Intentionally undefined.
+
+      const operationBuffer = Buffer.from(JSON.stringify(deactivateOperationRequest));
+      await expectAsync(DeactivateOperation
+        .parse(operationBuffer)).toBeRejectedWith(new SidetreeError(`The deactivate request didSuffix must be a string but is of undefined type.`));
+      done();
+    });
+
+    it('should throw if didUniqueSuffix is not encoded multihash.', async (done) => {
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+
+      const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
+        'unused-DID-unique-suffix',
+        recoveryPrivateKey
+      );
+
+      (deactivateOperationRequest.didSuffix as any) = 'thisIsNotMultihash'; // Intentionally not multihash.
+
+      const operationBuffer = Buffer.from(JSON.stringify(deactivateOperationRequest));
+      await expectAsync(DeactivateOperation
+        .parse(operationBuffer)).toBeRejectedWith(new SidetreeError(`Given deactivate request didSuffix string 'thisIsNotMultihash' is not a multihash.`));
       done();
     });
   });

@@ -11,8 +11,7 @@ import SidetreeTransactionModel from './models/SidetreeTransactionModel';
  */
 export default class SidetreeTransactionParser {
 
-  public constructor (private bitcoinClient: BitcoinClient, private sidetreePrefix: string) {
-  }
+  public constructor (private bitcoinClient: BitcoinClient, private sidetreePrefix: string) { }
 
   /**
    * Parses the given transaction and returns the sidetree transaction object.
@@ -121,11 +120,10 @@ export default class SidetreeTransactionParser {
   private async fetchOutput (transactionId: string, outputIndexToFetch: number): Promise<BitcoinOutputModel | undefined> {
     try {
       const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
-
       return transaction.outputs[outputIndexToFetch];
     } catch (e) {
-      Logger.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
-      return undefined;
+      Logger.error(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
+      throw e;
     }
   }
 

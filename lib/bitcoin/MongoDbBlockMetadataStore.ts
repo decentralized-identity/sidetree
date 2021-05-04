@@ -66,7 +66,7 @@ export default class MongoDbBlockMetadataStore extends MongoDbStore implements I
   }
 
   public async getLast (): Promise<BlockMetadata | undefined> {
-    const blocks = await this.collection!.find<BlockMetadata>().sort({ height: -1 }).limit(1).toArray();
+    const blocks = await this.collection!.find().sort({ height: -1 }).limit(1).toArray();
     if (blocks.length === 0) {
       return undefined;
     }
@@ -79,7 +79,7 @@ export default class MongoDbBlockMetadataStore extends MongoDbStore implements I
    * Gets the first block (block with lowest height).
    */
   private async getFirst (): Promise<BlockMetadata | undefined> {
-    const blocks = await this.collection!.find<BlockMetadata>().sort({ height: 1 }).limit(1).toArray();
+    const blocks = await this.collection!.find().sort({ height: 1 }).limit(1).toArray();
     if (blocks.length === 0) {
       return undefined;
     }

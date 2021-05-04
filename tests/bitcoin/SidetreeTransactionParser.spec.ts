@@ -2,6 +2,7 @@ import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinInputModel from '../../lib/bitcoin/models/BitcoinInputModel';
 import BitcoinOutputModel from '../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
+import { FetchError } from 'node-fetch';
 import SidetreeTransactionParser from '../../lib/bitcoin/SidetreeTransactionParser';
 
 describe('SidetreeTransactionParser', () => {
@@ -252,12 +253,18 @@ describe('SidetreeTransactionParser', () => {
       done();
     });
 
-    it('should return undefined if any exception is thrown.', async (done) => {
-      spyOn(sidetreeTxnParser['bitcoinClient'], 'getRawTransaction').and.throwError('some error');
+    it('should throw if fetch throws', async () => {
+      const mockError = new FetchError('mocked test error', 'request-timeout');
+      spyOn(sidetreeTxnParser['bitcoinClient'], 'getRawTransaction').and.callFake(async () => {
+        throw mockError;
+      });
 
-      const actual = await sidetreeTxnParser['fetchOutput']('txn id', 1);
-      expect(actual).toBeUndefined();
-      done();
+      try {
+        await sidetreeTxnParser['fetchOutput']('txn id', 1);
+        fail();
+      } catch (e) {
+        expect(e).toEqual(mockError);
+      }
     });
   });
 

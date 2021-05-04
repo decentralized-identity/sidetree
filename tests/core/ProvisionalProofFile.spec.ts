@@ -10,8 +10,8 @@ describe('ProvisionalProofFile', async () => {
     it('should parse a valid provisional proof file successfully.', async () => {
       const [anyPublicKey, anyPrivateKey] = await Jwk.generateEs256kKeyPair(); // Used in multiple signed data for testing purposes.
 
-      const updateOperationData1 = await OperationGenerator.generateUpdateOperation('unused', anyPublicKey, anyPrivateKey);
-      const updateOperationData2 = await OperationGenerator.generateUpdateOperation('unused', anyPublicKey, anyPrivateKey);
+      const updateOperationData1 = await OperationGenerator.generateUpdateOperation('EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg', anyPublicKey, anyPrivateKey);
+      const updateOperationData2 = await OperationGenerator.generateUpdateOperation('EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg', anyPublicKey, anyPrivateKey);
 
       const updateOperation1 = updateOperationData1.updateOperation;
       const updateOperation2 = updateOperationData2.updateOperation;
