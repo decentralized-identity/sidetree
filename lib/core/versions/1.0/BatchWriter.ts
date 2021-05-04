@@ -43,12 +43,10 @@ export default class BatchWriter implements IBatchWriter {
     const numberOfOperations = queuedOperations.length;
 
     // Do nothing if there is nothing to batch together.
-    if (queuedOperations.length === 0) {
+    if (numberOfOperations === 0) {
       Logger.info(`No queued operations to batch.`);
       return 0;
     }
-
-    Logger.info(LogColor.lightBlue(`Batch size = ${LogColor.green(numberOfOperations)}`));
 
     const operationModels = await Promise.all(queuedOperations.map(async (queuedOperation) => Operation.parse(queuedOperation.operationBuffer)));
     const createOperations = operationModels.filter(operation => operation.type === OperationType.Create) as CreateOperation[];
@@ -100,7 +98,9 @@ export default class BatchWriter implements IBatchWriter {
     await this.blockchain.write(stringToWriteToBlockchain, fee);
 
     // Remove written operations from queue after batch writing has completed successfully.
-    await this.operationQueue.dequeue(queuedOperations.length);
+    await this.operationQueue.dequeue(numberOfOperations);
+
+    Logger.info(LogColor.lightBlue(`Batch size = ${LogColor.green(numberOfOperations)}`));
 
     return numberOfOperations;
   }
