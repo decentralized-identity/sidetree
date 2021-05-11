@@ -11,7 +11,7 @@
 _For this call, you are encouraged to turn your video on. This is a good way to build rapport given we are a large, disparate group experiencing a lot of churn._
 
 _This document is live-edited DURING each call, and stable/authoritative copies live on our github repo under /agenda.md . 
-Please note that we might not notice a pullrequest in time, but you are free to propose agenda items for future meetings via hackmd._
+Please note that we might not notice a pull request in time, but you are free to propose agenda items for future meetings via hackmd._
 
 <details>
 <summary> Meeting information </summary>
@@ -29,11 +29,100 @@ Please note that we might not notice a pullrequest in time, but you are free to 
 <details>
 <summary> Topics for upcoming meetings</summary>
 
-* Add a way to set `controller`? (Lionello Lunesu)
-
-
 
 </details>
+
+## Meeting - 11 May 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+- [x] Daniel Buchner
+- [x] Jace Hensley
+- [x] Henk van Cann
+
+### Agenda
+- Welcome / Introductions
+- Sidetree DID Type Registry - Daniel (https://github.com/decentralized-identity/sidetree/pull/1120/files)
+  - Approved during WG call.
+  - Next action: clarify how the type number is related to the Sidetree property value.
+
+## Meeting - 13 April 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+- [x] Daniel Buchner
+- [x] Henk van Cann
+- [x] Lionello Lunesu (Workday)
+
+### Agenda
+- Welcome / Introductions
+- Next work topics
+
+## Meeting - 06 April 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+- [x] Balazs Nemethi
+- [x] Daniel Buchner
+- [x] Henk van Cann
+
+### Agenda
+- Welcome / Introductions
+- Blog post
+- Next work topics
+
+## Meeting - 23 March 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+- [x] Lionello Lunesu (Workday)
+
+### Agenda
+- Welcome / Introductions
+- Types (Daniel)
+
+### Notes on Blog Post
+
+Write a post for Sidetree v1
+Deadline: April Fools (1st)
+
+#### Outline
+
+- History of project
+  - What is it (Troy)
+  - How did it start (Daniel)
+  - Past posts (Daniel)
+- Ratified status (1 paragraph)
+- Contributors
+  - Org logos
+  - Blurb about who they are (1 sentence), and why Sidetree (1 sentence)
+- Implementations
+  - Intro to blockchain agnostic, interop first (2 sentences)
+  - Logos and links to projects
+- vNext additions to spec
+  - Pruning & Checkpoints (2 sentences)
+  - Type table (2 sentences)
+  - Light node implementer's guide (2 sentences)
+
+
+
+
+## Meeting - 09 March 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+- [x] Daniel Buchner
+- [x] Lionello Lunesu (Workday)
+- [x] Jen Schreiber (Workday)
+
+### Agenda
+- Welcome / Introductions
+- Open PRs
+- Tag spec v1.0
+- Discussion
+
+* Add a way to set `controller`? (Lionello Lunesu)
+    * This was recently added to `add-public-keys` patch action
 
 ## Meeting - 02 March 2021 - (1500 ET)
  
@@ -41,7 +130,7 @@ Please note that we might not notice a pullrequest in time, but you are free to 
 - [x] Troy Ronda
 - [x] Daniel Buchner
 - [x] Andreas Freund
-- [x] Lionello Lunesu
+- [x] Lionello Lunesu (Workday)
 
 ### Agenda
 
