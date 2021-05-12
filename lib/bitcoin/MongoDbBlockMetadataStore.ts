@@ -1,5 +1,5 @@
-import { Collection, Cursor } from 'mongodb';
 import BlockMetadata from './models/BlockMetadata';
+import { Cursor } from 'mongodb';
 import IBlockMetadataStore from './interfaces/IBlockMetadataStore';
 import MongoDbStore from '../common/MongoDbStore';
 
@@ -20,9 +20,9 @@ export default class MongoDbBlockMetadataStore extends MongoDbStore implements I
     super(serverUrl, MongoDbBlockMetadataStore.collectionName, databaseName);
   }
 
-  protected async createIndex (collection: Collection) {
+  public async createIndex () {
     // Create unique index, so duplicate inserts are rejected.
-    await collection.createIndex({ height: 1 }, { unique: true });
+    await this.collection.createIndex({ height: 1 }, { unique: true });
   }
 
   public async add (arrayOfBlockMetadata: BlockMetadata[]): Promise<void> {

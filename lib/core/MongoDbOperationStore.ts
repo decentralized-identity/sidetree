@@ -1,4 +1,4 @@
-import { Binary, Collection, Long } from 'mongodb';
+import { Binary, Long } from 'mongodb';
 import AnchoredOperationModel from './models/AnchoredOperationModel';
 import IOperationStore from './interfaces/IOperationStore';
 import MongoDbStore from '../common/MongoDbStore';
@@ -31,9 +31,11 @@ export default class MongoDbOperationStore extends MongoDbStore implements IOper
     super(serverUrl, MongoDbOperationStore.collectionName, databaseName);
   }
 
-  protected async createIndex (collection: Collection) {
+  public async createIndex () {
     // This is an unique index, so duplicate inserts are rejected/ignored.
-    await collection.createIndex({ didSuffix: 1, txnNumber: 1, opIndex: 1, type: 1 }, { unique: true });
+    await this.collection.createIndex({ didSuffix: 1, txnNumber: 1, opIndex: 1, type: 1 }, { unique: true });
+    // The query in `get() method needs a corresponding composite index in some cloud-based services (CosmosDB 4.0) that supports MongoDB driver.
+    await this.collection.createIndex({ didSuffix: 1, txnNumber: 1, opIndex: 1 }, { unique: true });
   }
 
   public async insertOrReplace (operations: AnchoredOperationModel[]): Promise<void> {
@@ -59,7 +61,7 @@ export default class MongoDbOperationStore extends MongoDbStore implements IOper
   public async get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]> {
     const mongoOperations = await this.collection!
       .find({ didSuffix: didUniqueSuffix })
-      .sort({ txnNumber: 1, opIndex: 1 })
+      .sort({ didSuffix: 1, txnNumber: 1, opIndex: 1 })
       .maxTimeMS(MongoDbStore.defaultQueryTimeoutInMilliseconds)
       .toArray();
 

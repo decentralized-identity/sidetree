@@ -1896,13 +1896,13 @@ describe('BitcoinProcessor', () => {
       expect(serviceStateStorePutSpy).not.toHaveBeenCalled();
     });
 
-    it('should perform upgrade if saved service version is different from running service version.', async () => {
+    it('should perform upgrade if saved service version is older then the current running service version.', async () => {
       const blockMetadataStoreClearCollectionSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'clearCollection');
       const transactionStoreClearCollectionSpy = spyOn(bitcoinProcessor['transactionStore'], 'clearCollection');
       const serviceStateStorePutSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'put');
 
-      // Simulate that the saved service state is `undefined`.
-      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve(undefined));
+      // Mock a saved service version that is definitely older than the current running code version to trigger DB upgrade.
+      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ serviceVersion: '0.0.1' }));
 
       await (bitcoinProcessor as any).upgradeDatabaseIfNeeded();
 

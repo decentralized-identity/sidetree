@@ -6,7 +6,7 @@ import SidetreeError from '../../../common/SidetreeError';
 
 /**
  * Sidetree operation stored in MongoDb.
- * Note: we use the shorter property name "opIndex" instead of "operationIndex" due to a constraint imposed by CosmosDB/MongoDB:
+ * Note: we use the shorter property name "opIndex" instead of "operationIndex" due to a constraint imposed by some MongoDB service such as CosmosDB 3.2:
  * the sum of property names of a unique index keys need to be less than 40 characters.
  * Note: We represent opIndex, transactionNumber, and transactionTime as long instead of number (double) to avoid some floating
  * point comparison quirks.

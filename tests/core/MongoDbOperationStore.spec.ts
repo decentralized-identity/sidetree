@@ -112,15 +112,12 @@ describe('MongoDbOperationStore', async () => {
     // Make connection to mongo db to verify collection exists
     const client = await MongoClient.connect(config.mongoDbConnectionString, { useNewUrlParser: true });
     const db = client.db(databaseName);
-    let collections = await db.collections();
-    let collectionNames = collections.map(collection => collection.collectionName);
+    const collections = await db.collections();
+    const collectionNames = collections.map(collection => collection.collectionName);
     expect(collectionNames.includes(MongoDbOperationStore.collectionName)).toBeTruthy();
 
     // clean up
-    await db.dropCollection(MongoDbOperationStore.collectionName);
-    collections = await db.collections();
-    collectionNames = collections.map(collection => collection.collectionName);
-    expect(collectionNames.includes(MongoDbOperationStore.collectionName)).toBeFalsy();
+    await db.dropDatabase();
   });
 
   describe('insertOrReplace()', () => {
