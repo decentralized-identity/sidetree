@@ -19,14 +19,10 @@ export default class MongoDbServiceStateStore<T> extends MongoDbStore implements
     await this.collection!.replaceOne({ }, serviceState, { upsert: true }); // { } filter results in replacement of the first document returned.
   }
 
-  public async get (): Promise<T | undefined> {
+  public async get (): Promise<T> {
     const queryOptions = { fields: { _id: 0 } }; // Exclude `_id` field from being returned.
     const serviceState = await this.collection!.findOne({ }, queryOptions);
 
-    if (serviceState === null) {
-      return undefined;
-    } else {
-      return serviceState;
-    }
+    return serviceState;
   }
 }

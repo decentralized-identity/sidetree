@@ -209,7 +209,7 @@ export default class BitcoinProcessor {
     const currentServiceVersion = currentServiceVersionModel.version;
 
     const savedServiceState = await this.serviceStateStore.get();
-    const savedServiceVersion = savedServiceState?.serviceVersion;
+    const savedServiceVersion = savedServiceState.serviceVersion;
 
     if (savedServiceVersion === currentServiceVersion) {
       return;

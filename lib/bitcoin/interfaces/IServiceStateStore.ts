@@ -11,5 +11,5 @@ export default interface IServiceStateStore<T> {
   /**
    * Gets the service state.
    */
-  get (): Promise<T | undefined>;
+  get (): Promise<T>;
 }

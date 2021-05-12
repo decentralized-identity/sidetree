@@ -1,9 +1,11 @@
+import * as semver from 'semver';
 import * as timeSpan from 'time-span';
 import { ISidetreeCas, ISidetreeEventEmitter, ISidetreeLogger } from '..';
 import BatchScheduler from './BatchScheduler';
 import Blockchain from './Blockchain';
 import Config from './models/Config';
 import DownloadManager from './DownloadManager';
+import ErrorCode from './ErrorCode';
 import EventEmitter from '../common/EventEmitter';
 import LogColor from '../common/LogColor';
 import Logger from '../common/Logger';
@@ -18,6 +20,7 @@ import ResponseModel from '../common/models/ResponseModel';
 import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import ServiceStateModel from './models/ServiceStateModel';
+import SidetreeError from '../common/SidetreeError';
 import VersionManager from './VersionManager';
 import VersionModel from './models/VersionModel';
 
@@ -155,10 +158,18 @@ export default class Core {
     const currentServiceVersionModel = this.serviceInfo.getServiceVersion();
     const currentServiceVersion = currentServiceVersionModel.version;
     const savedServiceState = await this.serviceStateStore.get();
-    const savedServiceVersion = savedServiceState?.serviceVersion;
+    const savedServiceVersion = savedServiceState.serviceVersion;
 
     if (savedServiceVersion === currentServiceVersion) {
       return;
+    }
+
+    // Throw if attempting to run old code on new DB.
+    if (semver.lt(currentServiceVersion, savedServiceVersion)) {
+      Logger.error(
+        LogColor.red(`Running older code ${LogColor.green(currentServiceVersion)} on newer DB ${LogColor.green(savedServiceVersion)} is not supported.`)
+      );
+      throw new SidetreeError(ErrorCode.RunningOlderCodeOnNewerDatabaseUnsupported);
     }
 
     // Add DB upgrade code below.
@@ -170,6 +181,8 @@ export default class Core {
     await this.operationStore.delete();
     await this.transactionStore.clearCollection();
     await this.unresolvableTransactionStore.clearCollection();
+
+    await this.operationStore.createIndex();
 
     await this.serviceStateStore.put({ serviceVersion: currentServiceVersion });
 

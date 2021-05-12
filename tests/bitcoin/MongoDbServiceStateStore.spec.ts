@@ -37,14 +37,10 @@ describe('MongoDbServiceStateStore', async () => {
   });
 
   it('should put and get service state correctly.', async (done) => {
-    // Expect service state to be undefined before any state is added.
-    let actualServiceState = await store.get();
-    expect(actualServiceState).toBeUndefined();
-
     // Put then get an initial service state.
     const initialServiceState: BitcoinServiceStateModel = { serviceVersion: '1' };
     await store.put(initialServiceState);
-    actualServiceState = await store.get();
+    let actualServiceState = await store.get();
     expect(actualServiceState).toEqual(initialServiceState);
 
     // Put then get another service state to test upsert.

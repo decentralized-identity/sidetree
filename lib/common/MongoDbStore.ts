@@ -45,25 +45,22 @@ export default class MongoDbStore {
     const collectionNames = collections.map(collection => collection.collectionName);
 
     // If collection exists, use it; else create it.
-    let collection;
     if (collectionNames.includes(this.collectionName)) {
       Logger.info(`Collection '${this.collectionName}' found.`);
-      collection = db.collection(this.collectionName);
+      this.collection = db.collection(this.collectionName);
     } else {
       Logger.info(`Collection '${this.collectionName}' does not exists, creating...`);
-      collection = await db.createCollection(this.collectionName);
+      this.collection = await db.createCollection(this.collectionName);
 
-      await this.createIndex(collection);
+      await this.createIndex();
       Logger.info(`Collection '${this.collectionName}' created.`);
     }
-
-    this.collection = collection;
   }
 
   /**
-   * Create the indices required by the collection passed.
+   * Create the indices required by this store.
    * To be overridden by inherited classes if a collection index is needed.
    */
-  protected async createIndex (_collection: Collection): Promise<void> {
+  public async createIndex (): Promise<void> {
   }
 }
