@@ -155,26 +155,25 @@ export default class Core {
   }
 
   private async upgradeDatabaseIfNeeded () {
-    const currentServiceVersionModel = this.serviceInfo.getServiceVersion();
-    const currentServiceVersion = currentServiceVersionModel.version;
+    const expectedDbVersion = "1.0.0";
     const savedServiceState = await this.serviceStateStore.get();
-    const savedServiceVersion = savedServiceState.serviceVersion;
+    const actualDbVersion = savedServiceState.databaseVersion;
 
-    if (savedServiceVersion === currentServiceVersion) {
+    if (expectedDbVersion === actualDbVersion) {
       return;
     }
 
     // Throw if attempting to run old code on new DB.
-    if (semver.lt(currentServiceVersion, savedServiceVersion)) {
+    if (actualDbVersion !== undefined && semver.lt(expectedDbVersion, actualDbVersion)) {
       Logger.error(
-        LogColor.red(`Running older code ${LogColor.green(currentServiceVersion)} on newer DB ${LogColor.green(savedServiceVersion)} is not supported.`)
+        LogColor.red(`Running code dependent on DB version ${LogColor.green(expectedDbVersion)} on newer DB version ${LogColor.green(actualDbVersion)} is not supported.`)
       );
       throw new SidetreeError(ErrorCode.RunningOlderCodeOnNewerDatabaseUnsupported);
     }
 
     // Add DB upgrade code below.
 
-    Logger.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(savedServiceVersion)} to ${LogColor.green(currentServiceVersion)}...`));
+    Logger.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(actualDbVersion)} to ${LogColor.green(expectedDbVersion)}...`));
 
     // Current upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
     const timer = timeSpan();
@@ -184,9 +183,8 @@ export default class Core {
 
     await this.operationStore.createIndex();
 
-    await this.serviceStateStore.put({ serviceVersion: currentServiceVersion });
+    await this.serviceStateStore.put({ databaseVersion: expectedDbVersion });
 
     Logger.warn(LogColor.yellow(`DB upgraded in: ${LogColor.green(timer.rounded())} ms.`));
   }
-
 }

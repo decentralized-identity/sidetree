@@ -1,3 +1,4 @@
+import * as semver from 'semver';
 import * as timeSpan from 'time-span';
 import { ISidetreeEventEmitter, ISidetreeLogger } from '..';
 import BitcoinBlockDataIterator from './BitcoinBlockDataIterator';
@@ -205,26 +206,31 @@ export default class BitcoinProcessor {
   }
 
   private async upgradeDatabaseIfNeeded () {
-    const currentServiceVersionModel = await this.getServiceVersion();
-    const currentServiceVersion = currentServiceVersionModel.version;
-
+    const expectedDbVersion = "1.0.0";
     const savedServiceState = await this.serviceStateStore.get();
-    const savedServiceVersion = savedServiceState.serviceVersion;
+    const actualDbVersion = savedServiceState.databaseVersion;
 
-    if (savedServiceVersion === currentServiceVersion) {
+    if (expectedDbVersion === actualDbVersion) {
       return;
     }
 
+    // Throw if attempting to run old code on new DB.
+    if (actualDbVersion !== undefined && semver.lt(expectedDbVersion, actualDbVersion)) {
+      Logger.error(
+        LogColor.red(`Running code dependent on DB version ${LogColor.green(expectedDbVersion)} on newer DB version ${LogColor.green(actualDbVersion)} is not supported.`)
+      );
+      throw new SidetreeError(ErrorCode.RunningOlderCodeOnNewerDatabaseUnsupported);
+    }
+
+
     // Add DB upgrade code below.
 
-    Logger.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(savedServiceVersion)} to ${LogColor.green(currentServiceVersion)}...`));
+    Logger.warn(LogColor.yellow(`Upgrading DB from version ${LogColor.green(actualDbVersion)} to ${LogColor.green(expectedDbVersion)}...`));
 
     // Current upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
     const timer = timeSpan();
-    await this.blockMetadataStore.clearCollection();
-    await this.transactionStore.clearCollection();
 
-    await this.serviceStateStore.put({ serviceVersion: currentServiceVersion });
+    await this.serviceStateStore.put({ databaseVersion: expectedDbVersion });
 
     Logger.warn(LogColor.yellow(`DB upgraded in: ${LogColor.green(timer.rounded())} ms.`));
   }

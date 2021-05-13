@@ -1883,12 +1883,11 @@ describe('BitcoinProcessor', () => {
       upgradeDatabaseIfNeededSpy.and.callThrough();
     });
 
-    it('should not perform upgrade if saved service version is the same as the running service version.', async () => {
+    it('should not perform upgrade if saved database version is the same as the expected version.', async () => {
       const serviceStateStorePutSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'put');
 
       // Simulate that the saved service version is the same as the running service version.
-      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ serviceVersion: '1' }));
-      spyOn(bitcoinProcessor['serviceInfoProvider'], 'getServiceVersion').and.returnValue({ name: 'unused', version: '1' });
+      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ databaseVersion: '1.0.0' }));
 
       await (bitcoinProcessor as any).upgradeDatabaseIfNeeded();
 
@@ -1896,20 +1895,26 @@ describe('BitcoinProcessor', () => {
       expect(serviceStateStorePutSpy).not.toHaveBeenCalled();
     });
 
-    it('should perform upgrade if saved service version is older then the current running service version.', async () => {
-      const blockMetadataStoreClearCollectionSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'clearCollection');
-      const transactionStoreClearCollectionSpy = spyOn(bitcoinProcessor['transactionStore'], 'clearCollection');
+    it('should perform upgrade if saved database version is older than the expected database version.', async () => {
       const serviceStateStorePutSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'put');
 
-      // Mock a saved service version that is definitely older than the current running code version to trigger DB upgrade.
-      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ serviceVersion: '0.0.1' }));
+      // Mock a database version that is definitely older than the expected database version to trigger DB upgrade.
+      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ databaseVersion: '0.0.1' }));
 
       await (bitcoinProcessor as any).upgradeDatabaseIfNeeded();
 
       // Verify that that upgrade path was invoked.
-      expect(blockMetadataStoreClearCollectionSpy).toHaveBeenCalled();
-      expect(transactionStoreClearCollectionSpy).toHaveBeenCalled();
-      expect(serviceStateStorePutSpy).toHaveBeenCalled();
+      expect(serviceStateStorePutSpy).toHaveBeenCalledWith({ databaseVersion: '1.0.0' });
+    });
+
+    it('should throw if attempting to run older code on newer DB.', async () => {
+      // Mock a saved database version that is definitely newer than the expected version to trigger expected error.
+      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ databaseVersion: '99999.0.0' }));
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => (bitcoinProcessor as any).upgradeDatabaseIfNeeded(),
+        ErrorCode.RunningOlderCodeOnNewerDatabaseUnsupported
+      );
     });
   });
 });

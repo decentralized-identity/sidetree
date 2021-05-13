@@ -19,6 +19,7 @@ export default {
   LockResolverTransactionIsNotPayingToScript: 'lock_resolver_transaction_is_not_paying_to_script',
   LockResolverTransactionNotConfirmed: 'lock_resolver_transaction_not_confirmed',
   LockResolverTransactionNotFound: 'lock_resolver_transaction_not_found',
+  RunningOlderCodeOnNewerDatabaseUnsupported: 'running_older_code_on_newer_database_unsupported',
   ValueTimeLockInPendingState: 'value_time_lock_in_pending_state',
   VersionManagerVersionStringNotFound: 'version_manager_version_string_not_found'
 };

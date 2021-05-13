@@ -187,12 +187,11 @@ describe('Core', async () => {
     beforeEach(() => {
     });
 
-    it('should not perform upgrade if saved service version is the same as the running service version.', async () => {
+    it('should not perform upgrade if saved database version is the same as the expected database version.', async () => {
       const core = new Core(testConfig, testVersionConfig, mockCas);
 
-      // Simulate that the saved service version is the same as the running service version.
-      const serviceStateModel = core['serviceInfo'].getServiceVersion();
-      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ serviceVersion: serviceStateModel.version }));
+      // Simulate that the saved database version is the same as the expected database version.
+      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ databaseVersion: '1.0.0' }));
 
       const serviceStateStorePutSpy = spyOn(core['serviceStateStore'], 'put');
       await (core as any).upgradeDatabaseIfNeeded();
@@ -201,7 +200,7 @@ describe('Core', async () => {
       expect(serviceStateStorePutSpy).not.toHaveBeenCalled();
     });
 
-    it('should perform upgrade if saved service version is older than the current running service version.', async () => {
+    it('should perform upgrade if saved database version is older than the current running database version.', async () => {
       const core = new Core(testConfig, testVersionConfig, mockCas);
 
       const operationStoreDeleteSpy = spyOn(core['operationStore'], 'delete');
@@ -210,8 +209,8 @@ describe('Core', async () => {
       const transactionStoreClearCollectionSpy = spyOn(core['transactionStore'], 'clearCollection');
       const serviceStateStorePutSpy = spyOn(core['serviceStateStore'], 'put');
 
-      // Mock a saved service version that is definitely older than the current running code version to trigger DB upgrade.
-      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ serviceVersion: '0.0.1' }));
+      // Mock a saved database version that is definitely older than the expected version to trigger DB upgrade.
+      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ databaseVersion: '0.0.1' }));
 
       await (core as any).upgradeDatabaseIfNeeded();
 
@@ -220,14 +219,14 @@ describe('Core', async () => {
       expect(unresolvableTransactionStoreClearCollectionSpy).toHaveBeenCalled();
       expect(transactionStoreClearCollectionSpy).toHaveBeenCalled();
       expect(operationStoreCreateIndexSpy).toHaveBeenCalled();
-      expect(serviceStateStorePutSpy).toHaveBeenCalled();
+      expect(serviceStateStorePutSpy).toHaveBeenCalledWith({ databaseVersion: '1.0.0' });
     });
 
     it('should throw if attempting to run older code on newer DB.', async () => {
       const core = new Core(testConfig, testVersionConfig, mockCas);
 
-      // Mock a saved service version that is definitely newer than the current running code version to trigger expected error.
-      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ serviceVersion: '99999.0.0' }));
+      // Mock a saved database version that is definitely newer than the expected version to trigger expected error.
+      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ databaseVersion: '99999.0.0' }));
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => (core as any).upgradeDatabaseIfNeeded(),

@@ -38,13 +38,13 @@ describe('MongoDbServiceStateStore', async () => {
 
   it('should put and get service state correctly.', async (done) => {
     // Put then get an initial service state.
-    const initialServiceState: BitcoinServiceStateModel = { serviceVersion: '1' };
+    const initialServiceState: BitcoinServiceStateModel = { databaseVersion: '1.0.0' };
     await store.put(initialServiceState);
     let actualServiceState = await store.get();
     expect(actualServiceState).toEqual(initialServiceState);
 
     // Put then get another service state to test upsert.
-    const newServiceState: BitcoinServiceStateModel = { serviceVersion: '2' };
+    const newServiceState: BitcoinServiceStateModel = { databaseVersion: '2.0.0' };
     await store.put(newServiceState);
     actualServiceState = await store.get();
     expect(actualServiceState).toEqual(newServiceState);
@@ -68,10 +68,10 @@ describe('MongoDbServiceStateStore', async () => {
       // until a subsequent operation is called (such as `createIndex()` or inserting record) possibly due to lazy load.
       // hence in this test we insert a record and retrieve it again to prove that the collection is created.
       await store.initialize();
-      await store.put({ serviceVersion: '1.1' });
+      await store.put({ databaseVersion: '1.1.0' });
 
       const serviceState = await store.get();
-      expect(serviceState?.serviceVersion).toEqual('1.1');
+      expect(serviceState?.databaseVersion).toEqual('1.1.0');
 
       done();
     });
