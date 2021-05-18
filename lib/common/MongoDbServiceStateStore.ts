@@ -23,6 +23,6 @@ export default class MongoDbServiceStateStore<T> extends MongoDbStore implements
     const queryOptions = { fields: { _id: 0 } }; // Exclude `_id` field from being returned.
     const serviceState = await this.collection!.findOne({ }, queryOptions);
 
-    return serviceState;
+    return serviceState ? serviceState : { };
   }
 }
