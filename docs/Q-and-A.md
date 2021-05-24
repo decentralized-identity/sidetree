@@ -329,7 +329,7 @@ All transactions that occur after the specified Ledger Time will adhere to the a
 New Version Activation is **necessary for Minor and Major version segments**; the ones with breaking protocol advancements, and protocol forking changes, or security patches.
 _(@henkvancann)_
 
-## Could Sidetree work with be pruned or charded blockchains?
+## Could Sidetree work with pruned or sharded blockchains?
 No, any node needs a full copy of the blockchain that serves as a settlement layer 1. The reason is ordering of operation on DID is done via consensus of the blockchain.\
 _(@henkvancann)_
 ## How to bootstrap Sidetree on the internet? Is it like fax machine; the more there are the more effective it is?
