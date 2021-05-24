@@ -23,7 +23,7 @@ WASM = [WebAssembly](#WebAssembly)
 
 ## Definitions in alphabetic order
 
-Terminology specific for Sidetree can be found [here](https://identity.foundation/sidetree/spec/#terminology). The following definitions are specificly listed to support the [Question and Answers](Q-and-A.md) on a simpler level, and to be able to put Sidetree in relation to other fields of interest.
+Terminology specific for Sidetree can be found [here](https://identity.foundation/sidetree/spec/#terminology). The following definitions are specifically listed to support the [Question and Answers](Q-and-A.md) on a simpler level, and to be able to put Sidetree in relation to other fields of interest.
 
 #### Agent
 A representative for an _identity_. MAY require the use of a _wallet_. MAY support _transfer_
