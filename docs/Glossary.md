@@ -1,6 +1,6 @@
 # Definitions
 
-There is seperate section [terminology](./spec/terminology.md) is a separate file additional to this Glossary for the Q&A. The terminology is for advanced to proficient Sidetree users.
+There is separate section [terminology](./spec/terminology.md) in a separate file additional to this Glossary for the Q&A. The terminology is for advanced to proficient Sidetree users.
 
 ## Abbreviations
 In alphabetic order:\
