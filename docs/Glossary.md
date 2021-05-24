@@ -4,15 +4,15 @@ There is seperate section [terminology](./spec/terminology.md) is a separate fil
 
 ## Abbreviations
 In alphabetic order:\
-BX = [Bidirectional model transformation](#bidirectional-model-transformation)
-CAS = Content Addressable Storage 
+BX = [Bidirectional model transformation](#bidirectional-model-transformation)\
+CAS = Content Addressable Storage\
 DID = [Decentralized Identity](#decentralized-identity) or Digital Identity dependent of the context.\
 DIF = Decentralized Identity Foundation\
 DDO = DID Document, look up W3D DID standardization for more info\
 DHT = Distributed Hash Table\
-DIF = Decentralized Identity Foundation, https://identity.foundation\
+DIF = Decentralized Identity Foundation, https://identity.foundation \
 DKMI = Decentralized Key Mangement Infrastructure\
-JWK = [JSON Web Key](#json-web-key)
+JWK = [JSON Web Key](#json-web-key)\
 IPv4 = standard Internet Protocol, version 4\
 PKI = [Public Key Infrastructure](#public-key-infrastructure)\
 PR = Pull Request; github terminology\

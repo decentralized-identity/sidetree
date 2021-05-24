@@ -147,7 +147,7 @@ It is a DID overlay network.
 
 <img src="./images/layers-of-SSI-interop.png" alt="Layers of SSI interopability" border="0" width="600"> 
 
-## For who is Sidetree?
+## Who is Sidetree for?
 Any team or organisation that wants to create an DID based on Sidetree, because of its typical Layer 2 properties, not bloating any Layer 1 solution. Laying a foundation for layer 3 development, in the DID to be developed, that will result in W3C DID compliant VCs.
 _(@henkvancann)_
 
