@@ -266,7 +266,7 @@ The transactions array must always end with a complete block of data, but can st
   "moreTransactions": "True if there are more transactions beyond the returned batch. False otherwise.",
   "transactions": [
     {
-      "transactionNumber": "A monotonically increasing number (need NOT be by 1) that identifies a Sidtree transaction.",
+      "transactionNumber": "A monotonically increasing number (need NOT be by 1) that identifies a Sidetree transaction.",
       "transactionTime": "The logical blockchain time this transaction is anchored. Used for protocol version selection.",
       "transactionTimeHash": "The hash associated with the transaction time.",
       "anchorString": "The string written to the blockchain for this transaction.",
