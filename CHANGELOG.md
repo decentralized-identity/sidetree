@@ -1,3 +1,34 @@
+## [1.0.3](https://github.com/decentralized-identity/sidetree/compare/v1.0.1...v1.0.3) (2021-05-28)
+
+
+### Bug Fixes
+
+* **ref-imp:** add suffix check when parsing operation ([#1117](https://github.com/decentralized-identity/sidetree/issues/1117)) ([6a6ef47](https://github.com/decentralized-identity/sidetree/commit/6a6ef478ada962de9171315e10b4dd2a8deaecfd))
+* **ref-imp:** added missing bitcoin event export ([9ab3ce6](https://github.com/decentralized-identity/sidetree/commit/9ab3ce66b2b6d201bf2c32d36845b9d4ae75e2c0))
+* **ref-imp:** better transactions API behavior when bitcoin service is in forked state ([c3940ad](https://github.com/decentralized-identity/sidetree/commit/c3940ad3d8ba2ede365adfb95dd75272c303554d))
+* **ref-imp:** error thrown in blockchain time refresh can crash core ([6c20245](https://github.com/decentralized-identity/sidetree/commit/6c202452a177493ac37dfd58a9fb5371c88f1bf9))
+* **ref-imp:** fix missing transaction when bitcoin rpc call fails ([#1116](https://github.com/decentralized-identity/sidetree/issues/1116)) ([3732ac3](https://github.com/decentralized-identity/sidetree/commit/3732ac3976c03e9b07e0313551e7b49c359d3b31))
+* **ref-imp:** fixed DB upgrade failng due to null service state ([54b4288](https://github.com/decentralized-identity/sidetree/commit/54b4288a1f2cea1df22f89f803a88f34ecf9f76c))
+* **ref-imp:** fixed typo in long-form resolution log ([9fb410c](https://github.com/decentralized-identity/sidetree/commit/9fb410c5f699cf1b3faa6204ac412712ed7f91cf))
+* **ref-imp:** improved error message for incorrect DID prefix ([51b8cf8](https://github.com/decentralized-identity/sidetree/commit/51b8cf8a406fe9123841afb7d4f113e36e145e1e))
+* **ref-imp:** made Core event code consistent with bitcoin service ([6abd2a1](https://github.com/decentralized-identity/sidetree/commit/6abd2a10a72e69ceb5d0569c87f6075fdc1cfa26))
+* **ref-imp:** updated bitcoin listunspent RPC call to include unconfirmed transactions ([1a028d1](https://github.com/decentralized-identity/sidetree/commit/1a028d178fd03968f3a04a65816ad38c6c3b2386))
+* **ref-imp:** updated mongodb lib version in attempt to fix rare DB infinite awaits ([9fc1f1c](https://github.com/decentralized-identity/sidetree/commit/9fc1f1ca2d54e68f555e7968a2e6be6af8d6832a))
+* **spec:** revert vector insertion ([#1061](https://github.com/decentralized-identity/sidetree/issues/1061)) ([12e1bff](https://github.com/decentralized-identity/sidetree/commit/12e1bff89322c84a16f94133ae0be42fa5387249))
+
+
+### Features
+
+* **ref-imp:** added bitcoin lock monitor events ([009202d](https://github.com/decentralized-identity/sidetree/commit/009202dcb39eb9b28f1525de259fb3b68dcb5f56))
+* **ref-imp:** added error code metadata for batch writer loop failure event ([9ee807f](https://github.com/decentralized-identity/sidetree/commit/9ee807f47cf8e8a8d90e25946526af34295727b2))
+* **ref-imp:** added feature to monitor writer max batch size + minor fixes ([5d0a14e](https://github.com/decentralized-identity/sidetree/commit/5d0a14eaa8e160b9030acdbd2a5d3fd080dd3bbf))
+* **ref-imp:** added support for MongoDB 4.0 based cloud storage services ([b987678](https://github.com/decentralized-identity/sidetree/commit/b98767847ad8cb2be1cf44c065ebf5033e96eb09))
+* **ref-imp:** added timeout for fetaching operations of a DID ([b840682](https://github.com/decentralized-identity/sidetree/commit/b84068285f3e8a0267885a2aae3617affe86f9ed))
+* **ref-imp:** emitted a couple of events in bitcoin processor ([189cfcd](https://github.com/decentralized-identity/sidetree/commit/189cfcd15ed03b4a8e1c0d9d13f88e2b7eda862c))
+* **ref-imp:** introduced database versioning ([378a964](https://github.com/decentralized-identity/sidetree/commit/378a964b4769d0c0c5108e758c30140290bb6afb))
+
+
+
 ## [1.0.1](https://github.com/decentralized-identity/sidetree/compare/v1.0.0...v1.0.1) (2021-02-03)
 
 
