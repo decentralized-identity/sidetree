@@ -52,6 +52,15 @@ describe('MongoDbServiceStateStore', async () => {
     done();
   });
 
+
+  describe('get()', async () => {
+    it('should get empty object if service state is not found in DB.', async () => {
+      await store.clearCollection();
+      let actualServiceState = await store.get();
+      expect(actualServiceState).toEqual({});
+    });
+  });
+
   describe('initialize()', async () => {
     it('should create collection on initialization if it does not exist.', async (done) => {
       // Deleting collections to setup this test.
