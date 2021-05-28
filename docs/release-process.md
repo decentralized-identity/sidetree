@@ -27,8 +27,7 @@ To create a stable release follow the following steps:
 1. Run `npm run version:release`, with an appropriate option such as [ `major` | `minor` | `patch` ].
 1. Observe and note down the correctly incremented version number X.Y.Z change to the `package.json` and changes to `CHANGELOG.md`
 1. Push the release branch and open a pull request for the release.
-1. Once approvals have been sought, merge the pull request using **rebase**,
-    preserving the commit message as `release commit [skip ci]`
+1. Once approvals have been sought, merge the pull request preserving the last commit message "`chore(ref-imp): release commit [skip ci]`". This is how release action to publish an NPM package is triggered. The easiest way is to do a direct `rebase` assuming you follow the steps strictly.
 1. Observe the triggering of the `/.github/workflows/release.yml` github workflow
 1. Remove the tag created in the release branch: `git tag -d vX.Y.Z`
 1. Remove the local release branch:
@@ -38,9 +37,6 @@ To create a stable release follow the following steps:
    1. git pull
    1. git tag vX.Y.Z
    1. git push origin vX.Y.Z
-
-**Note** It is important that **rebase** is used as the strategy for merging a release pull request as this preserves the created release tag.
-
 
 The resulting release will publish the new package to [npm](https://www.npmjs.com/).
 
