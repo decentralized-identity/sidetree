@@ -1,6 +1,6 @@
-# Contribution Guidlines
+# Contribution Guidelines
 
-The following document covers the contribution guidlines for the artifacts in this repository.
+The following document covers the contribution guidelines for the artifacts in this repository.
 
 ## Commit message format
 

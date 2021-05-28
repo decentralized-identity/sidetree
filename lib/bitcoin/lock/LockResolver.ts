@@ -118,7 +118,7 @@ export default class LockResolver {
     // Split the script into parts and verify each part
     const scriptAsmParts = redeemScript.toASM().split(' ');
 
-    // Verify different parts; [0] & [5] indeces are parsed only if the script is valid
+    // Verify different parts; [0] & [5] indices are parsed only if the script is valid
     const isScriptValid =
       scriptAsmParts.length === 8 &&
       scriptAsmParts[1] === 'OP_NOP3' &&
