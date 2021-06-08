@@ -155,7 +155,7 @@ export default class Core {
   }
 
   private async upgradeDatabaseIfNeeded () {
-    const expectedDbVersion = "1.0.0";
+    const expectedDbVersion = '1.0.0';
     const savedServiceState = await this.serviceStateStore.get();
     const actualDbVersion = savedServiceState.databaseVersion;
 
@@ -166,6 +166,7 @@ export default class Core {
     // Throw if attempting to run old code on new DB.
     if (actualDbVersion !== undefined && semver.lt(expectedDbVersion, actualDbVersion)) {
       Logger.error(
+        // eslint-disable-next-line max-len
         LogColor.red(`Running code dependent on DB version ${LogColor.green(expectedDbVersion)} on newer DB version ${LogColor.green(actualDbVersion)} is not supported.`)
       );
       throw new SidetreeError(ErrorCode.RunningOlderCodeOnNewerDatabaseUnsupported);

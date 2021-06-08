@@ -52,11 +52,10 @@ describe('MongoDbServiceStateStore', async () => {
     done();
   });
 
-
   describe('get()', async () => {
     it('should get empty object if service state is not found in DB.', async () => {
       await store.clearCollection();
-      let actualServiceState = await store.get();
+      const actualServiceState = await store.get();
       expect(actualServiceState).toEqual({});
     });
   });
