@@ -32,6 +32,28 @@ Please note that we might not notice a pull request in time, but you are free to
 
 </details>
 
+## Meeting - 22 June 2021 - (1500 ET)
+ 
+### Attendees
+
+### Agenda
+- Welcome / Introductions
+- 
+
+
+## Meeting - 08 June 2021 - (1500 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+- [x] Daniel Buchner
+- [x] Volodymyr Pavlyshyn
+
+### Agenda
+- Welcome / Introductions
+- Review type registry strings
+- Discuss pruning work item
+- Implementation status and coordination discussion
+
 ## Meeting - 11 May 2021 - (1500 ET)
  
 ### Attendees
