@@ -14,7 +14,6 @@ export default interface IBitcoinConfig {
   databaseName: string;
   defaultTransactionFeeInSatoshisPerKB: number | undefined;
   genesisBlockNumber: number;
-  lowBalanceNoticeInDays: number | undefined;
   mongoDbConnectionString: string;
   requestTimeoutInMilliseconds: number | undefined;
   requestMaxRetries: number | undefined;

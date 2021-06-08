@@ -51,7 +51,6 @@ describe('BitcoinProcessor', () => {
     databaseName: 'bitcoin-test',
     defaultTransactionFeeInSatoshisPerKB: undefined,
     genesisBlockNumber: 1,
-    lowBalanceNoticeInDays: 28,
     mongoDbConnectionString: 'mongodb://localhost:27017',
     requestMaxRetries: 3,
     requestTimeoutInMilliseconds: 300,
@@ -180,7 +179,6 @@ describe('BitcoinProcessor', () => {
         genesisBlockNumber: randomNumber(),
         mongoDbConnectionString: randomString(),
         sidetreeTransactionPrefix: randomString(4),
-        lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
         transactionPollPeriodInSeconds: 60,
@@ -215,7 +213,6 @@ describe('BitcoinProcessor', () => {
         genesisBlockNumber: randomNumber(),
         mongoDbConnectionString: randomString(),
         sidetreeTransactionPrefix: randomString(4),
-        lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
         transactionPollPeriodInSeconds: 60,
@@ -753,8 +750,6 @@ describe('BitcoinProcessor', () => {
 
   describe('writeTransaction', () => {
     const bitcoinFee = 4000;
-    const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;
-
     beforeEach(() => {
       bitcoinProcessor['lastProcessedBlock'] = {
         height: randomNumber(),
@@ -768,7 +763,7 @@ describe('BitcoinProcessor', () => {
 
     it('should write a transaction if there are enough Satoshis', async (done) => {
       const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning + 1));
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(9999999999));
       spyOn(bitcoinProcessor['bitcoinClient'], 'createSidetreeTransaction').and.returnValue(Promise.resolve({
         transactionId: 'string',
         transactionFee: bitcoinFee,
@@ -783,25 +778,6 @@ describe('BitcoinProcessor', () => {
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
       expect(monitorAddSpy).toHaveBeenCalledWith(hash);
-      done();
-    });
-
-    it('should warn if the number of Satoshis are under the lowBalance calculation', async (done) => {
-      const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning - 1));
-      spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
-      const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastSidetreeTransaction' as any).and.returnValue(Promise.resolve('someHash'));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'createSidetreeTransaction').and.returnValue(Promise.resolve({
-        transactionId: 'string',
-        transactionFee: bitcoinFee,
-        serializedTransactionObject: 'string'
-      }));
-
-      await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
-      expect(getCoinsSpy).toHaveBeenCalled();
-      expect(broadcastSpy).toHaveBeenCalled();
-      expect(monitorAddSpy).toHaveBeenCalled();
       done();
     });
 
