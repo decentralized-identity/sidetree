@@ -3,6 +3,7 @@ import { MongoClient } from 'mongodb';
 import MongoDb from '../common/MongoDb';
 import MongoDbUnresolvableTransactionStore from '../../lib/core/MongoDbUnresolvableTransactionStore';
 import TransactionModel from '../../lib/common/models/TransactionModel';
+import UnresolvableTransactionModel from '../../lib/core/models/UnresolvableTransactionModel';
 
 /**
  * Creates a MongoDbUnresolvableTransactionStore and initializes it.
@@ -35,6 +36,19 @@ async function generateTransactions (count: number): Promise<TransactionModel[]>
   }
 
   return transactions;
+}
+
+/**
+ * Verifies an `UnresolvableTransactionModel` against the expected `TransactionModel`.
+ */
+async function verifyUnresolvableTransactionModel (actual: UnresolvableTransactionModel, expected: TransactionModel) {
+  const actualCopy = Object.assign({}, actual) as any;
+  delete actualCopy._id; // For removing the _id property assigned from MongoDB.
+  delete actualCopy.firstFetchTime;
+  delete actualCopy.nextRetryTime;
+  delete actualCopy.retryAttempts;
+
+  expect(actualCopy).toEqual(expected);
 }
 
 describe('MongoDbUnresolvableTransactionStore', async () => {
@@ -88,6 +102,9 @@ describe('MongoDbUnresolvableTransactionStore', async () => {
     await store.recordUnresolvableTransactionFetchAttempt(transactions[2]);
     let unresolvableTransactions = await store.getUnresolvableTransactions();
     expect(unresolvableTransactions.length).toEqual(3);
+    verifyUnresolvableTransactionModel(unresolvableTransactions[0], transactions[0]);
+    verifyUnresolvableTransactionModel(unresolvableTransactions[1], transactions[1]);
+    verifyUnresolvableTransactionModel(unresolvableTransactions[2], transactions[2]);
 
     // Simulate the first transaction as failing retry attempt again.
     await store.recordUnresolvableTransactionFetchAttempt(transactions[0]);

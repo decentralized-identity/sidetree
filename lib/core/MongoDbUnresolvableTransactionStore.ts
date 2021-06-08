@@ -2,15 +2,10 @@ import { Collection, Db, Long, MongoClient } from 'mongodb';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
 import Logger from '../common/Logger';
 import TransactionModel from '../common/models/TransactionModel';
-
-interface IUnresolvableTransaction extends TransactionModel {
-  firstFetchTime: number;
-  retryAttempts: number;
-  nextRetryTime: number;
-}
+import UnresolvableTransactionModel from './models/UnresolvableTransactionModel';
 
 /**
- * Implementation of `IIUnresolvableTransactionStore` that stores the transaction data in a MongoDB database.
+ * Implementation of `IUnresolvableTransactionStore` that stores the transaction data in a MongoDB database.
  */
 export default class MongoDbUnresolvableTransactionStore implements IUnresolvableTransactionStore {
   /** Collection name for unresolvable transactions. */
@@ -59,7 +54,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
     const transactionNumber = transaction.transactionNumber;
     const searchFilter = { transactionTime, transactionNumber: Long.fromNumber(transactionNumber) };
     const findResults = await this.unresolvableTransactionCollection!.find(searchFilter).toArray();
-    let unresolvableTransaction: IUnresolvableTransaction | undefined;
+    let unresolvableTransaction: UnresolvableTransactionModel | undefined;
     if (findResults && findResults.length > 0) {
       unresolvableTransaction = findResults[0];
     }
@@ -67,10 +62,14 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
     // If unresolvable transaction not found in store, insert a new one; else update the info on retry attempts.
     if (unresolvableTransaction === undefined) {
       const newUnresolvableTransaction = {
+        anchorString: transaction.anchorString,
         transactionTime,
         transactionNumber: Long.fromNumber(transactionNumber),
-        anchorString: transaction.anchorString,
         transactionTimeHash: transaction.transactionTimeHash,
+        transactionFeePaid: transaction.transactionFeePaid,
+        normalizedTransactionFee: transaction.normalizedTransactionFee,
+        writer: transaction.writer,
+        // Additional properties used for retry logic below.
         firstFetchTime: Date.now(),
         retryAttempts: 0,
         nextRetryTime: Date.now()
@@ -126,7 +125,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
    * Gets the list of unresolvable transactions.
    * Mainly used for test purposes.
    */
-  public async getUnresolvableTransactions (): Promise<IUnresolvableTransaction[]> {
+  public async getUnresolvableTransactions (): Promise<UnresolvableTransactionModel[]> {
     const transactions = await this.unresolvableTransactionCollection!.find().sort({ transactionTime: 1, transactionNumber: 1 }).toArray();
     return transactions;
   }
@@ -135,7 +134,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
    * Creates the `unresolvable-transaction` collection with indexes if it does not exists.
    * @returns The existing collection if exists, else the newly created collection.
    */
-  public static async createUnresolvableTransactionCollectionIfNotExist (db: Db): Promise<Collection<IUnresolvableTransaction>> {
+  public static async createUnresolvableTransactionCollectionIfNotExist (db: Db): Promise<Collection<UnresolvableTransactionModel>> {
     const collections = await db.collections();
     const collectionNames = collections.map(collection => collection.collectionName);
 
