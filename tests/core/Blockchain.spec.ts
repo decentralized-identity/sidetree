@@ -1,7 +1,6 @@
 import Blockchain from '../../lib/core/Blockchain';
 import CoreErrorCode from '../../lib/core/ErrorCode';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
-import EventEmitter from '../../lib/common/EventEmitter';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ReadableStream from '../../lib/common/ReadableStream';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
@@ -11,58 +10,6 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 
 describe('Blockchain', async () => {
-  describe('startPeriodicCachedBlockchainTimeRefresh', () => {
-    it('should call periodicallyRefreshCachedBlockchainTime().', async () => {
-      const blockchainClient = new Blockchain('Unused URI');
-      const periodicallyRefreshCachedBlockchainTimeSpy =
-        spyOn(blockchainClient as any, 'periodicallyRefreshCachedBlockchainTime');
-
-      blockchainClient.startPeriodicCachedBlockchainTimeRefresh();
-
-      expect(periodicallyRefreshCachedBlockchainTimeSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('periodicallyRefreshCachedBlockchainTime', () => {
-    beforeEach(() => {
-      // Freeze time
-      jasmine.clock().install();
-    });
-
-    afterEach(() => {
-      // End freeze time
-      jasmine.clock().uninstall();
-    });
-
-    it('should trigger another blockchain time refresh.', async () => {
-      const blockchainClient = new Blockchain('Unused URI');
-      const getLatestTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue({} as any);
-
-      expect(getLatestTimeSpy).not.toHaveBeenCalled();
-
-      await (blockchainClient as any).periodicallyRefreshCachedBlockchainTime();
-      expect(getLatestTimeSpy).toHaveBeenCalledTimes(1);
-
-      // Time is advanced by refresh time, so the getLatestTimeSpy should be called again.
-      jasmine.clock().tick(Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
-      expect(getLatestTimeSpy).toHaveBeenCalledTimes(2);
-    });
-
-    it('should trigger another blockchain time refresh even if exception is thrown.', async () => {
-      const blockchainClient = new Blockchain('Unused URI');
-      const getLatestTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.throwError('any error');
-
-      expect(getLatestTimeSpy).not.toHaveBeenCalled();
-
-      await (blockchainClient as any).periodicallyRefreshCachedBlockchainTime();
-      expect(getLatestTimeSpy).toHaveBeenCalledTimes(1);
-
-      // Time is advanced by refresh time, so the getLatestTimeSpy should be called again.
-      jasmine.clock().tick(Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
-      expect(getLatestTimeSpy).toHaveBeenCalledTimes(2);
-    });
-  });
-
   describe('read()', async () => {
     it('should return transactions fetched.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
@@ -222,30 +169,6 @@ describe('Blockchain', async () => {
     });
   });
 
-  describe('initialize()', async () => {
-    it('should initialize cached blockchain time during initialize().', async () => {
-      const blockchainClient = new Blockchain('Unused URI');
-      const mockFetchResponse = {
-        status: 200,
-        body: {
-          read: () => {
-            return JSON.stringify({
-              time: 100,
-              hash: '100'
-            });
-          }
-        }
-      };
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-
-      await blockchainClient.initialize();
-      const approximateTime = blockchainClient.approximateTime;
-
-      expect(approximateTime.time).toEqual(100);
-      expect(approximateTime.hash).toEqual('100');
-    });
-  });
-
   describe('getFirstValidTransaction()', async () => {
     it('should return the transaction returned by the underlying blockchain service.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
@@ -314,6 +237,19 @@ describe('Blockchain', async () => {
   });
 
   describe('getLatestTime()', async () => {
+    it('should return the latest time', async () => {
+      const blockchainClient = new Blockchain('Unused URI');
+      const mockFetchResponse = {
+        status: 200,
+        body: {
+          read: () => { return `{ "hash": "someHash", "time": 123 }`; }
+        }
+      };
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      const result = await blockchainClient.getLatestTime();
+      expect(result).toEqual({ hash: 'someHash', time: 123 });
+    });
+
     it('should throw if encountered error when fetching time from blockchain service.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
       const mockFetchResponse = {
@@ -337,40 +273,6 @@ describe('Blockchain', async () => {
       }
 
       fail();
-    });
-
-    it('should not emit an event when underlying blockchain time is unchanged. ', async () => {
-      const blockchainClient = new Blockchain('Unused URI');
-
-      // Preset the cached to time to a hardcoded value.
-      const hardcodedBlockchainTimeModel = { time: 1, hash: 'unused' };
-      blockchainClient['cachedBlockchainTime'] = hardcodedBlockchainTimeModel;
-
-      // Mock the time fetch response to the same hardcoded value to simulate unchanged time.
-      const mockFetchResponse = {
-        status: 200,
-        body: {
-          read: () => { return Buffer.from(JSON.stringify(hardcodedBlockchainTimeModel)); }
-        }
-      };
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      const eventEmitterSpy = spyOn(EventEmitter, 'emit');
-
-      await blockchainClient.getLatestTime();
-
-      expect(eventEmitterSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('initialize', async () => {
-    it('should initialize the member variables.', async () => {
-      const blockchainClient = new Blockchain('unused URI');
-
-      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: '100' }));
-
-      await blockchainClient.initialize();
-
-      expect(getTimeSpy).toHaveBeenCalled();
     });
   });
 

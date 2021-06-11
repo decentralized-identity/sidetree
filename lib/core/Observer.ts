@@ -4,11 +4,13 @@ import EventCode from './EventCode';
 import EventEmitter from '../common/EventEmitter';
 import IBlockchain from './interfaces/IBlockchain';
 import IOperationStore from './interfaces/IOperationStore';
+import IServiceStateStore from '../common/interfaces/IServiceStateStore';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionStore from './interfaces/ITransactionStore';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
 import IVersionManager from './interfaces/IVersionManager';
 import Logger from '../common/Logger';
+import ServiceStateModel from './models/ServiceStateModel';
 import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import ThroughputLimiter from './ThroughputLimiter';
@@ -37,6 +39,11 @@ export default class Observer {
 
   private throughputLimiter: ThroughputLimiter;
 
+  /**
+   * The interval which to pull and update blockchain time
+   */
+  private blockchainTimePullIntervalInSeconds = 60;
+
   public constructor (
     private versionManager: IVersionManager,
     private blockchain: IBlockchain,
@@ -44,6 +51,7 @@ export default class Observer {
     private operationStore: IOperationStore,
     private transactionStore: ITransactionStore,
     private unresolvableTransactionStore: IUnresolvableTransactionStore,
+    private serviceStateStore: IServiceStateStore<ServiceStateModel>,
     private observingIntervalInSeconds: number) {
     this.throughputLimiter = new ThroughputLimiter(versionManager);
   }
@@ -60,6 +68,7 @@ export default class Observer {
       this.continuePeriodicProcessing = true;
 
       this.processTransactions();
+      this.pullLatestBlockChainTime();
     });
   }
 
@@ -70,6 +79,22 @@ export default class Observer {
   public stopPeriodicProcessing () {
     Logger.info(`Stopped periodic transactions processing.`);
     this.continuePeriodicProcessing = false;
+  }
+
+  private async pullLatestBlockChainTime () {
+    try {
+      const latestBlockchainTime = await this.blockchain.getLatestTime();
+      const serviceState = await this.serviceStateStore.get();
+      serviceState.approximateTime = latestBlockchainTime.time;
+      await this.serviceStateStore.put(serviceState);
+      EventEmitter.emit(EventCode.SidetreeBlockchainTimeChanged, { time: latestBlockchainTime.time });
+    } catch (e) {
+      Logger.error(`Error occured while updating blockchain time, investigate and fix: ${e}`);
+    } finally {
+      if (this.continuePeriodicProcessing) {
+        setTimeout(async () => this.pullLatestBlockChainTime(), this.blockchainTimePullIntervalInSeconds * 1000);
+      }
+    }
   }
 
   /**
@@ -126,7 +151,8 @@ export default class Observer {
         // This check will prevent Core from reverting transactions if/when blockchain service is re-initializing its data itself.
         let blockReorganizationDetected = false;
         if (invalidTransactionNumberOrTimeHash) {
-          if (lastKnownTransactionTime <= this.blockchain.approximateTime.time) {
+          const latestBlockchainTime = await this.blockchain.getLatestTime();
+          if (lastKnownTransactionTime <= latestBlockchainTime.time) {
             blockReorganizationDetected = true;
             moreTransactions = true;
           } else {

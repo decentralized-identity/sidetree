@@ -1,4 +1,4 @@
-import IServiceStateStore from '../bitcoin/interfaces/IServiceStateStore';
+import IServiceStateStore from './interfaces/IServiceStateStore';
 import MongoDbStore from './MongoDbStore';
 
 /**

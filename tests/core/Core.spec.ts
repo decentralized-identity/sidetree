@@ -41,26 +41,26 @@ describe('Core', async () => {
       const unresolvableTransactionStoreInitSpy = spyOn(core['unresolvableTransactionStore'], 'initialize');
       const operationStoreInitSpy = spyOn(core['operationStore'], 'initialize');
       const upgradeDatabaseIfNeededSpy = spyOn(core as any, 'upgradeDatabaseIfNeeded');
-      const blockchainInitSpy = spyOn(core['blockchain'], 'initialize');
       const versionManagerInitSpy = spyOn(core['versionManager'], 'initialize');
       const observerStartSpy = spyOn(core['observer'], 'startPeriodicProcessing');
       const batchSchedulerStartSpy = spyOn(core['batchScheduler'], 'startPeriodicBatchWriting');
-      const blockchainStartSpy = spyOn(core['blockchain'], 'startPeriodicCachedBlockchainTimeRefresh');
       const downloadManagerStartSpy = spyOn(core['downloadManager'], 'start');
       const monitorInitializeSpy = spyOn(core.monitor, 'initialize');
+      // mocking it so initialize doesn't actually start the periodic pull
+      const startPeriodicTimePullSpy = spyOn(core as any, 'startPeriodicTimePull').and.callFake(() => {});
+
       await core.initialize();
       expect(serviceStateStoreInitializeSpy).toHaveBeenCalled();
       expect(transactionStoreInitSpy).toHaveBeenCalled();
       expect(unresolvableTransactionStoreInitSpy).toHaveBeenCalled();
       expect(operationStoreInitSpy).toHaveBeenCalled();
       expect(upgradeDatabaseIfNeededSpy).toHaveBeenCalled();
-      expect(blockchainInitSpy).toHaveBeenCalled();
       expect(versionManagerInitSpy).toHaveBeenCalled();
       expect(observerStartSpy).toHaveBeenCalled();
       expect(batchSchedulerStartSpy).toHaveBeenCalled();
-      expect(blockchainStartSpy).toHaveBeenCalled();
       expect(downloadManagerStartSpy).toHaveBeenCalled();
       expect(monitorInitializeSpy).toHaveBeenCalled();
+      expect(startPeriodicTimePullSpy).toHaveBeenCalled();
     });
 
     it('should override the default logger/event emitter if custom logger/event emitter is given.', async () => {
@@ -71,11 +71,9 @@ describe('Core', async () => {
       spyOn(core['unresolvableTransactionStore'], 'initialize');
       spyOn(core['operationStore'], 'initialize');
       spyOn(core as any, 'upgradeDatabaseIfNeeded');
-      spyOn(core['blockchain'], 'initialize');
       spyOn(core['versionManager'], 'initialize');
       spyOn(core['observer'], 'startPeriodicProcessing');
       spyOn(core['batchScheduler'], 'startPeriodicBatchWriting');
-      spyOn(core['blockchain'], 'startPeriodicCachedBlockchainTimeRefresh');
       spyOn(core['downloadManager'], 'start');
       spyOn(core.monitor, 'initialize');
 
@@ -91,6 +89,8 @@ describe('Core', async () => {
         emit: async () => { customEvenEmitterInvoked = true; }
       };
 
+      // mocking it so initialize doesn't actually start the periodic pull
+      spyOn(core as any, 'startPeriodicTimePull').and.callFake(() => {});
       await core.initialize(customLogger, customEvenEmitter);
 
       // Invoke logger to trigger the custom logger's method defined above.
@@ -117,12 +117,12 @@ describe('Core', async () => {
       spyOn(core['unresolvableTransactionStore'], 'initialize');
       spyOn(core['operationStore'], 'initialize');
       spyOn(core as any, 'upgradeDatabaseIfNeeded');
-      spyOn(core['blockchain'], 'initialize');
       spyOn(core['versionManager'], 'initialize');
-      spyOn(core['blockchain'], 'startPeriodicCachedBlockchainTimeRefresh');
       spyOn(core['downloadManager'], 'start');
       spyOn(core.monitor, 'initialize');
 
+      // mocking it so initialize doesn't actually start the periodic pull
+      spyOn(core as any, 'startPeriodicTimePull').and.callFake(() => {});
       await core.initialize();
       expect(observerStartSpy).not.toHaveBeenCalled();
       expect(batchSchedulerStartSpy).not.toHaveBeenCalled();
@@ -163,7 +163,7 @@ describe('Core', async () => {
       const mockRequestHandler = jasmine.createSpyObj<IRequestHandler>('versionManagerSpy', ['handleResolveRequest']);
       mockRequestHandler.handleResolveRequest.and.callFake(() => { return resolvedRequest; });
       core['versionManager']['getRequestHandler'] = () => { return mockRequestHandler; };
-      core['blockchain']['cachedBlockchainTime'] = { time: Number.MAX_SAFE_INTEGER, hash: 'hash' };
+      spyOn(core['blockchain'], 'getLatestTime').and.returnValue(Promise.resolve({ time: Number.MAX_SAFE_INTEGER, hash: 'hash' }));
       const response = await core.handleResolveRequest('did:sidetree:abc');
       expect(mockRequestHandler.handleResolveRequest).toHaveBeenCalled();
       expect(response).toEqual({ status: ResponseStatus.Succeeded, body: null });
@@ -176,7 +176,7 @@ describe('Core', async () => {
       const mockRequestHandler = jasmine.createSpyObj<IRequestHandler>('versionManagerSpy', ['handleOperationRequest']);
       mockRequestHandler.handleOperationRequest.and.callFake(() => { return resolvedRequest; });
       core['versionManager']['getRequestHandler'] = () => { return mockRequestHandler; };
-      core['blockchain']['cachedBlockchainTime'] = { time: Number.MAX_SAFE_INTEGER, hash: 'hash' };
+      spyOn(core['blockchain'], 'getLatestTime').and.returnValue(Promise.resolve({ time: Number.MAX_SAFE_INTEGER, hash: 'hash' }));
       const response = await core.handleOperationRequest(Buffer.from('some string'));
       expect(mockRequestHandler.handleOperationRequest).toHaveBeenCalled();
       expect(response).toEqual({ status: ResponseStatus.Succeeded, body: null });
@@ -232,6 +232,26 @@ describe('Core', async () => {
         () => (core as any).upgradeDatabaseIfNeeded(),
         ErrorCode.RunningOlderCodeOnNewerDatabaseUnsupported
       );
+    });
+  });
+
+  describe('startPeriodicTimePull', () => {
+    it('should update the in memory time periodically', async () => {
+      let counter = 0;
+      const core = new Core(testConfig, testVersionConfig, mockCas);
+      core['approximateTimeUpdateIntervalInSeconds'] = 0.01;
+      const periodicPullSpy = spyOn(core as any, 'startPeriodicTimePull').and.callThrough();
+      spyOn(core['serviceStateStore'], 'initialize').and.callFake(() => { return Promise.resolve(); });
+      spyOn(core['serviceStateStore'], 'get').and.callFake(() => { counter++; return Promise.resolve({ approximateTime: counter }); });
+      jasmine.clock().install();
+      expect(core['approximateTime']).toEqual(undefined);
+      await core['startPeriodicTimePull']();
+      expect(core['approximateTime']).toEqual(1);
+      expect(periodicPullSpy).toHaveBeenCalledTimes(1);
+      jasmine.clock().tick(11);
+      expect(periodicPullSpy).toHaveBeenCalledTimes(2);
+      core['shouldContinueTimePull'] = false;
+      jasmine.clock().uninstall();
     });
   });
 });

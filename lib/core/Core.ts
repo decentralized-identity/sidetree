@@ -42,6 +42,9 @@ export default class Core {
   private batchScheduler: BatchScheduler;
   private resolver: Resolver;
   private serviceInfo: ServiceInfo;
+  private approximateTime?: number;
+  private approximateTimeUpdateIntervalInSeconds: number = 60;
+  private shouldContinueTimePull: boolean = true;
 
   /**
    * Core constructor.
@@ -66,6 +69,7 @@ export default class Core {
       this.operationStore,
       this.transactionStore,
       this.unresolvableTransactionStore,
+      this.serviceStateStore,
       config.observingIntervalInSeconds
     );
 
@@ -87,7 +91,6 @@ export default class Core {
     await this.operationStore.initialize();
     await this.upgradeDatabaseIfNeeded();
 
-    await this.blockchain.initialize();
     await this.versionManager.initialize(
       this.blockchain,
       this.cas,
@@ -109,18 +112,32 @@ export default class Core {
       Logger.warn(LogColor.yellow(`Batch writing is disabled.`));
     }
 
-    this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
+    this.startPeriodicTimePull();
     this.downloadManager.start();
 
     await this.monitor.initialize(this.config);
   }
 
   /**
+   * Periodically pulls time into memory to prevent db call on every request
+   */
+  private async startPeriodicTimePull () {
+    const newApproximateTime = (await this.serviceStateStore.get()).approximateTime;
+    Logger.info(`Core approximateTime updated to: ${newApproximateTime}`);
+    this.approximateTime = newApproximateTime;
+
+    // shouldContinueTimePull is only used in tests to stop the pulling
+    if (this.shouldContinueTimePull) {
+      setTimeout(async () => this.startPeriodicTimePull(), this.approximateTimeUpdateIntervalInSeconds * 1000);
+    }
+  }
+
+  /**
    * Handles an operation request.
    */
   public async handleOperationRequest (request: Buffer): Promise<ResponseModel> {
-    const currentTime = this.blockchain.approximateTime;
-    const requestHandler = this.versionManager.getRequestHandler(currentTime.time);
+    const currentTime = this.approximateTime!;
+    const requestHandler = this.versionManager.getRequestHandler(currentTime);
     const response = requestHandler.handleOperationRequest(request);
     return response;
   }
@@ -132,8 +149,8 @@ export default class Core {
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
   public async handleResolveRequest (didOrDidDocument: string): Promise<ResponseModel> {
-    const currentTime = this.blockchain.approximateTime;
-    const requestHandler = this.versionManager.getRequestHandler(currentTime.time);
+    const currentTime = this.approximateTime!;
+    const requestHandler = this.versionManager.getRequestHandler(currentTime);
     const response = requestHandler.handleResolveRequest(didOrDidDocument);
     return response;
   }
