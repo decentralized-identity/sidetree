@@ -30,6 +30,11 @@ export default class Observer {
    */
   private transactionsUnderProcessing: TransactionUnderProcessingModel[] = [];
 
+  /**
+   * This is the transaction that is used as a cursor/timestamp to fetch newer transaction.
+   */
+  private cursorTransaction: TransactionModel | undefined;
+
   private throughputLimiter: ThroughputLimiter;
 
   public constructor (
@@ -70,29 +75,30 @@ export default class Observer {
    */
   private async processTransactions () {
     try {
-      // Update processing state by looking through state of async processing of all the transactions that completed between the polling period.
+      // Optional update to store the processed transactions that completed in between the polling periods.
       await this.storeThenTrimConsecutiveTransactionsProcessed();
 
       // Keep fetching new Sidetree transactions from blockchain and processing them
       // until there are no more new transactions or there is a block reorganization.
       let moreTransactions = false;
       do {
-        // Get the last transaction to be used as a timestamp to fetch new transactions.
-        const lastTransaction = await this.transactionStore.getLastTransaction();
-        const lastTransactionNumber = lastTransaction ? lastTransaction.transactionNumber : undefined;
-        const lastTransactionTimeHash = lastTransaction ? lastTransaction.transactionTimeHash : undefined;
-        const lastTransactionTime = lastTransaction ? lastTransaction.transactionTime : 0;
+        if (this.cursorTransaction == undefined) {
+          this.cursorTransaction = await this.transactionStore.getLastTransaction();
+        }
+        const cursorTransactionNumber = this.cursorTransaction ? this.cursorTransaction.transactionNumber : undefined;
+        const cursorTransactionTimeHash = this.cursorTransaction ? this.cursorTransaction.transactionTimeHash : undefined;
+        const cursorTransactionTime = this.cursorTransaction ? this.cursorTransaction.transactionTime : 0;
 
         let invalidTransactionNumberOrTimeHash = false;
         let readResult;
         const endTimer = timeSpan(); // Measure time taken to go blockchain read.
         try {
           Logger.info('Fetching Sidetree transactions from blockchain service...');
-          readResult = await this.blockchain.read(lastTransactionNumber, lastTransactionTimeHash);
+          readResult = await this.blockchain.read(cursorTransactionNumber, cursorTransactionTimeHash);
           Logger.info(`Fetched ${readResult.transactions.length} Sidetree transactions from blockchain service in ${endTimer.rounded()} ms.`);
         } catch (error) {
           if (error instanceof SidetreeError && error.code === SharedErrorCode.InvalidTransactionNumberOrTimeHash) {
-            Logger.info(`Invalid transaction number ${lastTransactionNumber} or time hash ${lastTransactionTimeHash} given to blockchain service.`);
+            Logger.info(`Invalid transaction number ${cursorTransactionNumber} or time hash ${cursorTransactionTimeHash} given to blockchain service.`);
             invalidTransactionNumberOrTimeHash = true;
           } else {
             throw error;
@@ -101,10 +107,15 @@ export default class Observer {
 
         const transactions = readResult ? readResult.transactions : [];
         moreTransactions = readResult ? readResult.moreTransactions : false;
-        let qualifiedTransactions = await this.throughputLimiter.getQualifiedTransactions(transactions);
-        qualifiedTransactions = qualifiedTransactions.sort((a, b) => { return a.transactionNumber - b.transactionNumber; });
+
+        // Set the cursor for fetching of next transaction batch in the next loop.
+        if (transactions.length > 0) {
+          this.cursorTransaction = transactions[transactions.length - 1];
+        }
 
         // Queue parallel downloading and processing of chunk files.
+        let qualifiedTransactions = await this.throughputLimiter.getQualifiedTransactions(transactions);
+        qualifiedTransactions = qualifiedTransactions.sort((a, b) => { return a.transactionNumber - b.transactionNumber; });
         for (const transaction of qualifiedTransactions) {
           const transactionUnderProcessing = {
             transaction: transaction,
@@ -120,7 +131,7 @@ export default class Observer {
         // This check will prevent Core from reverting transactions if/when blockchain service is re-initializing its data itself.
         let blockReorganizationDetected = false;
         if (invalidTransactionNumberOrTimeHash) {
-          if (lastTransactionTime <= this.blockchain.approximateTime.time) {
+          if (cursorTransactionTime <= this.blockchain.approximateTime.time) {
             blockReorganizationDetected = true;
             moreTransactions = true;
           } else {
@@ -138,6 +149,8 @@ export default class Observer {
           Logger.info(`Reverting invalid transactions...`);
           await this.revertInvalidTransactions();
           Logger.info(`Completed reverting invalid transactions.`);
+
+          this.cursorTransaction = undefined;
         } else {
           // Else it means all transactions fetched are good for processing.
 
@@ -152,10 +165,13 @@ export default class Observer {
           // erase the entire list transactions under processing since processing MUST not advance beyond the transaction that failed processing.
           const hasErrorInTransactionProcessing = this.hasErrorInTransactionProcessing();
           if (hasErrorInTransactionProcessing) {
-            // Optional step to defend against potential uncontrolled growth in `transactionsUnderProcessing` array size due to looping.
+            // Step to defend against potential uncontrolled growth in `transactionsUnderProcessing` array size due to looping.
             await Observer.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(this.transactionsUnderProcessing, 0);
+            await this.storeThenTrimConsecutiveTransactionsProcessed();
 
+            // Clear the the entire list of transactions under processing since we have cannot advance further due to error.
             this.transactionsUnderProcessing = [];
+            this.cursorTransaction = undefined;
           }
         }
       } while (moreTransactions);
