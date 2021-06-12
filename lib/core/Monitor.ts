@@ -3,8 +3,8 @@ import Blockchain from './Blockchain';
 import Config from './models/Config';
 import MongoDbOperationQueue from './versions/latest/MongoDbOperationQueue';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
-import VersionManager from './VersionManager';
 import TransactionModel from '../common/models/TransactionModel';
+import VersionManager from './VersionManager';
 
 /**
  * An class to monitor the Core.
@@ -12,15 +12,19 @@ import TransactionModel from '../common/models/TransactionModel';
  */
 export default class Monitor {
 
+  private blockchain!: Blockchain;
   private operationQueue: MongoDbOperationQueue;
-  private transactionStore!: MongoDbTransactionStore;
+  private transactionStore: MongoDbTransactionStore;
+  private versionManager!: VersionManager;
 
-  public constructor (private versionManager: VersionManager, private blockchain: Blockchain) {
+  public constructor () {
     this.operationQueue = new MongoDbOperationQueue();
     this.transactionStore = new MongoDbTransactionStore();
   }
 
-  public async initialize (config: Config) {
+  public async initialize (config: Config, versionManager: VersionManager, blockchain: Blockchain) {
+    this.blockchain = blockchain;
+    this.versionManager = versionManager;
     await this.transactionStore.initialize(config.mongoDbConnectionString, config.databaseName);
     await this.operationQueue.initialize(config.mongoDbConnectionString, config.databaseName);
   }

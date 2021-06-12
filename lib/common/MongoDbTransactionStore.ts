@@ -16,11 +16,6 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   private transactionCollection: Collection<any> | undefined;
 
   /**
-   * Constructs a `MongoDbTransactionStore`;
-   */
-  constructor () { }
-
-  /**
    * Initialize the MongoDB transaction store.
    */
   public async initialize (serverUrl: string, databaseName: string): Promise<void> {

@@ -1,9 +1,9 @@
-import TransactionModel from "../../common/models/TransactionModel";
+import TransactionModel from '../../common/models/TransactionModel';
 
 /**
  * Unresolvable transaction model.
  */
-export default 
+export default
 interface UnresolvableTransactionModel extends TransactionModel {
   firstFetchTime: number;
   retryAttempts: number;

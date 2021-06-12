@@ -82,7 +82,7 @@ export default class Observer {
       // until there are no more new transactions or there is a block reorganization.
       let moreTransactions = false;
       do {
-        if (this.cursorTransaction == undefined) {
+        if (this.cursorTransaction === undefined) {
           this.cursorTransaction = await this.transactionStore.getLastTransaction();
         }
         const cursorTransactionNumber = this.cursorTransaction ? this.cursorTransaction.transactionNumber : undefined;
@@ -197,7 +197,7 @@ export default class Observer {
   /**
    * Gets the total count of the transactions given that are still under processing.
    */
-  private static getCountOfTransactionsUnderProcessing(transactionsUnderProcessing: TransactionUnderProcessingModel[]): number {
+  private static getCountOfTransactionsUnderProcessing (transactionsUnderProcessing: TransactionUnderProcessingModel[]): number {
     const countOfTransactionsUnderProcessing = transactionsUnderProcessing.filter(
       transaction => transaction.processingStatus === TransactionProcessingStatus.Processing
     ).length;
@@ -208,7 +208,7 @@ export default class Observer {
   /**
    * Returns true if at least processing of one transaction resulted in an error that prevents advancement of transaction processing.
    */
-   private hasErrorInTransactionProcessing(): boolean {
+  private hasErrorInTransactionProcessing (): boolean {
     const firstTransactionProcessingError = this.transactionsUnderProcessing.find(
       transaction => transaction.processingStatus === TransactionProcessingStatus.Error
     );
@@ -216,7 +216,10 @@ export default class Observer {
     return (firstTransactionProcessingError !== undefined);
   }
 
-  private static async waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo (transactionsUnderProcessing: TransactionUnderProcessingModel[], count: number) {
+  private static async waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo (
+    transactionsUnderProcessing: TransactionUnderProcessingModel[],
+    count: number) {
+
     let countOfTransactionsUnderProcessing = Observer.getCountOfTransactionsUnderProcessing(transactionsUnderProcessing);
     while (countOfTransactionsUnderProcessing > count) {
       // Wait a little before checking again.
@@ -255,7 +258,7 @@ export default class Observer {
   /**
    * Goes through `transactionsUnderProcessing` in chronological order, records every consecutive processed transaction in the transaction store,
    * then remove them from `transactionsUnderProcessing` and update the in memory `lastConsecutivelyProcessedTransaction`.
-   * 
+   *
    * NOTE: this excludes transaction processing that resulted in `TransactionProcessingStatus.Error`,
    * because such error includes the case when the code fails to store the transaction to the retry table for future retry,
    * adding it to the transaction table means such transaction won't be processed again, resulting in missing operation data.
@@ -295,7 +298,7 @@ export default class Observer {
 
     if (transactionProcessedSuccessfully) {
       Logger.info(`Removing transaction '${transaction.transactionNumber}' from unresolvable transactions if exists...`);
-      this.unresolvableTransactionStore.removeUnresolvableTransaction(transaction); // We do not await since failure is not a critical and simply results another retry.
+      this.unresolvableTransactionStore.removeUnresolvableTransaction(transaction); // Skip await since failure is not a critical and results in a retry.
     } else {
       try {
         Logger.info(`Recording failed processing attempt for transaction '${transaction.transactionNumber}'...`);

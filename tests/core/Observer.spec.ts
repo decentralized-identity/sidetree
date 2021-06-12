@@ -126,12 +126,12 @@ describe('Observer', async () => {
           transactionTime: 1,
           transactionTimeHash: 'unused',
           writer: 'unused'
-       }
+        }
       ]));
 
       spyOn(transactionProcessor, 'processTransaction').and.throwError('Any error to trigger code to save transaction data for retry later.');
-      const recordUnresolvableTransactionFetchAttemptSpy = spyOn(observer['unresolvableTransactionStore'], 'recordUnresolvableTransactionFetchAttempt').and.throwError('Error that prevents transaction processing from advancing.')
-      
+      const recordUnresolvableTransactionFetchAttemptSpy = spyOn(observer['unresolvableTransactionStore'], 'recordUnresolvableTransactionFetchAttempt').and.throwError('Error that prevents transaction processing from advancing.');
+
       spyOn(Observer as any, 'waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo'); // Mock so no wait is needed.
 
       await observer['processTransactions']();
@@ -528,9 +528,9 @@ describe('Observer', async () => {
     const getFirstValidTransactionSpy =
       spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(undefined));
 
-      const revertInvalidTransactionsSpy = spyOn(observer as any, 'revertInvalidTransactions').and.returnValue(Promise.resolve(undefined));
+    const revertInvalidTransactionsSpy = spyOn(observer as any, 'revertInvalidTransactions').and.returnValue(Promise.resolve(undefined));
 
-      // Process first set of transactions.
+    // Process first set of transactions.
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the Observer until at two processing cycle has lapsed.

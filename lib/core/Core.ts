@@ -69,7 +69,7 @@ export default class Core {
       config.observingIntervalInSeconds
     );
 
-    this.monitor = new Monitor(this.versionManager, this.blockchain);
+    this.monitor = new Monitor();
   }
 
   /**
@@ -112,7 +112,7 @@ export default class Core {
     this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
     this.downloadManager.start();
 
-    await this.monitor.initialize(this.config);
+    await this.monitor.initialize(this.config, this.versionManager, this.blockchain);
   }
 
   /**
