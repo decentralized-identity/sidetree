@@ -65,7 +65,7 @@ export default class Observer {
       this.continuePeriodicProcessing = true;
 
       this.processTransactions();
-      this.pullLatestBlockChainTime();
+      this.pullLatestBlockchainTime();
     });
   }
 
@@ -78,7 +78,7 @@ export default class Observer {
     this.continuePeriodicProcessing = false;
   }
 
-  private async pullLatestBlockChainTime () {
+  private async pullLatestBlockchainTime () {
     try {
       const latestBlockchainTime = await this.blockchain.getLatestTime();
       const serviceState = await this.serviceStateStore.get();
@@ -89,7 +89,7 @@ export default class Observer {
       Logger.error(`Error occured while updating blockchain time, investigate and fix: ${e}`);
     } finally {
       if (this.continuePeriodicProcessing) {
-        setTimeout(async () => this.pullLatestBlockChainTime(), this.blockchainTimePullIntervalInSeconds * 1000);
+        setTimeout(async () => this.pullLatestBlockchainTime(), this.blockchainTimePullIntervalInSeconds * 1000);
       }
     }
   }

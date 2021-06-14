@@ -408,7 +408,7 @@ describe('Observer', async () => {
       transactions: []
     };
 
-    // Force blockchain time to be higher than the latest known transaction time by core,
+    // Force blockchain time to be higher than the cursor transaction time used in Observer,
     // such that Observer will consider `InvalidTransactionNumberOrTimeHash` a block reorg.
     spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 5000, hash: '5000' }));
 
