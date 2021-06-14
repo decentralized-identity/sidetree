@@ -4,7 +4,8 @@ import TransactionModel from '../../common/models/TransactionModel';
  * The state of a transaction that is being processed.
  */
 export enum TransactionProcessingStatus {
-  Pending = 'pending',
+  Error = 'error',
+  Processing = 'processing',
   Processed = 'processed'
 }
 
