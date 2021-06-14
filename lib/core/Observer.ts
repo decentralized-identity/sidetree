@@ -143,6 +143,8 @@ export default class Observer {
         // then revert invalid transaction and operations.
         if (blockReorganizationDetected) {
           Logger.info(`Block reorganization detected.`);
+          EventEmitter.emit(EventCode.SidetreeObserverBlockReorganization);
+
           await Observer.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(this.transactionsUnderProcessing, 0);
           await this.storeThenTrimConsecutiveTransactionsProcessed(); // This is an optional optimization to give best the chance of minimal revert dataset.
 

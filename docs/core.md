@@ -736,6 +736,11 @@ Event data:
 }
 ```
 
+### `sidetree_observer_block_reorganization`
+Occurs every time the observer detects a block reorganization.
+
+Event data: none
+
 ### `sidetree_observer_loop_failure`
 Occurs every time the observer fails a processing loop.
 
