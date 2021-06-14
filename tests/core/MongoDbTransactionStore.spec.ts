@@ -9,8 +9,8 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
  * Creates a MongoDbTransactionStore and initializes it.
  */
 async function createTransactionStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbTransactionStore> {
-  const transactionStore = new MongoDbTransactionStore(transactionStoreUri, databaseName);
-  await transactionStore.initialize();
+  const transactionStore = new MongoDbTransactionStore();
+  await transactionStore.initialize(transactionStoreUri, databaseName);
   return transactionStore;
 }
 
@@ -91,7 +91,7 @@ describe('MongoDbTransactionStore', async () => {
     expect(collectionNames.includes(MongoDbTransactionStore.transactionCollectionName)).toBeFalsy();
 
     console.info(`Trigger initialization.`);
-    await transactionStore.initialize();
+    await transactionStore.initialize(config.mongoDbConnectionString, databaseName);
 
     console.info(`Verify collection exists now.`);
     collections = await db.collections();

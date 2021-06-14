@@ -16,16 +16,11 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   private transactionCollection: Collection<any> | undefined;
 
   /**
-   * Constructs a `MongoDbTransactionStore`;
-   */
-  constructor (private serverUrl: string, private databaseName: string) { }
-
-  /**
    * Initialize the MongoDB transaction store.
    */
-  public async initialize (): Promise<void> {
-    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
-    this.db = client.db(this.databaseName);
+  public async initialize (serverUrl: string, databaseName: string): Promise<void> {
+    const client = await MongoClient.connect(serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
+    this.db = client.db(databaseName);
     this.transactionCollection = await MongoDbTransactionStore.createTransactionCollectionIfNotExist(this.db);
   }
 

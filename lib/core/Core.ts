@@ -58,7 +58,7 @@ export default class Core {
     this.blockchain = new Blockchain(config.blockchainServiceUri);
     this.downloadManager = new DownloadManager(config.maxConcurrentDownloads, this.cas);
     this.resolver = new Resolver(this.versionManager, this.operationStore);
-    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
+    this.transactionStore = new MongoDbTransactionStore();
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     this.batchScheduler = new BatchScheduler(this.versionManager, this.blockchain, config.batchingIntervalInSeconds);
@@ -73,7 +73,7 @@ export default class Core {
       config.observingIntervalInSeconds
     );
 
-    this.monitor = new Monitor(this.versionManager, this.blockchain);
+    this.monitor = new Monitor();
   }
 
   /**
@@ -86,7 +86,7 @@ export default class Core {
 
     // DB initializations.
     await this.serviceStateStore.initialize();
-    await this.transactionStore.initialize();
+    await this.transactionStore.initialize(this.config.mongoDbConnectionString, this.config.databaseName);
     await this.unresolvableTransactionStore.initialize();
     await this.operationStore.initialize();
     await this.upgradeDatabaseIfNeeded();
@@ -115,7 +115,7 @@ export default class Core {
     this.startPeriodicTimePull();
     this.downloadManager.start();
 
-    await this.monitor.initialize(this.config);
+    await this.monitor.initialize(this.config, this.versionManager, this.blockchain);
   }
 
   /**

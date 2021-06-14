@@ -8,10 +8,11 @@ import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import ITransactionProcessor from '../../lib/core/interfaces/ITransactionProcessor';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Ipfs from '../../lib/ipfs/Ipfs';
 import Logger from '../../lib/common/Logger';
-import MockBlockchain from '../mocks/MockBlockchain';
+// import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockServiceStateStore from '../mocks/MockServiceStateStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
@@ -28,44 +29,22 @@ import TransactionSelector from '../../lib/core/versions/latest/TransactionSelec
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
 
+  let observer: Observer;
+  let blockchainClient: Blockchain;
   let casClient;
   let downloadManager: DownloadManager;
   let operationStore: IOperationStore;
   let transactionStore: MockTransactionStore;
   let serviceStateStore: MockServiceStateStore;
-  let blockchain: MockBlockchain;
+  // let blockchain: MockBlockchain;
   let versionManager: IVersionManager;
   let getTransactionProcessorSpy: jasmine.Spy;
+  let transactionProcessor: ITransactionProcessor;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
   beforeAll(async () => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
-
-    const fetchTimeoutInSeconds = 1;
-    casClient = new Ipfs('unusedUri', fetchTimeoutInSeconds);
-
-    // Setting the CAS to always return 404.
-    spyOn(casClient, 'read').and.returnValue(Promise.resolve({ code: FetchResultCode.NotFound }));
-
-    operationStore = new MockOperationStore();
-    transactionStore = new MockTransactionStore();
-    serviceStateStore = new MockServiceStateStore();
-    downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
-    downloadManager.start();
-    blockchain = new MockBlockchain();
-    const versionMetadataFetcher = {} as any;
-
-    // Mock the blockchain to return an empty lock
-    spyOn(blockchain, 'getValueTimeLock').and.returnValue(Promise.resolve(undefined));
-
-    const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, versionMetadataFetcher);
-    const transactionSelector = new TransactionSelector(transactionStore);
-    versionManager = new MockVersionManager();
-
-    getTransactionProcessorSpy = spyOn(versionManager, 'getTransactionProcessor');
-    getTransactionProcessorSpy.and.returnValue(transactionProcessor);
-    spyOn(versionManager, 'getTransactionSelector').and.returnValue(transactionSelector);
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // Some asynchronous tests can take a bit longer than normal.
   });
 
   afterAll(() => {
@@ -73,7 +52,99 @@ describe('Observer', async () => {
   });
 
   beforeEach(() => {
+    const fetchTimeoutInSeconds = 1;
+    casClient = new Ipfs('unusedUri', fetchTimeoutInSeconds);
+
+    // Setting the CAS to always return 404.
+    spyOn(casClient, 'read').and.returnValue(Promise.resolve({ code: FetchResultCode.NotFound }));
+
+    blockchainClient = new Blockchain(config.blockchainServiceUri);
+    operationStore = new MockOperationStore();
     transactionStore = new MockTransactionStore();
+    serviceStateStore = new MockServiceStateStore();
+    downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
+    downloadManager.start();
+    const versionMetadataFetcher = {} as any;
+
+    // Mock the blockchain to return an empty lock
+    spyOn(blockchainClient, 'getValueTimeLock').and.returnValue(Promise.resolve(undefined));
+
+    transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchainClient, versionMetadataFetcher);
+    const transactionSelector = new TransactionSelector(transactionStore);
+    versionManager = new MockVersionManager();
+
+    getTransactionProcessorSpy = spyOn(versionManager, 'getTransactionProcessor');
+    getTransactionProcessorSpy.and.returnValue(transactionProcessor);
+    spyOn(versionManager, 'getTransactionSelector').and.returnValue(transactionSelector);
+
+    observer = new Observer(
+      versionManager,
+      blockchainClient,
+      config.maxConcurrentDownloads,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      serviceStateStore,
+      1
+    );
+  });
+
+  describe('waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo', () => {
+    it('should wait until transaction under processing count is 0.', async () => {
+      const transactionsUnderProcessing = [1, 2, 3] as any; // Actually unused in this test due to mock.
+
+      // Simulate count decrease from 2 to 0.
+      const getCountOfTransactionsUnderProcessingSpy = spyOn(Observer as any, 'getCountOfTransactionsUnderProcessing').and.returnValues(2, 0);
+
+      const startTime = Date.now();
+      await Observer['waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo'](transactionsUnderProcessing, 0);
+      const endTime = Date.now();
+
+      expect(getCountOfTransactionsUnderProcessingSpy).toHaveBeenCalledTimes(2);
+      // it should have taken at least 1 second because the setTimeout loop
+      expect(endTime - startTime).toBeGreaterThanOrEqual(1000);
+    });
+  });
+
+  describe('processTransactions', () => {
+    it('should set `transactionsUnderProcessing` to an empty array when a transaction processing has failed with an Error status.', async () => {
+      // Start the test with an entry in `transactionsUnderProcessing` array,
+      // so we don't falsely assume the array was populated and then cleared during the test.
+      observer['transactionsUnderProcessing'] = [{
+        processingStatus: TransactionProcessingStatus.Processing,
+        transaction: undefined as any // this will actually be used in this test.
+      }];
+      expect(observer['transactionsUnderProcessing'].length).toEqual(1);
+
+      spyOn(observer['blockchain'], 'read').and.returnValue(Promise.resolve(
+        {
+          moreTransactions: false, // So the loop will terminate after one loop.
+          transactions: [] // Unused in this test due to mock.
+        }
+      ));
+
+      // Empty array is fine;
+      spyOn(observer['throughputLimiter'], 'getQualifiedTransactions').and.returnValue(Promise.resolve([
+        {
+          anchorString: 'unused',
+          transactionFeePaid: 1,
+          transactionNumber: 1,
+          transactionTime: 1,
+          transactionTimeHash: 'unused',
+          writer: 'unused'
+        }
+      ]));
+
+      spyOn(transactionProcessor, 'processTransaction').and.throwError('Any error to trigger code to save transaction data for retry later.');
+      const recordUnresolvableTransactionFetchAttemptSpy = spyOn(observer['unresolvableTransactionStore'], 'recordUnresolvableTransactionFetchAttempt').and.throwError('Error that prevents transaction processing from advancing.');
+
+      spyOn(Observer as any, 'waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo'); // Mock so no wait is needed.
+
+      await observer['processTransactions']();
+
+      expect(recordUnresolvableTransactionFetchAttemptSpy).toHaveBeenCalledTimes(1);
+      expect(observer['transactionsUnderProcessing']).toEqual([]);
+    });
   });
 
   it('should record transactions processed with expected outcome.', async () => {
@@ -106,8 +177,6 @@ describe('Observer', async () => {
       transactions: []
     };
 
-    const blockchainClient = new Blockchain(config.blockchainServiceUri);
-
     let readInvocationCount = 0;
     const mockReadFunction = async () => {
       readInvocationCount++;
@@ -118,18 +187,6 @@ describe('Observer', async () => {
       }
     };
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
-
-    // Start the Observer.
-    const observer = new Observer(
-      versionManager,
-      blockchainClient,
-      config.maxConcurrentDownloads,
-      operationStore,
-      transactionStore,
-      transactionStore,
-      serviceStateStore,
-      1
-    );
 
     // mocking throughput limiter to make testing easier
     spyOn(observer['throughputLimiter'], 'getQualifiedTransactions').and.callFake(
@@ -211,18 +268,6 @@ describe('Observer', async () => {
     };
     spyOn(downloadManager, 'download').and.callFake(mockDownloadFunction);
 
-    const blockchainClient = new Blockchain(config.blockchainServiceUri);
-    const observer = new Observer(
-      versionManager,
-      blockchainClient,
-      config.maxConcurrentDownloads,
-      operationStore,
-      transactionStore,
-      transactionStore,
-      serviceStateStore,
-      1
-    );
-
     const anchoredData = AnchoredDataSerializer.serialize({ coreIndexFileUri: mockCoreIndexFileUri, numberOfOperations: createOperations.length });
     const mockTransaction: TransactionModel = {
       transactionNumber: 1,
@@ -257,18 +302,6 @@ describe('Observer', async () => {
     const expectedConsoleLogSubstring = tuple[1];
 
     it(`should stop processing a transaction if downloading core index files returns '${mockFetchReturnCode}'.`, async () => {
-      const blockchainClient = new Blockchain(config.blockchainServiceUri);
-      const observer = new Observer(
-        versionManager,
-        blockchainClient,
-        config.maxConcurrentDownloads,
-        operationStore,
-        transactionStore,
-        transactionStore,
-        serviceStateStore,
-        1
-      );
-
       spyOn(downloadManager, 'download').and.returnValue(Promise.resolve({ code: mockFetchReturnCode as FetchResultCode }));
 
       let expectedConsoleLogDetected = false;
@@ -375,8 +408,6 @@ describe('Observer', async () => {
       transactions: []
     };
 
-    const blockchainClient = new Blockchain(config.blockchainServiceUri);
-
     // Force blockchain time to be higher than the latest known transaction time by core,
     // such that Observer will consider `InvalidTransactionNumberOrTimeHash` a block reorg.
     spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 5000, hash: '5000' }));
@@ -401,18 +432,6 @@ describe('Observer', async () => {
 
     // Make the `getFirstValidTransaction` call return the first transaction as the most recent known valid transactions.
     spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(initialTransactionFetchResponseBody.transactions[0]));
-
-    // Process first set of transactions.
-    const observer = new Observer(
-      versionManager,
-      blockchainClient,
-      config.maxConcurrentDownloads,
-      operationStore,
-      transactionStore,
-      transactionStore,
-      serviceStateStore,
-      1
-    );
 
     // mocking throughput limiter to make testing easier
     spyOn(observer['throughputLimiter'], 'getQualifiedTransactions').and.callFake(
@@ -446,27 +465,13 @@ describe('Observer', async () => {
     expect(processedTransactions[3].anchorString).toEqual('4thTransaction');
   });
 
-  it('should log error if blockchian throws', async () => {
-    const blockchainClient = new Blockchain(config.blockchainServiceUri);
-
+  it('should log error if blockchain throws', async () => {
     let readInvocationCount = 0;
     spyOn(blockchainClient, 'read').and.callFake(() => {
       readInvocationCount++;
       throw new Error('Expected test error');
     });
     const loggerErrorSpy = spyOn(Logger, 'error').and.callThrough();
-
-    // Start the Observer.
-    const observer = new Observer(
-      versionManager,
-      blockchainClient,
-      config.maxConcurrentDownloads,
-      operationStore,
-      transactionStore,
-      transactionStore,
-      serviceStateStore,
-      1
-    );
 
     // mocking throughput limiter to make testing easier
     spyOn(observer['throughputLimiter'], 'getQualifiedTransactions').and.callFake(
@@ -485,7 +490,7 @@ describe('Observer', async () => {
       }
 
       // NOTE: the `retry` library retries if error is thrown.
-      throw new Error('Two transaction processing cycles have not occured yet.');
+      throw new Error('Two transaction processing cycles have not occurred yet.');
     }, {
       retries: 3,
       minTimeout: 1000, // milliseconds
@@ -512,8 +517,6 @@ describe('Observer', async () => {
     // Prep the transaction store with some initial state.
     await transactionStore.addTransaction(transaction);
 
-    const blockchainClient = new Blockchain(config.blockchainServiceUri);
-
     // Always return a blockchain time less than the last transaction known by core to simulate blockchain service being behind core service.
     spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 500, hash: '500' }));
 
@@ -531,20 +534,9 @@ describe('Observer', async () => {
     const getFirstValidTransactionSpy =
       spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(undefined));
 
-    // Process first set of transactions.
-    const observer = new Observer(
-      versionManager,
-      blockchainClient,
-      config.maxConcurrentDownloads,
-      operationStore,
-      transactionStore,
-      transactionStore,
-      serviceStateStore,
-      1
-    );
-
     const revertInvalidTransactionsSpy = spyOn(observer as any, 'revertInvalidTransactions').and.returnValue(Promise.resolve(undefined));
 
+    // Process first set of transactions.
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the Observer until at two processing cycle has lapsed.
@@ -565,47 +557,8 @@ describe('Observer', async () => {
     expect(getFirstValidTransactionSpy).toHaveBeenCalledTimes(0);
   });
 
-  describe('waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo', () => {
-    it('should wait until transactionsUnderProcessing is greater than count', async () => {
-      const blockchainClient = new Blockchain(config.blockchainServiceUri);
-      const observer = new Observer(
-        versionManager,
-        blockchainClient,
-        config.maxConcurrentDownloads,
-        operationStore,
-        transactionStore,
-        transactionStore,
-        serviceStateStore,
-        1
-      );
-      observer['transactionsUnderProcessing'] = [1, 2, 3] as any;
-      const storeConsecutiveTransactionsProcessedSpy = spyOn(observer as any, 'storeConsecutiveTransactionsProcessed').and.callFake(() => {
-        observer['transactionsUnderProcessing'] = [];
-      });
-
-      const startTime = Date.now();
-      await observer['waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo'](0);
-      const endTime = Date.now();
-
-      expect(storeConsecutiveTransactionsProcessedSpy).toHaveBeenCalledTimes(1);
-      // it should have taken at least 1 second because the setTimeout loop
-      expect(endTime - startTime).toBeGreaterThanOrEqual(1000);
-    });
-  });
-
   describe('processUnresolvableTransactions', () => {
     it('should process unresolvable transactions as expected', async () => {
-      const blockchainClient = new Blockchain(config.blockchainServiceUri);
-      const observer = new Observer(
-        versionManager,
-        blockchainClient,
-        config.maxConcurrentDownloads,
-        operationStore,
-        transactionStore,
-        transactionStore,
-        serviceStateStore,
-        1
-      );
       const isIndividualResolved = [false, false, false];
       spyOn(observer['unresolvableTransactionStore'], 'getUnresolvableTransactionsDueForRetry').and.returnValue([1, 2, 3] as any);
 
@@ -623,17 +576,6 @@ describe('Observer', async () => {
 
   describe('processTransaction', () => {
     it('should handle unexpected error', async () => {
-      const blockchainClient = new Blockchain(config.blockchainServiceUri);
-      const observer = new Observer(
-        versionManager,
-        blockchainClient,
-        config.maxConcurrentDownloads,
-        operationStore,
-        transactionStore,
-        transactionStore,
-        serviceStateStore,
-        1
-      );
       getTransactionProcessorSpy.and.throwError('Expected test error');
       const recordUnresolvableAttemptSpy = spyOn(observer['unresolvableTransactionStore'], 'recordUnresolvableTransactionFetchAttempt');
 
@@ -645,19 +587,8 @@ describe('Observer', async () => {
 
   describe('revertInvalidTransactions', () => {
     it('should delete all operations if last known valid transaction does not exist', async () => {
-      const observer = new Observer(
-        versionManager,
-        blockchain,
-        config.maxConcurrentDownloads,
-        operationStore,
-        transactionStore,
-        transactionStore,
-        serviceStateStore,
-        1
-      );
-
       spyOn(transactionStore, 'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve([]));
-      spyOn(blockchain, 'getFirstValidTransaction').and.returnValue(Promise.resolve(undefined));
+      spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(undefined));
 
       const operationStoreDelteSpy = spyOn(observer['operationStore'], 'delete').and.returnValue(Promise.resolve());
       const transactionStoreDelteSpy = spyOn(observer['transactionStore'], 'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
@@ -673,20 +604,11 @@ describe('Observer', async () => {
 
   describe('pullLatestBlockChainTime', () => {
     it('should pull the blockchain time periodically', async () => {
-      const observer = new Observer(
-        versionManager,
-        blockchain,
-        config.maxConcurrentDownloads,
-        operationStore,
-        transactionStore,
-        transactionStore,
-        serviceStateStore,
-        1
-      );
       observer['continuePeriodicProcessing'] = true;
 
       observer['blockchainTimePullIntervalInSeconds'] = 0.01;
       const pullIntervalSpy = spyOn(observer as any, 'pullLatestBlockChainTime').and.callThrough();
+      spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 500000, hash: 'someHash' }));
       jasmine.clock().install();
       jasmine.clock().mockDate();
       await observer['pullLatestBlockChainTime']();
