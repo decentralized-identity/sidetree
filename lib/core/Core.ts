@@ -108,7 +108,7 @@ export default class Core {
       Logger.warn(LogColor.yellow(`Transaction observer is disabled.`));
     }
 
-    // Only pull blockchain time when observer is enabled.
+    // Only pull real blockchain time when observer is enabled, else only read from db.
     await this.blockchainClock.startPeriodicPullLatestBlockchainTime();
 
     if (this.config.batchingIntervalInSeconds > 0) {
