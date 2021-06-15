@@ -16,45 +16,44 @@ export default class BlockchainClock {
      * The interval which to pull and update blockchain time
      */
     private blockchainTimePullIntervalInSeconds = 60;
-
-    /**
-     * The interval which to cache the approximate time
-     */
-    private approximateTimeUpdateIntervalInSeconds: number = 60;
-
     private cachedApprocimateTime?: number;
 
-    public constructor (private blockchain: Blockchain, private serviceStateStore: IServiceStateStore<ServiceStateModel>) { }
+    /**
+     *
+     * @param blockchain The blockchain client to use
+     * @param serviceStateStore The service state store to store time in
+     * @param enableRealBlockchainTimePull If enabled, will pull real blockchain time from blockchain, else will only use time from db
+     */
+    public constructor (
+        private blockchain: Blockchain,
+        private serviceStateStore: IServiceStateStore<ServiceStateModel>,
+        private enableRealBlockchainTimePull: boolean
+    ) { }
 
     /**
-     * Start periodically update the cached blockchain time
+     * Get the time
+     * @returns the time
      */
-    public async startPeriodicCacheTime () {
-      try {
-        const newApproximateTime = (await this.serviceStateStore.get()).approximateTime;
-        Logger.info(`Core approximateTime updated to: ${newApproximateTime}`);
-        this.cachedApprocimateTime = newApproximateTime;
-      } catch (e) {
-        Logger.error(`Error occured while caching blockchain time, investigate and fix: ${e}`);
-      }
-      // shouldContinueTimePull is only used in tests to stop the pulling
-      if (this.continuePulling) {
-        setTimeout(async () => this.startPeriodicCacheTime(), this.approximateTimeUpdateIntervalInSeconds * 1000);
-      }
-    }
-
-    /**
-     * Get the cahed approcimate time
-     * @returns the cached approcimate time
-     */
-    public getApproximateTime (): number | undefined {
+    public getTime (): number | undefined {
       return this.cachedApprocimateTime;
     }
 
     /**
-     * Start periodically pulling blockahin time from blockchain and store to service state store
+     * Start periodically pulling blockahin time. Will use real blockchain time if enabled
      */
     public async startPeriodicPullLatestBlockchainTime () {
+      if (this.enableRealBlockchainTimePull) {
+        await this.pullRealBlockchainTime();
+      }
+
+      await this.cacheTime();
+
+      if (this.continuePulling) {
+        setTimeout(async () => this.startPeriodicPullLatestBlockchainTime(), this.blockchainTimePullIntervalInSeconds * 1000);
+      }
+    }
+
+    private async pullRealBlockchainTime () {
       try {
         const latestBlockchainTime = await this.blockchain.getLatestTime();
         const serviceState = await this.serviceStateStore.get();
@@ -63,10 +62,16 @@ export default class BlockchainClock {
         EventEmitter.emit(EventCode.SidetreeBlockchainTimeChanged, { time: latestBlockchainTime.time });
       } catch (e) {
         Logger.error(`Error occured while updating blockchain time, investigate and fix: ${e}`);
-      } finally {
-        if (this.continuePulling) {
-          setTimeout(async () => this.startPeriodicPullLatestBlockchainTime(), this.blockchainTimePullIntervalInSeconds * 1000);
-        }
+      }
+    }
+
+    private async cacheTime () {
+      try {
+        const newApproximateTime = (await this.serviceStateStore.get()).approximateTime;
+        Logger.info(`Core approximateTime updated to: ${newApproximateTime}`);
+        this.cachedApprocimateTime = newApproximateTime;
+      } catch (e) {
+        Logger.error(`Error occured while caching blockchain time, investigate and fix: ${e}`);
       }
     }
 }

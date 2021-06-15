@@ -59,7 +59,10 @@ export default class Core {
     this.resolver = new Resolver(this.versionManager, this.operationStore);
     this.transactionStore = new MongoDbTransactionStore();
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString, config.databaseName);
-    this.blockchainClock = new BlockchainClock(this.blockchain, this.serviceStateStore);
+
+    // Only enable real blockchain time pull if observer is enabled
+    const enableRealBlockchainTimePull = config.observingIntervalInSeconds > 0;
+    this.blockchainClock = new BlockchainClock(this.blockchain, this.serviceStateStore, enableRealBlockchainTimePull);
 
     this.batchScheduler = new BatchScheduler(this.versionManager, this.blockchain, config.batchingIntervalInSeconds);
     this.observer = new Observer(
@@ -101,14 +104,12 @@ export default class Core {
 
     if (this.config.observingIntervalInSeconds > 0) {
       await this.observer.startPeriodicProcessing();
-      // Only pull blockchain time when observer is enabled.
-      await this.blockchainClock.startPeriodicPullLatestBlockchainTime();
     } else {
       Logger.warn(LogColor.yellow(`Transaction observer is disabled.`));
     }
 
-    // Performance optimization to cache the time so requests don't have to go to db
-    this.blockchainClock.startPeriodicCacheTime();
+    // Only pull blockchain time when observer is enabled.
+    await this.blockchainClock.startPeriodicPullLatestBlockchainTime();
 
     if (this.config.batchingIntervalInSeconds > 0) {
       this.batchScheduler.startPeriodicBatchWriting();
@@ -125,7 +126,7 @@ export default class Core {
    * Handles an operation request.
    */
   public async handleOperationRequest (request: Buffer): Promise<ResponseModel> {
-    const currentTime = this.blockchainClock.getApproximateTime()!;
+    const currentTime = this.blockchainClock.getTime()!;
     const requestHandler = this.versionManager.getRequestHandler(currentTime);
     const response = requestHandler.handleOperationRequest(request);
     return response;
@@ -138,7 +139,7 @@ export default class Core {
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
   public async handleResolveRequest (didOrDidDocument: string): Promise<ResponseModel> {
-    const currentTime = this.blockchainClock.getApproximateTime()!;
+    const currentTime = this.blockchainClock.getTime()!;
     const requestHandler = this.versionManager.getRequestHandler(currentTime);
     const response = requestHandler.handleResolveRequest(didOrDidDocument);
     return response;

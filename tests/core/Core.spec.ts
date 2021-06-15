@@ -29,6 +29,8 @@ describe('Core', async () => {
       const core = new Core(databaseIncludedConfig, testVersionConfig, mockCas);
       expect(core['operationStore']['databaseName']).toEqual(databaseName);
       expect(core['unresolvableTransactionStore']['databaseName']).toEqual(databaseName);
+      // true because it is set by config value
+      expect(core['blockchainClock']['enableRealBlockchainTimePull']).toEqual(true);
     });
   });
 
