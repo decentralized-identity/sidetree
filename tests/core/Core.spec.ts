@@ -46,7 +46,6 @@ describe('Core', async () => {
       const downloadManagerStartSpy = spyOn(core['downloadManager'], 'start');
       const monitorInitializeSpy = spyOn(core.monitor, 'initialize');
       // mocking it so initialize doesn't actually start the periodic pull
-      const startPeriodicTimePullSpy = spyOn(core as any, 'startPeriodicTimePull').and.callFake(() => {});
 
       await core.initialize();
       expect(serviceStateStoreInitializeSpy).toHaveBeenCalled();
@@ -59,7 +58,6 @@ describe('Core', async () => {
       expect(batchSchedulerStartSpy).toHaveBeenCalled();
       expect(downloadManagerStartSpy).toHaveBeenCalled();
       expect(monitorInitializeSpy).toHaveBeenCalled();
-      expect(startPeriodicTimePullSpy).toHaveBeenCalled();
     });
 
     it('should override the default logger/event emitter if custom logger/event emitter is given.', async () => {
@@ -89,7 +87,6 @@ describe('Core', async () => {
       };
 
       // mocking it so initialize doesn't actually start the periodic pull
-      spyOn(core as any, 'startPeriodicTimePull').and.callFake(() => {});
       await core.initialize(customLogger, customEvenEmitter);
 
       // Invoke logger to trigger the custom logger's method defined above.
@@ -121,7 +118,6 @@ describe('Core', async () => {
       spyOn(core.monitor, 'initialize');
 
       // mocking it so initialize doesn't actually start the periodic pull
-      spyOn(core as any, 'startPeriodicTimePull').and.callFake(() => {});
       await core.initialize();
       expect(observerStartSpy).not.toHaveBeenCalled();
       expect(batchSchedulerStartSpy).not.toHaveBeenCalled();
@@ -231,26 +227,6 @@ describe('Core', async () => {
         () => (core as any).upgradeDatabaseIfNeeded(),
         ErrorCode.RunningOlderCodeOnNewerDatabaseUnsupported
       );
-    });
-  });
-
-  describe('startPeriodicTimePull', () => {
-    it('should update the in memory time periodically', async () => {
-      let counter = 0;
-      const core = new Core(testConfig, testVersionConfig, mockCas);
-      core['approximateTimeUpdateIntervalInSeconds'] = 0.01;
-      const periodicPullSpy = spyOn(core as any, 'startPeriodicTimePull').and.callThrough();
-      spyOn(core['serviceStateStore'], 'initialize').and.callFake(() => { return Promise.resolve(); });
-      spyOn(core['serviceStateStore'], 'get').and.callFake(() => { counter++; return Promise.resolve({ approximateTime: counter }); });
-      jasmine.clock().install();
-      expect(core['approximateTime']).toEqual(undefined);
-      await core['startPeriodicTimePull']();
-      expect(core['approximateTime']).toEqual(1);
-      expect(periodicPullSpy).toHaveBeenCalledTimes(1);
-      jasmine.clock().tick(11);
-      expect(periodicPullSpy).toHaveBeenCalledTimes(2);
-      core['shouldContinueTimePull'] = false;
-      jasmine.clock().uninstall();
     });
   });
 });

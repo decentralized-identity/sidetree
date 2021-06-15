@@ -3,6 +3,7 @@ import * as timeSpan from 'time-span';
 import { ISidetreeCas, ISidetreeEventEmitter, ISidetreeLogger } from '..';
 import BatchScheduler from './BatchScheduler';
 import Blockchain from './Blockchain';
+import BlockchainClock from './BlockchainClock';
 import Config from './models/Config';
 import DownloadManager from './DownloadManager';
 import ErrorCode from './ErrorCode';
@@ -42,9 +43,7 @@ export default class Core {
   private batchScheduler: BatchScheduler;
   private resolver: Resolver;
   private serviceInfo: ServiceInfo;
-  private approximateTime?: number;
-  private approximateTimeUpdateIntervalInSeconds: number = 60;
-  private shouldContinueTimePull: boolean = true;
+  private blockchainClock: BlockchainClock;
 
   /**
    * Core constructor.
@@ -60,6 +59,7 @@ export default class Core {
     this.resolver = new Resolver(this.versionManager, this.operationStore);
     this.transactionStore = new MongoDbTransactionStore();
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString, config.databaseName);
+    this.blockchainClock = new BlockchainClock(this.blockchain, this.serviceStateStore);
 
     this.batchScheduler = new BatchScheduler(this.versionManager, this.blockchain, config.batchingIntervalInSeconds);
     this.observer = new Observer(
@@ -69,7 +69,6 @@ export default class Core {
       this.operationStore,
       this.transactionStore,
       this.unresolvableTransactionStore,
-      this.serviceStateStore,
       config.observingIntervalInSeconds
     );
 
@@ -102,9 +101,14 @@ export default class Core {
 
     if (this.config.observingIntervalInSeconds > 0) {
       await this.observer.startPeriodicProcessing();
+      // Only pull blockchain time when observer is enabled.
+      await this.blockchainClock.startPeriodicPullLatestBlockchainTime();
     } else {
       Logger.warn(LogColor.yellow(`Transaction observer is disabled.`));
     }
+
+    // Performance optimization to cache the time so requests don't have to go to db
+    this.blockchainClock.startPeriodicCacheTime();
 
     if (this.config.batchingIntervalInSeconds > 0) {
       this.batchScheduler.startPeriodicBatchWriting();
@@ -112,31 +116,16 @@ export default class Core {
       Logger.warn(LogColor.yellow(`Batch writing is disabled.`));
     }
 
-    this.startPeriodicTimePull();
     this.downloadManager.start();
 
     await this.monitor.initialize(this.config, this.versionManager, this.blockchain);
   }
 
   /**
-   * Periodically pulls time into memory to prevent db call on every request
-   */
-  private async startPeriodicTimePull () {
-    const newApproximateTime = (await this.serviceStateStore.get()).approximateTime;
-    Logger.info(`Core approximateTime updated to: ${newApproximateTime}`);
-    this.approximateTime = newApproximateTime;
-
-    // shouldContinueTimePull is only used in tests to stop the pulling
-    if (this.shouldContinueTimePull) {
-      setTimeout(async () => this.startPeriodicTimePull(), this.approximateTimeUpdateIntervalInSeconds * 1000);
-    }
-  }
-
-  /**
    * Handles an operation request.
    */
   public async handleOperationRequest (request: Buffer): Promise<ResponseModel> {
-    const currentTime = this.approximateTime!;
+    const currentTime = this.blockchainClock.getApproximateTime()!;
     const requestHandler = this.versionManager.getRequestHandler(currentTime);
     const response = requestHandler.handleOperationRequest(request);
     return response;
@@ -149,7 +138,7 @@ export default class Core {
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
   public async handleResolveRequest (didOrDidDocument: string): Promise<ResponseModel> {
-    const currentTime = this.approximateTime!;
+    const currentTime = this.blockchainClock.getApproximateTime()!;
     const requestHandler = this.versionManager.getRequestHandler(currentTime);
     const response = requestHandler.handleResolveRequest(didOrDidDocument);
     return response;

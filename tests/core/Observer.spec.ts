@@ -14,7 +14,6 @@ import Ipfs from '../../lib/ipfs/Ipfs';
 import Logger from '../../lib/common/Logger';
 // import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
-import MockServiceStateStore from '../mocks/MockServiceStateStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import Observer from '../../lib/core/Observer';
@@ -35,7 +34,6 @@ describe('Observer', async () => {
   let downloadManager: DownloadManager;
   let operationStore: IOperationStore;
   let transactionStore: MockTransactionStore;
-  let serviceStateStore: MockServiceStateStore;
   // let blockchain: MockBlockchain;
   let versionManager: IVersionManager;
   let getTransactionProcessorSpy: jasmine.Spy;
@@ -61,7 +59,6 @@ describe('Observer', async () => {
     blockchainClient = new Blockchain(config.blockchainServiceUri);
     operationStore = new MockOperationStore();
     transactionStore = new MockTransactionStore();
-    serviceStateStore = new MockServiceStateStore();
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
     const versionMetadataFetcher = {} as any;
@@ -84,7 +81,6 @@ describe('Observer', async () => {
       operationStore,
       transactionStore,
       transactionStore,
-      serviceStateStore,
       1
     );
   });
@@ -599,25 +595,6 @@ describe('Observer', async () => {
       expect(operationStoreDelteSpy).toHaveBeenCalledWith(undefined);
       expect(transactionStoreDelteSpy).toHaveBeenCalledWith(undefined);
       expect(unresolvableTransactionStoreDelteSpy).toHaveBeenCalledWith(undefined);
-    });
-  });
-
-  describe('pullLatestBlockChainTime', () => {
-    it('should pull the blockchain time periodically', async () => {
-      observer['continuePeriodicProcessing'] = true;
-
-      observer['blockchainTimePullIntervalInSeconds'] = 0.01;
-      const pullIntervalSpy = spyOn(observer as any, 'pullLatestBlockChainTime').and.callThrough();
-      spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 500000, hash: 'someHash' }));
-      jasmine.clock().install();
-      jasmine.clock().mockDate();
-      await observer['pullLatestBlockChainTime']();
-      expect(pullIntervalSpy).toHaveBeenCalledTimes(1);
-      expect(await serviceStateStore.get()).toEqual({ approximateTime: 500000 });
-      jasmine.clock().tick(11);
-      expect(pullIntervalSpy).toHaveBeenCalledTimes(2);
-      observer['continuePeriodicProcessing'] = false;
-      jasmine.clock().uninstall();
     });
   });
 });
