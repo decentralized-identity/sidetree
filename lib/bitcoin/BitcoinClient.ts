@@ -63,7 +63,9 @@ export default class BitcoinClient {
    * Initialize this bitcoin client.
    */
   public async initialize (): Promise<void> {
-
+    // Create wallet has to be called because as of bitcoin v0.21, a default wallet is no longer automatically created
+    // https://github.com/bitcoin/bitcoin/pull/15454
+    await this.createWallet();
     const walletAddress = this.bitcoinWallet.getAddress();
 
     Logger.info(`Checking if bitcoin contains a wallet for ${walletAddress}`);
@@ -225,6 +227,23 @@ export default class BitcoinClient {
       redeemScriptAsHex: '',
       serializedTransactionObject: serializedTransaction
     };
+  }
+
+  private async createWallet () {
+    const walletNameToUse = 'sidetreeDefaultWallet';
+    const request = {
+      method: 'createwallet',
+      params: [walletNameToUse] // the wallet name
+    };
+
+    const response = await this.rpcCall(request, true);
+    if (response.error === null) {
+      Logger.info(`Wallet created with name "${walletNameToUse}".`);
+    } else {
+      // for the list of possible errors: https://github.com/bitcoin/bitcoin/blob/master/src/rpc/protocol.h
+      Logger.error(`Error code ${response.error.code} occured while attempting to create bitcoin wallet: ${response.error.message}`);
+    }
+
   }
 
   /**

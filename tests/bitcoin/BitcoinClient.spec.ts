@@ -7,6 +7,7 @@ import BitcoinLockTransactionModel from '../../lib/bitcoin/models/BitcoinLockTra
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import BitcoinWallet from '../../lib/bitcoin/BitcoinWallet';
 import IBitcoinWallet from '../../lib/bitcoin/interfaces/IBitcoinWallet';
+import Logger from '../../lib/common/Logger';
 import ReadableStream from '../../lib/common/ReadableStream';
 
 describe('BitcoinClient', async () => {
@@ -156,19 +157,24 @@ describe('BitcoinClient', async () => {
         return Promise.resolve(undefined);
       });
 
+      const createWalletSpy = spyOn(bitcoinClient as any, 'createWallet');
+
       await bitcoinClient.initialize();
       expect(walletExistsSpy).toHaveBeenCalled();
       expect(importSpy).toHaveBeenCalled();
+      expect(createWalletSpy).toHaveBeenCalled();
     });
 
     it('should not import key if the wallet already exist', async () => {
       const walletExistsSpy = spyOn(bitcoinClient as any, 'isAddressAddedToWallet').and.returnValue(Promise.resolve(true));
 
       const importSpy = spyOn(bitcoinClient as any, 'addWatchOnlyAddressToWallet');
+      const createWalletSpy = spyOn(bitcoinClient as any, 'createWallet');
 
       await bitcoinClient.initialize();
       expect(walletExistsSpy).toHaveBeenCalled();
       expect(importSpy).not.toHaveBeenCalled();
+      expect(createWalletSpy).toHaveBeenCalled();
     });
   });
 
@@ -316,6 +322,30 @@ describe('BitcoinClient', async () => {
       };
       expect(actual).toEqual(expectedOutput);
 
+    });
+  });
+
+  describe('createWallet', () => {
+    it('should create a wallet', async () => {
+      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.returnValue({ error: null });
+      const loggerSpy = spyOn(Logger, 'info');
+      await bitcoinClient['createWallet']();
+      expect(rpcSpy).toHaveBeenCalledWith({
+        method: 'createwallet',
+        params: ['sidetreeDefaultWallet']
+      }, true);
+      expect(loggerSpy).toHaveBeenCalledWith(`Wallet created with name "sidetreeDefaultWallet".`);
+    });
+
+    it('should log error when create wallet fails', async () => {
+      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.returnValue({ error: { code: 123, message: 'fake test error' } });
+      const loggerSpy = spyOn(Logger, 'error');
+      await bitcoinClient['createWallet']();
+      expect(rpcSpy).toHaveBeenCalledWith({
+        method: 'createwallet',
+        params: ['sidetreeDefaultWallet']
+      }, true);
+      expect(loggerSpy).toHaveBeenCalledWith(`Error code 123 occured while attempting to create bitcoin wallet: fake test error`);
     });
   });
 
