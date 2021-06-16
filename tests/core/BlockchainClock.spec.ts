@@ -11,7 +11,7 @@ describe('BlockchainClock', () => {
   describe('getTime', () => {
     it('should return cached time', () => {
       expect(blockchainClock.getTime()).toEqual(undefined);
-      blockchainClock['cachedApprocimateTime'] = 123;
+      blockchainClock['cachedApproximateTime'] = 123;
       expect(blockchainClock.getTime()).toEqual(123);
     });
   });
@@ -23,12 +23,12 @@ describe('BlockchainClock', () => {
       spyOn(blockchainClock['blockchain'], 'getLatestTime').and.returnValue(Promise.resolve({ time: 123, hash: 'someHash' }));
       jasmine.clock().install();
       jasmine.clock().mockDate();
-      expect(blockchainClock['cachedApprocimateTime']).toEqual(undefined);
+      expect(blockchainClock['cachedApproximateTime']).toEqual(undefined);
       await blockchainClock['startPeriodicPullLatestBlockchainTime']();
       expect(pullIntervalSpy).toHaveBeenCalledTimes(1);
       // store is updated and cache is updated
       expect(await blockchainClock['serviceStateStore'].get()).toEqual({ approximateTime: 123 });
-      expect(blockchainClock['cachedApprocimateTime']).toEqual(123);
+      expect(blockchainClock['cachedApproximateTime']).toEqual(123);
       jasmine.clock().tick(11);
       expect(pullIntervalSpy).toHaveBeenCalledTimes(2);
       blockchainClock['continuePulling'] = false;
@@ -42,11 +42,29 @@ describe('BlockchainClock', () => {
       spyOn(blockchainClock['serviceStateStore'], 'get').and.throwError('Fake test Error');
       jasmine.clock().install();
       jasmine.clock().mockDate();
-      expect(blockchainClock['cachedApprocimateTime']).toEqual(undefined);
+      expect(blockchainClock['cachedApproximateTime']).toEqual(undefined);
       await blockchainClock['startPeriodicPullLatestBlockchainTime']();
       expect(pullIntervalSpy).toHaveBeenCalledTimes(1);
       // store is throwing error and cached time is not updated
-      expect(blockchainClock['cachedApprocimateTime']).toEqual(undefined);
+      expect(blockchainClock['cachedApproximateTime']).toEqual(undefined);
+      jasmine.clock().tick(11);
+      expect(pullIntervalSpy).toHaveBeenCalledTimes(2);
+      blockchainClock['continuePulling'] = false;
+      jasmine.clock().uninstall();
+    });
+
+    it('should pull the blockchain time periodically from db when bitcoin client error', async () => {
+      blockchainClock['blockchainTimePullIntervalInSeconds'] = 0.01;
+      const pullIntervalSpy = spyOn(blockchainClock as any, 'startPeriodicPullLatestBlockchainTime').and.callThrough();
+      spyOn(blockchainClock['blockchain'], 'getLatestTime').and.throwError('Fake test error');
+      spyOn(blockchainClock['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ approximateTime: 123 }));
+      jasmine.clock().install();
+      jasmine.clock().mockDate();
+      expect(blockchainClock['cachedApproximateTime']).toEqual(undefined);
+      await blockchainClock['startPeriodicPullLatestBlockchainTime']();
+      expect(pullIntervalSpy).toHaveBeenCalledTimes(1);
+      // store is throwing error and cached time is not updated
+      expect(blockchainClock['cachedApproximateTime']).toEqual(123);
       jasmine.clock().tick(11);
       expect(pullIntervalSpy).toHaveBeenCalledTimes(2);
       blockchainClock['continuePulling'] = false;
@@ -61,13 +79,13 @@ describe('BlockchainClock', () => {
       const cacheTimeSpy = spyOn(blockchainClock as any, 'cacheTime');
       jasmine.clock().install();
       jasmine.clock().mockDate();
-      expect(blockchainClock['cachedApprocimateTime']).toEqual(undefined);
+      expect(blockchainClock['cachedApproximateTime']).toEqual(undefined);
       await blockchainClock['startPeriodicPullLatestBlockchainTime']();
       expect(pullIntervalSpy).toHaveBeenCalledTimes(1);
       // store is not being updated so cache isn't updating
       expect(pullRealBlockchainTimeSpy).not.toHaveBeenCalled();
       expect(cacheTimeSpy).toHaveBeenCalledTimes(1);
-      expect(blockchainClock['cachedApprocimateTime']).toEqual(undefined);
+      expect(blockchainClock['cachedApproximateTime']).toEqual(undefined);
       jasmine.clock().tick(11);
       expect(pullIntervalSpy).toHaveBeenCalledTimes(2);
       blockchainClock['continuePulling'] = false;
