@@ -76,7 +76,6 @@ describe('BlockchainClock', () => {
       blockchainClock['enableRealBlockchainTimePull'] = false;
       const pullIntervalSpy = spyOn(blockchainClock as any, 'startPeriodicPullLatestBlockchainTime').and.callThrough();
       const pullRealBlockchainTimeSpy = spyOn(blockchainClock as any, 'pullRealBlockchainTime');
-      const cacheTimeSpy = spyOn(blockchainClock as any, 'cacheTime');
       jasmine.clock().install();
       jasmine.clock().mockDate();
       expect(blockchainClock['cachedApproximateTime']).toEqual(undefined);
@@ -84,7 +83,6 @@ describe('BlockchainClock', () => {
       expect(pullIntervalSpy).toHaveBeenCalledTimes(1);
       // store is not being updated so cache isn't updating
       expect(pullRealBlockchainTimeSpy).not.toHaveBeenCalled();
-      expect(cacheTimeSpy).toHaveBeenCalledTimes(1);
       expect(blockchainClock['cachedApproximateTime']).toEqual(undefined);
       jasmine.clock().tick(11);
       expect(pullIntervalSpy).toHaveBeenCalledTimes(2);
