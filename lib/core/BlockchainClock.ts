@@ -42,8 +42,7 @@ export default class BlockchainClock {
    */
   public async startPeriodicPullLatestBlockchainTime () {
     try {
-      let serviceState: ServiceStateModel | undefined;
-      serviceState = await this.serviceStateStore.get();
+      const serviceState = await this.serviceStateStore.get();
 
       if (this.enableRealBlockchainTimePull) {
         await this.pullRealBlockchainTime(serviceState);
