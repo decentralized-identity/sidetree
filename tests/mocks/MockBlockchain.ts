@@ -53,8 +53,8 @@ export default class MockBlockchain implements IBlockchain {
 
   private latestTime?: BlockchainTimeModel = { time: 500000, hash: 'dummyHash' };
 
-  public get approximateTime (): BlockchainTimeModel {
-    return this.latestTime!;
+  public getLatestTime (): Promise<BlockchainTimeModel> {
+    return new Promise((resolve) => { resolve(this.latestTime!); });
   }
 
   /**

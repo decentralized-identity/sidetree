@@ -36,10 +36,9 @@ export default interface IBlockchain {
   getFirstValidTransaction (transactions: TransactionModel[]): Promise<TransactionModel | undefined>;
 
   /**
-   * Gets the approximate latest time synchronously without requiring to make network call.
-   * Useful for cases where high performance is desired and high accuracy is not required.
+   * Returns the latest blockchain time
    */
-  approximateTime: BlockchainTimeModel;
+  getLatestTime (): Promise<BlockchainTimeModel>;
 
   /**
    * Fetches the normalized transaction fee used for proof-of-fee calculation, given the blockchain time.

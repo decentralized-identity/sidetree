@@ -50,7 +50,7 @@ export default class BatchScheduler {
       Logger.info('Start operation batch writing...');
 
       // Get the correct version of the `BatchWriter`.
-      const currentTime = this.blockchain.approximateTime.time;
+      const currentTime = (await this.blockchain.getLatestTime()).time;
       const batchWriter = this.versionManager.getBatchWriter(currentTime);
 
       const batchSize = await batchWriter.write();

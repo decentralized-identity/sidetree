@@ -34,7 +34,8 @@ export default class BatchWriter implements IBatchWriter {
     private versionMetadataFetcher: IVersionMetadataFetcher) { }
 
   public async write (): Promise<number> {
-    const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
+    const currentTime = await this.blockchain.getLatestTime();
+    const normalizedFee = await this.blockchain.getFee(currentTime.time);
     const currentLock = await this.blockchain.getWriterValueTimeLock();
     const numberOfOpsAllowed = BatchWriter.getNumberOfOperationsAllowed(this.versionMetadataFetcher, currentLock);
 

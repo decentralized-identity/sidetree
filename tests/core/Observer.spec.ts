@@ -12,6 +12,7 @@ import ITransactionProcessor from '../../lib/core/interfaces/ITransactionProcess
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Ipfs from '../../lib/ipfs/Ipfs';
 import Logger from '../../lib/common/Logger';
+// import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import MockVersionManager from '../mocks/MockVersionManager';
@@ -33,6 +34,7 @@ describe('Observer', async () => {
   let downloadManager: DownloadManager;
   let operationStore: IOperationStore;
   let transactionStore: MockTransactionStore;
+  // let blockchain: MockBlockchain;
   let versionManager: IVersionManager;
   let getTransactionProcessorSpy: jasmine.Spy;
   let transactionProcessor: ITransactionProcessor;
@@ -402,9 +404,9 @@ describe('Observer', async () => {
       transactions: []
     };
 
-    // Force blockchain time to be higher than the latest known transaction time by core,
+    // Force blockchain time to be higher than the cursor transaction time used in Observer,
     // such that Observer will consider `InvalidTransactionNumberOrTimeHash` a block reorg.
-    (blockchainClient as any).cachedBlockchainTime = { time: 5000, hash: '5000' };
+    spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 5000, hash: '5000' }));
 
     let readInvocationCount = 0;
     const mockReadFunction = async () => {

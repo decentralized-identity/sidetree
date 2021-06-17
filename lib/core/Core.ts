@@ -3,6 +3,7 @@ import * as timeSpan from 'time-span';
 import { ISidetreeCas, ISidetreeEventEmitter, ISidetreeLogger } from '..';
 import BatchScheduler from './BatchScheduler';
 import Blockchain from './Blockchain';
+import BlockchainClock from './BlockchainClock';
 import Config from './models/Config';
 import DownloadManager from './DownloadManager';
 import ErrorCode from './ErrorCode';
@@ -42,6 +43,7 @@ export default class Core {
   private batchScheduler: BatchScheduler;
   private resolver: Resolver;
   private serviceInfo: ServiceInfo;
+  private blockchainClock: BlockchainClock;
 
   /**
    * Core constructor.
@@ -57,6 +59,10 @@ export default class Core {
     this.resolver = new Resolver(this.versionManager, this.operationStore);
     this.transactionStore = new MongoDbTransactionStore();
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString, config.databaseName);
+
+    // Only enable real blockchain time pull if observer is enabled
+    const enableRealBlockchainTimePull = config.observingIntervalInSeconds > 0;
+    this.blockchainClock = new BlockchainClock(this.blockchain, this.serviceStateStore, enableRealBlockchainTimePull);
 
     this.batchScheduler = new BatchScheduler(this.versionManager, this.blockchain, config.batchingIntervalInSeconds);
     this.observer = new Observer(
@@ -87,7 +93,6 @@ export default class Core {
     await this.operationStore.initialize();
     await this.upgradeDatabaseIfNeeded();
 
-    await this.blockchain.initialize();
     await this.versionManager.initialize(
       this.blockchain,
       this.cas,
@@ -103,13 +108,15 @@ export default class Core {
       Logger.warn(LogColor.yellow(`Transaction observer is disabled.`));
     }
 
+    // Only pull real blockchain time when observer is enabled, else only read from db.
+    await this.blockchainClock.startPeriodicPullLatestBlockchainTime();
+
     if (this.config.batchingIntervalInSeconds > 0) {
       this.batchScheduler.startPeriodicBatchWriting();
     } else {
       Logger.warn(LogColor.yellow(`Batch writing is disabled.`));
     }
 
-    this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
     this.downloadManager.start();
 
     await this.monitor.initialize(this.config, this.versionManager, this.blockchain);
@@ -119,8 +126,8 @@ export default class Core {
    * Handles an operation request.
    */
   public async handleOperationRequest (request: Buffer): Promise<ResponseModel> {
-    const currentTime = this.blockchain.approximateTime;
-    const requestHandler = this.versionManager.getRequestHandler(currentTime.time);
+    const currentTime = this.blockchainClock.getTime()!;
+    const requestHandler = this.versionManager.getRequestHandler(currentTime);
     const response = requestHandler.handleOperationRequest(request);
     return response;
   }
@@ -132,8 +139,8 @@ export default class Core {
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
   public async handleResolveRequest (didOrDidDocument: string): Promise<ResponseModel> {
-    const currentTime = this.blockchain.approximateTime;
-    const requestHandler = this.versionManager.getRequestHandler(currentTime.time);
+    const currentTime = this.blockchainClock.getTime()!;
+    const requestHandler = this.versionManager.getRequestHandler(currentTime);
     const response = requestHandler.handleResolveRequest(didOrDidDocument);
     return response;
   }

@@ -1,8 +1,6 @@
 import * as HttpStatus from 'http-status';
 import BlockchainTimeModel from './models/BlockchainTimeModel';
 import CoreErrorCode from './ErrorCode';
-import EventCode from './EventCode';
-import EventEmitter from '../common/EventEmitter';
 import IBlockchain from './interfaces/IBlockchain';
 import JsonAsync from './versions/latest/util/JsonAsync';
 import Logger from '../common/Logger';
@@ -19,11 +17,6 @@ import nodeFetch from 'node-fetch';
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.
  */
 export default class Blockchain implements IBlockchain {
-
-  /** Interval for refreshing the cached blockchain time. */
-  static readonly cachedBlockchainTimeRefreshInSeconds = 60;
-  /** Used for caching the blockchain time to avoid excessive time fetching over network. */
-  private cachedBlockchainTime: BlockchainTimeModel;
 
   private serviceVersionFetcher: ServiceVersionFetcher;
   private fetch = nodeFetch;
@@ -43,33 +36,6 @@ export default class Blockchain implements IBlockchain {
     this.writerLockUri = `${uri}/writerlock`;
 
     this.serviceVersionFetcher = new ServiceVersionFetcher(uri);
-
-    this.cachedBlockchainTime = { hash: '', time: 0 }; // Dummy values that gets overwritten by `initialize()`.
-  }
-
-  /**
-   * Initializes the blockchain client by initializing the cached blockchain time.
-   */
-  public async initialize () {
-    await this.getLatestTime();
-  }
-
-  /**
-   * Starts periodically refreshing the cached blockchain time.
-   */
-  public startPeriodicCachedBlockchainTimeRefresh () {
-    this.periodicallyRefreshCachedBlockchainTime();
-  }
-
-  private async periodicallyRefreshCachedBlockchainTime () {
-    try {
-      await this.getLatestTime();
-    } catch (error) {
-      Logger.error(`Encountered error fetching latest blockchain time: ${error}`);
-    } finally {
-      Logger.info(`Waiting for ${Blockchain.cachedBlockchainTimeRefreshInSeconds} seconds before refresh blockchain time again.`);
-      setTimeout(async () => this.periodicallyRefreshCachedBlockchainTime(), Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
-    }
   }
 
   public async write (anchorString: string, minimumFee: number): Promise<void> {
@@ -179,10 +145,6 @@ export default class Blockchain implements IBlockchain {
     return transaction;
   }
 
-  public get approximateTime (): BlockchainTimeModel {
-    return this.cachedBlockchainTime;
-  }
-
   /**
    * Gets the version of the bitcoin service.
    */
@@ -194,7 +156,7 @@ export default class Blockchain implements IBlockchain {
    * Gets the latest blockchain time and updates the cached time.
    */
   public async getLatestTime (): Promise<BlockchainTimeModel> {
-    Logger.info(`Refreshing cached blockchain time...`);
+    Logger.info(`Getting blockchain time...`);
     const response = await this.fetch(this.timeUri);
     const responseBodyString = (response.body.read() as Buffer).toString();
 
@@ -203,18 +165,9 @@ export default class Blockchain implements IBlockchain {
       throw new SidetreeError(CoreErrorCode.BlockchainGetLatestTimeResponseNotOk, errorMessage);
     }
 
-    const newBlockchainTimeModel = JSON.parse(responseBodyString) as BlockchainTimeModel;
-
-    // Emit a time change event.
-    if (newBlockchainTimeModel.time !== this.cachedBlockchainTime.time) {
-      EventEmitter.emit(EventCode.SidetreeBlockchainTimeChanged, { time: newBlockchainTimeModel.time });
-    }
-
-    // Update the cached blockchain time every time blockchain time is fetched over the network.
-    this.cachedBlockchainTime = newBlockchainTimeModel;
-
-    Logger.info(`Refreshed blockchain time: ${responseBodyString}`);
-    return newBlockchainTimeModel;
+    Logger.info(`Got latest blockchain time: ${responseBodyString}`);
+    const latestBlockchainTimeModel = JSON.parse(responseBodyString) as BlockchainTimeModel;
+    return latestBlockchainTimeModel;
   }
 
   public async getFee (transactionTime: number): Promise<number> {

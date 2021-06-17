@@ -131,7 +131,9 @@ export default class Observer {
         // This check will prevent Core from reverting transactions if/when blockchain service is re-initializing its data itself.
         let blockReorganizationDetected = false;
         if (invalidTransactionNumberOrTimeHash) {
-          if (cursorTransactionTime <= this.blockchain.approximateTime.time) {
+
+          const latestBlockchainTime = await this.blockchain.getLatestTime();
+          if (cursorTransactionTime <= latestBlockchainTime.time) {
             blockReorganizationDetected = true;
             moreTransactions = true;
           } else {
