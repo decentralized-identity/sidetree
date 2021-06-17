@@ -36,6 +36,9 @@ export default class BitcoinClient {
 
   private readonly bitcoinWallet: IBitcoinWallet;
 
+  /** The wallet name that is created, loaded and used */
+  private walletNameToUse = 'sidetreeDefaultWallet';
+
   constructor (
     private bitcoinPeerUri: string,
     bitcoinRpcUsername: string | undefined,
@@ -63,9 +66,10 @@ export default class BitcoinClient {
    * Initialize this bitcoin client.
    */
   public async initialize (): Promise<void> {
-    // Create wallet has to be called because as of bitcoin v0.21, a default wallet is no longer automatically created
+    // Create and load wallet have to be called because as of bitcoin v0.21, a default wallet is no longer automatically created and loaded
     // https://github.com/bitcoin/bitcoin/pull/15454
     await this.createWallet();
+    await this.loadWallet();
     const walletAddress = this.bitcoinWallet.getAddress();
 
     Logger.info(`Checking if bitcoin contains a wallet for ${walletAddress}`);
@@ -230,20 +234,31 @@ export default class BitcoinClient {
   }
 
   private async createWallet () {
-    const walletNameToUse = 'sidetreeDefaultWallet';
     const request = {
       method: 'createwallet',
-      params: [walletNameToUse] // the wallet name
+      params: [this.walletNameToUse] // the wallet name
     };
 
-    const response = await this.rpcCall(request, true);
-    if (response.error === null) {
-      Logger.info(`Wallet created with name "${walletNameToUse}".`);
-    } else {
-      // for the list of possible errors: https://github.com/bitcoin/bitcoin/blob/master/src/rpc/protocol.h
-      Logger.error(`Error code ${response.error.code} occured while attempting to create bitcoin wallet: ${response.error.message}`);
-    }
+    try {
+      await this.rpcCall(request, true, false);
+      Logger.info(`Wallet created with name "${this.walletNameToUse}".`);
+    } catch (e) {
+      Logger.error(`Error occured while attempting to create bitcoin wallet: ${e}`);
+    };
+  }
 
+  private async loadWallet () {
+    const request = {
+      method: 'loadwallet',
+      params: [this.walletNameToUse] // the wallet name
+    };
+
+    try {
+      await this.rpcCall(request, true, false);
+      Logger.info(`Wallet loaded with name "${this.walletNameToUse}".`);
+    } catch (e) {
+      Logger.error(`Error occured while attempting to load bitcoin wallet: ${e}`);
+    };
   }
 
   /**
@@ -260,7 +275,7 @@ export default class BitcoinClient {
       ]
     };
 
-    const block = await this.rpcCall(request, true);
+    const block = await this.rpcCall(request, true, false);
 
     const transactionModels = block.tx.map((txn: any) => {
       const transactionBuffer = Buffer.from(txn.hex, 'hex');
@@ -290,7 +305,7 @@ export default class BitcoinClient {
       ]
     };
 
-    return this.rpcCall(hashRequest, true);
+    return this.rpcCall(hashRequest, true, false);
   }
 
   /**
@@ -316,7 +331,7 @@ export default class BitcoinClient {
       ]
     };
 
-    const response = await this.rpcCall(request, true);
+    const response = await this.rpcCall(request, true, false);
 
     return {
       hash: hash,
@@ -335,7 +350,7 @@ export default class BitcoinClient {
       method: 'getblockcount'
     };
 
-    const response = await this.rpcCall(request, true);
+    const response = await this.rpcCall(request, true, false);
     return response;
   }
 
@@ -390,7 +405,7 @@ export default class BitcoinClient {
       ]
     };
 
-    await this.rpcCall(request, false);
+    await this.rpcCall(request, false, true);
   }
 
   private async broadcastTransactionRpc (rawTransaction: string) {
@@ -402,7 +417,7 @@ export default class BitcoinClient {
       ]
     };
 
-    return this.rpcCall(request, true);
+    return this.rpcCall(request, true, false);
   }
 
   private async isAddressAddedToWallet (address: string): Promise<boolean> {
@@ -414,7 +429,7 @@ export default class BitcoinClient {
       ]
     };
 
-    const response = await this.rpcCall(request, true);
+    const response = await this.rpcCall(request, true, true);
     return response.labels.length > 0 || response.iswatchonly;
   }
 
@@ -426,7 +441,7 @@ export default class BitcoinClient {
       ]
     };
 
-    const response = await this.rpcCall(request, true);
+    const response = await this.rpcCall(request, true, false);
 
     if (!response.feerate ||
         (response.errors && response.errors.length > 0)) {
@@ -502,7 +517,7 @@ export default class BitcoinClient {
       ]
     };
 
-    const rawTransactionData = await this.rpcCall(request, true);
+    const rawTransactionData = await this.rpcCall(request, true, false);
     const hexEncodedTransaction = rawTransactionData.hex;
     const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
 
@@ -783,7 +798,7 @@ export default class BitcoinClient {
         [addressToSearch]
       ]
     };
-    const response: Array<any> = await this.rpcCall(request, true);
+    const response: Array<any> = await this.rpcCall(request, true, false);
 
     const unspentTransactions = response.map((coin) => {
       return new Transaction.UnspentOutput(coin);
@@ -794,7 +809,13 @@ export default class BitcoinClient {
     return unspentTransactions;
   }
 
-  private async rpcCall (request: any, timeout: boolean): Promise<any> {
+  /**
+   *
+   * @param request The request for the rpc call
+   * @param timeout Should timeout or not
+   * @param isWalletRPC Is wallet rpc or not. Should pass in true if the rpc call is called on specific wallet
+   */
+  private async rpcCall (request: any, timeout: boolean, isWalletRPC: boolean): Promise<any> {
     // append some standard jrpc parameters
     request.jsonrpc = '1.0';
     request.id = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
@@ -813,7 +834,15 @@ export default class BitcoinClient {
       };
     }
 
-    const response = await this.fetchWithRetry(this.bitcoinPeerUri.toString(), requestOptions, timeout);
+    let rpcUrl = this.bitcoinPeerUri.toString();
+    /**
+     * Specify the wallet to use if it is a wallet rpc call
+     * List of rpc calls categorized by type: https://developer.bitcoin.org/reference/rpc/
+     */
+    if (isWalletRPC) {
+      rpcUrl = `${rpcUrl}/wallet/${this.walletNameToUse}`;
+    }
+    const response = await this.fetchWithRetry(rpcUrl, requestOptions, timeout);
 
     const responseData = await ReadableStream.readAll(response.body);
     if (response.status !== httpStatus.OK) {
