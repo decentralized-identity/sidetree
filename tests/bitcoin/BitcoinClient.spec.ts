@@ -18,7 +18,7 @@ describe('BitcoinClient', async () => {
   let privateKeyFromBitcoinClient: PrivateKey;
   let walletAddressFromBitcoinClient: Address;
 
-  const bitcoinPeerUri = 'uri:someuri/';
+  const bitcoinPeerUri = 'uri:someuri';
   const maxRetries = 2;
 
   beforeEach(() => {
@@ -158,11 +158,13 @@ describe('BitcoinClient', async () => {
       });
 
       const createWalletSpy = spyOn(bitcoinClient as any, 'createWallet');
+      const loadWalletSpy = spyOn(bitcoinClient as any, 'loadWallet');
 
       await bitcoinClient.initialize();
       expect(walletExistsSpy).toHaveBeenCalled();
       expect(importSpy).toHaveBeenCalled();
       expect(createWalletSpy).toHaveBeenCalled();
+      expect(loadWalletSpy).toHaveBeenCalled();
     });
 
     it('should not import key if the wallet already exist', async () => {
@@ -170,11 +172,13 @@ describe('BitcoinClient', async () => {
 
       const importSpy = spyOn(bitcoinClient as any, 'addWatchOnlyAddressToWallet');
       const createWalletSpy = spyOn(bitcoinClient as any, 'createWallet');
+      const loadWalletSpy = spyOn(bitcoinClient as any, 'loadWallet');
 
       await bitcoinClient.initialize();
       expect(walletExistsSpy).toHaveBeenCalled();
       expect(importSpy).not.toHaveBeenCalled();
       expect(createWalletSpy).toHaveBeenCalled();
+      expect(loadWalletSpy).toHaveBeenCalled();
     });
   });
 
@@ -327,25 +331,49 @@ describe('BitcoinClient', async () => {
 
   describe('createWallet', () => {
     it('should create a wallet', async () => {
-      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.returnValue({ error: null });
+      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.returnValue({});
       const loggerSpy = spyOn(Logger, 'info');
       await bitcoinClient['createWallet']();
       expect(rpcSpy).toHaveBeenCalledWith({
         method: 'createwallet',
         params: ['sidetreeDefaultWallet']
-      }, true);
+      }, true, false);
       expect(loggerSpy).toHaveBeenCalledWith(`Wallet created with name "sidetreeDefaultWallet".`);
     });
 
     it('should log error when create wallet fails', async () => {
-      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.returnValue({ error: { code: 123, message: 'fake test error' } });
+      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.throwError('fake test error');
       const loggerSpy = spyOn(Logger, 'error');
       await bitcoinClient['createWallet']();
       expect(rpcSpy).toHaveBeenCalledWith({
         method: 'createwallet',
         params: ['sidetreeDefaultWallet']
-      }, true);
-      expect(loggerSpy).toHaveBeenCalledWith(`Error code 123 occured while attempting to create bitcoin wallet: fake test error`);
+      }, true, false);
+      expect(loggerSpy).toHaveBeenCalledWith(`Error occured while attempting to create bitcoin wallet: Error: fake test error`);
+    });
+  });
+
+  describe('loadWallet', () => {
+    it('should load a wallet', async () => {
+      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.returnValue({});
+      const loggerSpy = spyOn(Logger, 'info');
+      await bitcoinClient['loadWallet']();
+      expect(rpcSpy).toHaveBeenCalledWith({
+        method: 'loadwallet',
+        params: ['sidetreeDefaultWallet']
+      }, true, false);
+      expect(loggerSpy).toHaveBeenCalledWith(`Wallet loaded with name "sidetreeDefaultWallet".`);
+    });
+
+    it('should log error when load wallet fails', async () => {
+      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.throwError('fake test error');
+      const loggerSpy = spyOn(Logger, 'error');
+      await bitcoinClient['loadWallet']();
+      expect(rpcSpy).toHaveBeenCalledWith({
+        method: 'loadwallet',
+        params: ['sidetreeDefaultWallet']
+      }, true, false);
+      expect(loggerSpy).toHaveBeenCalledWith(`Error occured while attempting to load bitcoin wallet: Error: fake test error`);
     });
   });
 
@@ -1100,7 +1128,40 @@ describe('BitcoinClient', async () => {
   });
 
   describe('rpcCall', () => {
-    it('should call retry-fetch', async (done) => {
+    it('should call retry-fetch with specific wallet', async (done) => {
+      const request: any = {};
+      const memberName = 'memberRequestName';
+      const memberValue = 'memberRequestValue';
+      request[memberName] = memberValue;
+      const bodyIdentifier = 12345;
+      const result = 'some_result';
+
+      const retryFetchSpy = spyOn(bitcoinClient as any, 'fetchWithRetry');
+      retryFetchSpy.and.callFake((uri: string, params: any) => {
+        expect(uri).toContain(`${bitcoinPeerUri}/wallet/sidetreeDefaultWallet`);
+        expect(params.method).toEqual('post');
+        expect(JSON.parse(params.body)[memberName]).toEqual(memberValue);
+        return Promise.resolve({
+          status: httpStatus.OK,
+          body: bodyIdentifier
+        });
+      });
+      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake((body: any) => {
+        expect(body).toEqual(bodyIdentifier);
+        return Promise.resolve(Buffer.from(JSON.stringify({
+          result,
+          error: null,
+          id: null
+        })));
+      });
+
+      const actual = await bitcoinClient['rpcCall'](request, true, true);
+      expect(actual).toEqual(result);
+      expect(readUtilSpy).toHaveBeenCalled();
+      done();
+    });
+
+    it('should call retry-fetch without specific wallet', async (done) => {
       const request: any = {};
       const memberName = 'memberRequestName';
       const memberValue = 'memberRequestValue';
@@ -1127,9 +1188,8 @@ describe('BitcoinClient', async () => {
         })));
       });
 
-      const actual = await bitcoinClient['rpcCall'](request, true);
+      const actual = await bitcoinClient['rpcCall'](request, true, false);
       expect(actual).toEqual(result);
-      expect(retryFetchSpy).toHaveBeenCalled();
       expect(readUtilSpy).toHaveBeenCalled();
       done();
     });
@@ -1164,7 +1224,7 @@ describe('BitcoinClient', async () => {
       const originalAuthorization = (bitcoinClient as any).bitcoinAuthorization;
       (bitcoinClient as any).bitcoinAuthorization = undefined;
 
-      const actual = await bitcoinClient['rpcCall'](request, true);
+      const actual = await bitcoinClient['rpcCall'](request, true, false);
       expect(actual).toEqual(result);
       expect(retryFetchSpy).toHaveBeenCalled();
       expect(readUtilSpy).toHaveBeenCalled();
@@ -1194,7 +1254,7 @@ describe('BitcoinClient', async () => {
       });
 
       try {
-        await bitcoinClient['rpcCall'](request, true);
+        await bitcoinClient['rpcCall'](request, true, false);
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('Fetch');
@@ -1232,7 +1292,7 @@ describe('BitcoinClient', async () => {
       });
 
       try {
-        await bitcoinClient['rpcCall'](request, true);
+        await bitcoinClient['rpcCall'](request, true, false);
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('RPC');
