@@ -162,7 +162,13 @@ export default class Core {
   }
 
   private async upgradeDatabaseIfNeeded () {
-    const expectedDbVersion = '1.0.0';
+    // If this node is not the active Observer node, do not perform DB upgrade.
+    // Since only one active Observer is supported, this ensures only one node is performing the DB upgrade.
+    if (this.config.observingIntervalInSeconds === 0) {
+      return;
+    }
+
+    const expectedDbVersion = '1.0.1';
     const savedServiceState = await this.serviceStateStore.get();
     const actualDbVersion = savedServiceState.databaseVersion;
 
@@ -170,13 +176,12 @@ export default class Core {
       return;
     }
 
-    // Throw if attempting to run old code on new DB.
+    // Throw if attempting to downgrade.
     if (actualDbVersion !== undefined && semver.lt(expectedDbVersion, actualDbVersion)) {
       Logger.error(
-        // eslint-disable-next-line max-len
-        LogColor.red(`Running code dependent on DB version ${LogColor.green(expectedDbVersion)} on newer DB version ${LogColor.green(actualDbVersion)} is not supported.`)
+        LogColor.red(`Downgrading DB from version ${LogColor.green(actualDbVersion)} to  ${LogColor.green(expectedDbVersion)} is not allowed.`)
       );
-      throw new SidetreeError(ErrorCode.RunningOlderCodeOnNewerDatabaseUnsupported);
+      throw new SidetreeError(ErrorCode.DatabaseDowngradeNotAllowed);
     }
 
     // Add DB upgrade code below.

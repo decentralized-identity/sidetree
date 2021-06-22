@@ -184,11 +184,23 @@ describe('Core', async () => {
     beforeEach(() => {
     });
 
+    it('should not perform upgrade if the node is not an active Observer node.', async () => {
+      const config = Object.assign({}, testConfig);
+      config.observingIntervalInSeconds = 0; // Force disabling of Observer.
+      const core = new Core(config, testVersionConfig, mockCas);
+
+      const serviceStateStorePutSpy = spyOn(core['serviceStateStore'], 'put');
+      await (core as any).upgradeDatabaseIfNeeded();
+
+      // Verify that upgrade path was NOT invoked.
+      expect(serviceStateStorePutSpy).not.toHaveBeenCalled();
+    });
+
     it('should not perform upgrade if saved database version is the same as the expected database version.', async () => {
       const core = new Core(testConfig, testVersionConfig, mockCas);
 
       // Simulate that the saved database version is the same as the expected database version.
-      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ databaseVersion: '1.0.0' }));
+      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ databaseVersion: '1.0.1' }));
 
       const serviceStateStorePutSpy = spyOn(core['serviceStateStore'], 'put');
       await (core as any).upgradeDatabaseIfNeeded();
@@ -216,7 +228,7 @@ describe('Core', async () => {
       expect(unresolvableTransactionStoreClearCollectionSpy).toHaveBeenCalled();
       expect(transactionStoreClearCollectionSpy).toHaveBeenCalled();
       expect(operationStoreCreateIndexSpy).toHaveBeenCalled();
-      expect(serviceStateStorePutSpy).toHaveBeenCalledWith({ databaseVersion: '1.0.0' });
+      expect(serviceStateStorePutSpy).toHaveBeenCalledWith({ databaseVersion: '1.0.1' });
     });
 
     it('should throw if attempting to run older code on newer DB.', async () => {
@@ -227,7 +239,7 @@ describe('Core', async () => {
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => (core as any).upgradeDatabaseIfNeeded(),
-        ErrorCode.RunningOlderCodeOnNewerDatabaseUnsupported
+        ErrorCode.DatabaseDowngradeNotAllowed
       );
     });
   });

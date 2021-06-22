@@ -36,6 +36,8 @@ export default class MongoDbOperationStore extends MongoDbStore implements IOper
     await this.collection.createIndex({ didSuffix: 1, txnNumber: 1, opIndex: 1, type: 1 }, { unique: true });
     // The query in `get() method needs a corresponding composite index in some cloud-based services (CosmosDB 4.0) that supports MongoDB driver.
     await this.collection.createIndex({ didSuffix: 1, txnNumber: 1, opIndex: 1 }, { unique: true });
+    // The query in `get() method needs a non-composite index on `didSuffix` in some cloud-based services (CosmosDB 4.0) to allow efficient queries.
+    await this.collection.createIndex({ didSuffix: 1 }, { unique: false });
   }
 
   public async insertOrReplace (operations: AnchoredOperationModel[]): Promise<void> {
