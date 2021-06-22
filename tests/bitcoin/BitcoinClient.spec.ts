@@ -549,8 +549,9 @@ describe('BitcoinClient', async () => {
   });
 
   describe('getCurrentEstimatedFeeInSatoshisPerKB', () => {
-    it('should call the correct rpc and return the fee', async () => {
       const expectedIsWalletRpc = false;
+
+      it('should call the correct rpc and return the fee', async () => {
       const mockFeeInBitcoins = 155;
       const spy = verifyThenMockRpcCall('estimatesmartfee', expectedIsWalletRpc, [1], { feerate: mockFeeInBitcoins });
 
@@ -562,7 +563,6 @@ describe('BitcoinClient', async () => {
     });
 
     it('should throw if the feerate undefined', async (done) => {
-      const expectedIsWalletRpc = false;
       const spy = verifyThenMockRpcCall('estimatesmartfee', expectedIsWalletRpc, [1], { });
 
       try {
@@ -575,7 +575,6 @@ describe('BitcoinClient', async () => {
     });
 
     it('should throw if the there are any errors returned', async (done) => {
-      const expectedIsWalletRpc = false;
       const spy = verifyThenMockRpcCall('estimatesmartfee', expectedIsWalletRpc, [1], { feerate: 1, errors: ['some error'] });
 
       try {
@@ -1074,8 +1073,9 @@ describe('BitcoinClient', async () => {
   });
 
   describe('isAddressAddedToWallet', () => {
-    it('should check if the wallet is watch only', async () => {
       const expectedIsWalletRpc = true;
+
+      it('should check if the wallet is watch only', async () => {
       const address = 'ADSFAEADSF0934ADF';
       const spy = verifyThenMockRpcCall('getaddressinfo', expectedIsWalletRpc, [address], {
         address,
@@ -1098,7 +1098,6 @@ describe('BitcoinClient', async () => {
     });
 
     it('should check if the wallet has labels', async () => {
-      const expectedIsWalletRpc = true;
       const address = 'some_ADDRESS_string';
       const spy = verifyThenMockRpcCall('getaddressinfo', expectedIsWalletRpc, [address], {
         address,
@@ -1127,7 +1126,6 @@ describe('BitcoinClient', async () => {
     });
 
     it('should return false if it appears to be a random address', async () => {
-      const expectedIsWalletRpc = true;
       const address = 'random-ADDress';
       const spy = verifyThenMockRpcCall('getaddressinfo', expectedIsWalletRpc, [address], {
         address,
