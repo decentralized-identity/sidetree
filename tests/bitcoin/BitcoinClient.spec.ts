@@ -36,7 +36,7 @@ describe('BitcoinClient', async () => {
   /**
    * Verifies the given expected input against the actual input to `rpcCall`, then mocks the return value.
    */
-  function mockRpcCall (expectedMethod: string, expectedIsWalletRpc: boolean, expectedParams: any[] | undefined, returns: any): jasmine.Spy {
+  function verifyThenMockRpcCall (expectedMethod: string, expectedIsWalletRpc: boolean, expectedParams: any[] | undefined, returns: any): jasmine.Spy {
     return spyOn(bitcoinClient, 'rpcCall' as any).and.callFake((request: any, _enableTimeout: boolean, isWalletRpc: boolean) => {
 
       expect(isWalletRpc).toEqual(expectedIsWalletRpc);
@@ -185,9 +185,9 @@ describe('BitcoinClient', async () => {
 
   describe('broadcastSidetreeTransaction', () => {
     it('should call broadcastTransactionRpc with expected argument', async (done) => {
-      const mockRpcCall = spyOn<any>(bitcoinClient, 'broadcastTransactionRpc').and.returnValue('some value');
+      const verifyThenMockRpcCall = spyOn<any>(bitcoinClient, 'broadcastTransactionRpc').and.returnValue('some value');
       await bitcoinClient.broadcastSidetreeTransaction({ transactionId: 'someId', transactionFee: 1223, serializedTransactionObject: 'abc' });
-      expect(mockRpcCall).toHaveBeenCalledTimes(1);
+      expect(verifyThenMockRpcCall).toHaveBeenCalledTimes(1);
       done();
     });
   });
@@ -394,7 +394,7 @@ describe('BitcoinClient', async () => {
 
       spyOn(BitcoinClient as any, 'createBitcoreTransactionWrapper').and.returnValue(transaction);
       const expectedIsWalletRpc = false;
-      const spy = mockRpcCall('getblock', expectedIsWalletRpc, [hash, 2], blockData);
+      const spy = verifyThenMockRpcCall('getblock', expectedIsWalletRpc, [hash, 2], blockData);
       const actual = await bitcoinClient.getBlock(hash);
 
       expect(spy).toHaveBeenCalled();
@@ -410,7 +410,7 @@ describe('BitcoinClient', async () => {
       const height = 512;
       const hash = 'ADSFSAEF34359';
       const expectedIsWalletRpc = false;
-      const spy = mockRpcCall('getblockhash', expectedIsWalletRpc, [height], hash);
+      const spy = verifyThenMockRpcCall('getblockhash', expectedIsWalletRpc, [height], hash);
       const actual = await bitcoinClient.getBlockHash(height);
       expect(actual).toEqual(hash);
       expect(spy).toHaveBeenCalled();
@@ -423,7 +423,7 @@ describe('BitcoinClient', async () => {
       const hash = 'some hash value';
       const previousHash = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
       const expectedIsWalletRpc = false;
-      const spy = mockRpcCall('getblockheader', expectedIsWalletRpc, [hash, true], { height: height, previousblockhash: previousHash });
+      const spy = verifyThenMockRpcCall('getblockheader', expectedIsWalletRpc, [hash, true], { height: height, previousblockhash: previousHash });
       const actual = await bitcoinClient.getBlockInfo(hash);
       expect(actual.hash).toEqual(hash);
       expect(actual.height).toEqual(height);
@@ -442,7 +442,7 @@ describe('BitcoinClient', async () => {
         return Promise.resolve(hash);
       });
       const expectedIsWalletRpc = false;
-      const spy = mockRpcCall('getblockheader', expectedIsWalletRpc, [hash, true], { height: height, previousblockhash: previousHash });
+      const spy = verifyThenMockRpcCall('getblockheader', expectedIsWalletRpc, [hash, true], { height: height, previousblockhash: previousHash });
       const actual = await bitcoinClient.getBlockInfoFromHeight(height);
       expect(actual.hash).toEqual(hash);
       expect(actual.height).toEqual(height);
@@ -457,7 +457,7 @@ describe('BitcoinClient', async () => {
       const height = 753;
       const expectedParams = undefined;
       const expectedIsWalletRpc = false;
-      const mock = mockRpcCall('getblockcount', expectedIsWalletRpc, expectedParams, height);
+      const mock = verifyThenMockRpcCall('getblockcount', expectedIsWalletRpc, expectedParams, height);
       const actual = await bitcoinClient.getCurrentBlockHeight();
       expect(actual).toEqual(height);
       expect(mock).toHaveBeenCalled();
@@ -488,7 +488,7 @@ describe('BitcoinClient', async () => {
       spyOn(BitcoinClient as any, 'createBitcoreTransactionWrapper').and.returnValue(mockTransaction);
 
       const expectedIsWalletRpc = false;
-      const spy = mockRpcCall('getrawtransaction', expectedIsWalletRpc, [txnId, true], {
+      const spy = verifyThenMockRpcCall('getrawtransaction', expectedIsWalletRpc, [txnId, true], {
         confirmations: confirmations,
         hex: Buffer.from('serialized txn').toString('hex')
       });
@@ -505,7 +505,7 @@ describe('BitcoinClient', async () => {
       spyOn(BitcoinClient as any, 'createBitcoreTransactionWrapper').and.returnValue(mockTransaction);
 
       const expectedIsWalletRpc = false;
-      const spy = mockRpcCall('getrawtransaction', expectedIsWalletRpc, [txnId, true], {
+      const spy = verifyThenMockRpcCall('getrawtransaction', expectedIsWalletRpc, [txnId, true], {
         confirmations: undefined,
         hex: Buffer.from('serialized txn').toString('hex')
       });
@@ -552,7 +552,7 @@ describe('BitcoinClient', async () => {
     it('should call the correct rpc and return the fee', async () => {
       const expectedIsWalletRpc = false;
       const mockFeeInBitcoins = 155;
-      const spy = mockRpcCall('estimatesmartfee', expectedIsWalletRpc, [1], { feerate: mockFeeInBitcoins });
+      const spy = verifyThenMockRpcCall('estimatesmartfee', expectedIsWalletRpc, [1], { feerate: mockFeeInBitcoins });
 
       const expectedFeeInSatoshis = mockFeeInBitcoins * 100000000;
 
@@ -563,7 +563,7 @@ describe('BitcoinClient', async () => {
 
     it('should throw if the feerate undefined', async (done) => {
       const expectedIsWalletRpc = false;
-      const spy = mockRpcCall('estimatesmartfee', expectedIsWalletRpc, [1], { });
+      const spy = verifyThenMockRpcCall('estimatesmartfee', expectedIsWalletRpc, [1], { });
 
       try {
         await bitcoinClient['getCurrentEstimatedFeeInSatoshisPerKB']();
@@ -576,7 +576,7 @@ describe('BitcoinClient', async () => {
 
     it('should throw if the there are any errors returned', async (done) => {
       const expectedIsWalletRpc = false;
-      const spy = mockRpcCall('estimatesmartfee', expectedIsWalletRpc, [1], { feerate: 1, errors: ['some error'] });
+      const spy = verifyThenMockRpcCall('estimatesmartfee', expectedIsWalletRpc, [1], { feerate: 1, errors: ['some error'] });
 
       try {
         await bitcoinClient['getCurrentEstimatedFeeInSatoshisPerKB']();
@@ -694,7 +694,7 @@ describe('BitcoinClient', async () => {
 
       const expectedIsWalletRpc = true;
       const minimumConfirmations = 0;
-      const coinSpy = mockRpcCall('listunspent', expectedIsWalletRpc, [minimumConfirmations, null, [walletAddressFromBitcoinClient.toString()]], [
+      const rpcCallSpy = verifyThenMockRpcCall('listunspent', expectedIsWalletRpc, [minimumConfirmations, null, [walletAddressFromBitcoinClient.toString()]], [
         {
           txId: coin.txId,
           outputIndex: coin.outputIndex,
@@ -704,7 +704,7 @@ describe('BitcoinClient', async () => {
         }
       ]);
       const actual = await bitcoinClient['getUnspentOutputs'](walletAddressFromBitcoinClient);
-      expect(coinSpy).toHaveBeenCalled();
+      expect(rpcCallSpy).toHaveBeenCalled();
       expect(actual[0].satoshis).toEqual(coin.satoshis);
       done();
     });
@@ -712,9 +712,9 @@ describe('BitcoinClient', async () => {
     it('should return empty if no coins were found', async (done) => {
       const expectedIsWalletRpc = true;
       const minimumConfirmations = 0;
-      const coinSpy = mockRpcCall('listunspent', expectedIsWalletRpc, [minimumConfirmations, null, [walletAddressFromBitcoinClient.toString()]], []);
+      const rpcCallSpy = verifyThenMockRpcCall('listunspent', expectedIsWalletRpc, [minimumConfirmations, null, [walletAddressFromBitcoinClient.toString()]], []);
       const actual = await bitcoinClient['getUnspentOutputs'](walletAddressFromBitcoinClient);
-      expect(coinSpy).toHaveBeenCalled();
+      expect(rpcCallSpy).toHaveBeenCalled();
       expect(actual).toEqual([]);
       done();
     });
@@ -725,7 +725,7 @@ describe('BitcoinClient', async () => {
       const expectedIsWalletRpc = true;
       const publicKeyAsHex = 'some dummy value';
       const rescan = true;
-      const spy = mockRpcCall('importpubkey', expectedIsWalletRpc, [publicKeyAsHex, 'sidetree', rescan], []);
+      const spy = verifyThenMockRpcCall('importpubkey', expectedIsWalletRpc, [publicKeyAsHex, 'sidetree', rescan], []);
 
       await bitcoinClient['addWatchOnlyAddressToWallet'](publicKeyAsHex, rescan);
       expect(spy).toHaveBeenCalled();
@@ -739,7 +739,7 @@ describe('BitcoinClient', async () => {
       const mockRawTransaction = 'mocked-raw-transaction';
       const mockRpcOutput = 'mockRpcOutput';
 
-      const spy = mockRpcCall('sendrawtransaction', expectedIsWalletRpc, [mockRawTransaction], mockRpcOutput);
+      const spy = verifyThenMockRpcCall('sendrawtransaction', expectedIsWalletRpc, [mockRawTransaction], mockRpcOutput);
       const actual = await bitcoinClient['broadcastTransactionRpc'](mockRawTransaction);
       expect(actual).toEqual(mockRpcOutput);
       expect(spy).toHaveBeenCalled();
@@ -751,7 +751,7 @@ describe('BitcoinClient', async () => {
       const mockRawTransaction = 'mocked-raw-transaction';
       const mockRpcOutput = 'mockRpcOutput';
 
-      const spy = mockRpcCall('sendrawtransaction', expectedIsWalletRpc, [mockRawTransaction], mockRpcOutput);
+      const spy = verifyThenMockRpcCall('sendrawtransaction', expectedIsWalletRpc, [mockRawTransaction], mockRpcOutput);
       spy.and.throwError('test');
       try {
         await bitcoinClient['broadcastTransactionRpc'](mockRawTransaction);
@@ -1077,7 +1077,7 @@ describe('BitcoinClient', async () => {
     it('should check if the wallet is watch only', async () => {
       const expectedIsWalletRpc = true;
       const address = 'ADSFAEADSF0934ADF';
-      const spy = mockRpcCall('getaddressinfo', expectedIsWalletRpc, [address], {
+      const spy = verifyThenMockRpcCall('getaddressinfo', expectedIsWalletRpc, [address], {
         address,
         scriptPubKey: 'afdoijEAFDSDF',
         ismine: false,
@@ -1100,7 +1100,7 @@ describe('BitcoinClient', async () => {
     it('should check if the wallet has labels', async () => {
       const expectedIsWalletRpc = true;
       const address = 'some_ADDRESS_string';
-      const spy = mockRpcCall('getaddressinfo', expectedIsWalletRpc, [address], {
+      const spy = verifyThenMockRpcCall('getaddressinfo', expectedIsWalletRpc, [address], {
         address,
         scriptPubKey: 'script_pubkey_random',
         ismine: false,
@@ -1129,7 +1129,7 @@ describe('BitcoinClient', async () => {
     it('should return false if it appears to be a random address', async () => {
       const expectedIsWalletRpc = true;
       const address = 'random-ADDress';
-      const spy = mockRpcCall('getaddressinfo', expectedIsWalletRpc, [address], {
+      const spy = verifyThenMockRpcCall('getaddressinfo', expectedIsWalletRpc, [address], {
         address,
         scriptPubKey: 'script_pubKEY_random',
         ismine: false,
