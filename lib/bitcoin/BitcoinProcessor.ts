@@ -214,13 +214,12 @@ export default class BitcoinProcessor {
       return;
     }
 
-    // Throw if attempting to run old code on new DB.
+    // Throw if attempting to downgrade.
     if (actualDbVersion !== undefined && semver.lt(expectedDbVersion, actualDbVersion)) {
       Logger.error(
-        // eslint-disable-next-line max-len
-        LogColor.red(`Running code dependent on DB version ${LogColor.green(expectedDbVersion)} on newer DB version ${LogColor.green(actualDbVersion)} is not supported.`)
+        LogColor.red(`Downgrading DB from version ${LogColor.green(expectedDbVersion)} to  ${LogColor.green(actualDbVersion)} is not allowed.`)
       );
-      throw new SidetreeError(ErrorCode.RunningOlderCodeOnNewerDatabaseUnsupported);
+      throw new SidetreeError(ErrorCode.DatabaseDowngradeNotAllowed);
     }
 
     // Add DB upgrade code below.

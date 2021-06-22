@@ -1885,7 +1885,7 @@ describe('BitcoinProcessor', () => {
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => (bitcoinProcessor as any).upgradeDatabaseIfNeeded(),
-        ErrorCode.RunningOlderCodeOnNewerDatabaseUnsupported
+        ErrorCode.DatabaseDowngradeNotAllowed
       );
     });
   });
