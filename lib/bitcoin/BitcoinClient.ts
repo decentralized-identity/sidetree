@@ -813,7 +813,7 @@ export default class BitcoinClient {
         [addressToSearch]
       ]
     };
-    const isWalletRpc = false;
+    const isWalletRpc = true;
     const response: Array<any> = await this.rpcCall(request, true, isWalletRpc);
 
     const unspentTransactions = response.map((coin) => {
