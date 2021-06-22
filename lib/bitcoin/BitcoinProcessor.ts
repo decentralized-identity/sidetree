@@ -217,7 +217,7 @@ export default class BitcoinProcessor {
     // Throw if attempting to downgrade.
     if (actualDbVersion !== undefined && semver.lt(expectedDbVersion, actualDbVersion)) {
       Logger.error(
-        LogColor.red(`Downgrading DB from version ${LogColor.green(expectedDbVersion)} to  ${LogColor.green(actualDbVersion)} is not allowed.`)
+        LogColor.red(`Downgrading DB from version ${LogColor.green(actualDbVersion)} to  ${LogColor.green(expectedDbVersion)} is not allowed.`)
       );
       throw new SidetreeError(ErrorCode.DatabaseDowngradeNotAllowed);
     }
