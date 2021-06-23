@@ -38,7 +38,8 @@ Please note that we might not notice a pull request in time, but you are free to
 
 ### Agenda
 - Welcome / Introductions
-- 
+- Discuss shortened DID suffix based on anchor identifier and op index
+- Implementation status and coordination discussion
 
 
 ## Meeting - 08 June 2021 - (1500 ET)
