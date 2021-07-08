@@ -246,7 +246,13 @@ export default class BitcoinClient {
       await this.rpcCall(request, true, isWalletRpc);
       Logger.info(`Wallet created with name "${this.walletNameToUse}".`);
     } catch (e) {
-      Logger.error(`Error occured while attempting to create bitcoin wallet: ${e}`);
+      // using error message because bitcoin core error core is not reliable as a single code can contain multiple errors
+      const duplicateCreateString = 'already exists';
+      if (e.toString().toLowerCase().includes(duplicateCreateString)) {
+        Logger.info(`Wallet with name ${this.walletNameToUse} already exists.`);
+      } else {
+        Logger.error(`Error occured while attempting to create bitcoin wallet: ${e}`);
+      }
     };
   }
 
@@ -263,7 +269,13 @@ export default class BitcoinClient {
       await this.rpcCall(request, true, isWalletRpc);
       Logger.info(`Wallet loaded with name "${this.walletNameToUse}".`);
     } catch (e) {
-      Logger.error(`Error occured while attempting to load bitcoin wallet: ${e}`);
+      // using error message because bitcoin core error core is not reliable as a single code can contain multiple errors
+      const duplicateLoadString = 'already loaded';
+      if (e.toString().toLowerCase().includes(duplicateLoadString)) {
+        Logger.info(`Wallet with name ${this.walletNameToUse} already loaded.`);
+      } else {
+        Logger.error(`Error occured while attempting to load bitcoin wallet: ${e}`);
+      }
     };
   }
 

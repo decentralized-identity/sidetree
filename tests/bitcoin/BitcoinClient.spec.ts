@@ -352,6 +352,17 @@ describe('BitcoinClient', async () => {
       }, true, false);
       expect(loggerSpy).toHaveBeenCalledWith(`Error occured while attempting to create bitcoin wallet: Error: fake test error`);
     });
+
+    it('should log info when wallet already exists', async () => {
+      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.throwError('Wallet file verification failed. Failed to create path abc/def. Database already exists.');
+      const loggerSpy = spyOn(Logger, 'info');
+      await bitcoinClient['createWallet']();
+      expect(rpcSpy).toHaveBeenCalledWith({
+        method: 'createwallet',
+        params: ['sidetreeDefaultWallet']
+      }, true, false);
+      expect(loggerSpy).toHaveBeenCalledWith(`Wallet with name sidetreeDefaultWallet already exists.`);
+    });
   });
 
   describe('loadWallet', () => {
@@ -375,6 +386,17 @@ describe('BitcoinClient', async () => {
         params: ['sidetreeDefaultWallet']
       }, true, false);
       expect(loggerSpy).toHaveBeenCalledWith(`Error occured while attempting to load bitcoin wallet: Error: fake test error`);
+    });
+
+    it('should log info when load wallet fails', async () => {
+      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.throwError('Wallet file verification failed. Data file abc/def is already loaded.');
+      const loggerSpy = spyOn(Logger, 'info');
+      await bitcoinClient['loadWallet']();
+      expect(rpcSpy).toHaveBeenCalledWith({
+        method: 'loadwallet',
+        params: ['sidetreeDefaultWallet']
+      }, true, false);
+      expect(loggerSpy).toHaveBeenCalledWith(`Wallet with name sidetreeDefaultWallet already loaded.`);
     });
   });
 
@@ -549,9 +571,9 @@ describe('BitcoinClient', async () => {
   });
 
   describe('getCurrentEstimatedFeeInSatoshisPerKB', () => {
-      const expectedIsWalletRpc = false;
+    const expectedIsWalletRpc = false;
 
-      it('should call the correct rpc and return the fee', async () => {
+    it('should call the correct rpc and return the fee', async () => {
       const mockFeeInBitcoins = 155;
       const spy = verifyThenMockRpcCall('estimatesmartfee', expectedIsWalletRpc, [1], { feerate: mockFeeInBitcoins });
 
@@ -1073,9 +1095,9 @@ describe('BitcoinClient', async () => {
   });
 
   describe('isAddressAddedToWallet', () => {
-      const expectedIsWalletRpc = true;
+    const expectedIsWalletRpc = true;
 
-      it('should check if the wallet is watch only', async () => {
+    it('should check if the wallet is watch only', async () => {
       const address = 'ADSFAEADSF0934ADF';
       const spy = verifyThenMockRpcCall('getaddressinfo', expectedIsWalletRpc, [address], {
         address,
