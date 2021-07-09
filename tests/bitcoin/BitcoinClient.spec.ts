@@ -388,7 +388,7 @@ describe('BitcoinClient', async () => {
       expect(loggerSpy).toHaveBeenCalledWith(`Error occured while attempting to load bitcoin wallet: Error: fake test error`);
     });
 
-    it('should log info when load wallet fails', async () => {
+    it('should log info when wallet is already loaded', async () => {
       const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.throwError('Wallet file verification failed. Data file abc/def is already loaded.');
       const loggerSpy = spyOn(Logger, 'info');
       await bitcoinClient['loadWallet']();
