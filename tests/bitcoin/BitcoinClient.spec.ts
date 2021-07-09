@@ -342,15 +342,17 @@ describe('BitcoinClient', async () => {
       expect(loggerSpy).toHaveBeenCalledWith(`Wallet created with name "sidetreeDefaultWallet".`);
     });
 
-    it('should log error when create wallet fails', async () => {
+    it('should throw error when create wallet fails', async () => {
       const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.throwError('fake test error');
-      const loggerSpy = spyOn(Logger, 'error');
-      await bitcoinClient['createWallet']();
-      expect(rpcSpy).toHaveBeenCalledWith({
-        method: 'createwallet',
-        params: ['sidetreeDefaultWallet']
-      }, true, false);
-      expect(loggerSpy).toHaveBeenCalledWith(`Error occured while attempting to create bitcoin wallet: Error: fake test error`);
+      try {
+        await bitcoinClient['createWallet']();
+        fail('should have thrown but did not');
+      } catch {
+        expect(rpcSpy).toHaveBeenCalledWith({
+          method: 'createwallet',
+          params: ['sidetreeDefaultWallet']
+        }, true, false);
+      }
     });
 
     it('should log info when wallet already exists', async () => {
@@ -377,15 +379,17 @@ describe('BitcoinClient', async () => {
       expect(loggerSpy).toHaveBeenCalledWith(`Wallet loaded with name "sidetreeDefaultWallet".`);
     });
 
-    it('should log error when load wallet fails', async () => {
+    it('should throw error when load wallet fails', async () => {
       const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.throwError('fake test error');
-      const loggerSpy = spyOn(Logger, 'error');
-      await bitcoinClient['loadWallet']();
-      expect(rpcSpy).toHaveBeenCalledWith({
-        method: 'loadwallet',
-        params: ['sidetreeDefaultWallet']
-      }, true, false);
-      expect(loggerSpy).toHaveBeenCalledWith(`Error occured while attempting to load bitcoin wallet: Error: fake test error`);
+      try {
+        await bitcoinClient['loadWallet']();
+        fail('should have thrown but did not');
+      } catch {
+        expect(rpcSpy).toHaveBeenCalledWith({
+          method: 'loadwallet',
+          params: ['sidetreeDefaultWallet']
+        }, true, false);
+      }
     });
 
     it('should log info when wallet is already loaded', async () => {

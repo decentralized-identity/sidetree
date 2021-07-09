@@ -251,7 +251,7 @@ export default class BitcoinClient {
       if (e.toString().toLowerCase().includes(duplicateCreateString)) {
         Logger.info(`Wallet with name ${this.walletNameToUse} already exists.`);
       } else {
-        Logger.error(`Error occured while attempting to create bitcoin wallet: ${e}`);
+        throw e;
       }
     };
   }
@@ -274,7 +274,7 @@ export default class BitcoinClient {
       if (e.toString().toLowerCase().includes(duplicateLoadString)) {
         Logger.info(`Wallet with name ${this.walletNameToUse} already loaded.`);
       } else {
-        Logger.error(`Error occured while attempting to load bitcoin wallet: ${e}`);
+        throw e;
       }
     };
   }
