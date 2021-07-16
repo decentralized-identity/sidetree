@@ -57,8 +57,7 @@ A Sidetree client manages the private keys and performs document operations on b
 
 * Why have the concept of _index files_?
 
-  It would be ideal to be able to fetch metadata about the batched operations efficiently,
-  without needing to download the entire batched operation.
+  It would be useful to be able to fetch metadata about the batched operations without needing to download the actual batched operations.
   This design is needed for the implementation of "light nodes".
 
 * Why assign a _transaction number_ to invalid transactions?
