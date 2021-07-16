@@ -871,7 +871,6 @@ export default class BitcoinClient {
     const responseData = await ReadableStream.readAll(response.body);
     if (response.status !== httpStatus.OK) {
       const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
-      Logger.error(error);
       throw error;
     }
 
