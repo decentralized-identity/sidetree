@@ -33,7 +33,7 @@ To create a stable release follow the following steps:
 1. Remove the local release branch:
    1. `git checkout master`
    1. `git branch -D release`
-1. Push a new version tag to remote master e.g. (v1.0.1):
+1. Push a new version tag to remote master e.g. (v1.0.4):
    1. git pull
    1. git tag vX.Y.Z
    1. git push origin vX.Y.Z
