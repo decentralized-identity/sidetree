@@ -1,3 +1,22 @@
+## [1.0.4](https://github.com/decentralized-identity/sidetree/compare/v1.0.3...v1.0.4) (2021-07-16)
+
+
+### Bug Fixes
+
+* **ref-imp:** automatically create bitcoin wallet ([#1138](https://github.com/decentralized-identity/sidetree/issues/1138)) ([674d753](https://github.com/decentralized-identity/sidetree/commit/674d753ad30da2ef348b8e9b69eaa66bfc9e4024))
+* **ref-imp:** fixed bug where transaction is skipped if save for retry fails ([ce23a61](https://github.com/decentralized-identity/sidetree/commit/ce23a61eec2907135dd9d991bef77b12843eff87))
+* **ref-imp:** fixed retry logic always fails due to missing fee and lock info ([3e16be4](https://github.com/decentralized-identity/sidetree/commit/3e16be4f265f306f43009e26d1b0a5bc5743859c))
+* **ref-imp:** listunspent needs to be a wallet RPC call ([ef4ea65](https://github.com/decentralized-identity/sidetree/commit/ef4ea65955ae4b93fd365ff96f438ddb5043fb8a))
+* **ref-imp:** make bitcoin load wallet and specify wallet ([#1140](https://github.com/decentralized-identity/sidetree/issues/1140)) ([81e74d1](https://github.com/decentralized-identity/sidetree/commit/81e74d15adaae86433e9d1c7f8bd648edb7b7806))
+
+
+### Features
+
+* **ref-imp:** make core read blockchain time from db ([#1137](https://github.com/decentralized-identity/sidetree/issues/1137)) ([bd5445c](https://github.com/decentralized-identity/sidetree/commit/bd5445c74ed0679c150ad03daf0b67be5c381d87)), closes [#1139](https://github.com/decentralized-identity/sidetree/issues/1139)
+* **ref-imp:** only allow DB upgrade on observer node ([63b9301](https://github.com/decentralized-identity/sidetree/commit/63b930126476709d5a45315ff00ce3b6a78617e3))
+
+
+
 ## [1.0.3](https://github.com/decentralized-identity/sidetree/compare/v1.0.1...v1.0.3) (2021-05-28)
 
 
