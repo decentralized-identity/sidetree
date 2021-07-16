@@ -7,8 +7,8 @@ on:
 
 jobs:
   push-master:
-    # Don't run on any commit that features [skip ci] in the commit message
-    if: "! contains(github.event.head_commit.message, '[skip ci]')"
+    # Only run if the push is not attempting to publish a release.
+    if: "! contains(github.event.head_commit.message, 'chore(ref-imp): official release')"
     name: Build, test and publish unstable release
     runs-on: ubuntu-latest
     strategy:
