@@ -16,7 +16,6 @@ import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
-import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
 import ProvisionalIndexFile from '../../lib/core/versions/latest/ProvisionalIndexFile';
 import ProvisionalProofFile from '../../lib/core/versions/latest/ProvisionalProofFile';
@@ -623,19 +622,26 @@ describe('TransactionProcessor', () => {
         writer: 'anyWriter'
       };
 
-      // Create core index file with 1 create and 1 recover operation.
+      // Create core index file with 1 create, 1 recover operation and 1 deactivate.
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
+
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const recoverOperationData = await OperationGenerator.generateRecoverOperation({
         didUniqueSuffix: OperationGenerator.generateRandomHash(),
         recoveryPrivateKey
       });
       const recoverOperation = recoverOperationData.recoverOperation;
+
+      const deactivateDidUniqueSuffix = OperationGenerator.generateRandomHash();
+      const [, deactivatePrivateKey] = await OperationGenerator.generateKeyPair('anyKeyId');
+      const deactivateOperationData = await OperationGenerator.createDeactivateOperation(deactivateDidUniqueSuffix, deactivatePrivateKey);
+      const deactivateOperation = deactivateOperationData.deactivateOperation;
+
       const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
       const coreProofFileUri = OperationGenerator.generateRandomHash();
       const coreIndexFileBuffer =
-        await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileUri, coreProofFileUri, [createOperation], [recoverOperation], []);
+        await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileUri, coreProofFileUri, [createOperation], [recoverOperation], [deactivateOperation]);
       const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
 
       // Create provisional index file model with 1 update operation.
@@ -647,10 +653,10 @@ describe('TransactionProcessor', () => {
       const provisionalIndexFile = await ProvisionalIndexFile.parse(provisionalIndexFileBuffer);
 
       // Create core and provisional proof file.
-      const coreProofFile = await FileGenerator.createCoreProofFile([recoverOperation], []);
+      const coreProofFile = await FileGenerator.createCoreProofFile([recoverOperation], [deactivateOperation]);
       const provisionalProofFile = await FileGenerator.createProvisionalProofFile([updateOperation]);
 
-      // Create chunk file model with delta for the 3 operations created above.
+      // Create chunk file model with delta for the create, recover and update operations.
       const chunkFileBuffer = await ChunkFile.createBuffer([createOperation], [recoverOperation], [updateOperation]);
       const chunkFileModel = await ChunkFile.parse(chunkFileBuffer!);
 
@@ -658,14 +664,16 @@ describe('TransactionProcessor', () => {
         transactionModel, coreIndexFile, provisionalIndexFile, coreProofFile, provisionalProofFile, chunkFileModel
       );
 
-      expect(anchoredOperationModels.length).toEqual(3);
+      expect(anchoredOperationModels.length).toEqual(4);
       expect(anchoredOperationModels[0].didUniqueSuffix).toEqual(createOperation.didUniqueSuffix);
       expect(anchoredOperationModels[0].operationIndex).toEqual(0);
       expect(anchoredOperationModels[0].transactionTime).toEqual(1);
       expect(anchoredOperationModels[1].didUniqueSuffix).toEqual(recoverOperation.didUniqueSuffix);
       expect(anchoredOperationModels[1].operationIndex).toEqual(1);
-      expect(anchoredOperationModels[2].didUniqueSuffix).toEqual(updateOperation.didUniqueSuffix);
+      expect(anchoredOperationModels[2].didUniqueSuffix).toEqual(deactivateOperation.didUniqueSuffix);
       expect(anchoredOperationModels[2].operationIndex).toEqual(2);
+      expect(anchoredOperationModels[3].didUniqueSuffix).toEqual(updateOperation.didUniqueSuffix);
+      expect(anchoredOperationModels[3].operationIndex).toEqual(3);
       done();
     });
 
@@ -695,40 +703,6 @@ describe('TransactionProcessor', () => {
       expect(anchoredOperationModels[0].didUniqueSuffix).toEqual(createOperation.didUniqueSuffix);
       expect(anchoredOperationModels[0].operationIndex).toEqual(0);
       expect(anchoredOperationModels[0].transactionTime).toEqual(1);
-      done();
-    });
-
-    it('[Bug #820] should populate operation buffer for deactivate operations.', async (done) => {
-      // Create `TransactionModel`.
-      const transactionModel: TransactionModel = {
-        anchorString: 'anything',
-        normalizedTransactionFee: 999,
-        transactionFeePaid: 9999,
-        transactionNumber: 1,
-        transactionTime: 1,
-        transactionTimeHash: 'anyValue',
-        writer: 'anyWriter'
-      };
-
-      // Create core index file with 1 deactivate operation.
-      const anyDidUniqueSuffix = OperationGenerator.generateRandomHash();
-      const [, anyPrivateKey] = await OperationGenerator.generateKeyPair('anyKeyId');
-      const deactivateOperationData = await OperationGenerator.createDeactivateOperation(anyDidUniqueSuffix, anyPrivateKey);
-      const deactivateOperation = deactivateOperationData.deactivateOperation;
-      const provisionalIndexFileUri = OperationGenerator.generateRandomHash();
-      const coreProofFileUri = OperationGenerator.generateRandomHash();
-      const coreIndexFileBuffer = await CoreIndexFile.createBuffer('writerLockId', provisionalIndexFileUri, coreProofFileUri, [], [], [deactivateOperation]);
-      const coreIndexFile = await CoreIndexFile.parse(coreIndexFileBuffer);
-
-      // Construct the core proof file to go with the deactivate operation.
-      const coreProofFile = await FileGenerator.createCoreProofFile([], [deactivateOperation]);
-      const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](
-        transactionModel, coreIndexFile, undefined, coreProofFile, undefined, undefined
-      );
-
-      const returnedOperation = await Operation.parse(anchoredOperationModels[0].operationBuffer);
-      expect(returnedOperation.didUniqueSuffix).toEqual(deactivateOperation.didUniqueSuffix);
-      expect(returnedOperation.operationBuffer.length).toBeGreaterThan(0);
       done();
     });
 
