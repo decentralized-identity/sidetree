@@ -1,3 +1,13 @@
+## [1.0.5](https://github.com/decentralized-identity/sidetree/compare/v1.0.4...v1.0.5) (2021-07-26)
+
+
+### Bug Fixes
+
+* **ref-imp:** fix deactivate ([#1149](https://github.com/decentralized-identity/sidetree/issues/1149)) ([6322ef2](https://github.com/decentralized-identity/sidetree/commit/6322ef2397694436f6f34e4ac7434ce6eb375de3))
+* **ref-imp:** port transaction processor fix to v1 folder ([0b8c1ff](https://github.com/decentralized-identity/sidetree/commit/0b8c1fffdbb00a4b8660cca03d80249b870c840a))
+
+
+
 ## [1.0.4](https://github.com/decentralized-identity/sidetree/compare/v1.0.3...v1.0.4) (2021-07-16)
 
 
