@@ -32,7 +32,28 @@ Please note that we might not notice a pull request in time, but you are free to
 
 </details>
 
-## Meeting - 22 June 2021 - (1500 ET)
+## Meeting - 03 August 2021 - (1600 ET)
+ 
+### Attendees
+- [x] Troy Ronda
+
+### Agenda
+- Welcome / Introductions
+- Shortened anchored DID suffix status
+- Multibase prefix character
+- Discussion about minor spec updates (eg., updating the resolution examples)
+
+## Meeting - 20 July 2021 - (1600 ET)
+
+### Agenda
+- Meeting cancelled
+
+## Meeting - 06 July 2021 - (1600 ET)
+
+### Agenda
+- Meeting cancelled
+
+## Meeting - 22 June 2021 - (1600 ET)
  
 ### Attendees
 
@@ -42,7 +63,7 @@ Please note that we might not notice a pull request in time, but you are free to
 - Implementation status and coordination discussion
 
 
-## Meeting - 08 June 2021 - (1500 ET)
+## Meeting - 08 June 2021 - (1600 ET)
  
 ### Attendees
 - [x] Troy Ronda
