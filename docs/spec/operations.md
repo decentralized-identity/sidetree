@@ -45,7 +45,7 @@ Use the following process to generate a Sidetree-based DID:
     ```
     - The object ****MAY**** contain a `type` property, and if present, its value ****MUST**** be a type string, of a length and composition defined by the implementation, that signifies the type of entity a DID represents.
     - The object ****MUST**** contain a `deltaHash` property, and its value ****MUST**** be a hash of the canonicalized [_Create Operation Delta Object_](#create-delta-object) (detailed above), generated via the [`HASH_PROTOCOL`](#hash-protocol).
-    - The object ****MUST**** contain a `recoveryCommitment` property, and its value ****MUST**** be the [recovery commitment](#recovery-commitment) as generated in step 2.
+    - The object ****MUST**** contain a `recoveryCommitment` property, and its value ****MUST**** be the [recovery commitment](#recovery-commitment) as generated in step 5.
     - The object ****MAY**** contain an `anchorOrigin` property if an implemention defines this property.  This property signifies the implementer-defined system(s) that know the most recent anchor for this DID. The property's type and composition is defined by the implementation. Implementers ****MAY**** define this property since implementers with a single common anchoring system do not need to support this property.
 
 ::: note
