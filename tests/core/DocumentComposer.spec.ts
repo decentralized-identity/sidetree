@@ -47,19 +47,19 @@ describe('DocumentComposer', async () => {
         verificationMethod: [
           {
             id: '#anySigningKey',
-            controller: '',
+            controller: did.shortForm,
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.publicKeyJwk.x, y: anySigningPublicKey.publicKeyJwk.y }
           },
           {
             id: '#authPublicKey',
-            controller: '',
+            controller: did.shortForm,
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: authPublicKey.publicKeyJwk.x, y: authPublicKey.publicKeyJwk.y }
           },
           {
             id: '#noPurposePublicKey',
-            controller: '',
+            controller: did.shortForm,
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: noPurposePublicKey.publicKeyJwk.x, y: noPurposePublicKey.publicKeyJwk.y }
           }
