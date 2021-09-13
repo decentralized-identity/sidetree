@@ -13,7 +13,7 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('DocumentComposer', async () => {
 
   describe('transformToExternalDocument', () => {
-    it('should output the expected resolution result given key(s) across all purpose types.', async () => {
+    it('should output the expected resolution result with a shortForm identifier given key(s) across all purpose types.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
       const [noPurposePublicKey] = await OperationGenerator.generateKeyPair('noPurposePublicKey', []);
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Authentication]);
@@ -47,19 +47,81 @@ describe('DocumentComposer', async () => {
         verificationMethod: [
           {
             id: '#anySigningKey',
-            controller: '',
+            controller: did.shortForm,
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.publicKeyJwk.x, y: anySigningPublicKey.publicKeyJwk.y }
           },
           {
             id: '#authPublicKey',
-            controller: '',
+            controller: did.shortForm,
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: authPublicKey.publicKeyJwk.x, y: authPublicKey.publicKeyJwk.y }
           },
           {
             id: '#noPurposePublicKey',
-            controller: '',
+            controller: did.shortForm,
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: noPurposePublicKey.publicKeyJwk.x, y: noPurposePublicKey.publicKeyJwk.y }
+          }
+        ],
+        assertionMethod: ['#anySigningKey'],
+        authentication: [
+          '#anySigningKey',
+          '#authPublicKey'
+        ],
+        capabilityDelegation: ['#anySigningKey'],
+        capabilityInvocation: ['#anySigningKey'],
+        keyAgreement: ['#anySigningKey']
+      });
+    });
+
+    it('should output the expected resolution result with a longForm identifier given key(s) across all purpose types.', async () => {
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
+      const [noPurposePublicKey] = await OperationGenerator.generateKeyPair('noPurposePublicKey', []);
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Authentication]);
+      const document = {
+        publicKeys: [anySigningPublicKey, authPublicKey, noPurposePublicKey]
+      };
+      const didState: DidState = {
+        document,
+        lastOperationTransactionNumber: 123,
+        nextRecoveryCommitmentHash: 'EiBfOZdMtU6OBw8Pk879QtZ-2J-9FbbjSZyoaA_bqD4zhA',
+        nextUpdateCommitmentHash: 'EiDKIkwqO69IPG3pOlHkdb86nYt0aNxSHZu2r-bhEznjdA'
+      };
+
+      const published = false;
+      const did = await Did.create('did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg:eyJkZWx0YSI6eyJwYXRjaGVzIjpbeyJhY3Rpb24iOiJyZXBsYWNlIiwiZG9jdW1lbnQiOnsicHVibGljS2V5cyI6W3siaWQiOiJwdWJsaWNLZXlNb2RlbDFJZCIsInB1YmxpY0tleUp3ayI6eyJjcnYiOiJzZWNwMjU2azEiLCJrdHkiOiJFQyIsIngiOiJ0WFNLQl9ydWJYUzdzQ2pYcXVwVkpFelRjVzNNc2ptRXZxMVlwWG45NlpnIiwieSI6ImRPaWNYcWJqRnhvR0otSzAtR0oxa0hZSnFpY19EX09NdVV3a1E3T2w2bmsifSwicHVycG9zZXMiOlsiYXV0aGVudGljYXRpb24iLCJrZXlBZ3JlZW1lbnQiXSwidHlwZSI6IkVjZHNhU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOSJ9XSwic2VydmljZXMiOlt7ImlkIjoic2VydmljZTFJZCIsInNlcnZpY2VFbmRwb2ludCI6Imh0dHA6Ly93d3cuc2VydmljZTEuY29tIiwidHlwZSI6InNlcnZpY2UxVHlwZSJ9XX19XSwidXBkYXRlQ29tbWl0bWVudCI6IkVpREtJa3dxTzY5SVBHM3BPbEhrZGI4Nm5ZdDBhTnhTSFp1MnItYmhFem5qZEEifSwic3VmZml4RGF0YSI6eyJkZWx0YUhhc2giOiJFaUNmRFdSbllsY0Q5RUdBM2RfNVoxQUh1LWlZcU1iSjluZmlxZHo1UzhWRGJnIiwicmVjb3ZlcnlDb21taXRtZW50IjoiRWlCZk9aZE10VTZPQnc4UGs4NzlRdFotMkotOUZiYmpTWnlvYUFfYnFENHpoQSJ9fQ', 'sidetree');
+      const result = DocumentComposer.transformToExternalDocument(didState, did, published);
+
+      expect(result['@context']).toEqual('https://w3id.org/did-resolution/v1');
+      expect(result.didDocumentMetadata).toEqual({
+        equivalentId: ['did:sidetree:EiDyOQbbZAa3aiRzeCkV7LOx3SERjjH93EXoIM3UoN4oWg'],
+        method: {
+          published: false,
+          recoveryCommitment: 'EiBfOZdMtU6OBw8Pk879QtZ-2J-9FbbjSZyoaA_bqD4zhA',
+          updateCommitment: 'EiDKIkwqO69IPG3pOlHkdb86nYt0aNxSHZu2r-bhEznjdA'
+        }
+      });
+      expect(result.didDocument).toEqual({
+        id: did.longForm,
+        '@context': ['https://www.w3.org/ns/did/v1', { '@base': did.longForm }],
+        service: undefined,
+        verificationMethod: [
+          {
+            id: '#anySigningKey',
+            controller: did.longForm,
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.publicKeyJwk.x, y: anySigningPublicKey.publicKeyJwk.y }
+          },
+          {
+            id: '#authPublicKey',
+            controller: did.longForm,
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: authPublicKey.publicKeyJwk.x, y: authPublicKey.publicKeyJwk.y }
+          },
+          {
+            id: '#noPurposePublicKey',
+            controller: did.longForm,
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: noPurposePublicKey.publicKeyJwk.x, y: noPurposePublicKey.publicKeyJwk.y }
           }
