@@ -1,5 +1,6 @@
 export default {
   BitcoinBlockMetadataNotFound: 'bitcoin_block_metadata_not_found',
+  BitcoinClientFetchHttpCodeWithNetworkIssue: 'bitcoin_client_fetch_http_code_with_network_issue',
   BitcoinFileReaderBlockCannotReadDirectory: 'bitcoin_file_reader_block_cannot_read_directory',
   BitcoinFileReaderBlockCannotReadFile: 'bitcoin_file_reader_block_cannot_read_file',
   BitcoinWalletIncorrectImportString: 'bitcoin_wallet_incorrect_import_string',

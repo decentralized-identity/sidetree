@@ -1,4 +1,3 @@
-import * as httpStatus from 'http-status';
 import * as nodeFetchPackage from 'node-fetch';
 import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
@@ -6,7 +5,9 @@ import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinLockTransactionModel from '../../lib/bitcoin/models/BitcoinLockTransactionModel';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import BitcoinWallet from '../../lib/bitcoin/BitcoinWallet';
+import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import IBitcoinWallet from '../../lib/bitcoin/interfaces/IBitcoinWallet';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Logger from '../../lib/common/Logger';
 import ReadableStream from '../../lib/common/ReadableStream';
 
@@ -1171,177 +1172,105 @@ describe('BitcoinClient', async () => {
   });
 
   describe('rpcCall', () => {
-    it('should call retry-fetch with specific wallet', async (done) => {
+    it('should call retry-fetch with specific wallet.', async (done) => {
       const request: any = {};
       const memberName = 'memberRequestName';
       const memberValue = 'memberRequestValue';
       request[memberName] = memberValue;
-      const bodyIdentifier = 12345;
-      const result = 'some_result';
+
+      const mockedBodyBuffer = Buffer.from(JSON.stringify({
+        result: 'abc'
+      }));
 
       const retryFetchSpy = spyOn(bitcoinClient as any, 'fetchWithRetry');
       retryFetchSpy.and.callFake((uri: string, params: any) => {
         expect(uri).toContain(`${bitcoinPeerUri}/wallet/sidetreeDefaultWallet`);
         expect(params.method).toEqual('post');
         expect(JSON.parse(params.body)[memberName]).toEqual(memberValue);
-        return Promise.resolve({
-          status: httpStatus.OK,
-          body: bodyIdentifier
-        });
-      });
-      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake((body: any) => {
-        expect(body).toEqual(bodyIdentifier);
-        return Promise.resolve(Buffer.from(JSON.stringify({
-          result,
-          error: null,
-          id: null
-        })));
+        return Promise.resolve(mockedBodyBuffer);
       });
 
-      const actual = await bitcoinClient['rpcCall'](request, true, true);
-      expect(actual).toEqual(result);
-      expect(readUtilSpy).toHaveBeenCalled();
+      const actualResult = await bitcoinClient['rpcCall'](request, true, true);
+      expect(actualResult).toEqual('abc');
+      expect(retryFetchSpy).toHaveBeenCalled();
       done();
     });
 
-    it('should call retry-fetch without specific wallet', async (done) => {
+    it('should call retry-fetch without specific wallet.', async (done) => {
       const request: any = {};
       const memberName = 'memberRequestName';
       const memberValue = 'memberRequestValue';
       request[memberName] = memberValue;
-      const bodyIdentifier = 12345;
-      const result = 'some_result';
+
+      const mockedBodyBuffer = Buffer.from(JSON.stringify({
+        result: 'abc'
+      }));
 
       const retryFetchSpy = spyOn(bitcoinClient as any, 'fetchWithRetry');
       retryFetchSpy.and.callFake((uri: string, params: any) => {
         expect(uri).toContain(bitcoinPeerUri);
         expect(params.method).toEqual('post');
         expect(JSON.parse(params.body)[memberName]).toEqual(memberValue);
-        return Promise.resolve({
-          status: httpStatus.OK,
-          body: bodyIdentifier
-        });
-      });
-      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake((body: any) => {
-        expect(body).toEqual(bodyIdentifier);
-        return Promise.resolve(Buffer.from(JSON.stringify({
-          result,
-          error: null,
-          id: null
-        })));
+        return Promise.resolve(mockedBodyBuffer);
       });
 
-      const actual = await bitcoinClient['rpcCall'](request, true, false);
-      expect(actual).toEqual(result);
-      expect(readUtilSpy).toHaveBeenCalled();
+      const actualResult = await bitcoinClient['rpcCall'](request, true, false);
+      expect(actualResult).toEqual('abc');
+      expect(retryFetchSpy).toHaveBeenCalled();
       done();
     });
 
-    it('should call retry-fetch without authohrization', async (done) => {
+    it('should call retry-fetch without authorization', async (done) => {
       const request: any = {};
       const memberName = 'memberRequestName';
       const memberValue = 'memberRequestValue';
       request[memberName] = memberValue;
-      const bodyIdentifier = 12345;
-      const result = 'some_result';
+
+      const mockedBodyBuffer = Buffer.from(JSON.stringify({
+        result: 'abc'
+      }));
 
       const retryFetchSpy = spyOn(bitcoinClient as any, 'fetchWithRetry');
       retryFetchSpy.and.callFake((uri: string, params: any) => {
         expect(uri).toContain(bitcoinPeerUri);
         expect(params.method).toEqual('post');
         expect(JSON.parse(params.body)[memberName]).toEqual(memberValue);
-        return Promise.resolve({
-          status: httpStatus.OK,
-          body: bodyIdentifier
-        });
-      });
-      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake((body: any) => {
-        expect(body).toEqual(bodyIdentifier);
-        return Promise.resolve(Buffer.from(JSON.stringify({
-          result,
-          error: null,
-          id: null
-        })));
+        return Promise.resolve(mockedBodyBuffer);
       });
 
       const originalAuthorization = (bitcoinClient as any).bitcoinAuthorization;
-      (bitcoinClient as any).bitcoinAuthorization = undefined;
+      (bitcoinClient as any).bitcoinAuthorization = undefined; // Removing authorization header.
 
-      const actual = await bitcoinClient['rpcCall'](request, true, false);
-      expect(actual).toEqual(result);
+      const actualResult = await bitcoinClient['rpcCall'](request, true, false);
+      expect(actualResult).toEqual('abc');
       expect(retryFetchSpy).toHaveBeenCalled();
-      expect(readUtilSpy).toHaveBeenCalled();
       (bitcoinClient as any).bitcoinAuthorization = originalAuthorization;
       done();
     });
 
-    it('should throw if the request failed', async (done) => {
-      const request: any = {
-        test: 'some random string'
-      };
-      const result = 'some result';
-      const statusCode = 7890;
-
-      const retryFetchSpy = spyOn(bitcoinClient as any, 'fetchWithRetry');
-      retryFetchSpy.and.callFake((uri: string, params: any) => {
-        expect(uri).toContain(bitcoinPeerUri);
-        expect(params.method).toEqual('post');
-        expect(JSON.parse(params.body).test).toEqual(request.test);
-        return Promise.resolve({
-          status: statusCode
-        });
-      });
-
-      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake(() => {
-        return Promise.resolve(Buffer.from(result));
-      });
-
-      try {
-        await bitcoinClient['rpcCall'](request, true, false);
-        fail('should have thrown');
-      } catch (error) {
-        expect(error.message).toContain('Fetch');
-        expect(error.message).toContain(statusCode.toString());
-        expect(error.message).toContain(result);
-        expect(retryFetchSpy).toHaveBeenCalled();
-        expect(readUtilSpy).toHaveBeenCalled();
-      } finally {
-        done();
-      }
-    });
-
-    it('should throw if the RPC call failed', async (done) => {
+    it('should throw if the RPC call result contains an `error` property.', async (done) => {
       const request: any = {
         test: 'some request value'
       };
-      const result = 'some result';
+
+      const mockedBodyBuffer = Buffer.from(JSON.stringify({
+        error: 'some_error'
+      }));
 
       const retryFetchSpy = spyOn(bitcoinClient as any, 'fetchWithRetry');
       retryFetchSpy.and.callFake((uri: string, params: any) => {
         expect(uri).toContain(bitcoinPeerUri);
         expect(params.method).toEqual('post');
         expect(JSON.parse(params.body).test).toEqual(request.test);
-        return Promise.resolve({
-          status: httpStatus.OK
-        });
-      });
-
-      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake(() => {
-        return Promise.resolve(Buffer.from(JSON.stringify({
-          result: null,
-          error: result,
-          id: null
-        })));
+        return Promise.resolve(mockedBodyBuffer);
       });
 
       try {
         await bitcoinClient['rpcCall'](request, true, false);
         fail('should have thrown');
       } catch (error) {
-        expect(error.message).toContain('RPC');
-        expect(error.message).toContain(result);
+        expect(error.message).toContain('some_error');
         expect(retryFetchSpy).toHaveBeenCalled();
-        expect(readUtilSpy).toHaveBeenCalled();
       } finally {
         done();
       }
@@ -1349,119 +1278,153 @@ describe('BitcoinClient', async () => {
   });
 
   describe('fetchWithRetry', () => {
-
-    it('should fetch the URI with the given requestParameters', async (done) => {
-      const path = 'http://some_random_path';
-      const request: any = {
-        headers: {}
-      };
-      const memberName = 'headerMember';
-      const memberValue = 'headerValue';
-      request.headers[memberName] = memberValue;
-      const result = 200;
+    it('should fetch the URI with the given requestParameters when timeout is enabled', async (done) => {
+      const mockedRequestParams = { method: 'POST' };
+      const mockedResponseBody = 'mockedBody';
+      const mockedResponseStatus = 200;
 
       fetchSpy.and.callFake((uri: string, params: any) => {
         expect(uri).toEqual(path);
-        expect(params.headers[memberName]).toEqual(memberValue);
-        return Promise.resolve(result);
+
+        // Expected to have timeout set explicitly.
+        const expectedFinalRequestParams = {
+          method: 'POST',
+          timeout: bitcoinClient.requestTimeout
+        };
+
+        expect(params).toEqual(expectedFinalRequestParams);
+        return Promise.resolve({ status: mockedResponseStatus, body: mockedResponseBody });
       });
 
-      const actual = await bitcoinClient['fetchWithRetry'](path, request);
-      expect(actual as any).toEqual(result);
+      const mockBuffer = Buffer.from('anyBufferValue');
+      const readAllSpy = spyOn(ReadableStream, 'readAll').and.callFake((body: any) => {
+        expect(body).toEqual(mockedResponseBody);
+        return Promise.resolve(mockBuffer);
+      });
+
+      const path = 'http://unused_path';
+      const buffer = await bitcoinClient['fetchWithRetry'](path, mockedRequestParams, true); // true = timeout enabled.
       expect(fetchSpy).toHaveBeenCalled();
+      expect(readAllSpy).toHaveBeenCalled();
+      expect(buffer).toEqual(mockBuffer);
       done();
     });
 
-    it('should fetch the URI with the given requestParameters without timeout', async (done) => {
-      const path = 'http://some_random_path';
-      const request: any = {
-        headers: {}
-      };
-      const memberName = 'headerMember';
-      const memberValue = 'headerValue';
-      request.headers[memberName] = memberValue;
-      const result = 200;
+    it('should fetch the URI with the given requestParameters when timeout is disabled.', async (done) => {
+      const mockedRequestParams = { method: 'POST' };
+      const mockedResponseBody = 'mockedBody';
+      const mockedResponseStatus = 200;
 
       fetchSpy.and.callFake((uri: string, params: any) => {
         expect(uri).toEqual(path);
-        expect(params.headers[memberName]).toEqual(memberValue);
-        return Promise.resolve(result);
+
+        // Expected to have timeout set explicitly.
+        const expectedFinalRequestParams = {
+          method: 'POST',
+          timeout: 0
+        };
+
+        expect(params).toEqual(expectedFinalRequestParams);
+        return Promise.resolve({ status: mockedResponseStatus, body: mockedResponseBody });
       });
 
-      const actual = await bitcoinClient['fetchWithRetry'](path, request, false);
-      expect(actual as any).toEqual(result);
+      const mockBuffer = Buffer.from('anyBufferValue');
+      const readAllSpy = spyOn(ReadableStream, 'readAll').and.callFake((body: any) => {
+        expect(body).toEqual(mockedResponseBody);
+        return Promise.resolve(mockBuffer);
+      });
+
+      const path = 'http://unused_path';
+      const buffer = await bitcoinClient['fetchWithRetry'](path, mockedRequestParams, false); // false = timeout disabled.
       expect(fetchSpy).toHaveBeenCalled();
+      expect(readAllSpy).toHaveBeenCalled();
+      expect(buffer).toEqual(mockBuffer);
       done();
     });
 
-    it('should retry with an extended time period if the request timed out', async (done) => {
-      const requestId = 'someRequestId';
-      let timeout: number;
-      fetchSpy.and.callFake((_: any, params: any) => {
-        expect(params.headers.id).toEqual(requestId, 'Fetch was not called with request parameters');
-        if (timeout) {
-          expect(params.timeout).toBeGreaterThan(timeout, 'Fetch was not called with an extended timeout');
-          return Promise.resolve();
-        } else {
-          timeout = params.timeout;
-          return Promise.reject(new nodeFetchPackage.FetchError('test', 'request-timeout'));
+    it('should retry with increased timeout until max-retry reached if timeout is enabled.', async (done) => {
+      const mockedRequestParams = { method: 'POST' };
+      const mockedTimeoutError = new nodeFetchPackage.FetchError('test', 'request-timeout');
+
+      let previousTimeout = 0; // Records the timeout used by the previous fetch call. Setting to zero allows the initial timeout value check to succeed also.
+      fetchSpy.and.callFake((_uri: string, params: any) => {
+        expect(params.timeout).toBeGreaterThan(previousTimeout);
+        previousTimeout = params.timeout;
+        return Promise.reject(mockedTimeoutError);
+      });
+
+      const path = 'http://unused_path';
+
+      try {
+        await bitcoinClient['fetchWithRetry'](path, mockedRequestParams, true); // true = timeout enabled.
+      } catch (error) {
+        if (error.type === 'request-timeout') {
+          // This exception is the expected behavior, perform rest of the validations.
+          expect(fetchSpy).toHaveBeenCalledTimes(bitcoinClient.requestMaxRetries + 1);
+          done();
+          return;
         }
+      }
+
+      fail('Should have throw a request timeout error when reached maximum retry count.');
+    });
+
+    it('should throw non timeout errors thrown by fetch immediately.', async (done) => {
+      const mockedRequestParams = { method: 'POST' };
+      const mockedTimeoutError = new nodeFetchPackage.FetchError('test', 'unknown-error'); // This should force error to be thrown without retry.
+
+      fetchSpy.and.callFake(() => {
+        return Promise.reject(mockedTimeoutError);
       });
 
-      await bitcoinClient['fetchWithRetry']('localhost', { headers: { id: requestId } });
+      const path = 'http://unused_path';
+
+      try {
+        await bitcoinClient['fetchWithRetry'](path, mockedRequestParams, true); // true = timeout enabled.
+      } catch (error) {
+        if (error.type === 'unknown-error') {
+          expect(fetchSpy).toHaveBeenCalledTimes(1); // Expecting only fetching once.
+          done();
+          return;
+        }
+      }
+
+      fail('Should have throw a request timeout error when reached maximum retry count.');
+    });
+
+    it('should retry if response HTTP code is related to network connectivity issues.', async (done) => {
+      const mockedResponseBody = 'unusedBody';
+
+      fetchSpy.and.returnValues(
+        { status: 502, body: mockedResponseBody }, // Simulates a network issue.
+        { status: 200, body: mockedResponseBody } // Simulates a subsequent success.
+      );
+
+      const readAllSpy = spyOn(ReadableStream, 'readAll').and.callFake(() => {
+        return Promise.resolve(Buffer.from('unused'));
+      });
+
+      await bitcoinClient['fetchWithRetry']('http://unused_path', { }, true); // true = timeout enabled.
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(readAllSpy).toHaveBeenCalledTimes(2); // Shows retry has happened.
       done();
     });
 
-    it('should stop retrying after the max retry limit', async (done) => {
-      fetchSpy.and.callFake((_: any, __: any) => {
-        return Promise.reject(new nodeFetchPackage.FetchError('test', 'request-timeout'));
-      });
+    it('should throw if response HTTP code is an error not related to connectivity issues.', async (done) => {
+      const mockedResponseBody = 'unusedBody';
+      fetchSpy.and.returnValue({ status: 500, body: mockedResponseBody }); // Simulates a non-network issue.
 
-      try {
-        await bitcoinClient['fetchWithRetry']('localhost');
-      } catch (error) {
-        expect(error.message).toEqual('test');
-        expect(error.type).toEqual('request-timeout');
-        expect(fetchSpy).toHaveBeenCalledTimes(maxRetries + 1);
-      } finally {
-        done();
-      }
-    });
+      const readAllSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from('unused')));
 
-    it('should throw non timeout errors immediately', async (done) => {
-      let timeout = true;
-      const result = 'some random result';
-      fetchSpy.and.callFake((_: any, __: any) => {
-        if (timeout) {
-          timeout = false;
-          return Promise.reject(new nodeFetchPackage.FetchError('test', 'request-timeout'));
-        } else {
-          return Promise.reject(new Error(result));
-        }
-      });
-      try {
-        await bitcoinClient['fetchWithRetry']('localhost');
-      } catch (error) {
-        expect(error.message).toEqual(result);
-        expect(fetchSpy).toHaveBeenCalledTimes(2);
-      } finally {
-        done();
-      }
-    });
-  });
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(() =>
+        bitcoinClient['fetchWithRetry']('http://unused_path', { }, true), // true = timeout enabled.
+      ErrorCode.BitcoinClientFetchHttpCodeWithNetworkIssue
+      );
 
-  describe('waitFor', () => {
-    it('should return after the given amount of time', async (done) => {
-      let approved = false;
-      setTimeout(() => {
-        approved = true;
-      }, 300);
-
-      await bitcoinClient['waitFor'](400);
-      expect(approved).toBeTruthy();
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(readAllSpy).toHaveBeenCalledTimes(1); // Shows retry never happened.
       done();
-    }, 500);
+    });
   });
 });
