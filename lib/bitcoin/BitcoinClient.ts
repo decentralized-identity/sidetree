@@ -8,10 +8,12 @@ import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinSidetreeTransactionModel from './models/BitcoinSidetreeTransactionModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import BitcoinWallet from './BitcoinWallet';
+import ErrorCode from './ErrorCode';
 import IBitcoinWallet from './interfaces/IBitcoinWallet';
 import { IBlockInfo } from './BitcoinProcessor';
 import Logger from '../common/Logger';
 import ReadableStream from '../common/ReadableStream';
+import SidetreeError from '../common/SidetreeError';
 
 /**
  * Structure (internal to this class) to store the transaction information
@@ -44,8 +46,8 @@ export default class BitcoinClient {
     bitcoinRpcUsername: string | undefined,
     bitcoinRpcPassword: string | undefined,
     bitcoinWalletOrImportString: IBitcoinWallet | string,
-    private requestTimeout: number,
-    private requestMaxRetries: number,
+    readonly requestTimeout: number,
+    readonly requestMaxRetries: number,
     private sidetreeTransactionFeeMarkupPercentage: number,
     private estimatedFeeSatoshiPerKB?: number) {
 
@@ -866,15 +868,9 @@ export default class BitcoinClient {
     // List of rpc calls categorized by type: https://developer.bitcoin.org/reference/rpc/
     const rpcUrl = isWalletRpc ? `${this.bitcoinPeerUri}/wallet/${this.walletNameToUse}` : this.bitcoinPeerUri;
 
-    const response = await this.fetchWithRetry(rpcUrl, requestOptions, timeout);
+    const bodyBuffer = await this.fetchWithRetry(rpcUrl, requestOptions, timeout);
 
-    const responseData = await ReadableStream.readAll(response.body);
-    if (response.status !== httpStatus.OK) {
-      const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
-      throw error;
-    }
-
-    const responseJson = JSON.parse(responseData.toString());
+    const responseJson = JSON.parse(bodyBuffer.toString());
 
     if ('error' in responseJson && responseJson.error !== null) {
       const error = new Error(`RPC failed: ${JSON.stringify(responseJson.error)}`);
@@ -886,52 +882,71 @@ export default class BitcoinClient {
   }
 
   /**
-   * Calls `nodeFetch` and retries with exponential back-off on `request-timeout` FetchError`.
+   * Calls `nodeFetch` and retries upon request time-out or HTTP 502/503/504 codes.
    * @param uri URI to fetch
    * @param requestParameters Request parameters to use
-   * @param setTimeout True to set a timeout on the request, and retry if times out, false to wait indefinitely.
-   * @returns Response of the fetch
+   * @param enableTimeout Set to `true` to have request timeout with exponential increase on timeout in subsequent retries.
+   *                      Set to `false` to wait indefinitely for response (used for long running request such as importing a wallet).
+   * @returns Buffer of the response body.
    */
-  private async fetchWithRetry (uri: string, requestParameters?: RequestInit | undefined, setTimeout: boolean = true): Promise<Response> {
+  private async fetchWithRetry (uri: string, requestParameters: RequestInit, enableTimeout: boolean): Promise<Buffer> {
     let retryCount = 0;
-    let timeout: number;
+    let networkError: Error | undefined;
+    let requestTimeout = enableTimeout ? this.requestTimeout : 0; // 0 = disabling timeout.
     do {
-      timeout = this.requestTimeout * 2 ** retryCount;
-      let params = Object.assign({}, requestParameters);
-      if (setTimeout) {
-        params = Object.assign(params, {
-          timeout
-        });
+      // If we are retrying (not initial attempt).
+      if (networkError !== undefined) {
+        retryCount++;
+
+        // Double the request timeout. NOTE: if timeout is disabled, then `requestTimeout` will always be 0;
+        requestTimeout *= 2;
+
+        Logger.info(`Retrying attempt count: ${retryCount} with request timeout of ${requestTimeout} ms...`);
       }
+
+      let response: Response;
       try {
-        return await nodeFetch(uri, params);
+        // Clone the request parameters passed in, then set timeout value if needed.
+        const params = Object.assign({}, requestParameters);
+        params.timeout = requestTimeout;
+
+        response = await nodeFetch(uri, params);
       } catch (error) {
-        if (error instanceof FetchError) {
-          if (retryCount >= this.requestMaxRetries) {
-            Logger.info('Max retries reached. Request failed.');
-            throw error;
-          }
-          switch (error.type) {
-            case 'request-timeout':
-              Logger.info(`Request timeout (${retryCount})`);
-              await this.waitFor(Math.round(timeout));
-              Logger.info(`Retrying request (${++retryCount})`);
-              continue;
-          }
+        // Retry-able if request is timed out.
+        if (error instanceof FetchError && error.type === 'request-timeout') {
+          networkError = error;
+          Logger.info(`Attempt ${retryCount} timed-out.`);
+          continue;
         }
-        Logger.error(error);
+
         throw error;
       }
-    } while (true);
-  }
 
-  /**
-   * Async timeout
-   * @param milliseconds Timeout in milliseconds
-   */
-  private async waitFor (milliseconds: number) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, milliseconds);
-    });
+      const bodyBuffer = await ReadableStream.readAll(response.body);
+      if (response.status === httpStatus.OK) {
+        return bodyBuffer;
+      } else {
+        networkError = new SidetreeError(
+          ErrorCode.BitcoinClientFetchHttpCodeWithNetworkIssue,
+          `Unexpected HTTP response: [${response.status}]: ${bodyBuffer}`
+        );
+
+        // Retry-able if one of these HTTP codes.
+        if (response.status === httpStatus.BAD_GATEWAY ||
+            response.status === httpStatus.GATEWAY_TIMEOUT ||
+            response.status === httpStatus.SERVICE_UNAVAILABLE) {
+          Logger.info(`Attempt ${retryCount} resulted in ${response.status}`);
+          continue;
+        }
+
+        // All other error code, not connectivity related issue, fail straight away.
+        throw networkError;
+      }
+
+      // Else we can retry
+    } while (retryCount < this.requestMaxRetries);
+
+    Logger.info('Max retries reached without success.');
+    throw networkError;
   }
 }
