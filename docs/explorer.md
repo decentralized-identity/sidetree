@@ -71,7 +71,7 @@ HTTP/1.1 200 OK
     {
       "suffix": "EiA_9TDmSJn0C30eigz6UKELg11orDjMEV9t_5y48xr24Q",
       "type": "abc",
-      "normalizedTransactionFee": 701873
+      "blockchainTime": 701873
     }
   ]
 }
