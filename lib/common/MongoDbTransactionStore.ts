@@ -1,6 +1,7 @@
 import { Collection, Cursor, Db, Long, MongoClient } from 'mongodb';
 import ITransactionStore from '../core/interfaces/ITransactionStore';
 import Logger from '../common/Logger';
+import MongoDbLogger from './MongoDbLogger';
 import TransactionModel from './models/TransactionModel';
 
 /**
@@ -19,7 +20,9 @@ export default class MongoDbTransactionStore implements ITransactionStore {
    * Initialize the MongoDB transaction store.
    */
   public async initialize (serverUrl: string, databaseName: string): Promise<void> {
-    const client = await MongoClient.connect(serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
+    // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
+    const client = await MongoClient.connect(serverUrl, { useNewUrlParser: true, logger: MongoDbLogger.customLogger });
+    MongoDbLogger.setCommandLogger(client);
     this.db = client.db(databaseName);
     this.transactionCollection = await MongoDbTransactionStore.createTransactionCollectionIfNotExist(this.db);
   }

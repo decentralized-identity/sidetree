@@ -1,6 +1,7 @@
 import { Collection, Db, Long, MongoClient } from 'mongodb';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
 import Logger from '../common/Logger';
+import MongoDbLogger from '../common/MongoDbLogger';
 import TransactionModel from '../common/models/TransactionModel';
 import UnresolvableTransactionModel from './models/UnresolvableTransactionModel';
 
@@ -33,7 +34,9 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
    * Initialize the MongoDB unresolvable transaction store.
    */
   public async initialize (): Promise<void> {
-    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
+    // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
+    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true, logger: MongoDbLogger.customLogger });
+    MongoDbLogger.setCommandLogger(client);
     this.db = client.db(this.databaseName);
     this.unresolvableTransactionCollection = await MongoDbUnresolvableTransactionStore.createUnresolvableTransactionCollectionIfNotExist(this.db);
   }

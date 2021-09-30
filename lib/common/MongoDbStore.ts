@@ -1,5 +1,6 @@
 import { Collection, Db, MongoClient } from 'mongodb';
 import Logger from '../common/Logger';
+import MongoDbLogger from './MongoDbLogger';
 
 /**
  * Base class that contains the common MongoDB collection setup.
@@ -22,7 +23,9 @@ export default class MongoDbStore {
    * Initialize the MongoDB transaction store.
    */
   public async initialize (): Promise<void> {
-    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
+    // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
+    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true, logger: MongoDbLogger.customLogger });
+    MongoDbLogger.setCommandLogger(client);
     this.db = client.db(this.databaseName);
     await this.createCollectionIfNotExist(this.db);
   }

@@ -1,6 +1,7 @@
 import { Binary, Collection, Db, MongoClient } from 'mongodb';
 import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
+import MongoDbLogger from '../../../common/MongoDbLogger';
 import QueuedOperationModel from './models/QueuedOperationModel';
 import SidetreeError from '../../../common/SidetreeError';
 
@@ -31,7 +32,8 @@ export default class MongoDbOperationQueue implements IOperationQueue {
    * Initialize the MongoDB operation store.
    */
   public async initialize (serverUrl: string, databaseName: string) {
-    const client = await MongoClient.connect(serverUrl);
+    const client = await MongoClient.connect(serverUrl, { useNewUrlParser: true, logger: MongoDbLogger.customLogger });
+    MongoDbLogger.setCommandLogger(client);
     this.db = client.db(databaseName);
     this.collection = await MongoDbOperationQueue.createCollectionIfNotExist(this.db);
   }

@@ -1,5 +1,6 @@
 import { Collection, Db, Long, MongoClient } from 'mongodb';
 import Logger from '../../common/Logger';
+import MongoDbLogger from '../../common/MongoDbLogger';
 import SavedLockModel from './../models/SavedLockedModel';
 
 /**
@@ -26,7 +27,9 @@ export default class MongoDbLockTransactionStore {
    * Initializes this object by creating the required collection.
    */
   public async initialize () {
-    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
+    // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
+    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true, logger: MongoDbLogger.customLogger });
+    MongoDbLogger.setCommandLogger(client);
     this.db = client.db(this.databaseName);
     this.lockCollection = await MongoDbLockTransactionStore.creatLockCollectionIfNotExist(this.db);
   }
