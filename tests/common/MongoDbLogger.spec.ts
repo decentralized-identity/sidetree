@@ -1,10 +1,23 @@
 import Config from '../../lib/core/models/Config';
 import Logger from '../../lib/common/Logger';
 import { MongoClient } from 'mongodb';
+import MongoDb from './MongoDb';
 import MongoDbLogger from '../../lib/common/MongoDbLogger';
 
 describe('MongoDbLogger', async () => {
   const config: Config = require('../json/config-test.json');
+  let mongoServiceAvailable = false;
+
+  beforeAll(async () => {
+    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
+  });
+
+  beforeEach(async () => {
+    if (!mongoServiceAvailable) {
+      pending('MongoDB service not available');
+    }
+  });
+
   it('should invoke command monitoring logger with different log level according to command response status', async () => {
     spyOn(Logger, 'info');
     spyOn(Logger, 'warn');
