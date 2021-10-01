@@ -28,7 +28,12 @@ export default class MongoDbLockTransactionStore {
    */
   public async initialize () {
     // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
-    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true, logger: MongoDbLogger.customLogger });
+    const client = await MongoClient.connect(this.serverUrl, {
+      useNewUrlParser: true,
+      logger: MongoDbLogger.customLogger,
+      monitorCommands: true,
+      loggerLevel: 'debug'
+    });
     MongoDbLogger.setCommandLogger(client);
     this.db = client.db(this.databaseName);
     this.lockCollection = await MongoDbLockTransactionStore.creatLockCollectionIfNotExist(this.db);

@@ -16,12 +16,16 @@ export default class MongoDbLogger {
 
   static customLogger = function (_message: string | undefined, state: LoggerState | undefined): void {
     switch (state?.type) {
-      case 'debug':
-      case 'info':
-        Logger.info(state);
+      case 'warn':
+        Logger.warn(state);
         break;
       case 'error':
         Logger.error(state);
+        break;
+      case undefined:
+        break;
+      default:
+        Logger.info(state);
     }
   };
 }

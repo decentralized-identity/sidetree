@@ -35,7 +35,12 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
    */
   public async initialize (): Promise<void> {
     // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
-    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true, logger: MongoDbLogger.customLogger });
+    const client = await MongoClient.connect(this.serverUrl, {
+      useNewUrlParser: true,
+      logger: MongoDbLogger.customLogger,
+      monitorCommands: true,
+      loggerLevel: 'debug'
+    });
     MongoDbLogger.setCommandLogger(client);
     this.db = client.db(this.databaseName);
     this.unresolvableTransactionCollection = await MongoDbUnresolvableTransactionStore.createUnresolvableTransactionCollectionIfNotExist(this.db);
