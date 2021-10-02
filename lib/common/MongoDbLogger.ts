@@ -28,7 +28,7 @@ export default class MongoDbLogger {
       return;
     }
 
-    switch (state?.type) {
+    switch (state.type) {
       case 'warn':
         Logger.warn(state);
         break;

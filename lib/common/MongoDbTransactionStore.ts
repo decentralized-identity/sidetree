@@ -1,8 +1,8 @@
 import { Cursor, Long } from 'mongodb';
 import ITransactionStore from '../core/interfaces/ITransactionStore';
 import Logger from '../common/Logger';
-import TransactionModel from './models/TransactionModel';
 import MongoDbStore from './MongoDbStore';
+import TransactionModel from './models/TransactionModel';
 
 /**
  * Implementation of ITransactionStore that stores the transaction data in a MongoDB database.
@@ -166,5 +166,12 @@ export default class MongoDbTransactionStore extends MongoDbStore implements ITr
 
     const transactions: TransactionModel[] = await cursor.sort({ transactionNumber: 1 }).toArray();
     return transactions;
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public async createIndex (): Promise<void> {
+    await this.collection.createIndex({ transactionNumber: 1 }, { unique: true });
   }
 }

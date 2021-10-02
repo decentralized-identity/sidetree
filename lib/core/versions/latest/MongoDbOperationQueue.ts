@@ -35,6 +35,13 @@ export default class MongoDbOperationQueue extends MongoDbStore implements IOper
     super(serverUrl, MongoDbOperationQueue.collectionName, databaseName);
   }
 
+  /**
+   * @inheritDoc
+   */
+  public async createIndex (): Promise<void> {
+    await this.collection.createIndex({ didUniqueSuffix: 1 }, { unique: true });
+  }
+
   async enqueue (didUniqueSuffix: string, operationBuffer: Buffer) {
     try {
       const queuedOperation: IMongoQueuedOperation = {

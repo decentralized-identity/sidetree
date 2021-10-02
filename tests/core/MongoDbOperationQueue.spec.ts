@@ -34,6 +34,7 @@ async function generateAndQueueOperations (operationQueue: IOperationQueue, coun
 describe('MongoDbOperationQueue', async () => {
   const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = 1000000;
 
   let mongoServiceAvailable = false;
   let operationQueue: MongoDbOperationQueue;

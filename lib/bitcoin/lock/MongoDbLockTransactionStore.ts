@@ -55,4 +55,11 @@ export default class MongoDbLockTransactionStore extends MongoDbStore {
 
     return lastLocks[0] as SavedLockModel;
   }
+
+  /**
+   * @inheritDoc
+   */
+  public async createIndex (): Promise<void> {
+    await this.collection.createIndex({ createTimestamp: -1 });
+  }
 }

@@ -37,6 +37,7 @@ describe('MongoDbLogger', async () => {
     spyOn(Logger, 'info');
     spyOn(Logger, 'warn');
     spyOn(Logger, 'error');
+    spyOn(Logger, 'debug');
     MongoDbLogger.customLogger('message', undefined);
     expect(Logger.info).not.toHaveBeenCalled();
     const state = {
@@ -47,7 +48,7 @@ describe('MongoDbLogger', async () => {
       type: 'debug'
     };
     MongoDbLogger.customLogger('message', state);
-    expect(Logger.info).toHaveBeenCalledWith(state);
+    expect(Logger.debug).toHaveBeenCalledWith(state);
 
     state.type = 'info';
     MongoDbLogger.customLogger('message', state);

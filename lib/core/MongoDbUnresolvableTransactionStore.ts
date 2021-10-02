@@ -1,7 +1,7 @@
-import { Long } from 'mongodb';
-import MongoDbStore from '../common/MongoDbStore';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
 import Logger from '../common/Logger';
+import { Long } from 'mongodb';
+import MongoDbStore from '../common/MongoDbStore';
 import TransactionModel from '../common/models/TransactionModel';
 import UnresolvableTransactionModel from './models/UnresolvableTransactionModel';
 
@@ -19,11 +19,18 @@ export default class MongoDbUnresolvableTransactionStore extends MongoDbStore im
    * Creates a new instance of this object.
    * @param serverUrl The target server url.
    * @param databaseName The database name where the collection should be saved.
+   * @param retryExponentialDelayFactor
+   *   The exponential delay factor in milliseconds for retries of unresolvable transactions.
+   *   e.g. if it is set to 1 seconds, then the delays for retries will be 1 second, 2 seconds, 4 seconds... until the transaction can be resolved.
    */
   public constructor (
     serverUrl: string,
-    databaseName: string) {
+    databaseName: string,
+    retryExponentialDelayFactor?: number) {
     super(serverUrl, MongoDbUnresolvableTransactionStore.unresolvableTransactionCollectionName, databaseName);
+    if (retryExponentialDelayFactor !== undefined) {
+      this.exponentialDelayFactorInMilliseconds = retryExponentialDelayFactor;
+    }
   }
 
   public async recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void> {
@@ -106,5 +113,13 @@ export default class MongoDbUnresolvableTransactionStore extends MongoDbStore im
   public async getUnresolvableTransactions (): Promise<UnresolvableTransactionModel[]> {
     const transactions = await this.collection!.find().sort({ transactionTime: 1, transactionNumber: 1 }).toArray();
     return transactions;
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public async createIndex (): Promise<void> {
+    await this.collection.createIndex({ transactionTime: 1, transactionNumber: 1 }, { unique: true });
+    await this.collection.createIndex({ nextRetryTime: 1 });
   }
 }
