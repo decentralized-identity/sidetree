@@ -1,7 +1,7 @@
-import { Binary, Collection, Db, MongoClient } from 'mongodb';
+import { Binary } from 'mongodb';
 import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
-import MongoDbLogger from '../../../common/MongoDbLogger';
+import MongoDbStore from '../../../common/MongoDbStore';
 import QueuedOperationModel from './models/QueuedOperationModel';
 import SidetreeError from '../../../common/SidetreeError';
 
@@ -20,27 +20,19 @@ interface IMongoQueuedOperation {
 /**
  * Operation queue used by the Batch Writer implemented using MongoDB.
  */
-export default class MongoDbOperationQueue implements IOperationQueue {
+export default class MongoDbOperationQueue extends MongoDbStore implements IOperationQueue {
   /** Collection name for queued operations. */
   public static readonly collectionName: string = 'queued-operations';
 
-  private collection: Collection<any> | undefined;
-
-  private db: Db | undefined;
-
   /**
-   * Initialize the MongoDB operation store.
+   * Creates a new instance of this object.
+   * @param serverUrl The target server url.
+   * @param databaseName The database name where the collection should be saved.
    */
-  public async initialize (serverUrl: string, databaseName: string) {
-    const client = await MongoClient.connect(serverUrl, {
-      useNewUrlParser: true,
-      logger: MongoDbLogger.customLogger,
-      monitorCommands: true,
-      loggerLevel: 'debug'
-    });
-    MongoDbLogger.setCommandLogger(client);
-    this.db = client.db(databaseName);
-    this.collection = await MongoDbOperationQueue.createCollectionIfNotExist(this.db);
+  public constructor (
+    serverUrl: string,
+    databaseName: string) {
+    super(serverUrl, MongoDbOperationQueue.collectionName, databaseName);
   }
 
   async enqueue (didUniqueSuffix: string, operationBuffer: Buffer) {
@@ -95,37 +87,6 @@ export default class MongoDbOperationQueue implements IOperationQueue {
   async getSize (): Promise<number> {
     const size = await this.collection!.estimatedDocumentCount();
     return size;
-  }
-
-  /**
-   * * Clears the unresolvable transaction store. Mainly used in tests.
-   */
-  public async clearCollection () {
-    await this.collection!.drop();
-    this.collection = await MongoDbOperationQueue.createCollectionIfNotExist(this.db!);
-  }
-
-  /**
-   * Creates the queued operation collection with indexes if it does not exists.
-   * @returns The existing collection if exists, else the newly created collection.
-   */
-  private static async createCollectionIfNotExist (db: Db): Promise<Collection<IMongoQueuedOperation>> {
-    // Get the names of existing collections.
-    const collections = await db.collections();
-    const collectionNames = collections.map(collection => collection.collectionName);
-
-    // If the queued operation collection exists, use it; else create it then use it.
-    let collection;
-    if (collectionNames.includes(this.collectionName)) {
-      collection = db.collection(this.collectionName);
-    } else {
-      collection = await db.createCollection(this.collectionName);
-      // Create an index on didUniqueSuffix make `contains()` operations more efficient.
-      // This is an unique index, so duplicate inserts are rejected.
-      await collection.createIndex({ didUniqueSuffix: 1 }, { unique: true });
-    }
-
-    return collection;
   }
 
   private static convertToQueuedOperationModel (mongoQueuedOperation: IMongoQueuedOperation): QueuedOperationModel {

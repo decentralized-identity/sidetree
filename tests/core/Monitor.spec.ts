@@ -8,11 +8,11 @@ describe('Monitor', async () => {
 
   describe('getOperationQueueSize()', async () => {
     it('should get operation queue size correctly.', async () => {
-      const monitor = new SidetreeMonitor();
+      const monitor = new SidetreeMonitor(testConfig);
       const operationQueueInitializeSpy = spyOn((monitor as any).operationQueue, 'initialize');
       const transactionStoreInitializeSpy = spyOn((monitor as any).transactionStore, 'initialize');
 
-      await monitor.initialize(testConfig, { } as any, { } as any);
+      await monitor.initialize({ } as any, { } as any);
       expect(operationQueueInitializeSpy).toHaveBeenCalledTimes(1);
       expect(transactionStoreInitializeSpy).toHaveBeenCalledTimes(1);
     });
@@ -20,7 +20,7 @@ describe('Monitor', async () => {
 
   describe('getOperationQueueSize()', async () => {
     it('should get operation queue size correctly.', async () => {
-      const monitor = new SidetreeMonitor();
+      const monitor = new SidetreeMonitor(testConfig);
       spyOn((monitor as any).operationQueue, 'getSize').and.returnValue(Promise.resolve(300));
 
       const output = await monitor.getOperationQueueSize();
@@ -30,7 +30,7 @@ describe('Monitor', async () => {
 
   describe('getWriterMaxBatchSize()', async () => {
     it('should get writer max batch size correctly.', async () => {
-      const monitor = new SidetreeMonitor();
+      const monitor = new SidetreeMonitor(testConfig);
       (monitor as any).blockchain = { getWriterValueTimeLock: () => { } };
       spyOn((monitor as any).blockchain, 'getWriterValueTimeLock');
       spyOn(BatchWriter, 'getNumberOfOperationsAllowed').and.returnValue(1000);
@@ -52,7 +52,7 @@ describe('Monitor', async () => {
         normalizedTransactionFee: 1
       };
 
-      const monitor = new SidetreeMonitor();
+      const monitor = new SidetreeMonitor(testConfig);
       spyOn((monitor as any).transactionStore as MongoDbTransactionStore, 'getLastTransaction').and.returnValue(Promise.resolve(mockTransaction));
 
       const output = await monitor.getLastProcessedTransaction();

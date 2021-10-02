@@ -57,7 +57,7 @@ export default class Core {
     this.blockchain = new Blockchain(config.blockchainServiceUri);
     this.downloadManager = new DownloadManager(config.maxConcurrentDownloads, this.cas);
     this.resolver = new Resolver(this.versionManager, this.operationStore);
-    this.transactionStore = new MongoDbTransactionStore();
+    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     // Only enable real blockchain time pull if observer is enabled
@@ -75,7 +75,7 @@ export default class Core {
       config.observingIntervalInSeconds
     );
 
-    this.monitor = new Monitor();
+    this.monitor = new Monitor(config);
   }
 
   /**
@@ -88,7 +88,7 @@ export default class Core {
 
     // DB initializations.
     await this.serviceStateStore.initialize();
-    await this.transactionStore.initialize(this.config.mongoDbConnectionString, this.config.databaseName);
+    await this.transactionStore.initialize();
     await this.unresolvableTransactionStore.initialize();
     await this.operationStore.initialize();
     await this.upgradeDatabaseIfNeeded();
@@ -119,7 +119,7 @@ export default class Core {
 
     this.downloadManager.start();
 
-    await this.monitor.initialize(this.config, this.versionManager, this.blockchain);
+    await this.monitor.initialize(this.versionManager, this.blockchain);
   }
 
   /**

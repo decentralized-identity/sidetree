@@ -80,7 +80,8 @@ describe('Core', async () => {
       const customLogger = {
         info: () => { customLoggerInvoked = true; },
         warn: () => { },
-        error: () => { }
+        error: () => { },
+        debug: () => { }
       };
 
       let customEvenEmitterInvoked = false;

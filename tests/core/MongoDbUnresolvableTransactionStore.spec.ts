@@ -9,7 +9,7 @@ import UnresolvableTransactionModel from '../../lib/core/models/UnresolvableTran
  * Creates a MongoDbUnresolvableTransactionStore and initializes it.
  */
 async function createIUnresolvableTransactionStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbUnresolvableTransactionStore> {
-  const unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(transactionStoreUri, databaseName, 1);
+  const unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(transactionStoreUri, databaseName);
   await unresolvableTransactionStore.initialize();
   return unresolvableTransactionStore;
 }

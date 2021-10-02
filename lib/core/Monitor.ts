@@ -17,16 +17,16 @@ export default class Monitor {
   private transactionStore: MongoDbTransactionStore;
   private versionManager!: VersionManager;
 
-  public constructor () {
-    this.operationQueue = new MongoDbOperationQueue();
-    this.transactionStore = new MongoDbTransactionStore();
+  public constructor (config: Config) {
+    this.operationQueue = new MongoDbOperationQueue(config.mongoDbConnectionString, config.databaseName);
+    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
   }
 
-  public async initialize (config: Config, versionManager: VersionManager, blockchain: Blockchain) {
+  public async initialize (versionManager: VersionManager, blockchain: Blockchain) {
     this.blockchain = blockchain;
     this.versionManager = versionManager;
-    await this.transactionStore.initialize(config.mongoDbConnectionString, config.databaseName);
-    await this.operationQueue.initialize(config.mongoDbConnectionString, config.databaseName);
+    await this.transactionStore.initialize();
+    await this.operationQueue.initialize();
   }
 
   /**
