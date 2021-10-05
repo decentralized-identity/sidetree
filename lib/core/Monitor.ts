@@ -13,16 +13,13 @@ import VersionManager from './VersionManager';
 export default class Monitor {
 
   private blockchain!: Blockchain;
-  private operationQueue: MongoDbOperationQueue;
-  private transactionStore: MongoDbTransactionStore;
+  private operationQueue!: MongoDbOperationQueue;
+  private transactionStore!: MongoDbTransactionStore;
   private versionManager!: VersionManager;
 
-  public constructor (config: Config) {
+  public async initialize (config: Config, versionManager: VersionManager, blockchain: Blockchain) {
     this.operationQueue = new MongoDbOperationQueue(config.mongoDbConnectionString, config.databaseName);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
-  }
-
-  public async initialize (versionManager: VersionManager, blockchain: Blockchain) {
     this.blockchain = blockchain;
     this.versionManager = versionManager;
     await this.transactionStore.initialize();
