@@ -2,9 +2,21 @@ import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import MongoDbTransactionStore from '../../lib/common/MongoDbTransactionStore';
 import { SidetreeMonitor } from '../../lib';
 import TransactionModel from '../../lib/common/models/TransactionModel';
+import MongoDb from '../common/MongoDb';
 
-fdescribe('Monitor', async () => {
+describe('Monitor', async () => {
   const testConfig = require('../json/config-test.json');
+  let mongoServiceAvailable = false;
+
+  beforeAll(async () => {
+    mongoServiceAvailable = await MongoDb.isServerAvailable(testConfig.mongoDbConnectionString);
+  });
+
+  beforeEach(async () => {
+    if (!mongoServiceAvailable) {
+      pending('MongoDB service not available');
+    }
+  });
 
   describe('getOperationQueueSize()', async () => {
     it('should get operation queue size correctly.', async () => {
