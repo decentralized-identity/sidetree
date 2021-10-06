@@ -9,8 +9,8 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
  * Creates a MongoDbTransactionStore and initializes it.
  */
 async function createTransactionStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbTransactionStore> {
-  const transactionStore = new MongoDbTransactionStore();
-  await transactionStore.initialize(transactionStoreUri, databaseName);
+  const transactionStore = new MongoDbTransactionStore(transactionStoreUri, databaseName);
+  await transactionStore.initialize();
   return transactionStore;
 }
 
@@ -63,7 +63,7 @@ describe('MongoDbTransactionStore', async () => {
   });
 
   it('should throw error if addTransaction throws a non 11000 error', async () => {
-    spyOn(transactionStore['transactionCollection'] as any, 'insertOne').and.throwError('Expected test error');
+    spyOn(transactionStore['collection'] as any, 'insertOne').and.throwError('Expected test error');
     try {
       await transactionStore.addTransaction({
         transactionNumber: 1,
@@ -91,7 +91,7 @@ describe('MongoDbTransactionStore', async () => {
     expect(collectionNames.includes(MongoDbTransactionStore.transactionCollectionName)).toBeFalsy();
 
     console.info(`Trigger initialization.`);
-    await transactionStore.initialize(config.mongoDbConnectionString, databaseName);
+    await transactionStore.initialize();
 
     console.info(`Verify collection exists now.`);
     collections = await db.collections();
@@ -137,7 +137,7 @@ describe('MongoDbTransactionStore', async () => {
     const transactionCount = 3;
     await generateAndStoreTransactions(transactionStore, transactionCount);
 
-    spyOn(transactionStore['transactionCollection'] as any, 'find').and.throwError('expected test error');
+    spyOn(transactionStore['collection'] as any, 'find').and.throwError('expected test error');
     const transactions = await transactionStore.getTransactionsLaterThan(1, 100);
     expect(transactions.length).toEqual(0);
   });

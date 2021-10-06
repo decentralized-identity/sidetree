@@ -1,14 +1,11 @@
-import { Collection, Db, Long, MongoClient } from 'mongodb';
-import Logger from '../../common/Logger';
+import { Long } from 'mongodb';
+import MongoDbStore from '../../common/MongoDbStore';
 import SavedLockModel from './../models/SavedLockedModel';
 
 /**
  * Encapsulates functionality to store the bitcoin lock information to Db.
  */
-export default class MongoDbLockTransactionStore {
-  private db: Db | undefined;
-  private lockCollection: Collection<any> | undefined;
-
+export default class MongoDbLockTransactionStore extends MongoDbStore {
   /** The collection name */
   public static readonly lockCollectionName = 'locks';
 
@@ -18,17 +15,9 @@ export default class MongoDbLockTransactionStore {
    * @param databaseName The database name where the collection should be saved.
    */
   public constructor (
-    private serverUrl: string,
-    private databaseName: string) {
-  }
-
-  /**
-   * Initializes this object by creating the required collection.
-   */
-  public async initialize () {
-    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
-    this.db = client.db(this.databaseName);
-    this.lockCollection = await MongoDbLockTransactionStore.creatLockCollectionIfNotExist(this.db);
+    serverUrl: string,
+    databaseName: string) {
+    super(serverUrl, MongoDbLockTransactionStore.lockCollectionName, databaseName);
   }
 
   /**
@@ -47,22 +36,14 @@ export default class MongoDbLockTransactionStore {
       type: bitcoinLock.type
     };
 
-    await this.lockCollection!.insertOne(lockInMongoDb);
-  }
-
-  /**
-   * Clears the store.
-   */
-  public async clearCollection () {
-    await this.lockCollection!.drop();
-    this.lockCollection = await MongoDbLockTransactionStore.creatLockCollectionIfNotExist(this.db!);
+    await this.collection!.insertOne(lockInMongoDb);
   }
 
   /**
    * Gets the latest lock (highest create timestamp) saved in the db; or undefined if nothing saved.
    */
   public async getLastLock (): Promise<SavedLockModel | undefined> {
-    const lastLocks = await this.lockCollection!
+    const lastLocks = await this.collection!
       .find()
       .limit(1)
       .sort({ createTimestamp: -1 })
@@ -75,23 +56,10 @@ export default class MongoDbLockTransactionStore {
     return lastLocks[0] as SavedLockModel;
   }
 
-  private static async creatLockCollectionIfNotExist (db: Db): Promise<Collection<SavedLockModel>> {
-    const collections = await db.collections();
-    const collectionNames = collections.map(collection => collection.collectionName);
-
-    // If 'locks' collection exists, use it; else create it.
-    let lockCollection;
-    if (collectionNames.includes(MongoDbLockTransactionStore.lockCollectionName)) {
-      Logger.info('Locks collection already exists.');
-      lockCollection = db.collection(MongoDbLockTransactionStore.lockCollectionName);
-    } else {
-      Logger.info('Locks collection does not exists, creating...');
-      lockCollection = await db.createCollection(MongoDbLockTransactionStore.lockCollectionName);
-
-      await lockCollection.createIndex({ createTimestamp: -1 });
-      Logger.info('Locks collection created.');
-    }
-
-    return lockCollection;
+  /**
+   * @inheritDoc
+   */
+  public async createIndex (): Promise<void> {
+    await this.collection.createIndex({ createTimestamp: -1 });
   }
 }

@@ -108,7 +108,7 @@ export default class BitcoinProcessor {
 
     this.serviceStateStore = new MongoDbServiceStateStore(config.mongoDbConnectionString, config.databaseName);
     this.blockMetadataStore = new MongoDbBlockMetadataStore(config.mongoDbConnectionString, config.databaseName);
-    this.transactionStore = new MongoDbTransactionStore();
+    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     this.spendingMonitor = new SpendingMonitor(config.bitcoinFeeSpendingCutoffPeriodInBlocks,
       BitcoinClient.convertBtcToSatoshis(config.bitcoinFeeSpendingCutoff),
@@ -165,7 +165,7 @@ export default class BitcoinProcessor {
     await this.versionManager.initialize(versionModels, this.config, this.blockMetadataStore);
     await this.serviceStateStore.initialize();
     await this.blockMetadataStore.initialize();
-    await this.transactionStore.initialize(this.config.mongoDbConnectionString, this.config.databaseName);
+    await this.transactionStore.initialize();
     await this.bitcoinClient.initialize();
     await this.mongoDbLockTransactionStore.initialize();
 

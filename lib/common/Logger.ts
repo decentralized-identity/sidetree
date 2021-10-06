@@ -18,6 +18,13 @@ export default class Logger {
   }
 
   /**
+   * Logs debug.
+   */
+  public static debug (data: any): void {
+    Logger.singleton.debug(data);
+  }
+
+  /**
    * Logs info.
    */
   public static info (data: any): void {

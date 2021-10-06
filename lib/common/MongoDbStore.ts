@@ -1,4 +1,4 @@
-import { Collection, Db, MongoClient } from 'mongodb';
+import { Collection, Db, LoggerState, MongoClient } from 'mongodb';
 import Logger from '../common/Logger';
 
 /**
@@ -14,6 +14,44 @@ export default class MongoDbStore {
   protected collection!: Collection<any>;
 
   /**
+   * Set the logger for mongodb command monitoring.
+   * @param client the mongodb client
+   */
+  public static enableCommandResultLogging (client: MongoClient) {
+    client.on('commandSucceeded', (event: any) => {
+      Logger.info(event);
+    });
+    client.on('commandFailed', (event: any) => {
+      Logger.warn(event);
+    });
+  }
+
+  /**
+   * The custom logger for general logging purpose in mongodb client
+   * @param _message The message is already included in the state so there is no need to log the message twice.
+   * @param state The complete logging event state
+   */
+  public static customLogger (_message: string | undefined, state: LoggerState | undefined): void {
+    if (state === undefined) {
+      return;
+    }
+
+    switch (state.type) {
+      case 'warn':
+        Logger.warn(state);
+        break;
+      case 'error':
+        Logger.error(state);
+        break;
+      case 'debug':
+        Logger.debug(state);
+        break;
+      default:
+        Logger.info(state);
+    }
+  };
+
+  /**
    * Constructs a `MongoDbStore`;
    */
   constructor (private serverUrl: string, private collectionName: string, private databaseName: string) { }
@@ -22,7 +60,14 @@ export default class MongoDbStore {
    * Initialize the MongoDB transaction store.
    */
   public async initialize (): Promise<void> {
-    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
+    // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
+    const client = await MongoClient.connect(this.serverUrl, {
+      useNewUrlParser: true,
+      logger: MongoDbStore.customLogger,
+      monitorCommands: true,
+      loggerLevel: 'debug'
+    });
+    MongoDbStore.enableCommandResultLogging(client);
     this.db = client.db(this.databaseName);
     await this.createCollectionIfNotExist(this.db);
   }

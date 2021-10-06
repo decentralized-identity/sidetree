@@ -9,4 +9,7 @@ nunitresults.xml
 .nyc_output/
 coverage/
 
+# Intellij
+.idea/
+
 style-conversion

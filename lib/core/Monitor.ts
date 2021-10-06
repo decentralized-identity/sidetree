@@ -12,21 +12,21 @@ import VersionManager from './VersionManager';
  */
 export default class Monitor {
 
-  private blockchain!: Blockchain;
+  private blockchain: Blockchain;
   private operationQueue: MongoDbOperationQueue;
   private transactionStore: MongoDbTransactionStore;
-  private versionManager!: VersionManager;
+  private readonly versionManager: VersionManager;
 
-  public constructor () {
-    this.operationQueue = new MongoDbOperationQueue();
-    this.transactionStore = new MongoDbTransactionStore();
-  }
-
-  public async initialize (config: Config, versionManager: VersionManager, blockchain: Blockchain) {
+  public constructor (config: Config, versionManager: VersionManager, blockchain: Blockchain) {
+    this.operationQueue = new MongoDbOperationQueue(config.mongoDbConnectionString, config.databaseName);
+    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
     this.blockchain = blockchain;
     this.versionManager = versionManager;
-    await this.transactionStore.initialize(config.mongoDbConnectionString, config.databaseName);
-    await this.operationQueue.initialize(config.mongoDbConnectionString, config.databaseName);
+  }
+
+  public async initialize () {
+    await this.transactionStore.initialize();
+    await this.operationQueue.initialize();
   }
 
   /**
