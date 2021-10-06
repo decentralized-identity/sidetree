@@ -75,7 +75,7 @@ export default class Core {
       config.observingIntervalInSeconds
     );
 
-    this.monitor = new Monitor();
+    this.monitor = new Monitor(this.config, this.versionManager, this.blockchain);
   }
 
   /**
@@ -119,7 +119,7 @@ export default class Core {
 
     this.downloadManager.start();
 
-    await this.monitor.initialize(this.config, this.versionManager, this.blockchain);
+    await this.monitor.initialize();
   }
 
   /**

@@ -2,26 +2,25 @@ import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import MongoDbTransactionStore from '../../lib/common/MongoDbTransactionStore';
 import { SidetreeMonitor } from '../../lib';
 import TransactionModel from '../../lib/common/models/TransactionModel';
-import MongoDb from '../common/MongoDb';
 
 describe('Monitor', async () => {
   const testConfig = require('../json/config-test.json');
-  let mongoServiceAvailable = false;
 
-  beforeAll(async () => {
-    mongoServiceAvailable = await MongoDb.isServerAvailable(testConfig.mongoDbConnectionString);
-  });
+  describe('getOperationQueueSize()', async () => {
+    it('should get operation queue size correctly.', async () => {
+      const monitor = new SidetreeMonitor(testConfig, { } as any, { } as any);
+      const operationQueueInitializeSpy = spyOn((monitor as any).operationQueue, 'initialize');
+      const transactionStoreInitializeSpy = spyOn((monitor as any).transactionStore, 'initialize');
 
-  beforeEach(async () => {
-    if (!mongoServiceAvailable) {
-      pending('MongoDB service not available');
-    }
+      await monitor.initialize();
+      expect(operationQueueInitializeSpy).toHaveBeenCalledTimes(1);
+      expect(transactionStoreInitializeSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('getOperationQueueSize()', async () => {
     it('should get operation queue size correctly.', async () => {
-      const monitor = new SidetreeMonitor();
-      await monitor.initialize(testConfig, { } as any, { } as any);
+      const monitor = new SidetreeMonitor(testConfig, { } as any, { } as any);
       spyOn((monitor as any).operationQueue, 'getSize').and.returnValue(Promise.resolve(300));
 
       const output = await monitor.getOperationQueueSize();
@@ -31,8 +30,7 @@ describe('Monitor', async () => {
 
   describe('getWriterMaxBatchSize()', async () => {
     it('should get writer max batch size correctly.', async () => {
-      const monitor = new SidetreeMonitor();
-      await monitor.initialize(testConfig, { } as any, { } as any);
+      const monitor = new SidetreeMonitor(testConfig, { } as any, { } as any);
       (monitor as any).blockchain = { getWriterValueTimeLock: () => { } };
       spyOn((monitor as any).blockchain, 'getWriterValueTimeLock');
       spyOn(BatchWriter, 'getNumberOfOperationsAllowed').and.returnValue(1000);
@@ -54,8 +52,7 @@ describe('Monitor', async () => {
         normalizedTransactionFee: 1
       };
 
-      const monitor = new SidetreeMonitor();
-      await monitor.initialize(testConfig, { } as any, { } as any);
+      const monitor = new SidetreeMonitor(testConfig, { } as any, { } as any);
       spyOn((monitor as any).transactionStore as MongoDbTransactionStore, 'getLastTransaction').and.returnValue(Promise.resolve(mockTransaction));
 
       const output = await monitor.getLastProcessedTransaction();
