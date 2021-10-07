@@ -4,10 +4,6 @@ import ILogger from './interfaces/ILogger';
  * Console Logger.
  */
 export default class ConsoleLogger implements ILogger {
-  debug (data: any): void {
-    console.debug(data);
-  }
-
   info (data: any): void {
     console.info(data);
   }

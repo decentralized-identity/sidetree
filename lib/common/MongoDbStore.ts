@@ -19,7 +19,9 @@ export default class MongoDbStore {
    */
   public static enableCommandResultLogging (client: MongoClient) {
     client.on('commandSucceeded', (event: any) => {
-      Logger.info(event);
+      if (!['ping', 'hello', 'isMaster', 'hostInfo'].includes(event.commandName)) {
+        Logger.info(event);
+      }
     });
     client.on('commandFailed', (event: any) => {
       Logger.warn(event);
@@ -43,9 +45,6 @@ export default class MongoDbStore {
       case 'error':
         Logger.error(state);
         break;
-      case 'debug':
-        Logger.debug(state);
-        break;
       default:
         Logger.info(state);
     }
@@ -65,7 +64,7 @@ export default class MongoDbStore {
       useNewUrlParser: true,
       logger: MongoDbStore.customLogger,
       monitorCommands: true,
-      loggerLevel: 'debug'
+      loggerLevel: 'error'
     });
     MongoDbStore.enableCommandResultLogging(client);
     this.db = client.db(this.databaseName);
