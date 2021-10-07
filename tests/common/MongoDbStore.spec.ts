@@ -57,10 +57,6 @@ describe('MongoDbStore', async () => {
     MongoDbStore.customLogger('message', state);
     expect(Logger.error).toHaveBeenCalledWith(state);
 
-    state.type = 'warn';
-    MongoDbStore.customLogger('message', state);
-    expect(Logger.warn).toHaveBeenCalledWith(state);
-
     state.type = 'whatever';
     MongoDbStore.customLogger('message', state);
     expect(Logger.info).toHaveBeenCalledWith(state);

@@ -39,9 +39,6 @@ export default class MongoDbStore {
     }
 
     switch (state.type) {
-      case 'warn':
-        Logger.warn(state);
-        break;
       case 'error':
         Logger.error(state);
         break;
