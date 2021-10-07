@@ -31,8 +31,6 @@ describe('MongoDbStore', async () => {
     expect(Logger.info).toHaveBeenCalledWith(jasmine.objectContaining({ commandName: 'find' }));
     await expectAsync(client.db('sidetree-test').collection('service').dropIndex('test')).toBeRejected();
     expect(Logger.warn).toHaveBeenCalledWith(jasmine.objectContaining({ commandName: 'dropIndexes' }));
-    await expectAsync(client.db('sidetree-test').collection('service').dropIndex('test')).toBeRejected();
-    expect(Logger.warn).toHaveBeenCalledWith(jasmine.objectContaining({ commandName: 'dropIndexes' }));
     client.emit('commandSucceeded', { commandName: 'ping' });
     expect(Logger.info).not.toHaveBeenCalledWith(jasmine.objectContaining({ commandName: 'ping' }));
   });
