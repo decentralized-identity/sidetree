@@ -31,13 +31,14 @@ describe('MongoDbStore', async () => {
     expect(Logger.info).toHaveBeenCalledWith(jasmine.objectContaining({ commandName: 'find' }));
     await expectAsync(client.db('sidetree-test').collection('service').dropIndex('test')).toBeRejected();
     expect(Logger.warn).toHaveBeenCalledWith(jasmine.objectContaining({ commandName: 'dropIndexes' }));
+    client.emit('commandSucceeded', { commandName: 'ping' });
+    expect(Logger.info).not.toHaveBeenCalledWith(jasmine.objectContaining({ commandName: 'ping' }));
   });
 
   it('should invoke logger with corresponding method according to the passed state', () => {
     spyOn(Logger, 'info');
     spyOn(Logger, 'warn');
     spyOn(Logger, 'error');
-    spyOn(Logger, 'debug');
     MongoDbStore.customLogger('message', undefined);
     expect(Logger.info).not.toHaveBeenCalled();
     const state = {
@@ -47,8 +48,6 @@ describe('MongoDbStore', async () => {
       pid: 0,
       type: 'debug'
     };
-    MongoDbStore.customLogger('message', state);
-    expect(Logger.debug).toHaveBeenCalledWith(state);
 
     state.type = 'info';
     MongoDbStore.customLogger('message', state);
@@ -57,10 +56,6 @@ describe('MongoDbStore', async () => {
     state.type = 'error';
     MongoDbStore.customLogger('message', state);
     expect(Logger.error).toHaveBeenCalledWith(state);
-
-    state.type = 'warn';
-    MongoDbStore.customLogger('message', state);
-    expect(Logger.warn).toHaveBeenCalledWith(state);
 
     state.type = 'whatever';
     MongoDbStore.customLogger('message', state);
