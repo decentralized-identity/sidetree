@@ -19,7 +19,9 @@ export default class MongoDbStore {
    */
   public static enableCommandResultLogging (client: MongoClient) {
     client.on('commandSucceeded', (event: any) => {
-      if (!['ping', 'hello', 'isMaster', 'hostInfo'].includes(event.commandName)) {
+      // Command name can have different casing in different MongoDB versions, so always compare lower case.
+      const lowerCaseCommandName = (event.commandName as string).toLowerCase();
+      if (!['ping', 'hello', 'ismaster', 'hostinfo'].includes(lowerCaseCommandName)) {
         Logger.info(event);
       }
     });
