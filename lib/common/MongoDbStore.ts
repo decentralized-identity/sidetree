@@ -19,7 +19,7 @@ export default class MongoDbStore {
    */
   public static enableCommandResultLogging (client: MongoClient) {
     client.on('commandSucceeded', (event: any) => {
-      if (!['ping', 'hello', 'isMaster', 'hostInfo'].includes(event.commandName)) {
+      if (!['ping', 'hello', 'ismaster', 'hostinfo'].includes(event.commandName)) {
         Logger.info(event);
       }
     });
