@@ -478,7 +478,7 @@ describe('Blockchain', async () => {
       done();
     });
 
-    it('should throw generic error if that is returned by the network call.', async (done) => {
+    it('should throw generic error if HTTP 200 is not returned by the network call.', async (done) => {
       const blockchainClient = new Blockchain('unused');
 
       const mockFetchResponse = {
