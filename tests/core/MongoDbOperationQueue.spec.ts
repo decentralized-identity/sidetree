@@ -1,6 +1,7 @@
 import Config from '../../lib/core/models/Config';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import IOperationQueue from '../../lib/core/versions/latest/interfaces/IOperationQueue';
+import { MongoClient } from 'mongodb';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationQueue from '../../lib/core/versions/latest/MongoDbOperationQueue';
 import SidetreeError from '../../lib/common/SidetreeError';
@@ -40,6 +41,11 @@ describe('MongoDbOperationQueue', async () => {
   beforeAll(async () => {
     mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
     if (mongoServiceAvailable) {
+      // Deleting collection before running the tests.
+      const client = await MongoClient.connect(config.mongoDbConnectionString);
+      const db = client.db(databaseName);
+      await db.dropCollection(MongoDbOperationQueue.collectionName);
+
       operationQueue = await createOperationQueue(config.mongoDbConnectionString, databaseName);
     }
   });
@@ -70,7 +76,7 @@ describe('MongoDbOperationQueue', async () => {
     }
   });
 
-  it('should deqeueue with correct count.', async () => {
+  it('should dequeue with correct count.', async () => {
     const operationCount = 3;
     const queuedOperations = await generateAndQueueOperations(operationQueue, operationCount);
 
