@@ -375,7 +375,7 @@ describe('BitcoinClient', async () => {
       await bitcoinClient['loadWallet']();
       expect(rpcSpy).toHaveBeenCalledWith({
         method: 'loadwallet',
-        params: ['sidetreeDefaultWallet']
+        params: ['sidetreeDefaultWallet', true]
       }, true, false);
       expect(loggerSpy).toHaveBeenCalledWith(`Wallet loaded with name "sidetreeDefaultWallet".`);
     });
@@ -388,7 +388,7 @@ describe('BitcoinClient', async () => {
       } catch {
         expect(rpcSpy).toHaveBeenCalledWith({
           method: 'loadwallet',
-          params: ['sidetreeDefaultWallet']
+          params: ['sidetreeDefaultWallet', true]
         }, true, false);
       }
     });
@@ -399,7 +399,7 @@ describe('BitcoinClient', async () => {
       await bitcoinClient['loadWallet']();
       expect(rpcSpy).toHaveBeenCalledWith({
         method: 'loadwallet',
-        params: ['sidetreeDefaultWallet']
+        params: ['sidetreeDefaultWallet', true]
       }, true, false);
       expect(loggerSpy).toHaveBeenCalledWith(`Wallet with name sidetreeDefaultWallet already loaded.`);
     });
