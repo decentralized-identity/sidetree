@@ -261,7 +261,7 @@ export default class BitcoinClient {
   private async loadWallet () {
     const request = {
       method: 'loadwallet',
-      params: [this.walletNameToUse] // the wallet name
+      params: [this.walletNameToUse, true] // the wallet name
     };
 
     // Intentionally not throwing because bitcoin returns 500 when a wallet is already loaded
