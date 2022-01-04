@@ -65,12 +65,4 @@ export default class TransactionNumber {
     const blockNumber = Math.trunc(transactionNumber / TransactionNumber.maxTransactionCountInBlock);
     return blockNumber;
   }
-
-  /**
-   * Returns the position component of transactionNumber
-   */
-  public static getPosition (transactionNumber: number) {
-    const transactionIndexInBlock = transactionNumber % TransactionNumber.maxTransactionCountInBlock;
-    return transactionIndexInBlock;
-  }
 }

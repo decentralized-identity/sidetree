@@ -34,11 +34,4 @@ describe('TransactionNumber', () => {
       expect(blockNumber).toEqual(11111111);
     });
   });
-
-  describe('getPosition()', () => {
-    it('should return position correctly given a transaction number.', async () => {
-      const transactionIndexInBlock = TransactionNumber.getPosition(77777777111111);
-      expect(transactionIndexInBlock).toEqual(111111);
-    });
-  });
 });
