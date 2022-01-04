@@ -928,7 +928,7 @@ export default class BitcoinClient {
       } else {
         networkError = new SidetreeError(
           ErrorCode.BitcoinClientFetchHttpCodeWithNetworkIssue,
-          `Unexpected HTTP response: [${response.status}]: ${bodyBuffer}`
+          `Network issue ith HTTP response: [${response.status}]: ${bodyBuffer}`
         );
 
         // Retry-able if one of these HTTP codes.
@@ -940,7 +940,10 @@ export default class BitcoinClient {
         }
 
         // All other error code, not connectivity related issue, fail straight away.
-        throw networkError;
+        throw new SidetreeError(
+          ErrorCode.BitcoinClientFetchUnexpectedError,
+          `Unexpected fetch HTTP response: [${response.status}]: ${bodyBuffer}`
+        );
       }
 
       // Else we can retry
