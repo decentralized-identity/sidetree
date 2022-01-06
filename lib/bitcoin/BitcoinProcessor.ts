@@ -206,7 +206,7 @@ export default class BitcoinProcessor {
   }
 
   private async upgradeDatabaseIfNeeded () {
-    const expectedDbVersion = '1.0.0';
+    const expectedDbVersion = '1.1.0';
     const savedServiceState = await this.serviceStateStore.get();
     const actualDbVersion = savedServiceState.databaseVersion;
 
@@ -228,6 +228,8 @@ export default class BitcoinProcessor {
 
     // Current upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
     const timer = timeSpan();
+    await this.blockMetadataStore.clearCollection();
+    await this.transactionStore.clearCollection();
 
     await this.serviceStateStore.put({ databaseVersion: expectedDbVersion });
 

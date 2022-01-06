@@ -168,7 +168,7 @@ export default class Core {
       return;
     }
 
-    const expectedDbVersion = '1.0.1';
+    const expectedDbVersion = '1.1.0';
     const savedServiceState = await this.serviceStateStore.get();
     const actualDbVersion = savedServiceState.databaseVersion;
 
@@ -194,6 +194,8 @@ export default class Core {
     await this.transactionStore.clearCollection();
     await this.unresolvableTransactionStore.clearCollection();
 
+    // There was a index change/addition in from v1.0.0 -> v1.0.1 of the DB, this line ensures new indices are created,
+    // but can be optional in the future when v1.0.0 is so old that we don't care about upgrade path from it.
     await this.operationStore.createIndex();
 
     await this.serviceStateStore.put({ databaseVersion: expectedDbVersion });
