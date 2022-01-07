@@ -928,7 +928,7 @@ export default class BitcoinClient {
       } else {
         networkError = new SidetreeError(
           ErrorCode.BitcoinClientFetchHttpCodeWithNetworkIssue,
-          `Network issue ith HTTP response: [${response.status}]: ${bodyBuffer}`
+          `Network issue with HTTP response: [${response.status}]: ${bodyBuffer}`
         );
 
         // Retry-able if one of these HTTP codes.
