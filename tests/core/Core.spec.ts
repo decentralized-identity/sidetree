@@ -201,7 +201,7 @@ describe('Core', async () => {
       const core = new Core(testConfig, testVersionConfig, mockCas);
 
       // Simulate that the saved database version is the same as the expected database version.
-      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ databaseVersion: '1.0.1' }));
+      spyOn(core['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ databaseVersion: '1.1.0' }));
 
       const serviceStateStorePutSpy = spyOn(core['serviceStateStore'], 'put');
       await (core as any).upgradeDatabaseIfNeeded();
@@ -229,7 +229,7 @@ describe('Core', async () => {
       expect(unresolvableTransactionStoreClearCollectionSpy).toHaveBeenCalled();
       expect(transactionStoreClearCollectionSpy).toHaveBeenCalled();
       expect(operationStoreCreateIndexSpy).toHaveBeenCalled();
-      expect(serviceStateStorePutSpy).toHaveBeenCalledWith({ databaseVersion: '1.0.1' });
+      expect(serviceStateStorePutSpy).toHaveBeenCalledWith({ databaseVersion: '1.1.0' });
     });
 
     it('should throw if attempting to run older code on newer DB.', async () => {

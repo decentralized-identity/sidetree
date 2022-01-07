@@ -1419,7 +1419,7 @@ describe('BitcoinClient', async () => {
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(() =>
         bitcoinClient['fetchWithRetry']('http://unused_path', { }, true), // true = timeout enabled.
-      ErrorCode.BitcoinClientFetchHttpCodeWithNetworkIssue
+        ErrorCode.BitcoinClientFetchUnexpectedError
       );
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
