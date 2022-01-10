@@ -14,6 +14,8 @@ Sidetree defines `published`, `updateCommitment`, and `recoveryCommitment` metho
    - `updateCommitment` is the commitment for the next update operation as defined in [commitment schemes](https://identity.foundation/sidetree/spec/#commitment-schemes).
    - `recoveryCommitment` is the commitment for the next recover or deactivate operation as defined in [commitment schemes](https://identity.foundation/sidetree/spec/#commitment-schemes).
 
+The DID Resolution Result response ****MUST**** contain a `Content-Type` HTTP header with value `application/ld+json;profile="https://w3id.org/did-resolution"`.
+
 ::: example
 ```json
 {
