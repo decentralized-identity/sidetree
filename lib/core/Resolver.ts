@@ -104,15 +104,18 @@ export default class Resolver {
    */
   private async applyRecoverAndDeactivateOperations (startingDidState: DidState, commitValueToOperationMap: Map<string, AnchoredOperationModel[]>)
     : Promise<DidState> {
-    let didState = startingDidState;
+    // This stores all commitment hash of the corresponding reveal value of operations that have been successfully applied,
+    // such that no infinite loop of logical operation chain can be created.
+    const commitValuesUsed = new Set<string>();
 
+    let didState = startingDidState;
     while (commitValueToOperationMap.has(didState.nextRecoveryCommitmentHash!)) {
       let operationsWithCorrectRevealValue: AnchoredOperationModel[] = commitValueToOperationMap.get(didState.nextRecoveryCommitmentHash!)!;
 
       // Sort using blockchain time.
       operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.sort((a, b) => a.transactionNumber - b.transactionNumber);
 
-      const newDidState: DidState | undefined = await this.applyFirstValidOperation(operationsWithCorrectRevealValue, didState);
+      const newDidState: DidState | undefined = await this.applyFirstValidOperation(operationsWithCorrectRevealValue, didState, commitValuesUsed);
 
       // We are done if we can't find a valid recover/deactivate operation to apply.
       if (newDidState === undefined) {
@@ -120,12 +123,15 @@ export default class Resolver {
       }
 
       // We reach here if we have successfully computed a new DID state.
-      didState = newDidState;
-
+      
       // If the previous applied operation is a deactivate. No need to continue further.
-      if (didState.nextRecoveryCommitmentHash === undefined) {
-        return didState;
+      if (newDidState.nextRecoveryCommitmentHash === undefined) {
+        return newDidState;
       }
+
+      // Record the commit value so that it is not used again.
+      commitValuesUsed.add(didState.nextUpdateCommitmentHash!);
+      didState = newDidState;
     }
 
     return didState;
@@ -136,15 +142,18 @@ export default class Resolver {
    */
   private async applyUpdateOperations (startingDidState: DidState, commitValueToOperationMap: Map<string, AnchoredOperationModel[]>)
     : Promise<DidState> {
-    let didState = startingDidState;
+    // This stores all commitment hash of the corresponding reveal value of operations that have been successfully applied,
+    // such that no infinite loop of logical operation chain can be created.
+    const commitValuesUsed = new Set<string>();
 
+    let didState = startingDidState;
     while (commitValueToOperationMap.has(didState.nextUpdateCommitmentHash!)) {
       let operationsWithCorrectRevealValue: AnchoredOperationModel[] = commitValueToOperationMap.get(didState.nextUpdateCommitmentHash!)!;
 
       // Sort using blockchain time.
       operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.sort((a, b) => a.transactionNumber - b.transactionNumber);
 
-      const newDidState: DidState | undefined = await this.applyFirstValidOperation(operationsWithCorrectRevealValue, didState);
+      const newDidState: DidState | undefined = await this.applyFirstValidOperation(operationsWithCorrectRevealValue, didState, commitValuesUsed);
 
       // We are done if we can't find a valid update operation to apply.
       if (newDidState === undefined) {
@@ -152,6 +161,8 @@ export default class Resolver {
       }
 
       // We reach here if we have successfully computed a new DID state.
+      // Record the commit value so that it is not used again.
+      commitValuesUsed.add(didState.nextUpdateCommitmentHash!);
       didState = newDidState;
     }
 
@@ -184,14 +195,21 @@ export default class Resolver {
   /**
    * @returns The new DID State if a valid operation is applied, `undefined` otherwise.
    */
-  private async applyFirstValidOperation (operations: AnchoredOperationModel[], originalDidState: DidState): Promise<DidState | undefined> {
-    let newDidState = originalDidState;
-
+  private async applyFirstValidOperation (operations: AnchoredOperationModel[], originalDidState: DidState, commitValuesUsed: Set<string>): Promise<DidState | undefined> {
     // Stop as soon as an operation is applied successfully.
     for (const operation of operations) {
-      newDidState = (await this.applyOperation(operation, newDidState))!;
+      const newDidState = (await this.applyOperation(operation, originalDidState))!;
 
-      // If operation matching the recovery commitment is applied.
+      // If the new DID state is referencing an already applied commit-reveal pair,
+      // then we must discard this "new DID state" as invalid, and move on to try the next operation.
+      // NOTE: Ideally we should perform this check BEFORE attempting applying the operation to the existing DID state,
+      // but the way the code is setup currently it is not easy to do. This optimization could be easier once the refactoring work below is done:
+      // TODO: https://github.com/decentralized-identity/sidetree/issues/442
+      if (Resolver.isCommitValueReused(originalDidState, newDidState, commitValuesUsed)) {
+        continue;
+      }
+
+      // If operation matching the commitment is applied.
       if (newDidState.lastOperationTransactionNumber !== originalDidState.lastOperationTransactionNumber) {
         return newDidState;
       }
@@ -200,6 +218,23 @@ export default class Resolver {
     // TODO: Issue 981 this can probably return old did state. https://github.com/decentralized-identity/sidetree/issues/981
     // Else we reach the end of operations without being able to apply any of them.
     return undefined;
+  }
+
+  /**
+   * Checks if the new DID state references a commitment hash that is already in use.
+   */
+  private static isCommitValueReused(oldDidState: DidState, newDidState: DidState, commitValuesUsed: Set<string>): boolean {
+    if (newDidState.nextUpdateCommitmentHash !== undefined && // This check is optional in pure JavaScript, but required for strongly typed Set in TypeScript.
+        commitValuesUsed.has(newDidState.nextUpdateCommitmentHash)) {
+      return true;
+    }
+
+    // Edge condition where the operation re-references the commitment hash that its own reveal value hashes to.
+    if (newDidState.nextUpdateCommitmentHash === oldDidState.nextUpdateCommitmentHash) {
+      return true;
+    }
+
+    return false;
   }
 
   /**

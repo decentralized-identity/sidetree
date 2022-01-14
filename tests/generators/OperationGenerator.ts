@@ -304,7 +304,7 @@ export default class OperationGenerator {
     const [additionalPublicKey, additionalPrivateKey] = await OperationGenerator.generateKeyPair(additionalKeyId);
 
     // Should really use an independent key, but reusing key for convenience in test.
-    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(additionalPublicKey);
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(additionalPublicKey.publicKeyJwk);
 
     const operationJson = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
       didUniqueSuffix,
@@ -330,7 +330,7 @@ export default class OperationGenerator {
   }
 
   /**
-   * Creates a named anchored operation model from `OperationModel`.
+   * Creates an anchored operation model from `OperationModel`.
    */
   public static createAnchoredOperationModelFromOperationModel (
     operationModel: OperationModel,
@@ -346,6 +346,30 @@ export default class OperationGenerator {
       transactionNumber,
       transactionTime
     };
+    return anchoredOperationModel;
+  }
+
+  /**
+   * Creates a anchored operation model from an operation request.
+   */
+  public static createAnchoredOperationModelFromRequest (
+    didUniqueSuffix: string,
+    operationRequest: { type: OperationType }, // Need to know at least the type.
+    transactionTime: number,
+    transactionNumber: number,
+    operationIndex: number
+  ): AnchoredOperationModel {
+    const operationBuffer = Buffer.from(JSON.stringify(operationRequest));
+
+    const anchoredOperationModel: AnchoredOperationModel = {
+      didUniqueSuffix,
+      type: operationRequest.type,
+      operationBuffer,
+      operationIndex,
+      transactionNumber,
+      transactionTime
+    };
+
     return anchoredOperationModel;
   }
 
