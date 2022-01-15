@@ -45,21 +45,22 @@ export default class OperationProcessor implements IOperationProcessor {
       throw new SidetreeError(ErrorCode.OperationProcessorUnknownOperationType);
     }
 
-    try {
-      // If the operation was not applied, log some info in case needed for debugging.
-      if (appliedDidState === undefined ||
-          appliedDidState.lastOperationTransactionNumber === previousOperationTransactionNumber) {
-        const index = anchoredOperationModel.operationIndex;
-        const time = anchoredOperationModel.transactionTime;
-        const number = anchoredOperationModel.transactionNumber;
-        const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-        Logger.info(`Ignored invalid operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
-      }
-    } catch (error) {
-      Logger.info(`Failed logging ${error}.`);
-      // If logging fails, just move on.
+    // If the operation was not applied, return undefined.
+    // TODO: https://github.com/decentralized-identity/sidetree/issues/1171:
+    //       Make OperationProcessor.applyXyxOperation() return undefined when unable to apply an operation,
+    //       Making the failure explicit is better than the current approach of inferring failure based on transaction number,
+    //       it will also be more consistent with the pattern used downstream.
+    if (appliedDidState === undefined ||
+        appliedDidState.lastOperationTransactionNumber === previousOperationTransactionNumber) {
+      const index = anchoredOperationModel.operationIndex;
+      const time = anchoredOperationModel.transactionTime;
+      const number = anchoredOperationModel.transactionNumber;
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      Logger.info(`Ignored invalid operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
+      return undefined;
     }
 
+    // Operation applied successfully.
     return appliedDidState;
   }
 

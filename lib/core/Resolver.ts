@@ -123,7 +123,7 @@ export default class Resolver {
       }
 
       // We reach here if we have successfully computed a new DID state.
-      
+
       // If the previous applied operation is a deactivate. No need to continue further.
       if (newDidState.nextRecoveryCommitmentHash === undefined) {
         return newDidState;
@@ -173,18 +173,17 @@ export default class Resolver {
    * Applies the given operation to the given DID state.
    * @param operation The operation to be applied.
    * @param didState The DID state to apply the operation on top of.
-   * @returns The resultant `DidState`. The given DID state is return if the given operation cannot be applied.
+   * @returns The resultant `DidState`. undefined if the given operation cannot be applied.
    */
   private async applyOperation (
     operation: AnchoredOperationModel,
     didState: DidState | undefined
   ): Promise<DidState | undefined> {
-    let appliedDidState = didState;
-
     // NOTE: MUST NOT throw error, else a bad operation can be used to denial resolution for a DID.
+    let appliedDidState;
     try {
       const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
-      appliedDidState = await operationProcessor.apply(operation, appliedDidState);
+      appliedDidState = await operationProcessor.apply(operation, didState);
     } catch (error) {
       Logger.info(`Skipped bad operation for DID ${operation.didUniqueSuffix} at time ${operation.transactionTime}. Error: ${SidetreeError.stringify(error)}`);
     }
@@ -195,10 +194,19 @@ export default class Resolver {
   /**
    * @returns The new DID State if a valid operation is applied, `undefined` otherwise.
    */
-  private async applyFirstValidOperation (operations: AnchoredOperationModel[], originalDidState: DidState, commitValuesUsed: Set<string>): Promise<DidState | undefined> {
+  private async applyFirstValidOperation (
+    operations: AnchoredOperationModel[],
+    originalDidState: DidState,
+    commitValuesUsed: Set<string>
+  ): Promise<DidState | undefined> {
     // Stop as soon as an operation is applied successfully.
     for (const operation of operations) {
-      const newDidState = (await this.applyOperation(operation, originalDidState))!;
+      const newDidState = await this.applyOperation(operation, originalDidState);
+
+      // If operation application is unsuccessful, try the next operation.
+      if (newDidState === undefined) {
+        continue;
+      }
 
       // If the new DID state is referencing an already applied commit-reveal pair,
       // then we must discard this "new DID state" as invalid, and move on to try the next operation.
@@ -209,13 +217,10 @@ export default class Resolver {
         continue;
       }
 
-      // If operation matching the commitment is applied.
-      if (newDidState.lastOperationTransactionNumber !== originalDidState.lastOperationTransactionNumber) {
-        return newDidState;
-      }
+      // Code reaches here if operation application is successful and commit-reveal pair is not reused.
+      return newDidState;
     }
 
-    // TODO: Issue 981 this can probably return old did state. https://github.com/decentralized-identity/sidetree/issues/981
     // Else we reach the end of operations without being able to apply any of them.
     return undefined;
   }
@@ -223,7 +228,7 @@ export default class Resolver {
   /**
    * Checks if the new DID state references a commitment hash that is already in use.
    */
-  private static isCommitValueReused(oldDidState: DidState, newDidState: DidState, commitValuesUsed: Set<string>): boolean {
+  private static isCommitValueReused (oldDidState: DidState, newDidState: DidState, commitValuesUsed: Set<string>): boolean {
     if (newDidState.nextUpdateCommitmentHash !== undefined && // This check is optional in pure JavaScript, but required for strongly typed Set in TypeScript.
         commitValuesUsed.has(newDidState.nextUpdateCommitmentHash)) {
       return true;

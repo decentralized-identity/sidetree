@@ -40,7 +40,7 @@ export default class DocumentComposer {
         const id = '#' + publicKey.id;
         const didDocumentPublicKey = {
           id: id,
-          controller: '',
+          controller: did.isShortForm ? did.shortForm : did.longForm,
           type: publicKey.type,
           publicKeyJwk: publicKey.publicKeyJwk
         };
@@ -51,7 +51,7 @@ export default class DocumentComposer {
         verificationMethod.push(didDocumentPublicKey);
 
         if (purposeSet.size > 0) {
-          const reference = didDocumentPublicKey.controller + didDocumentPublicKey.id;
+          const reference = didDocumentPublicKey.id;
 
           for (const purpose of purposeSet) {
             if (!verificationRelationships.has(purpose)) {

@@ -8,11 +8,10 @@ export default interface IOperationProcessor {
 
   /**
    * Applies an operation on top of the given DID state.
-   * In the case of an invalid operation, the resultant DID state will remain the same.
    *
    * @param operation The operation to apply against the given DID Document (if any).
    * @param didState The DID state to apply the operation no top of. Needs to be `undefined` if the operation to be applied is a create operation.
-   * @returns The resultant `DidState`.
+   * @returns The resultant `DidState`; undefined if operation failed to be applied.
    */
   apply (
     operation: AnchoredOperationModel,

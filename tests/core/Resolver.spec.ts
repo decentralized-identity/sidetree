@@ -461,7 +461,8 @@ describe('Resolver', () => {
       const didSuffix = createOperationData.createOperation.didUniqueSuffix;
 
       // Create the 1st update.
-      const commitmentHashFor2ndUpdate = Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.updatePublicKey); // Intentionally reuse the same update key causing a commit-reveal value loop.
+      // Intentionally reuse the same update key causing a commit-reveal value loop.
+      const commitmentHashFor2ndUpdate = Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.updatePublicKey);
       const patchesFor1stUpdate = [{
         action: PatchAction.Replace,
         document: {
@@ -487,7 +488,8 @@ describe('Resolver', () => {
 
       const newDidState: DidState = await (resolver as any).applyUpdateOperations(initialDidState, updateCommitValueToOperationMap);
 
-      // Expecting the new state to contain info of the initial create operation only, because the 2nd operation is invalid due to its reuse/circular reference of commitment hash.
+      // Expecting the new state to contain info of the initial create operation only,
+      // because the 2nd operation is invalid due to its reuse/circular reference of commitment hash.
       expect(newDidState.lastOperationTransactionNumber).toEqual(1);
 
       done();
@@ -522,7 +524,8 @@ describe('Resolver', () => {
       const anchoredUpdate1 = OperationGenerator.createAnchoredOperationModelFromRequest(didSuffix, update1Request, 11, 11, 11);
 
       // Create the 2nd update.
-      const commitmentHashFor3rdUpdate = Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.updatePublicKey); // Intentionally reuse the same update key causing a commit-reveal value loop.
+      // Intentionally reuse the same update key causing a commit-reveal value loop.
+      const commitmentHashFor3rdUpdate = Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.updatePublicKey);
       const patchesFor2ndUpdate = [{
         action: PatchAction.Replace,
         document: {
@@ -548,7 +551,8 @@ describe('Resolver', () => {
 
       const newDidState: DidState = await (resolver as any).applyUpdateOperations(initialDidState, updateCommitValueToOperationMap);
 
-      // Expecting the new state to contain info of the first update operation only, because the 2nd update operation is invalid due to its reuse/circular reference of commitment hash.
+      // Expecting the new state to contain info of the first update operation only,
+      // because the 2nd update operation is invalid due to its reuse/circular reference of commitment hash.
       expect(newDidState.lastOperationTransactionNumber).toEqual(11);
 
       done();
