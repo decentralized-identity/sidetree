@@ -408,6 +408,74 @@ describe('Resolver', () => {
       expect(newDidState.nextRecoveryCommitmentHash).toEqual(createOperationData.operationRequest.suffixData.recoveryCommitment);
       done();
     });
+
+    it('should not allow reuse of commit value - operation referencing itself.', async (done) => {
+      // Setting up initial DID state for the test.
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
+      const initialDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
+      const didSuffix = createOperationData.createOperation.didUniqueSuffix;
+
+      // Create the 1st recover operation.
+      const documentFor1stRecovery = { };
+      const recovery1Request = await OperationGenerator.createRecoverOperationRequest(
+        createOperationData.createOperation.didUniqueSuffix,
+        createOperationData.recoveryPrivateKey,
+        createOperationData.recoveryPublicKey, // Intentionally reuse the same recovery key causing a commit-reveal value loop.
+        OperationGenerator.generateRandomHash(),
+        documentFor1stRecovery
+      );
+      const anchoredRecovery1 = OperationGenerator.createAnchoredOperationModelFromRequest(didSuffix, recovery1Request, 2, 2, 2);
+
+      const recoveryCommitValueToOperationMap: Map<string, AnchoredOperationModel[]> =
+        await (resolver as any).constructCommitValueToOperationLookupMap([anchoredRecovery1]);
+
+      const newDidState: DidState = await (resolver as any).applyRecoverAndDeactivateOperations(initialDidState, recoveryCommitValueToOperationMap);
+
+      // Expecting the new state to contain info of the initial create operation only,
+      // because the 2nd operation is invalid due to its reuse/circular reference of commitment hash.
+      expect(newDidState.lastOperationTransactionNumber).toEqual(1);
+
+      done();
+    });
+
+    it('should not allow reuse of commit value - operation referencing an earlier operation.', async (done) => {
+      // Setting up initial DID state for the test.
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
+      const initialDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
+      const didSuffix = createOperationData.createOperation.didUniqueSuffix;
+
+      // Create the 1st recover operation.
+      const [publicKeyFor2ndRecovery, privateKeyFor2ndRecovery] = await Jwk.generateEs256kKeyPair();
+      const recovery1Request = await OperationGenerator.createRecoverOperationRequest(
+        createOperationData.createOperation.didUniqueSuffix,
+        createOperationData.recoveryPrivateKey,
+        publicKeyFor2ndRecovery,
+        OperationGenerator.generateRandomHash(), // Unused next update commitment.
+        { }
+      );
+      const anchoredRecovery1 = OperationGenerator.createAnchoredOperationModelFromRequest(didSuffix, recovery1Request, 11, 11, 11);
+
+      // Create the 2nd recovery.
+      const recovery2Request = await OperationGenerator.createRecoverOperationRequest(
+        createOperationData.createOperation.didUniqueSuffix,
+        privateKeyFor2ndRecovery,
+        createOperationData.recoveryPublicKey, // Intentionally reuse the same recovery key in the create operation causing a commit-reveal value loop.
+        OperationGenerator.generateRandomHash(), // Unused next update commitment.
+        { }
+      );
+      const anchoredRecovery2 = OperationGenerator.createAnchoredOperationModelFromRequest(didSuffix, recovery2Request, 22, 22, 22);
+
+      const commitValueToOperationMap: Map<string, AnchoredOperationModel[]> =
+        await (resolver as any).constructCommitValueToOperationLookupMap([anchoredRecovery1, anchoredRecovery2]);
+
+      const newDidState: DidState = await (resolver as any).applyRecoverAndDeactivateOperations(initialDidState, commitValueToOperationMap);
+
+      // Expecting the new state to contain info of the first recover operation only,
+      // because the 2nd recover operation is invalid due to its reuse/circular reference of commitment hash.
+      expect(newDidState.lastOperationTransactionNumber).toEqual(11);
+
+      done();
+    });
   });
 
   describe('applyUpdateOperations()', () => {
@@ -482,7 +550,6 @@ describe('Resolver', () => {
       );
       const anchoredUpdate1 = OperationGenerator.createAnchoredOperationModelFromRequest(didSuffix, update1Request, 2, 2, 2);
 
-      // Intentionally using the resolver's map construction method to test operations with the same reveal value are placed in the same array.
       const updateCommitValueToOperationMap: Map<string, AnchoredOperationModel[]> =
         await (resolver as any).constructCommitValueToOperationLookupMap([anchoredUpdate1]);
 
@@ -545,7 +612,6 @@ describe('Resolver', () => {
       );
       const anchoredUpdate2 = OperationGenerator.createAnchoredOperationModelFromRequest(didSuffix, update2Request, 22, 22, 22);
 
-      // Intentionally using the resolver's map construction method to test operations with the same reveal value are placed in the same array.
       const updateCommitValueToOperationMap: Map<string, AnchoredOperationModel[]> =
         await (resolver as any).constructCommitValueToOperationLookupMap([anchoredUpdate1, anchoredUpdate2]);
 

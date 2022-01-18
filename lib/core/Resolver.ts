@@ -130,7 +130,7 @@ export default class Resolver {
       }
 
       // Record the commit value so that it is not used again.
-      commitValuesUsed.add(didState.nextUpdateCommitmentHash!);
+      commitValuesUsed.add(didState.nextRecoveryCommitmentHash!);
       didState = newDidState;
     }
 
@@ -213,7 +213,7 @@ export default class Resolver {
       // NOTE: Ideally we should perform this check BEFORE attempting applying the operation to the existing DID state,
       // but the way the code is setup currently it is not easy to do. This optimization could be easier once the refactoring work below is done:
       // TODO: https://github.com/decentralized-identity/sidetree/issues/442
-      if (Resolver.isCommitValueReused(originalDidState, newDidState, commitValuesUsed)) {
+      if (Resolver.isCommitValueReused(operation.type, originalDidState, newDidState, commitValuesUsed)) {
         continue;
       }
 
@@ -228,7 +228,18 @@ export default class Resolver {
   /**
    * Checks if the new DID state references a commitment hash that is already in use.
    */
-  private static isCommitValueReused (oldDidState: DidState, newDidState: DidState, commitValuesUsed: Set<string>): boolean {
+   private static isCommitValueReused (operationType: OperationType, oldDidState: DidState, newDidState: DidState, commitValuesUsed: Set<string>): boolean {
+    if (operationType === OperationType.Update) {
+      return this.isUpdateCommitValueReused(oldDidState, newDidState, commitValuesUsed);
+    } else { // Recovery/Deactivate path.
+      return this.isRecoverCommitValueReused(oldDidState, newDidState, commitValuesUsed);
+    }
+  }
+
+  /**
+   * Checks if the new DID state references an update commitment hash that is already in use.
+   */
+  private static isUpdateCommitValueReused (oldDidState: DidState, newDidState: DidState, commitValuesUsed: Set<string>): boolean {
     if (newDidState.nextUpdateCommitmentHash !== undefined && // This check is optional in pure JavaScript, but required for strongly typed Set in TypeScript.
         commitValuesUsed.has(newDidState.nextUpdateCommitmentHash)) {
       return true;
@@ -236,6 +247,23 @@ export default class Resolver {
 
     // Edge condition where the operation re-references the commitment hash that its own reveal value hashes to.
     if (newDidState.nextUpdateCommitmentHash === oldDidState.nextUpdateCommitmentHash) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Checks if the new DID state references a recover commitment hash that is already in use.
+   */
+   private static isRecoverCommitValueReused (oldDidState: DidState, newDidState: DidState, commitValuesUsed: Set<string>): boolean {
+    if (newDidState.nextRecoveryCommitmentHash !== undefined && // This check is optional in pure JavaScript, but required for strongly typed Set in TypeScript.
+        commitValuesUsed.has(newDidState.nextRecoveryCommitmentHash)) {
+      return true;
+    }
+
+    // Edge condition where the operation re-references the commitment hash that its own reveal value hashes to.
+    if (newDidState.nextRecoveryCommitmentHash === oldDidState.nextRecoveryCommitmentHash) {
       return true;
     }
 
