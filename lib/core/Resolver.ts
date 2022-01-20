@@ -104,7 +104,7 @@ export default class Resolver {
    */
   private async applyRecoverAndDeactivateOperations (startingDidState: DidState, commitValueToOperationMap: Map<string, AnchoredOperationModel[]>)
     : Promise<DidState> {
-    // This stores all commitment hash of the corresponding reveal value of operations that have been successfully applied,
+    // This stores all commitment hashes of the corresponding reveal values of the operations that have been successfully applied,
     // such that no infinite loop of logical operation chain can be created.
     const commitValuesUsed = new Set<string>();
 
@@ -142,7 +142,7 @@ export default class Resolver {
    */
   private async applyUpdateOperations (startingDidState: DidState, commitValueToOperationMap: Map<string, AnchoredOperationModel[]>)
     : Promise<DidState> {
-    // This stores all commitment hash of the corresponding reveal value of operations that have been successfully applied,
+    // This stores all commitment hashes of the corresponding reveal values of the operations that have been successfully applied,
     // such that no infinite loop of logical operation chain can be created.
     const commitValuesUsed = new Set<string>();
 
