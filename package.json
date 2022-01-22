@@ -16,7 +16,7 @@
     "jose": "1.28.1",
     "mongodb": "3.6.4",
     "multihashes": "0.4.14",
-    "node-fetch": "2.6.1",
+    "node-fetch": "3.1.1",
     "priorityqueue": "1.0.0",
     "semver": "7.3.5",
     "time-span": "3.1.0",
