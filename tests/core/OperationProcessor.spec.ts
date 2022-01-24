@@ -12,7 +12,6 @@ import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import JsObject from '../../lib/core/versions/latest/util/JsObject';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
-import Logger from '../../lib/common/Logger';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import Multihash from '../../lib/core/versions/latest/Multihash';
@@ -383,7 +382,6 @@ describe('OperationProcessor', async () => {
     let signingPrivateKey: JwkEs256k;
     let namedAnchoredCreateOperationModel: AnchoredOperationModel;
     let didState: DidState | undefined;
-    let nextRecoveryCommitmentHash: string;
     let verifyEncodedMultihashForContentSpy: jasmine.Spy;
 
     // Create a DID before each test.
@@ -396,7 +394,6 @@ describe('OperationProcessor', async () => {
       // Generate key(s) and service(s) to be included in the DID Document.
       [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
-      nextRecoveryCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey);
       const services = OperationGenerator.generateServices(['dummyHubUri']);
 
       // Create the initial create operation.
@@ -446,32 +443,12 @@ describe('OperationProcessor', async () => {
         .toBeRejectedWith(new SidetreeError(ErrorCode.OperationProcessorUnknownOperationType));
     });
 
-    it('should continue if logging of an invalid operation application throws for unexpected reason', async () => {
-      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
-
-      // Simulating the logging of invalid operation throws an error.
-      spyOn(Logger, 'info').and.callFake(
-        (data: string) => {
-          if (data.startsWith('Ignored invalid operation')) {
-            throw new Error('An error message.');
-          }
-        }
-      );
-
-      const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, didState);
-      expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-      expect(newDidState!.document).toBeDefined();
-      expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
-    });
-
     describe('applyCreateOperation()', () => {
       it('should not apply the create operation if a DID state already exists.', async () => {
         const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
 
         const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, didState);
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-        expect(newDidState!.document).toBeDefined();
-        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
+        expect(newDidState).toBeUndefined();
       });
 
       it('should apply the create operation with { } as document if encoded data and suffix data do not match', async () => {
@@ -542,11 +519,7 @@ describe('OperationProcessor', async () => {
         };
 
         const newDidState = await operationProcessor.apply(anchoredUpdateOperationModel, didState);
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-        expect(newDidState!.document).toBeDefined();
-
-        // The count of public keys should remain 1, not 2.
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
+        expect(newDidState).toBeUndefined();
       });
 
       it('should not apply update operation if signature is invalid.', async () => {
@@ -570,11 +543,7 @@ describe('OperationProcessor', async () => {
         };
 
         const newDidState = await operationProcessor.apply(anchoredUpdateOperationModel, didState);
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-        expect(newDidState!.document).toBeDefined();
-
-        // The count of public signing keys should remain 1, not 2.
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
+        expect(newDidState).toBeUndefined();
       });
 
       it('should not apply update operation if updateKey is invalid', async () => {
@@ -599,11 +568,7 @@ describe('OperationProcessor', async () => {
         };
 
         const newDidState = await operationProcessor.apply(anchoredUpdateOperationModel, didState);
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-        expect(newDidState!.document).toBeDefined();
-
-        // The count of public keys should remain 1, not 2.
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
+        expect(newDidState).toBeUndefined();
       });
 
       it('should not apply update operation if delta is undefined', async () => {
@@ -633,11 +598,7 @@ describe('OperationProcessor', async () => {
         spyOn(UpdateOperation, 'parse').and.returnValue(Promise.resolve(modifiedUpdateOperation));
 
         const newDidState = await operationProcessor.apply(anchoredUpdateOperationModel, didState);
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-        expect(newDidState!.document).toBeDefined();
-
-        // The count of public keys should remain 1, not 2.
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
+        expect(newDidState).toBeUndefined();
       });
 
       it('should not apply update operation if delta does not match delta hash', async () => {
@@ -667,11 +628,7 @@ describe('OperationProcessor', async () => {
         spyOn(UpdateOperation, 'parse').and.returnValue(Promise.resolve(modifiedUpdateOperation));
 
         const newDidState = await operationProcessor.apply(anchoredUpdateOperationModel, didState);
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-        expect(newDidState!.document).toBeDefined();
-
-        // The count of public keys should remain 1, not 2.
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
+        expect(newDidState).toBeUndefined();
       });
 
       it('should treat update a success and increment update commitment if any patch failed to apply.', async () => {
@@ -724,10 +681,7 @@ describe('OperationProcessor', async () => {
         const anchoredRecoverOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(operationData.recoverOperation, 2, 2, 2);
 
         const newDidState = await operationProcessor.apply(anchoredRecoverOperationModel, didState);
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-
-        // Verify that the recovery commitment is still the same as prior to the application of the recover operation.
-        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
+        expect(newDidState).toBeUndefined();
       });
 
       it('should not apply if recovery signature is invalid.', async () => {
@@ -744,10 +698,7 @@ describe('OperationProcessor', async () => {
         spyOn(RecoverOperation, 'parse').and.returnValue(Promise.resolve(modifiedResult));
 
         const newDidState = await operationProcessor.apply(anchoredRecoverOperationModel, didState);
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-
-        // Verify that the recovery commitment is still the same as prior to the application of the recover operation.
-        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
+        expect(newDidState).toBeUndefined();
       });
 
       it('should apply successfully with resultant document being { } and advanced commit reveal when document composer fails to apply patches.', async () => {
@@ -868,10 +819,7 @@ describe('OperationProcessor', async () => {
         const newDidState = await operationProcessor.apply(anchoredDeactivateOperationModel, didState);
 
         // Expecting resulting DID state to still be the same as prior to attempting to apply the invalid deactivate operation.
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-        expect(newDidState!.document).toBeDefined();
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
-        expect(newDidState!.nextUpdateCommitmentHash).toEqual(didState!.nextUpdateCommitmentHash);
+        expect(newDidState).toBeUndefined();
       });
 
       it('should not apply if signature is invalid.', async () => {
@@ -888,10 +836,7 @@ describe('OperationProcessor', async () => {
         const newDidState = await operationProcessor.apply(anchoredDeactivateOperationModel, didState);
 
         // Expecting resulting DID state to still be the same as prior to attempting to apply the invalid deactivate operation.
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-        expect(newDidState!.document).toBeDefined();
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
-        expect(newDidState!.nextUpdateCommitmentHash).toEqual(didState!.nextUpdateCommitmentHash);
+        expect(newDidState).toBeUndefined();
       });
     });
   });
