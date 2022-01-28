@@ -8,4 +8,5 @@ export default interface PublicKeyModel {
   type: string;
   publicKeyJwk: any;
   purposes?: PublicKeyPurpose[];
+  controller?: string;
 }
