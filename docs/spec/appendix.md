@@ -77,4 +77,4 @@ The following operation inputs are in the form of Sidetree REST API Operations.
 ```
 
 ### Acknowledgements
-Transmute received funding from the United States Department of Homeland Security's (US DHS) Silicon Valley Innovation Program to contribute to this work item under contracts 70RSAT20T00000003, and 70RSAT20T00000033. This work item does not necessarily reflect the position or the policy of the U.S. Government and no official endorsement should be inferred.
+Transmute received funding from the United States Department of Homeland Security's (US DHS) Silicon Valley Innovation Program to contribute to this work item under contracts 70RSAT20T00000003, and 70RSAT20T00000033. This work item does not necessarily reflect the position or the policy of the U.S. Government and no official endorsement should be inferred. DIF is not lending or implying support/affiliation with the outside entity as a part of the acknowledgement.
