@@ -3,6 +3,7 @@ import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './
 import EventCode from './EventCode';
 import EventEmitter from '../common/EventEmitter';
 import IBlockchain from './interfaces/IBlockchain';
+import IConfirmationStore from './interfaces/IConfirmationStore';
 import IOperationStore from './interfaces/IOperationStore';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionStore from './interfaces/ITransactionStore';
@@ -44,6 +45,7 @@ export default class Observer {
     private operationStore: IOperationStore,
     private transactionStore: ITransactionStore,
     private unresolvableTransactionStore: IUnresolvableTransactionStore,
+    private confirmationStore: IConfirmationStore,
     private observingIntervalInSeconds: number) {
     this.throughputLimiter = new ThroughputLimiter(versionManager);
   }
@@ -124,6 +126,7 @@ export default class Observer {
           this.transactionsUnderProcessing.push(transactionUnderProcessing);
           // Intentionally not awaiting on downloading and processing each operation batch.
           this.processTransaction(transaction, transactionUnderProcessing);
+          await this.confirmationStore.confirm(transaction.anchorString, transaction.transactionTime);
         }
 
         // NOTE: Blockchain reorg has happened for sure only if `invalidTransactionNumberOrTimeHash` AND
@@ -339,6 +342,10 @@ export default class Observer {
     await this.operationStore.delete(bestKnownValidRecentTransactionNumber);
 
     await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
+
+    for (const transaction of await this.transactionStore.getTransactionsLaterThan(bestKnownValidRecentTransactionNumber, undefined)) {
+      await this.confirmationStore.confirm(transaction.anchorString, undefined);
+    }
 
     // NOTE: MUST do steps below LAST in this particular order to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
     await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);

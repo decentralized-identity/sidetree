@@ -5,6 +5,7 @@ import DownloadManager from './DownloadManager';
 import IBatchWriter from './interfaces/IBatchWriter';
 import IBlockchain from './interfaces/IBlockchain';
 import ICas from './interfaces/ICas';
+import IConfirmationStore from './interfaces/IConfirmationStore';
 import IOperationProcessor from './interfaces/IOperationProcessor';
 import IOperationStore from './interfaces/IOperationStore';
 import IRequestHandler from './interfaces/IRequestHandler';
@@ -55,7 +56,8 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
     downloadManager: DownloadManager,
     operationStore: IOperationStore,
     resolver: Resolver,
-    transactionStore: ITransactionStore
+    transactionStore: ITransactionStore,
+    confirmationStore: IConfirmationStore
   ) {
     // NOTE: In principal each version of the interface implementations can have different constructors,
     // but we currently keep the constructor signature the same as much as possible for simple instance construction,
@@ -76,7 +78,7 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
       this.transactionSelectors.set(version, transactionSelector);
 
       const BatchWriter = await this.loadDefaultExportsForVersion(version, 'BatchWriter');
-      const batchWriter = new BatchWriter(operationQueue, blockchain, cas, this);
+      const batchWriter = new BatchWriter(operationQueue, blockchain, cas, this, this.config.minConfirmationBetweenWrites, confirmationStore);
       this.batchWriters.set(version, batchWriter);
 
       const OperationProcessor = await this.loadDefaultExportsForVersion(version, 'OperationProcessor');
