@@ -1,4 +1,3 @@
-import IConfirmationStore from '../../interfaces/IConfirmationStore';
 import AnchoredData from './models/AnchoredData';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import ChunkFile from './ChunkFile';
@@ -10,6 +9,7 @@ import FeeManager from './FeeManager';
 import IBatchWriter from '../../interfaces/IBatchWriter';
 import IBlockchain from '../../interfaces/IBlockchain';
 import ICas from '../../interfaces/ICas';
+import IConfirmationStore from '../../interfaces/IConfirmationStore';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import LogColor from '../../../common/LogColor';

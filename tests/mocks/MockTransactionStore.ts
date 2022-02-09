@@ -55,8 +55,16 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
     throw new Error('Not implemented.');
   }
 
-  public async getTransactionsLaterThan (_transactionNumber: number | undefined, _max: number): Promise<TransactionModel[]> {
-    throw new Error('Not implemented.');
+  public async getTransactionsLaterThan (transactionNumber: number | undefined, max: number | undefined): Promise<TransactionModel[]> {
+    let transactions = this.processedTransactions;
+    if (transactionNumber !== undefined) {
+      transactions = transactions.filter(entry => entry.transactionTime > transactionNumber);
+    }
+    if (max !== undefined) {
+      transactions = transactions.slice(0, max);
+    }
+
+    return transactions;
   }
 
   async recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void> {

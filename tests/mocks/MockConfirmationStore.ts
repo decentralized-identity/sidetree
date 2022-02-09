@@ -10,7 +10,11 @@ interface ConfirmationModel {
 }
 
 export default class MockConfirmationStore implements IConfirmationStore {
-  private readonly entries: ConfirmationModel[] = [];
+  private entries: ConfirmationModel[] = [];
+  public clear () : void{
+    this.entries = [];
+  }
+
   public async confirm (anchorString: string, confirmedAt: number | undefined): Promise<void> {
     const found = this.entries.find(entry => entry.anchorString === anchorString);
     if (found !== undefined) {

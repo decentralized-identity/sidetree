@@ -26,7 +26,7 @@ import { TransactionProcessingStatus } from '../../lib/core/models/TransactionUn
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 
-fdescribe('Observer', async () => {
+describe('Observer', async () => {
   const config = require('../json/config-test.json');
 
   let observer: Observer;
@@ -586,6 +586,7 @@ fdescribe('Observer', async () => {
   describe('revertInvalidTransactions', () => {
     it('should delete all operations if last known valid transaction does not exist', async () => {
       spyOn(transactionStore, 'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve([]));
+      spyOn(transactionStore, 'getTransactionsLaterThan').and.returnValue(Promise.resolve([]));
       spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(undefined));
 
       const operationStoreDelteSpy = spyOn(observer['operationStore'], 'delete').and.returnValue(Promise.resolve());
