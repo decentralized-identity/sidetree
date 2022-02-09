@@ -12,6 +12,7 @@ import ITransactionProcessor from '../../lib/core/interfaces/ITransactionProcess
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Ipfs from '../../lib/ipfs/Ipfs';
 import Logger from '../../lib/common/Logger';
+import MockConfirmationStore from '../mocks/MockConfirmationStore';
 // import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
@@ -25,7 +26,7 @@ import { TransactionProcessingStatus } from '../../lib/core/models/TransactionUn
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 
-describe('Observer', async () => {
+fdescribe('Observer', async () => {
   const config = require('../json/config-test.json');
 
   let observer: Observer;
@@ -81,6 +82,7 @@ describe('Observer', async () => {
       operationStore,
       transactionStore,
       transactionStore,
+      new MockConfirmationStore(),
       1
     );
   });

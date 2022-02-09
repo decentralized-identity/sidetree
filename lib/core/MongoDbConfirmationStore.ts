@@ -21,10 +21,10 @@ export default class MongoDbConfirmationStore extends MongoDbStore implements IC
     await this.collection.findOneAndUpdate({ anchorString }, { confirmedAt });
   }
 
-  public async getLastSubmitted (): Promise<{ submittedAt: number; confirmedAt: number | undefined } | null> {
+  public async getLastSubmitted (): Promise<{ submittedAt: number; confirmedAt: number | undefined } | undefined> {
     const response: ConfirmationModel[] = await this.collection.find().sort({ submittedAt: -1 }).limit(1).toArray();
     if (response.length === 0) {
-      return null;
+      return undefined;
     }
 
     return {
@@ -41,5 +41,13 @@ export default class MongoDbConfirmationStore extends MongoDbStore implements IC
         confirmedAt: undefined
       }
     );
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public async createIndex (): Promise<void> {
+    await this.collection.createIndex({ anchorString: 1 }, { unique: true });
+    await this.collection.createIndex({ submittedAt: 1 });
   }
 }

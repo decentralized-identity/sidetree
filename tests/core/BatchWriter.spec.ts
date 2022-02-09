@@ -6,6 +6,7 @@ import ICas from '../../lib/core/interfaces/ICas';
 import IOperationQueue from '../../lib/core/versions/latest/interfaces/IOperationQueue';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
+import MockConfirmationStore from '../mocks/MockConfirmationStore';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import OperationGenerator from '../generators/OperationGenerator';
 import ProtocolParameters from '../../lib/core/versions/latest/ProtocolParameters';
@@ -23,7 +24,7 @@ describe('BatchWriter', () => {
     cas = new MockCas();
     operationQueue = new MockOperationQueue();
     const mockVersionMetadataFetcher: any = {};
-    batchWriter = new BatchWriter(operationQueue, blockchain, cas, mockVersionMetadataFetcher);
+    batchWriter = new BatchWriter(operationQueue, blockchain, cas, mockVersionMetadataFetcher, new MockConfirmationStore());
   });
 
   describe('write()', () => {

@@ -28,12 +28,13 @@ import ValueTimeLockVerifier from './ValueTimeLockVerifier';
  * Implementation of the `IBatchWriter`.
  */
 export default class BatchWriter implements IBatchWriter {
+  private static minConfirmationBetweenWrites: number = 6;
+
   public constructor (
     private operationQueue: IOperationQueue,
     private blockchain: IBlockchain,
     private cas: ICas,
     private versionMetadataFetcher: IVersionMetadataFetcher,
-    private minConfirmationBetweenWrites: number,
     private confirmationStore: IConfirmationStore) { }
 
   public async write (): Promise<number> {
@@ -53,10 +54,12 @@ export default class BatchWriter implements IBatchWriter {
     }
 
     const lastSubmitted = await this.confirmationStore.getLastSubmitted();
-    if (lastSubmitted !== null &&
-      (lastSubmitted.confirmedAt === undefined || currentTime.time - lastSubmitted.confirmedAt < this.minConfirmationBetweenWrites - 1)
+    Logger.info(`Got the last submitted from ConfirmationStore: ${lastSubmitted}.`);
+    if (lastSubmitted !== undefined &&
+      (lastSubmitted.confirmedAt === undefined ||
+        currentTime.time - lastSubmitted.confirmedAt < BatchWriter.minConfirmationBetweenWrites - 1)
     ) {
-      Logger.info(`Waiting for ${this.minConfirmationBetweenWrites} confirmations. Confirmed at ${lastSubmitted.confirmedAt}, Current at ${currentTime.time}.`);
+      Logger.info(`Waiting for more confirmations. Confirmed at ${lastSubmitted.confirmedAt}, Current at ${currentTime.time}.`);
       return 0;
     }
 
@@ -110,10 +113,11 @@ export default class BatchWriter implements IBatchWriter {
 
     await this.blockchain.write(stringToWriteToBlockchain, fee);
 
+    Logger.info(`Transaction ${stringToWriteToBlockchain} is submitted at ${currentTime.time}`);
+    await this.confirmationStore.submit(stringToWriteToBlockchain, currentTime.time);
+
     // Remove written operations from queue after batch writing has completed successfully.
     await this.operationQueue.dequeue(numberOfOperations);
-
-    await this.confirmationStore.submit(stringToWriteToBlockchain, currentTime.time);
 
     Logger.info(LogColor.lightBlue(`Batch size = ${LogColor.green(numberOfOperations)}`));
 

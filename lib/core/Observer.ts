@@ -126,7 +126,6 @@ export default class Observer {
           this.transactionsUnderProcessing.push(transactionUnderProcessing);
           // Intentionally not awaiting on downloading and processing each operation batch.
           this.processTransaction(transaction, transactionUnderProcessing);
-          await this.confirmationStore.confirm(transaction.anchorString, transaction.transactionTime);
         }
 
         // NOTE: Blockchain reorg has happened for sure only if `invalidTransactionNumberOrTimeHash` AND
@@ -303,6 +302,8 @@ export default class Observer {
       transactionProcessedSuccessfully = false;
     }
 
+    Logger.info(`Transaction ${transaction.anchorString} is confirmed at ${transaction.transactionTime}`);
+    await this.confirmationStore.confirm(transaction.anchorString, transaction.transactionTime);
     if (transactionProcessedSuccessfully) {
       Logger.info(`Removing transaction '${transaction.transactionNumber}' from unresolvable transactions if exists...`);
       this.unresolvableTransactionStore.removeUnresolvableTransaction(transaction); // Skip await since failure is not a critical and results in a retry.
@@ -344,6 +345,7 @@ export default class Observer {
     await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
 
     for (const transaction of await this.transactionStore.getTransactionsLaterThan(bestKnownValidRecentTransactionNumber, undefined)) {
+      Logger.info(`Transaction ${transaction.anchorString} is reset`);
       await this.confirmationStore.confirm(transaction.anchorString, undefined);
     }
 

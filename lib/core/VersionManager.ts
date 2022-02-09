@@ -78,7 +78,7 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
       this.transactionSelectors.set(version, transactionSelector);
 
       const BatchWriter = await this.loadDefaultExportsForVersion(version, 'BatchWriter');
-      const batchWriter = new BatchWriter(operationQueue, blockchain, cas, this, this.config.minConfirmationBetweenWrites, confirmationStore);
+      const batchWriter = new BatchWriter(operationQueue, blockchain, cas, this, confirmationStore);
       this.batchWriters.set(version, batchWriter);
 
       const OperationProcessor = await this.loadDefaultExportsForVersion(version, 'OperationProcessor');

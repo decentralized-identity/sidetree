@@ -22,6 +22,7 @@ import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
+import MockConfirmationStore from '../mocks/MockConfirmationStore';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
@@ -78,7 +79,7 @@ describe('RequestHandler', () => {
       }
     };
     cas = new MockCas();
-    const batchWriter = new BatchWriter(operationQueue, blockchain, cas, versionMetadataFetcher);
+    const batchWriter = new BatchWriter(operationQueue, blockchain, cas, versionMetadataFetcher, new MockConfirmationStore());
     const operationProcessor = new OperationProcessor();
 
     versionManager = new MockVersionManager();
