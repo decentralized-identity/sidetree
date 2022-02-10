@@ -346,7 +346,7 @@ export default class Observer {
 
     for (const transaction of await this.transactionStore.getTransactionsLaterThan(bestKnownValidRecentTransactionNumber, undefined)) {
       Logger.info(`Transaction ${transaction.anchorString} is reset`);
-      await this.confirmationStore.confirm(transaction.anchorString, undefined);
+      await this.confirmationStore.confirm(transaction.anchorString, null);
     }
 
     // NOTE: MUST do steps below LAST in this particular order to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.

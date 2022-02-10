@@ -409,6 +409,7 @@ describe('Observer', async () => {
     // Force blockchain time to be higher than the cursor transaction time used in Observer,
     // such that Observer will consider `InvalidTransactionNumberOrTimeHash` a block reorg.
     spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 5000, hash: '5000' }));
+    const confirmSpy = spyOn(observer['confirmationStore'], 'confirm');
 
     let readInvocationCount = 0;
     const mockReadFunction = async () => {
@@ -461,6 +462,17 @@ describe('Observer', async () => {
     expect(processedTransactions[1].anchorString).toEqual('2ndTransactionNew');
     expect(processedTransactions[2].anchorString).toEqual('3rdTransactionNew');
     expect(processedTransactions[3].anchorString).toEqual('4thTransaction');
+    expect(confirmSpy.calls.allArgs()).toEqual([
+      ['1stTransaction', 1000],
+      ['2ndTransaction', 2000],
+      ['3rdTransaction', 3000],
+      ['1stTransaction', null],
+      ['2ndTransaction', null],
+      ['3rdTransaction', null],
+      ['2ndTransactionNew', 2001],
+      ['3rdTransactionNew', 3001],
+      ['4thTransaction', 4000]
+    ]);
   });
 
   it('should log error if blockchain throws', async () => {
@@ -576,10 +588,12 @@ describe('Observer', async () => {
     it('should handle unexpected error', async () => {
       getTransactionProcessorSpy.and.throwError('Expected test error');
       const recordUnresolvableAttemptSpy = spyOn(observer['unresolvableTransactionStore'], 'recordUnresolvableTransactionFetchAttempt');
+      const confirmSpy = spyOn(observer['confirmationStore'], 'confirm');
 
       await observer['processTransaction']({} as any, {} as any);
       // Failed to process the unresolvable transactions so the attempt should be recorded
       expect(recordUnresolvableAttemptSpy).toHaveBeenCalled();
+      expect(confirmSpy).toHaveBeenCalled();
     });
   });
 

@@ -4,7 +4,7 @@ import MongoDbStore from '../common/MongoDbStore';
 interface ConfirmationModel {
   anchorString: string;
   submittedAt: number;
-  confirmedAt: number | undefined;
+  confirmedAt: number | null;
 }
 
 /**
@@ -17,11 +17,11 @@ export default class MongoDbConfirmationStore extends MongoDbStore implements IC
     super(serverUrl, MongoDbConfirmationStore.collectionName, databaseName);
   }
 
-  public async confirm (anchorString: string, confirmedAt: number | undefined): Promise<void> {
-    await this.collection.findOneAndUpdate({ anchorString }, { confirmedAt });
+  public async confirm (anchorString: string, confirmedAt: number | null): Promise<void> {
+    await this.collection.updateOne({ anchorString }, { $set: { confirmedAt } });
   }
 
-  public async getLastSubmitted (): Promise<{ submittedAt: number; confirmedAt: number | undefined } | undefined> {
+  public async getLastSubmitted (): Promise<{ submittedAt: number; confirmedAt: number | null } | undefined> {
     const response: ConfirmationModel[] = await this.collection.find().sort({ submittedAt: -1 }).limit(1).toArray();
     if (response.length === 0) {
       return undefined;

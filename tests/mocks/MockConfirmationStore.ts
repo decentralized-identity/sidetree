@@ -6,7 +6,7 @@ import IConfirmationStore from '../../lib/core/interfaces/IConfirmationStore';
 interface ConfirmationModel {
   anchorString: string;
   submittedAt: number;
-  confirmedAt: number | undefined;
+  confirmedAt: number | null;
 }
 
 export default class MockConfirmationStore implements IConfirmationStore {
@@ -15,14 +15,14 @@ export default class MockConfirmationStore implements IConfirmationStore {
     this.entries = [];
   }
 
-  public async confirm (anchorString: string, confirmedAt: number | undefined): Promise<void> {
+  public async confirm (anchorString: string, confirmedAt: number | null): Promise<void> {
     const found = this.entries.find(entry => entry.anchorString === anchorString);
     if (found !== undefined) {
       found.confirmedAt = confirmedAt;
     }
   }
 
-  public async getLastSubmitted (): Promise<{ submittedAt: number; confirmedAt: number | undefined } | undefined> {
+  public async getLastSubmitted (): Promise<{ submittedAt: number; confirmedAt: number | null } | undefined> {
     const sorted = this.entries.sort((a, b) => b.submittedAt - a.submittedAt);
     if (sorted.length === 0) {
       return undefined;
@@ -35,7 +35,7 @@ export default class MockConfirmationStore implements IConfirmationStore {
     this.entries.push({
       anchorString,
       submittedAt,
-      confirmedAt: undefined
+      confirmedAt: null
     });
   }
 }
