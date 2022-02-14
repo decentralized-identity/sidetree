@@ -239,7 +239,8 @@ describe('DocumentComposer', async () => {
         method: {
           published
         },
-        canonicalId: 'did:method:suffix'
+        canonicalId: 'did:method:suffix',
+        deactivated: true
       });
     });
   });

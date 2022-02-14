@@ -128,7 +128,8 @@ export default class DocumentComposer {
       method: {
         published
       },
-      canonicalId: did
+      canonicalId: did,
+      deactivated: true
     };
     return {
       '@context': DocumentComposer.resolutionObjectContextUrl,
