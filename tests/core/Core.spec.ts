@@ -41,6 +41,7 @@ describe('Core', async () => {
       const transactionStoreInitSpy = spyOn(core['transactionStore'], 'initialize');
       const unresolvableTransactionStoreInitSpy = spyOn(core['unresolvableTransactionStore'], 'initialize');
       const operationStoreInitSpy = spyOn(core['operationStore'], 'initialize');
+      const confirmationStoreInitSpy = spyOn(core['confirmationStore'], 'initialize');
       const upgradeDatabaseIfNeededSpy = spyOn(core as any, 'upgradeDatabaseIfNeeded');
       const versionManagerInitSpy = spyOn(core['versionManager'], 'initialize');
       const observerStartSpy = spyOn(core['observer'], 'startPeriodicProcessing');
@@ -54,6 +55,7 @@ describe('Core', async () => {
       expect(transactionStoreInitSpy).toHaveBeenCalled();
       expect(unresolvableTransactionStoreInitSpy).toHaveBeenCalled();
       expect(operationStoreInitSpy).toHaveBeenCalled();
+      expect(confirmationStoreInitSpy).toHaveBeenCalled();
       expect(upgradeDatabaseIfNeededSpy).toHaveBeenCalled();
       expect(versionManagerInitSpy).toHaveBeenCalled();
       expect(observerStartSpy).toHaveBeenCalled();
@@ -69,6 +71,7 @@ describe('Core', async () => {
       spyOn(core['transactionStore'], 'initialize');
       spyOn(core['unresolvableTransactionStore'], 'initialize');
       spyOn(core['operationStore'], 'initialize');
+      spyOn(core['confirmationStore'], 'initialize');
       spyOn(core as any, 'upgradeDatabaseIfNeeded');
       spyOn(core['versionManager'], 'initialize');
       spyOn(core['observer'], 'startPeriodicProcessing');
@@ -115,6 +118,7 @@ describe('Core', async () => {
       spyOn(core['transactionStore'], 'initialize');
       spyOn(core['unresolvableTransactionStore'], 'initialize');
       spyOn(core['operationStore'], 'initialize');
+      spyOn(core['confirmationStore'], 'initialize');
       spyOn(core as any, 'upgradeDatabaseIfNeeded');
       spyOn(core['versionManager'], 'initialize');
       spyOn(core['downloadManager'], 'start');
