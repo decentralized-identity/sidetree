@@ -4,7 +4,7 @@ import MongoDbStore from '../common/MongoDbStore';
 interface ConfirmationModel {
   anchorString: string;
   submittedAt: number;
-  confirmedAt: number | null;
+  confirmedAt: number | undefined;
 }
 
 /**
@@ -22,7 +22,7 @@ export default class MongoDbConfirmationStore extends MongoDbStore implements IC
   }
 
   public async resetAfter (confirmedAt: number | undefined): Promise<void> {
-    await this.collection.updateMany({ confirmedAt: { $gt: confirmedAt } }, { $set: { confirmedAt: null } });
+    await this.collection.updateMany({ confirmedAt: { $gt: confirmedAt } }, { $set: { confirmedAt: undefined } });
   }
 
   public async getLastSubmitted (): Promise<{ submittedAt: number; confirmedAt: number | undefined } | undefined> {
@@ -33,6 +33,8 @@ export default class MongoDbConfirmationStore extends MongoDbStore implements IC
 
     return {
       submittedAt: response[0].submittedAt,
+      // NOTE: MongoDB saves explicit `undefined` property as `null` internally by default,
+      // so we do the `null` to `undefined` conversion here.
       confirmedAt: response[0].confirmedAt === null ? undefined : response[0].confirmedAt
     };
   }
@@ -41,8 +43,7 @@ export default class MongoDbConfirmationStore extends MongoDbStore implements IC
     await this.collection.insertOne(
       {
         anchorString,
-        submittedAt,
-        confirmedAt: undefined
+        submittedAt
       }
     );
   }
