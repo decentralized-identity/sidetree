@@ -344,10 +344,7 @@ export default class Observer {
 
     await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
 
-    for (const transaction of await this.transactionStore.getTransactionsLaterThan(bestKnownValidRecentTransactionNumber, undefined)) {
-      Logger.info(`Transaction ${transaction.anchorString} is reset`);
-      await this.confirmationStore.confirm(transaction.anchorString, null);
-    }
+    await this.confirmationStore.resetAfter(bestKnownValidRecentTransaction?.transactionTime);
 
     // NOTE: MUST do steps below LAST in this particular order to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
     await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);

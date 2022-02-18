@@ -410,6 +410,7 @@ describe('Observer', async () => {
     // such that Observer will consider `InvalidTransactionNumberOrTimeHash` a block reorg.
     spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 5000, hash: '5000' }));
     const confirmSpy = spyOn(observer['confirmationStore'], 'confirm');
+    const resetSpy = spyOn(observer['confirmationStore'], 'resetAfter');
 
     let readInvocationCount = 0;
     const mockReadFunction = async () => {
@@ -466,12 +467,12 @@ describe('Observer', async () => {
       ['1stTransaction', 1000],
       ['2ndTransaction', 2000],
       ['3rdTransaction', 3000],
-      ['1stTransaction', null],
-      ['2ndTransaction', null],
-      ['3rdTransaction', null],
       ['2ndTransactionNew', 2001],
       ['3rdTransactionNew', 3001],
       ['4thTransaction', 4000]
+    ]);
+    expect(resetSpy.calls.allArgs()).toEqual([
+      [1000]
     ]);
   });
 

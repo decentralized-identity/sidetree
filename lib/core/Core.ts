@@ -95,6 +95,7 @@ export default class Core {
     await this.transactionStore.initialize();
     await this.unresolvableTransactionStore.initialize();
     await this.operationStore.initialize();
+    await this.confirmationStore.initialize();
     await this.upgradeDatabaseIfNeeded();
 
     await this.versionManager.initialize(

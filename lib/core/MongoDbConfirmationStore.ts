@@ -17,11 +17,15 @@ export default class MongoDbConfirmationStore extends MongoDbStore implements IC
     super(serverUrl, MongoDbConfirmationStore.collectionName, databaseName);
   }
 
-  public async confirm (anchorString: string, confirmedAt: number | null): Promise<void> {
-    await this.collection.updateOne({ anchorString }, { $set: { confirmedAt } });
+  public async confirm (anchorString: string, confirmedAt: number): Promise<void> {
+    await this.collection.updateMany({ anchorString }, { $set: { confirmedAt } });
   }
 
-  public async getLastSubmitted (): Promise<{ submittedAt: number; confirmedAt: number | null } | undefined> {
+  public async resetAfter (confirmedAt: number | undefined): Promise<void> {
+    await this.collection.updateMany({ confirmedAt: { $gt: confirmedAt } }, { $set: { confirmedAt: null } });
+  }
+
+  public async getLastSubmitted (): Promise<{ submittedAt: number; confirmedAt: number | undefined } | undefined> {
     const response: ConfirmationModel[] = await this.collection.find().sort({ submittedAt: -1 }).limit(1).toArray();
     if (response.length === 0) {
       return undefined;
@@ -29,7 +33,7 @@ export default class MongoDbConfirmationStore extends MongoDbStore implements IC
 
     return {
       submittedAt: response[0].submittedAt,
-      confirmedAt: response[0].confirmedAt
+      confirmedAt: response[0].confirmedAt === null ? undefined : response[0].confirmedAt
     };
   }
 
@@ -47,7 +51,8 @@ export default class MongoDbConfirmationStore extends MongoDbStore implements IC
    * @inheritDoc
    */
   public async createIndex (): Promise<void> {
-    await this.collection.createIndex({ anchorString: 1 }, { unique: true });
+    await this.collection.createIndex({ anchorString: 1 });
     await this.collection.createIndex({ submittedAt: 1 });
+    await this.collection.createIndex({ confirmedAt: 1 });
   }
 }

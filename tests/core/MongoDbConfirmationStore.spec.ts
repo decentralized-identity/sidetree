@@ -40,7 +40,7 @@ describe('MongoDbConfirmationStore', async () => {
       await confirmationStore.submit('anchor-string4', 102);
       await confirmationStore.submit('anchor-string5', 101);
       await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 105, confirmedAt: null
+        submittedAt: 105, confirmedAt: undefined
       });
     });
 
@@ -51,7 +51,7 @@ describe('MongoDbConfirmationStore', async () => {
     it('should return confirmed once confirmed', async () => {
       await confirmationStore.submit('anchor-string1', 100);
       await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 100, confirmedAt: null
+        submittedAt: 100, confirmedAt: undefined
       });
       await confirmationStore.confirm('anchor-string1', 101);
       await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
@@ -59,7 +59,7 @@ describe('MongoDbConfirmationStore', async () => {
       });
       await confirmationStore.submit('anchor-string2', 105);
       await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 105, confirmedAt: null
+        submittedAt: 105, confirmedAt: undefined
       });
       await confirmationStore.confirm('anchor-string2', 106);
       await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
@@ -70,15 +70,19 @@ describe('MongoDbConfirmationStore', async () => {
     it('should handle reorg correctly', async () => {
       await confirmationStore.submit('anchor-string1', 100);
       await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 100, confirmedAt: null
+        submittedAt: 100, confirmedAt: undefined
       });
       await confirmationStore.confirm('anchor-string1', 101);
       await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
         submittedAt: 100, confirmedAt: 101
       });
-      await confirmationStore.confirm('anchor-string1', null);
+      await confirmationStore.resetAfter(101);
       await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 100, confirmedAt: null
+        submittedAt: 100, confirmedAt: 101
+      });
+      await confirmationStore.resetAfter(100);
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
+        submittedAt: 100, confirmedAt: undefined
       });
       await confirmationStore.confirm('anchor-string1', 102);
       await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
