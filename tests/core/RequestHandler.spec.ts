@@ -340,6 +340,7 @@ describe('RequestHandler', () => {
       const response = await requestHandler.handleResolveRequest(anyDid);
 
       expect(response.status).toEqual(ResponseStatus.Deactivated);
+      expect(response.body.didDocumentMetadata.deactivated).toEqual(true);
     });
   });
 
