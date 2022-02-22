@@ -1,13 +1,7 @@
 /**
  * A simple in-memory implementation of operation store.
  */
-import IConfirmationStore from '../../lib/core/interfaces/IConfirmationStore';
-
-interface ConfirmationModel {
-  anchorString: string;
-  submittedAt: number;
-  confirmedAt: number | undefined;
-}
+import IConfirmationStore, { ConfirmationModel } from '../../lib/core/interfaces/IConfirmationStore';
 
 export default class MockConfirmationStore implements IConfirmationStore {
   private entries: ConfirmationModel[] = [];
@@ -22,7 +16,7 @@ export default class MockConfirmationStore implements IConfirmationStore {
     }
   }
 
-  public async getLastSubmitted (): Promise<{ submittedAt: number; confirmedAt: number | undefined } | undefined> {
+  public async getLastSubmitted (): Promise<ConfirmationModel | undefined> {
     const sorted = this.entries.sort((a, b) => b.submittedAt - a.submittedAt);
     if (sorted.length === 0) {
       return undefined;

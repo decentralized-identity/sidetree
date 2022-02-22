@@ -1,11 +1,5 @@
-import IConfirmationStore from './interfaces/IConfirmationStore';
+import IConfirmationStore, { ConfirmationModel } from './interfaces/IConfirmationStore';
 import MongoDbStore from '../common/MongoDbStore';
-
-interface ConfirmationModel {
-  anchorString: string;
-  submittedAt: number;
-  confirmedAt: number | undefined;
-}
 
 /**
  * Implementation of LastWriteStore that stores the last update per write
@@ -25,18 +19,17 @@ export default class MongoDbConfirmationStore extends MongoDbStore implements IC
     await this.collection.updateMany({ confirmedAt: { $gt: confirmedAt } }, { $set: { confirmedAt: undefined } });
   }
 
-  public async getLastSubmitted (): Promise<{ submittedAt: number; confirmedAt: number | undefined } | undefined> {
+  public async getLastSubmitted (): Promise<ConfirmationModel | undefined> {
     const response: ConfirmationModel[] = await this.collection.find().sort({ submittedAt: -1 }).limit(1).toArray();
     if (response.length === 0) {
       return undefined;
     }
 
-    return {
-      submittedAt: response[0].submittedAt,
-      // NOTE: MongoDB saves explicit `undefined` property as `null` internally by default,
-      // so we do the `null` to `undefined` conversion here.
-      confirmedAt: response[0].confirmedAt === null ? undefined : response[0].confirmedAt
-    };
+    if (response[0].confirmedAt === null) {
+      response[0].confirmedAt = undefined;
+    }
+
+    return response[0];
   }
 
   public async submit (anchorString: string, submittedAt: number): Promise<void> {

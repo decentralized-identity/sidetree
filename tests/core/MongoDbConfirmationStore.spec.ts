@@ -1,3 +1,4 @@
+import { ConfirmationModel } from '../../lib/core/interfaces/IConfirmationStore';
 import Config from '../../lib/core/models/Config';
 import MongoDb from '../common/MongoDb';
 import MongoDbConfirmationStore from '../../lib/core/MongoDbConfirmationStore';
@@ -39,9 +40,9 @@ describe('MongoDbConfirmationStore', async () => {
       await confirmationStore.submit('anchor-string3', 105);
       await confirmationStore.submit('anchor-string4', 102);
       await confirmationStore.submit('anchor-string5', 101);
-      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 105, confirmedAt: undefined
-      });
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo(jasmine.objectContaining<ConfirmationModel|undefined>({
+        submittedAt: 105, anchorString: 'anchor-string3'
+      }));
     });
 
     it('should return undefined if nothing has been submitted yet', async () => {
@@ -50,44 +51,54 @@ describe('MongoDbConfirmationStore', async () => {
 
     it('should return confirmed once confirmed', async () => {
       await confirmationStore.submit('anchor-string1', 100);
-      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 100, confirmedAt: undefined
-      });
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo(jasmine.objectContaining<ConfirmationModel|undefined>({
+        submittedAt: 100, anchorString: 'anchor-string1'
+      }));
       await confirmationStore.confirm('anchor-string1', 101);
-      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 100, confirmedAt: 101
-      });
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo(jasmine.objectContaining<ConfirmationModel|undefined>({
+        submittedAt: 100, confirmedAt: 101, anchorString: 'anchor-string1'
+      }));
       await confirmationStore.submit('anchor-string2', 105);
-      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 105, confirmedAt: undefined
-      });
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo(jasmine.objectContaining<ConfirmationModel|undefined>({
+        submittedAt: 105, anchorString: 'anchor-string2'
+      }));
       await confirmationStore.confirm('anchor-string2', 106);
-      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 105, confirmedAt: 106
-      });
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo(jasmine.objectContaining<ConfirmationModel|undefined>({
+        submittedAt: 105, confirmedAt: 106, anchorString: 'anchor-string2'
+      }));
+    });
+
+    it('should clear the collections using afterReset with undefined args', async () => {
+      await confirmationStore.submit('anchor-string1', 100);
+      await confirmationStore.confirm('anchor-string1', 101);
+      await confirmationStore.submit('anchor-string2', 110);
+      await confirmationStore.resetAfter(undefined);
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo(jasmine.objectContaining<ConfirmationModel|undefined>({
+        submittedAt: 110, anchorString: 'anchor-string2'
+      }));
     });
 
     it('should handle reorg correctly', async () => {
       await confirmationStore.submit('anchor-string1', 100);
-      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 100, confirmedAt: undefined
-      });
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo(jasmine.objectContaining<ConfirmationModel|undefined>({
+        submittedAt: 100, anchorString: 'anchor-string1'
+      }));
       await confirmationStore.confirm('anchor-string1', 101);
-      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 100, confirmedAt: 101
-      });
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo(jasmine.objectContaining<ConfirmationModel|undefined>({
+        submittedAt: 100, confirmedAt: 101, anchorString: 'anchor-string1'
+      }));
       await confirmationStore.resetAfter(101);
-      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 100, confirmedAt: 101
-      });
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo(jasmine.objectContaining<ConfirmationModel|undefined>({
+        submittedAt: 100, confirmedAt: 101, anchorString: 'anchor-string1'
+      }));
       await confirmationStore.resetAfter(100);
-      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 100, confirmedAt: undefined
-      });
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo(jasmine.objectContaining<ConfirmationModel|undefined>({
+        submittedAt: 100, anchorString: 'anchor-string1'
+      }));
       await confirmationStore.confirm('anchor-string1', 102);
-      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo({
-        submittedAt: 100, confirmedAt: 102
-      });
+      await expectAsync(confirmationStore.getLastSubmitted()).toBeResolvedTo(jasmine.objectContaining<ConfirmationModel|undefined>({
+        submittedAt: 100, confirmedAt: 102, anchorString: 'anchor-string1'
+      }));
     });
   });
 });
