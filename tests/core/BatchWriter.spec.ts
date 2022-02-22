@@ -20,6 +20,7 @@ describe('BatchWriter', () => {
   let confimrationStore: MockConfirmationStore;
 
   beforeAll(() => {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 1000000;
     blockchain = new MockBlockchain();
     cas = new MockCas();
     operationQueue = new MockOperationQueue();
@@ -121,6 +122,7 @@ describe('BatchWriter', () => {
         return Buffer.from('anyCoreIndexFileBuffer');
       });
 
+      await confimrationStore.clear();
       await batchWriter.write();
 
       done();

@@ -28,8 +28,6 @@ import ValueTimeLockVerifier from './ValueTimeLockVerifier';
  * Implementation of the `IBatchWriter`.
  */
 export default class BatchWriter implements IBatchWriter {
-  private static minConfirmationBetweenWrites: number = 6;
-
   public constructor (
     private operationQueue: IOperationQueue,
     private blockchain: IBlockchain,
@@ -55,10 +53,9 @@ export default class BatchWriter implements IBatchWriter {
 
     const lastSubmitted = await this.confirmationStore.getLastSubmitted();
     Logger.info(`Got the last submitted from ConfirmationStore: submitted at ${lastSubmitted?.submittedAt}, confirmed at ${lastSubmitted?.confirmedAt}.`);
+
     if (lastSubmitted !== undefined &&
-      (lastSubmitted.confirmedAt === undefined ||
-        currentTime.time - lastSubmitted.confirmedAt < BatchWriter.minConfirmationBetweenWrites - 1)
-    ) {
+      !BatchWriter.hasEnoughConfirmations(lastSubmitted.confirmedAt, currentTime.time)) {
       Logger.info(`Waiting for more confirmations. Confirmed at ${lastSubmitted.confirmedAt}, Current at ${currentTime.time}.`);
       return 0;
     }
@@ -159,6 +156,22 @@ export default class BatchWriter implements IBatchWriter {
     Logger.info(LogColor.lightBlue(`Wrote provisional index file ${LogColor.green(provisionalIndexFileUri)} to content addressable store.`));
 
     return provisionalIndexFileUri;
+  }
+
+  private static hasEnoughConfirmations (confirmedAt: number | undefined, currentTime: number): boolean {
+    const minConfirmationBetweenWrites: number = 6;
+
+    // If not confirmed.
+    if (confirmedAt === undefined) {
+      return false;
+    }
+
+    const numberOfConfirmations = currentTime - confirmedAt + 1;
+    if (numberOfConfirmations < minConfirmationBetweenWrites) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
