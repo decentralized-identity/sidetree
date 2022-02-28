@@ -25,6 +25,8 @@ export default class MongoDbConfirmationStore extends MongoDbStore implements IC
       return undefined;
     }
 
+    // NOTE: MongoDB saves explicit `undefined` property as `null` internally by default,
+    // so we do the `null` to `undefined` conversion here.
     if (response[0].confirmedAt === null) {
       response[0].confirmedAt = undefined;
     }
