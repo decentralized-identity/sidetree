@@ -228,7 +228,7 @@ export default class Resolver {
   /**
    * Checks if the new DID state references a commitment hash that is already in use.
    */
-   private static isCommitValueReused (operationType: OperationType, oldDidState: DidState, newDidState: DidState, commitValuesUsed: Set<string>): boolean {
+  private static isCommitValueReused (operationType: OperationType, oldDidState: DidState, newDidState: DidState, commitValuesUsed: Set<string>): boolean {
     if (operationType === OperationType.Update) {
       return this.isUpdateCommitValueReused(oldDidState, newDidState, commitValuesUsed);
     } else { // Recovery/Deactivate path.
@@ -256,7 +256,7 @@ export default class Resolver {
   /**
    * Checks if the new DID state references a recover commitment hash that is already in use.
    */
-   private static isRecoverCommitValueReused (oldDidState: DidState, newDidState: DidState, commitValuesUsed: Set<string>): boolean {
+  private static isRecoverCommitValueReused (oldDidState: DidState, newDidState: DidState, commitValuesUsed: Set<string>): boolean {
     if (newDidState.nextRecoveryCommitmentHash !== undefined && // This check is optional in pure JavaScript, but required for strongly typed Set in TypeScript.
         commitValuesUsed.has(newDidState.nextRecoveryCommitmentHash)) {
       return true;

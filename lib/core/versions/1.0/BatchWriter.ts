@@ -9,6 +9,7 @@ import FeeManager from './FeeManager';
 import IBatchWriter from '../../interfaces/IBatchWriter';
 import IBlockchain from '../../interfaces/IBlockchain';
 import ICas from '../../interfaces/ICas';
+import IConfirmationStore from '../../interfaces/IConfirmationStore';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import LogColor from '../../../common/LogColor';
@@ -31,7 +32,8 @@ export default class BatchWriter implements IBatchWriter {
     private operationQueue: IOperationQueue,
     private blockchain: IBlockchain,
     private cas: ICas,
-    private versionMetadataFetcher: IVersionMetadataFetcher) { }
+    private versionMetadataFetcher: IVersionMetadataFetcher,
+    private confirmationStore: IConfirmationStore) { }
 
   public async write (): Promise<number> {
     const currentTime = await this.blockchain.getLatestTime();
@@ -46,6 +48,15 @@ export default class BatchWriter implements IBatchWriter {
     // Do nothing if there is nothing to batch together.
     if (numberOfOperations === 0) {
       Logger.info(`No queued operations to batch.`);
+      return 0;
+    }
+
+    const lastSubmitted = await this.confirmationStore.getLastSubmitted();
+    Logger.info(`Got the last submitted from ConfirmationStore: submitted at ${lastSubmitted?.submittedAt}, confirmed at ${lastSubmitted?.confirmedAt}.`);
+
+    if (lastSubmitted !== undefined &&
+        !BatchWriter.hasEnoughConfirmations(lastSubmitted.confirmedAt, currentTime.time)) {
+      Logger.info(`Waiting for more confirmations. Confirmed at ${lastSubmitted.confirmedAt}, Current at ${currentTime.time}.`);
       return 0;
     }
 
@@ -93,10 +104,14 @@ export default class BatchWriter implements IBatchWriter {
     };
 
     const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
+
     const fee = FeeManager.computeMinimumTransactionFee(normalizedFee, numberOfOperations);
     Logger.info(LogColor.lightBlue(`Writing data to blockchain: ${LogColor.green(stringToWriteToBlockchain)} with minimum fee of: ${LogColor.green(fee)}`));
 
     await this.blockchain.write(stringToWriteToBlockchain, fee);
+
+    Logger.info(`Transaction ${stringToWriteToBlockchain} is submitted at ${currentTime.time}`);
+    await this.confirmationStore.submit(stringToWriteToBlockchain, currentTime.time);
 
     // Remove written operations from queue after batch writing has completed successfully.
     await this.operationQueue.dequeue(numberOfOperations);
@@ -141,6 +156,22 @@ export default class BatchWriter implements IBatchWriter {
     Logger.info(LogColor.lightBlue(`Wrote provisional index file ${LogColor.green(provisionalIndexFileUri)} to content addressable store.`));
 
     return provisionalIndexFileUri;
+  }
+
+  private static hasEnoughConfirmations (confirmedAt: number | undefined, currentTime: number): boolean {
+    const minConfirmationBetweenWrites: number = 6;
+
+    // If not confirmed.
+    if (confirmedAt === undefined) {
+      return false;
+    }
+
+    const numberOfConfirmations = currentTime - confirmedAt + 1;
+    if (numberOfConfirmations < minConfirmationBetweenWrites) {
+      return false;
+    }
+
+    return true;
   }
 
   /**

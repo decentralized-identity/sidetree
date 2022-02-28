@@ -3,6 +3,7 @@ import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './
 import EventCode from './EventCode';
 import EventEmitter from '../common/EventEmitter';
 import IBlockchain from './interfaces/IBlockchain';
+import IConfirmationStore from './interfaces/IConfirmationStore';
 import IOperationStore from './interfaces/IOperationStore';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionStore from './interfaces/ITransactionStore';
@@ -44,6 +45,7 @@ export default class Observer {
     private operationStore: IOperationStore,
     private transactionStore: ITransactionStore,
     private unresolvableTransactionStore: IUnresolvableTransactionStore,
+    private confirmationStore: IConfirmationStore,
     private observingIntervalInSeconds: number) {
     this.throughputLimiter = new ThroughputLimiter(versionManager);
   }
@@ -300,6 +302,8 @@ export default class Observer {
       transactionProcessedSuccessfully = false;
     }
 
+    Logger.info(`Transaction ${transaction.anchorString} is confirmed at ${transaction.transactionTime}`);
+    await this.confirmationStore.confirm(transaction.anchorString, transaction.transactionTime);
     if (transactionProcessedSuccessfully) {
       Logger.info(`Removing transaction '${transaction.transactionNumber}' from unresolvable transactions if exists...`);
       this.unresolvableTransactionStore.removeUnresolvableTransaction(transaction); // Skip await since failure is not a critical and results in a retry.
@@ -339,6 +343,8 @@ export default class Observer {
     await this.operationStore.delete(bestKnownValidRecentTransactionNumber);
 
     await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
+
+    await this.confirmationStore.resetAfter(bestKnownValidRecentTransaction?.transactionTime);
 
     // NOTE: MUST do steps below LAST in this particular order to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
     await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);

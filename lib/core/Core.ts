@@ -10,6 +10,7 @@ import ErrorCode from './ErrorCode';
 import EventEmitter from '../common/EventEmitter';
 import LogColor from '../common/LogColor';
 import Logger from '../common/Logger';
+import MongoDbConfirmationStore from './MongoDbConfirmationStore';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbServiceStateStore from '../common/MongoDbServiceStateStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
@@ -44,6 +45,7 @@ export default class Core {
   private resolver: Resolver;
   private serviceInfo: ServiceInfo;
   private blockchainClock: BlockchainClock;
+  private confirmationStore: MongoDbConfirmationStore;
 
   /**
    * Core constructor.
@@ -59,6 +61,7 @@ export default class Core {
     this.resolver = new Resolver(this.versionManager, this.operationStore);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString, config.databaseName);
+    this.confirmationStore = new MongoDbConfirmationStore(config.mongoDbConnectionString, config.databaseName);
 
     // Only enable real blockchain time pull if observer is enabled
     const enableRealBlockchainTimePull = config.observingIntervalInSeconds > 0;
@@ -72,6 +75,7 @@ export default class Core {
       this.operationStore,
       this.transactionStore,
       this.unresolvableTransactionStore,
+      this.confirmationStore,
       config.observingIntervalInSeconds
     );
 
@@ -91,6 +95,7 @@ export default class Core {
     await this.transactionStore.initialize();
     await this.unresolvableTransactionStore.initialize();
     await this.operationStore.initialize();
+    await this.confirmationStore.initialize();
     await this.upgradeDatabaseIfNeeded();
 
     await this.versionManager.initialize(
@@ -99,7 +104,8 @@ export default class Core {
       this.downloadManager,
       this.operationStore,
       this.resolver,
-      this.transactionStore
+      this.transactionStore,
+      this.confirmationStore
     ); // `VersionManager` is last initialized component as it needs many shared/common components to be ready first.
 
     if (this.config.observingIntervalInSeconds > 0) {

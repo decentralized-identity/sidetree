@@ -22,6 +22,7 @@ import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
+import MockConfirmationStore from '../mocks/MockConfirmationStore';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
@@ -61,6 +62,7 @@ describe('RequestHandler', () => {
   let recoveryPrivateKey: JwkEs256k;
   let did: string; // This DID is created at the beginning of every test.
   let didUniqueSuffix: string;
+  let confirmationStore: MockConfirmationStore;
 
   // Start a new instance of Operation Processor, and create a DID before every test.
   beforeEach(async () => {
@@ -78,7 +80,8 @@ describe('RequestHandler', () => {
       }
     };
     cas = new MockCas();
-    const batchWriter = new BatchWriter(operationQueue, blockchain, cas, versionMetadataFetcher);
+    confirmationStore = new MockConfirmationStore();
+    const batchWriter = new BatchWriter(operationQueue, blockchain, cas, versionMetadataFetcher, confirmationStore);
     const operationProcessor = new OperationProcessor();
 
     versionManager = new MockVersionManager();
@@ -134,6 +137,7 @@ describe('RequestHandler', () => {
 
     // Trigger the batch writing to clear the operation queue for future tests.
     await batchScheduler.writeOperationBatch();
+    confirmationStore.clear();
   });
 
   it('should resolve long form did from test vectors correctly', async () => {
