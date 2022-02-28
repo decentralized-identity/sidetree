@@ -55,7 +55,7 @@ export default class BatchWriter implements IBatchWriter {
     Logger.info(`Got the last submitted from ConfirmationStore: submitted at ${lastSubmitted?.submittedAt}, confirmed at ${lastSubmitted?.confirmedAt}.`);
 
     if (lastSubmitted !== undefined &&
-      !BatchWriter.hasEnoughConfirmations(lastSubmitted.confirmedAt, currentTime.time)) {
+        !BatchWriter.hasEnoughConfirmations(lastSubmitted.confirmedAt, currentTime.time)) {
       Logger.info(`Waiting for more confirmations. Confirmed at ${lastSubmitted.confirmedAt}, Current at ${currentTime.time}.`);
       return 0;
     }
