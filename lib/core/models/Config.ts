@@ -9,5 +9,4 @@ export default interface Config {
   maxConcurrentDownloads: number;
   mongoDbConnectionString: string;
   observingIntervalInSeconds: number;
-  minConfirmationBetweenWrites: number;
 }
