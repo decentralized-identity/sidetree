@@ -171,7 +171,6 @@ export default class Observer {
           // erase the entire list transactions under processing since processing MUST not advance beyond the transaction that failed processing.
           const hasErrorInTransactionProcessing = this.hasErrorInTransactionProcessing();
           if (hasErrorInTransactionProcessing) {
-            // Step to defend against potential uncontrolled growth in `transactionsUnderProcessing` array size due to looping.
             await Observer.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(this.transactionsUnderProcessing, 0);
             await this.storeThenTrimConsecutiveTransactionsProcessed();
 
