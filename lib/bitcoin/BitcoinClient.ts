@@ -939,6 +939,20 @@ export default class BitcoinClient {
           continue;
         }
 
+        // Error -28 - Client is still warming up
+        try {
+          const responseBody = JSON.parse(bodyBuffer.toString());
+          if (responseBody.error?.code === -28) {
+            Logger.info(`Attempt ${retryCount} resulted in ${response.status}: ${bodyBuffer}`);
+            continue;
+          }
+        } catch (e) {
+          throw new SidetreeError(
+            ErrorCode.BitcoinClientFetchUnexpectedError,
+            `Unexpected fetch HTTP response: [${response.status}]: ${bodyBuffer}`
+          );
+        }
+
         // All other error code, not connectivity related issue, fail straight away.
         throw new SidetreeError(
           ErrorCode.BitcoinClientFetchUnexpectedError,

@@ -1411,6 +1411,25 @@ describe('BitcoinClient', async () => {
       done();
     });
 
+    it('should retry if response HTTP response body error code is related to client still warming up.', async (done) => {
+      const mockedResponseBody = '{"result":null,"error":{"code":-28,"message":"Verifying blocks..."},"id":"6ntuus8rhdl"}';
+
+      fetchSpy.and.returnValues(
+        { status: 500, body: mockedResponseBody }, // Simulates a warming up error
+        { status: 200, body: mockedResponseBody } // Simulates a subsequent success.
+      );
+
+      const readAllSpy = spyOn(ReadableStream, 'readAll').and.callFake(() => {
+        return Promise.resolve(Buffer.from(mockedResponseBody));
+      });
+
+      await bitcoinClient['fetchWithRetry']('http://unused_path', { }, true); // true = timeout enabled.
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(readAllSpy).toHaveBeenCalledTimes(2); // Shows retry has happened.
+      done();
+    });
+
     it('should throw if response HTTP code is an error not related to connectivity issues.', async (done) => {
       const mockedResponseBody = 'unusedBody';
       fetchSpy.and.returnValue({ status: 500, body: mockedResponseBody }); // Simulates a non-network issue.
