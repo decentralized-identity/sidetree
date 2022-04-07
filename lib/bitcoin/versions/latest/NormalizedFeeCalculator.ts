@@ -1,3 +1,5 @@
+import SidetreeError from '../../../common/SidetreeError';
+import ErrorCode from '../../ErrorCode';
 import BlockMetadata from '../../models/BlockMetadata';
 import BlockMetadataWithoutNormalizedFee from '../../models/BlockMetadataWithoutNormalizedFee';
 import IBlockMetadataStore from '../../interfaces/IBlockMetadataStore';
@@ -72,6 +74,9 @@ export default class NormalizedFeeCalculator implements IFeeCalculator {
     // TODO: #943 This is left here because it may be versioned. Move it out if we confirm it will not be versioned.
     // https://github.com/decentralized-identity/sidetree/issues/943
     const blockMetadata = await this.blockMetadataStore.get(block, block + 1);
+    if (blockMetadata.length === 0) {
+      throw new SidetreeError(ErrorCode.NormalizedFeeCalculatorBlockNotFound);
+    }
     return this.calculateNormalizedTransactionFeeFromBlock(blockMetadata[0]);
   }
 

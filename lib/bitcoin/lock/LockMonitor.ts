@@ -213,7 +213,8 @@ export default class LockMonitor {
 
     } catch (e) {
 
-      if (e instanceof SidetreeError && e.code === ErrorCode.LockResolverTransactionNotConfirmed) {
+      if (e instanceof SidetreeError &&
+        (e.code === ErrorCode.LockResolverTransactionNotConfirmed || e.code === ErrorCode.NormalizedFeeCalculatorBlockNotFound)) {
         // This means that the transaction was broadcasted but hasn't been written on the blockchain yet.
         return {
           activeValueTimeLock: undefined,
