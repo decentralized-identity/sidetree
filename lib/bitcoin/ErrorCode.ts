@@ -26,5 +26,5 @@ export default {
   TransactionNumberTransactionIndexInBlockTooLarge: 'transaction_number_transaction_index_in_block_too_large',
   ValueTimeLockInPendingState: 'value_time_lock_in_pending_state',
   VersionManagerVersionStringNotFound: 'version_manager_version_string_not_found',
-  NormalizedFeeCalculatorBlockNotFound: 'normalized_fee_calculator.block_not_found'
+  NormalizedFeeCalculatorBlockNotFound: 'normalized_fee_calculator_block_not_found'
 };
