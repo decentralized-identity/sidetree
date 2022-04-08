@@ -1,5 +1,5 @@
-import { ConfirmationModel } from '../../lib/core/interfaces/IConfirmationStore';
 import Config from '../../lib/core/models/Config';
+import { ConfirmationModel } from '../../lib/core/interfaces/IConfirmationStore';
 import MongoDb from '../common/MongoDb';
 import MongoDbConfirmationStore from '../../lib/core/MongoDbConfirmationStore';
 
