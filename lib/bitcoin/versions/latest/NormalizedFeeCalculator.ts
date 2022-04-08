@@ -1,11 +1,11 @@
-import SidetreeError from '../../../common/SidetreeError';
-import ErrorCode from '../../ErrorCode';
 import BlockMetadata from '../../models/BlockMetadata';
 import BlockMetadataWithoutNormalizedFee from '../../models/BlockMetadataWithoutNormalizedFee';
+import ErrorCode from '../../ErrorCode';
 import IBlockMetadataStore from '../../interfaces/IBlockMetadataStore';
 import IFeeCalculator from '../../interfaces/IFeeCalculator';
 import LogColor from '../../../common/LogColor';
 import Logger from '../../../common/Logger';
+import SidetreeError from '../../../common/SidetreeError';
 
 /**
  * `IFeeCalculator` implementation.
