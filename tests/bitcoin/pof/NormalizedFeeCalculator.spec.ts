@@ -1,3 +1,5 @@
+import ErrorCode from '../../../lib/bitcoin/ErrorCode';
+import BlockMetadata from '../../../lib/bitcoin/models/BlockMetadata';
 import BlockMetadataWithoutNormalizedFee from '../../../lib/bitcoin/models/BlockMetadataWithoutNormalizedFee';
 import IBlockMetadataStore from '../../../lib/bitcoin/interfaces/IBlockMetadataStore';
 import MockBlockMetadataStore from '../../mocks/MockBlockMetadataStore';
@@ -288,6 +290,13 @@ describe('NormalizedFeeCalculaor', () => {
       const result = await normalizedFeeCalculator.getNormalizedFee(0);
       expect(result).toEqual(1);
       expect(blockMetadataGetSpy).toHaveBeenCalled();
+    });
+    it('should throw when block not yet recognized', async () => {
+      const blocks : BlockMetadata[] = [];
+      spyOn(normalizedFeeCalculator['blockMetadataStore'], 'get').and.returnValue(Promise.resolve(blocks));
+      await expectAsync(normalizedFeeCalculator.getNormalizedFee(0)).toBeRejectedWith(jasmine.objectContaining({
+        code: ErrorCode.NormalizedFeeCalculatorBlockNotFound
+      }));
     });
   });
 
