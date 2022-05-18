@@ -43,7 +43,6 @@ describe('MongoDbLockTransactionStore', async () => {
   const config: Config = require('../../json/config-test.json');
   const databaseName = 'sidetree-test';
 
-  let mongoServiceAvailable: boolean | undefined;
   let lockStore: MongoDbLockTransactionStore;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
@@ -51,11 +50,8 @@ describe('MongoDbLockTransactionStore', async () => {
   beforeAll(async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
-    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
-
-    if (mongoServiceAvailable) {
-      lockStore = await createLockStore(config.mongoDbConnectionString, databaseName);
-    }
+    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    lockStore = await createLockStore(config.mongoDbConnectionString, databaseName);
   });
 
   afterAll(() => {
@@ -63,10 +59,6 @@ describe('MongoDbLockTransactionStore', async () => {
   });
 
   beforeEach(async () => {
-    if (!mongoServiceAvailable) {
-      pending('MongoDB service not available');
-    }
-
     await lockStore.clearCollection();
   });
 

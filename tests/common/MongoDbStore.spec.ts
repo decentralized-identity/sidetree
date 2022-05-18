@@ -6,16 +6,12 @@ import MongoDbStore from '../../lib/common/MongoDbStore';
 
 describe('MongoDbStore', async () => {
   const config: Config = require('../json/config-test.json');
-  let mongoServiceAvailable = false;
 
   beforeAll(async () => {
-    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
+    await MongoDb.createInmemoryDb(config.mongoDbPort);
   });
 
   beforeEach(async () => {
-    if (!mongoServiceAvailable) {
-      pending('MongoDB service not available');
-    }
   });
 
   it('should invoke command monitoring logger with different log level according to command response status', async () => {

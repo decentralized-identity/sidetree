@@ -86,20 +86,12 @@ describe('MongoDbOperationStore', async () => {
 
   let operationStore: IOperationStore;
   const config = require('../json/config-test.json');
-
-  let mongoServiceAvailable = false;
   beforeAll(async () => {
-    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
-    if (mongoServiceAvailable) {
-      operationStore = await createOperationStore(config.mongoDbConnectionString);
-    }
+    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    operationStore = await createOperationStore(config.mongoDbConnectionString);
   });
 
   beforeEach(async () => {
-    if (!mongoServiceAvailable) {
-      pending('MongoDB service not available');
-    }
-
     await operationStore.delete();
   });
 

@@ -45,20 +45,13 @@ describe('MongoDbTransactionStore', async () => {
   const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
-  let mongoServiceAvailable: boolean | undefined;
   let transactionStore: MongoDbTransactionStore;
   beforeAll(async () => {
-    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
-    if (mongoServiceAvailable) {
-      transactionStore = await createTransactionStore(config.mongoDbConnectionString, databaseName);
-    }
+    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    transactionStore = await createTransactionStore(config.mongoDbConnectionString, databaseName);
   });
 
   beforeEach(async () => {
-    if (!mongoServiceAvailable) {
-      pending('MongoDB service not available');
-    }
-
     await transactionStore.clearCollection();
   });
 

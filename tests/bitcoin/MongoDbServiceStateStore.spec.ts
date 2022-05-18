@@ -18,21 +18,14 @@ describe('MongoDbServiceStateStore', async () => {
   const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
-  let mongoServiceAvailable = false;
   let store: MongoDbServiceStateStore<BitcoinServiceStateModel>;
 
   beforeAll(async () => {
-    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
-    if (mongoServiceAvailable) {
-      store = await createStore(config.mongoDbConnectionString, databaseName);
-    }
+    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    store = await createStore(config.mongoDbConnectionString, databaseName);
   });
 
   beforeEach(async () => {
-    if (!mongoServiceAvailable) {
-      pending('MongoDB service not available');
-    }
-
     await store.clearCollection();
   });
 
