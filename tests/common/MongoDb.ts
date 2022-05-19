@@ -1,20 +1,22 @@
-import { MongoClient } from 'mongodb';
+const MongoMemoryServer = require('mongodb-memory-server').MongoMemoryServer;
 
 /**
  * MongoDB related operations.
  */
 export default class MongoDb {
+  private static initialized : boolean;
+
   /**
-   * Test if a MongoDB service is running at the specified url.
+   * Setup inmemory mongodb to test with
    */
-  public static async isServerAvailable (serverUrl: string): Promise<boolean> {
-    try {
-      const client = await MongoClient.connect(serverUrl);
-      await client.close();
-    } catch (error) {
-      console.info('Mongoclient connect error: ' + error);
-      return false;
+  public static async createInmemoryDb (port: number): Promise<void> {
+    if (!MongoDb.initialized) {
+      await MongoMemoryServer.create({
+        instance: {
+          port
+        }
+      });
+      MongoDb.initialized = true;
     }
-    return true;
   }
 }

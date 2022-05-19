@@ -55,20 +55,13 @@ describe('MongoDbUnresolvableTransactionStore', async () => {
   const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
-  let mongoServiceAvailable = false;
   let store: MongoDbUnresolvableTransactionStore;
   beforeAll(async () => {
-    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
-    if (mongoServiceAvailable) {
-      store = await createIUnresolvableTransactionStore(config.mongoDbConnectionString, databaseName);
-    }
+    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    store = await createIUnresolvableTransactionStore(config.mongoDbConnectionString, databaseName);
   });
 
   beforeEach(async () => {
-    if (!mongoServiceAvailable) {
-      pending('MongoDB service not available');
-    }
-
     await store.clearCollection();
   });
 

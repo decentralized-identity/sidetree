@@ -7,6 +7,7 @@ import BlockMetadataWithoutNormalizedFee from '../models/BlockMetadataWithoutNor
 export default interface IFeeCalculator {
   /**
    * Returns the fee in satoshis for a particular block height.
+   * @throws SidetreeError with ErrorCode.NormalizedFeeCalculatorBlockNotFound if given block is not found.
    */
   getNormalizedFee (block: number): Promise<number>;
 

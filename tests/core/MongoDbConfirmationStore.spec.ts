@@ -1,5 +1,5 @@
-import { ConfirmationModel } from '../../lib/core/interfaces/IConfirmationStore';
 import Config from '../../lib/core/models/Config';
+import { ConfirmationModel } from '../../lib/core/interfaces/IConfirmationStore';
 import MongoDb from '../common/MongoDb';
 import MongoDbConfirmationStore from '../../lib/core/MongoDbConfirmationStore';
 
@@ -16,20 +16,13 @@ describe('MongoDbConfirmationStore', async () => {
   const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
-  let mongoServiceAvailable: boolean | undefined;
   let confirmationStore: MongoDbConfirmationStore;
   beforeAll(async () => {
-    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
-    if (mongoServiceAvailable) {
-      confirmationStore = await createConfirmationStore(config.mongoDbConnectionString, databaseName);
-    }
+    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    confirmationStore = await createConfirmationStore(config.mongoDbConnectionString, databaseName);
   });
 
   beforeEach(async () => {
-    if (!mongoServiceAvailable) {
-      pending('MongoDB service not available');
-    }
-
     await confirmationStore.clearCollection();
   });
 

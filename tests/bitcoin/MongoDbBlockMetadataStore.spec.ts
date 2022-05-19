@@ -18,20 +18,13 @@ describe('MongoDbBlockMetadataStore', async () => {
   const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
-  let mongoServiceAvailable = false;
   let blockMetadataStore: MongoDbBlockMetadataStore;
   beforeAll(async () => {
-    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
-    if (mongoServiceAvailable) {
-      blockMetadataStore = await createBlockMetadataStore(config.mongoDbConnectionString, databaseName);
-    }
+    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    blockMetadataStore = await createBlockMetadataStore(config.mongoDbConnectionString, databaseName);
   });
 
   beforeEach(async () => {
-    if (!mongoServiceAvailable) {
-      pending('MongoDB service not available');
-    }
-
     await blockMetadataStore.clearCollection();
   });
 
