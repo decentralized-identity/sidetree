@@ -47,7 +47,7 @@ describe('MongoDbTransactionStore', async () => {
 
   let transactionStore: MongoDbTransactionStore;
   beforeAll(async () => {
-    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    await MongoDb.createInmemoryDb(config);
     transactionStore = await createTransactionStore(config.mongoDbConnectionString, databaseName);
   });
 

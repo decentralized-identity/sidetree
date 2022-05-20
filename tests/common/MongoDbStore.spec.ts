@@ -8,7 +8,7 @@ describe('MongoDbStore', async () => {
   const config: Config = require('../json/config-test.json');
 
   beforeAll(async () => {
-    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    await MongoDb.createInmemoryDb(config);
   });
 
   beforeEach(async () => {

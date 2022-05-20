@@ -87,7 +87,7 @@ describe('MongoDbOperationStore', async () => {
   let operationStore: IOperationStore;
   const config = require('../json/config-test.json');
   beforeAll(async () => {
-    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    await MongoDb.createInmemoryDb(config);
     operationStore = await createOperationStore(config.mongoDbConnectionString);
   });
 

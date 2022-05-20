@@ -18,7 +18,7 @@ describe('MongoDbConfirmationStore', async () => {
 
   let confirmationStore: MongoDbConfirmationStore;
   beforeAll(async () => {
-    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    await MongoDb.createInmemoryDb(config);
     confirmationStore = await createConfirmationStore(config.mongoDbConnectionString, databaseName);
   });
 
