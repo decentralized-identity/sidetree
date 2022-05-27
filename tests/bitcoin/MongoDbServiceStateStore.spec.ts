@@ -21,7 +21,7 @@ describe('MongoDbServiceStateStore', async () => {
   let store: MongoDbServiceStateStore<BitcoinServiceStateModel>;
 
   beforeAll(async () => {
-    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    await MongoDb.createInmemoryDb(config);
     store = await createStore(config.mongoDbConnectionString, databaseName);
   });
 

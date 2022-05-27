@@ -57,7 +57,7 @@ describe('MongoDbUnresolvableTransactionStore', async () => {
 
   let store: MongoDbUnresolvableTransactionStore;
   beforeAll(async () => {
-    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    await MongoDb.createInmemoryDb(config);
     store = await createIUnresolvableTransactionStore(config.mongoDbConnectionString, databaseName);
   });
 

@@ -8,6 +8,5 @@ export default interface Config {
   didMethodName: string;
   maxConcurrentDownloads: number;
   mongoDbConnectionString: string;
-  mongoDbPort: number;
   observingIntervalInSeconds: number;
 }

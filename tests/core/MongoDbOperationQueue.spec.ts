@@ -37,7 +37,7 @@ describe('MongoDbOperationQueue', async () => {
 
   let operationQueue: MongoDbOperationQueue;
   beforeAll(async () => {
-    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    await MongoDb.createInmemoryDb(config);
     operationQueue = await createOperationQueue(config.mongoDbConnectionString, databaseName);
   });
 

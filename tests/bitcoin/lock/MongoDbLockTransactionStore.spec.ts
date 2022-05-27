@@ -50,7 +50,7 @@ describe('MongoDbLockTransactionStore', async () => {
   beforeAll(async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
-    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    await MongoDb.createInmemoryDb(config);
     lockStore = await createLockStore(config.mongoDbConnectionString, databaseName);
   });
 

@@ -20,7 +20,7 @@ describe('MongoDbBlockMetadataStore', async () => {
 
   let blockMetadataStore: MongoDbBlockMetadataStore;
   beforeAll(async () => {
-    await MongoDb.createInmemoryDb(config.mongoDbPort);
+    await MongoDb.createInmemoryDb(config);
     blockMetadataStore = await createBlockMetadataStore(config.mongoDbConnectionString, databaseName);
   });
 
