@@ -29,6 +29,11 @@ See the [API spec](https://identity.foundation/sidetree/api/) for the full API s
 ![npm-version](https://badgen.net/npm/v/@decentralized-identity/sidetree)
 ![npm-unstable-version](https://badgen.net/npm/v/@decentralized-identity/sidetree/unstable)
 
+
+Code Coverage
+
+![Statements](https://img.shields.io/badge/statements-100%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-100%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-100%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-100%25-brightgreen.svg?style=flat)
+
 See the [test vectors](tests/fixtures) for input fixtures that are expected by all sidetree implementations.
 
 See the [reference implementation document](docs/core.md) for description of the reference implementation.

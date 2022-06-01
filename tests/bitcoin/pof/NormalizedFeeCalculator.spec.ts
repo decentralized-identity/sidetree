@@ -1,11 +1,11 @@
-import ErrorCode from '../../../lib/bitcoin/ErrorCode';
 import BlockMetadata from '../../../lib/bitcoin/models/BlockMetadata';
 import BlockMetadataWithoutNormalizedFee from '../../../lib/bitcoin/models/BlockMetadataWithoutNormalizedFee';
+import ErrorCode from '../../../lib/bitcoin/ErrorCode';
 import IBlockMetadataStore from '../../../lib/bitcoin/interfaces/IBlockMetadataStore';
 import MockBlockMetadataStore from '../../mocks/MockBlockMetadataStore';
 import NormalizedFeeCalculator from '../../../lib/bitcoin/versions/latest/NormalizedFeeCalculator';
 
-describe('NormalizedFeeCalculaor', () => {
+describe('NormalizedFeeCalculator', () => {
   let normalizedFeeCalculator: NormalizedFeeCalculator;
   let mockMetadataStore: IBlockMetadataStore;
 
