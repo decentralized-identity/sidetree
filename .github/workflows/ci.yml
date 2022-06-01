@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [12, 14]
+        node-version: [16.x]
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
@@ -16,4 +16,5 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - run: npm i
-    - run: npm run test 
+    - run: npm run test:only # so we don't run the code coverage badge creation script and let the line below handle it
+    - run: npm run badge:cc:ci # throws if README output differs to README to be checked in (thus detects if tests are not run)
