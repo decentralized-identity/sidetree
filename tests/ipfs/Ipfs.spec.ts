@@ -1,3 +1,4 @@
+import nodeFetch from 'node-fetch';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import Ipfs from '../../lib/ipfs/Ipfs';
@@ -9,23 +10,41 @@ import SidetreeError from '../../lib/common/SidetreeError';
 import Timeout from '../../lib/ipfs/Util/Timeout';
 
 describe('Ipfs', async () => {
+  const config = require('../json/config-test.json');
   let casClient: ICas;
+  let networkAvailable = false;
+  beforeAll(async () => {
+    // test network connectivity, `networkAvailable` is used by tests to decide whether to run tests through real network calls or stubs
+    const ipfsVersionUrl = new URL('/api/v0/version', config.ipfsHttpApiEndpointUri).toString();
+    try {
+      const response = await nodeFetch(ipfsVersionUrl, { method: 'POST' });
+
+      if(response.status === 200) {
+        networkAvailable = true;
+      }
+    } catch {
+      // no op, all tests will run through stubs
+    }
+  });
 
   beforeEach(() => {
     const fetchTimeoutInSeconds = 1;
-    casClient = new Ipfs('http://anything.com/', fetchTimeoutInSeconds);
+    casClient = new Ipfs(config.ipfsHttpApiEndpointUri, fetchTimeoutInSeconds);
   });
 
   describe('write()', async () => {
     it('should return file hash of the content written.', async () => {
-      const fetchSpy = spyOn(casClient as any, 'fetch').and.returnValue(Promise.resolve({ status: 200, body: 'unused' }));
-      const readAllSpy = spyOn(ReadableStream, 'readAll')
-        .and.returnValue(Promise.resolve(Buffer.from(JSON.stringify({ Hash: 'QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko' }))));
-      const hash = await casClient.write(Buffer.from('unused'));
 
-      expect(fetchSpy).toHaveBeenCalled();
-      expect(readAllSpy).toHaveBeenCalled();
-      expect(hash).toEqual('QmWCcaE2iTRnJxqaC4VGFhD6ARsqRNPe2D2eYJTWgeP7ko'); // hash here is based64 encoded string. `readAll()` returns base58 encoded string.
+      // stub network call if network is not available
+      // testing using real network calls will help detect regression such as https://github.com/decentralized-identity/sidetree/issues/1188
+      if (!networkAvailable) {
+        spyOn(casClient as any, 'fetch').and.returnValue(Promise.resolve({ status: 200, body: 'unused' }));
+        spyOn(ReadableStream, 'readAll')
+          .and.returnValue(Promise.resolve(Buffer.from(JSON.stringify({ Hash: 'QmNaJwbzQuMwBdBk24WqyinzMNWsiK1rJPN1WnL4uwKQaA' }))));
+      }
+
+      const hash = await casClient.write(Buffer.from('anyBuffer'));
+      expect(hash).toEqual('QmNaJwbzQuMwBdBk24WqyinzMNWsiK1rJPN1WnL4uwKQaA');
     });
 
     it('should throw if content writing IPFS HTTP API returned a non-OK status with or without body', async () => {

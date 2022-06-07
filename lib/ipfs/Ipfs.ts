@@ -30,17 +30,20 @@ export default class Ipfs implements ICas {
     // An example of multipart form data:
     //
     // --ABoundaryString
+    // Content-Disposition: form-data;
     //
     // Content of the first part.
     // --ABoundaryString
+    // Content-Disposition: form-data;
     // Content-Type: application/octet-stream
     //
     // Binary content of second part.
     // --ABoundaryString--
     const beginBoundary = Buffer.from(`--${multipartBoundaryString}\n`);
+    const contentDisposition = Buffer.from(`Content-Disposition: form-data;\n`) // Required since IPFS v0.11
     const firstPartContentType = Buffer.from(`Content-Type: application/octet-stream\n\n`);
     const endBoundary = Buffer.from(`\n--${multipartBoundaryString}--`);
-    const requestBody = Buffer.concat([beginBoundary, firstPartContentType, content, endBoundary]);
+    const requestBody = Buffer.concat([beginBoundary, contentDisposition, firstPartContentType, content, endBoundary]);
 
     const requestParameters = {
       method: 'POST',
