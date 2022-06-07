@@ -3,6 +3,7 @@
   "didMethodName": "sidetree",
   "blockchainServiceUri": "http://127.0.0.1:3002",
   "batchingIntervalInSeconds": 10,
+  "ipfsHttpApiEndpointUri": "http://127.0.0.1:5001",
   "maxConcurrentDownloads": 20,
   "mongoDbConnectionString": "mongodb://localhost:27018/",
   "observingIntervalInSeconds": 10,
