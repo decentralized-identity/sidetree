@@ -20,10 +20,14 @@ Checklist before creating a stable release:
 To create a stable release follow the following steps:
 
 1. Checkout the head of master `git checkout master && git pull`
-1. Create a new release branch from master called `release`
+1. Create a new release branch from master called `release`:
+
+   `git checkout -b release`
+
 1. Install the dependencies `npm install`
-1. Build the package `npm build`
+1. Build the package `npm run build`
 1. Test the package `npm test`
+1. Sanity check: check the repo is completely clean without pending changes by running `npm status`, else the next command to commit a new version will fail.
 1. Run `npm run version:release`, with an appropriate option such as [ `major` | `minor` | `patch` ].
 1. Observe and note down the correctly incremented version number X.Y.Z change to the `package.json` and changes to `CHANGELOG.md`
 1. Push the release branch and open a pull request for the release.

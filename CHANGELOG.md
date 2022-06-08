@@ -1,3 +1,31 @@
+## [1.0.6](https://github.com/decentralized-identity/sidetree/compare/v1.0.4...v1.0.6) (2022-06-08)
+
+
+### Bug Fixes
+
+* **ref-imp:** [#1015](https://github.com/decentralized-identity/sidetree/issues/1015) - Set deactivated metadata property ([151be6f](https://github.com/decentralized-identity/sidetree/commit/151be6f44435c139906bf68bd02b60c89e734e6a))
+* **ref-imp:** [#1169](https://github.com/decentralized-identity/sidetree/issues/1169) - fixed bug on commit-reveal chain leading to infinite loop in resolution ([156df5f](https://github.com/decentralized-identity/sidetree/commit/156df5fef61e452848f69bf33d77a98eda2f09c9))
+* **ref-imp:** added support for IPFS v0.11 ([a196c52](https://github.com/decentralized-identity/sidetree/commit/a196c52be703d876e292d01fa8da9c1bab10b751))
+* **ref-imp:** allow Bitcoin Core to remember list of wallet to load during startup ([#1164](https://github.com/decentralized-identity/sidetree/issues/1164)) ([23d726e](https://github.com/decentralized-identity/sidetree/commit/23d726eca8654fe1ffea94939a699b6bc007886d))
+* **ref-imp:** fix deactivate ([#1149](https://github.com/decentralized-identity/sidetree/issues/1149)) ([6322ef2](https://github.com/decentralized-identity/sidetree/commit/6322ef2397694436f6f34e4ac7434ce6eb375de3))
+* **ref-imp:** fixed an integer precision bug in how transaction number is constructed ([c19a1ec](https://github.com/decentralized-identity/sidetree/commit/c19a1ec7eca4a5d9ff24989b1f37a6ac6eff40f7))
+* **ref-imp:** fixed casing that prevented filtering out mongo commands in logs ([d0c42d8](https://github.com/decentralized-identity/sidetree/commit/d0c42d80ccf14473f273f430c7bbcbb2910196fb))
+* **ref-imp:** fixed run time crashing of Core due to previous mongodb logging commit ([5c0c7f9](https://github.com/decentralized-identity/sidetree/commit/5c0c7f9a6bd04220284eeed5c249ccc8cb87ad01))
+* **ref-imp:** fixes controller property to have a value ([83ef023](https://github.com/decentralized-identity/sidetree/commit/83ef02300a400471537f2d2ad87f78a3b266154c))
+* **ref-imp:** fixing/removing dependencies with known vulnerabilities ([6099613](https://github.com/decentralized-identity/sidetree/commit/609961361e97546ff9d5139d961244b13df99dad))
+* **ref-imp:** integrate custom logger with mongodb ([#1157](https://github.com/decentralized-identity/sidetree/issues/1157)) ([a357828](https://github.com/decentralized-identity/sidetree/commit/a357828e179a5aaa165e87ae32f652b84788cbe2))
+* **ref-imp:** port transaction processor fix to v1 folder ([19c9492](https://github.com/decentralized-identity/sidetree/commit/19c949235ecdb7928719610d2fbae4996e74432d))
+* **ref-imp:** refactored getWriterValueTimeLock() to handle error better ([6f9b4d5](https://github.com/decentralized-identity/sidetree/commit/6f9b4d5d9947ef5e6a69c668f1c62682e7be368c))
+* **ref-imp:** updated bitcoin service to retry on connectivity issues ([2fe9c78](https://github.com/decentralized-identity/sidetree/commit/2fe9c785df61c75ce81347c93fdf52042e7319c1))
+
+
+### BREAKING CHANGES
+
+* **ref-imp:** The controller is no longer an empty string and instead matches
+the document id property (e.g. the did being resolved)
+
+
+
 ## [1.0.5](https://github.com/decentralized-identity/sidetree/compare/v1.0.4...v1.0.5) (2021-07-26)
 
 

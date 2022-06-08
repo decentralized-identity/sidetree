@@ -1,6 +1,6 @@
 {
   "name": "@decentralized-identity/sidetree",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Node.js implementation of Sidetree.",
   "repository": "https://github.com/decentralized-identity/sidetree",
   "license": "Apache-2.0",
@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@commitlint/cli": "^10.0.0",
+    "@ryansonshine/cz-conventional-changelog": "^3.3.4",
     "@types/async-retry": "1.4.0",
     "@types/bitcore-lib": "0.15.1",
     "@types/http-status": "0.2.30",
@@ -40,7 +41,6 @@
     "conventional-changelog": "3.1.18",
     "conventional-changelog-cli": "2.0.35",
     "copyfiles": "2.3.0",
-    "cz-conventional-changelog": "3.1.0",
     "eslint": "^7.10.0",
     "eslint-config-standard": "^14.1.1",
     "eslint-plugin-import": "^2.22.1",
@@ -54,8 +54,7 @@
     "jasmine-reporters": "^2.5.0",
     "jasmine-spec-reporter": "4.2.1",
     "mongodb-memory-server": "^8.5.2",
-    "nyc": "15.0.1",
-    "spec-up": "0.10.3",
+    "nyc": "^15.1.0",
     "ts-node": "8.3.0",
     "tslint": "5.11.0",
     "tslint-config-standard": "8.0.1",
