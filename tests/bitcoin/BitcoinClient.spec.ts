@@ -375,7 +375,10 @@ describe('BitcoinClient', async () => {
       await bitcoinClient['createWallet']();
       expect(rpcSpy).toHaveBeenCalledWith({
         method: 'createwallet',
-        params: ['sidetreeDefaultWallet']
+        params: {
+          wallet_name: 'sidetreeDefaultWallet',
+          descriptors: false
+        }
       }, true, false);
       expect(loggerSpy).toHaveBeenCalledWith(`Wallet created with name "sidetreeDefaultWallet".`);
     });
@@ -388,7 +391,10 @@ describe('BitcoinClient', async () => {
       } catch {
         expect(rpcSpy).toHaveBeenCalledWith({
           method: 'createwallet',
-          params: ['sidetreeDefaultWallet']
+          params: {
+            wallet_name: 'sidetreeDefaultWallet',
+            descriptors: false
+          }
         }, true, false);
       }
     });
@@ -399,7 +405,10 @@ describe('BitcoinClient', async () => {
       await bitcoinClient['createWallet']();
       expect(rpcSpy).toHaveBeenCalledWith({
         method: 'createwallet',
-        params: ['sidetreeDefaultWallet']
+        params: {
+          wallet_name: 'sidetreeDefaultWallet',
+          descriptors: false
+        }
       }, true, false);
       expect(loggerSpy).toHaveBeenCalledWith(`Wallet with name sidetreeDefaultWallet already exists.`);
     });

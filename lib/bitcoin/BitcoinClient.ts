@@ -283,9 +283,14 @@ export default class BitcoinClient {
   }
 
   private async createWallet () {
+    // Bitcoin Core 23.0 creates discriptor wallets by default, must set to false until further updates can be made to this repo.
+    // https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-23.0.md#wallet
     const request = {
       method: 'createwallet',
-      params: [this.walletNameToUse] // the wallet name
+      params: {
+        wallet_name: this.walletNameToUse,
+        descriptors: false
+      }
     };
 
     // Intentionally not throwing because bitcoin returns 500 when a wallet is already created
