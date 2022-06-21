@@ -841,17 +841,17 @@ export default class BitcoinClient {
 
   /**
    *
-   * @param request The request for the rpc call
+   * @param request The request for the RPC call
    * @param timeout Should timeout or not
-   * @param isWalletRpc Is wallet rpc or not. Should pass in true if the rpc call is called on specific wallet
+   * @param isWalletRpc Must set to `true` if the RPC is wallet-specific; `false` otherwise.
    */
   private async rpcCall (request: any, timeout: boolean, isWalletRpc: boolean): Promise<any> {
-    // append some standard jrpc parameters
+    // Append some standard RPC parameters.
     request.jsonrpc = '1.0';
     request.id = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
 
     const requestString = JSON.stringify(request);
-    Logger.info(`Sending jRPC request: id: ${request.id}, method: ${request.method}`);
+    Logger.info(`Sending jRPC request: id: ${request.id}, method: ${request.method}, request: ${requestString}`);
 
     const requestOptions: RequestInit = {
       body: requestString,

@@ -186,7 +186,7 @@ export default class BitcoinProcessor {
         Logger.info('Synchronizing blocks for sidetree transactions...');
         Logger.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
         if (this.config.bitcoinDataDirectory) {
-          // This reads into the raw block files and parse to speed up the initial startup instead of rpc
+          // This parses the raw block files directly to speed up the initial startup instead of using RPC calls.
           await this.fastProcessTransactions(startingBlock);
         } else {
           await this.processTransactions(startingBlock);
@@ -237,8 +237,8 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * A faster version of process transactions that requires access to bitcoin data directory
-   * @param startingBlock the starting block to begin processing
+   * A faster version of process transactions that requires access to bitcoin data directory.
+   * @param startingBlock The starting block which we have not processed yet to begin processing.
    */
   private async fastProcessTransactions (startingBlock: IBlockInfo) {
     const bitcoinBlockDataIterator = new BitcoinBlockDataIterator(this.config.bitcoinDataDirectory!);
@@ -263,6 +263,7 @@ export default class BitcoinProcessor {
         notYetValidatedBlocks,
         hashOfEarliestKnownValidBlock,
         startingBlock.height);
+
       if (validatedBlocks.length > 0) {
         heightOfEarliestKnownValidBlock = validatedBlocks[validatedBlocks.length - 1].height - 1;
         hashOfEarliestKnownValidBlock = validatedBlocks[validatedBlocks.length - 1].previousHash;
@@ -282,6 +283,14 @@ export default class BitcoinProcessor {
     Logger.info('finished fast processing');
   }
 
+  /**
+   * Used only by fast initialization.
+   * Parses given blocks to locate and store Sidetree transactions DB.
+   * @param blocks Blocks that are not in any specific order.
+   * @param notYetValidatedBlocks A map of all blocks that have not been confirmed to be part of the blockchain, where the block hash is the key.
+   * @param startingBlockHeight The height of the starting block that we have not yet processed.
+   * @param heightOfEarliestKnownValidBlock
+   */
   private async processBlocks (
     blocks: BitcoinBlockModel[],
     notYetValidatedBlocks: Map<string, BlockMetadataWithoutNormalizedFee>,
@@ -289,17 +298,22 @@ export default class BitcoinProcessor {
     heightOfEarliestKnownValidBlock: number) {
 
     for (const block of blocks) {
+      // The conditional check here is purely an optimization to avoid adding Sidetree transactions that we are for sure not interested in.
+      // But even if we add all the Sidetree transactions in these blocks in DB, `removeTransactionsInInvalidBlocks()` would have clean them up.
       if (block.height >= startingBlockHeight && block.height <= heightOfEarliestKnownValidBlock) {
-        notYetValidatedBlocks.set(
-          block.hash,
-          {
-            height: block.height,
-            hash: block.hash,
-            totalFee: BitcoinProcessor.getBitcoinBlockTotalFee(block),
-            transactionCount: block.transactions.length,
-            previousHash: block.previousHash
-          }
-        );
+        const blockMetadataWithoutFee = {
+          height: block.height,
+          hash: block.hash,
+          totalFee: BitcoinProcessor.getBitcoinBlockTotalFee(block),
+          transactionCount: block.transactions.length,
+          previousHash: block.previousHash
+        };
+
+        notYetValidatedBlocks.set(block.hash, blockMetadataWithoutFee);
+
+        // TODO: Issue #794 - https://github.com/decentralized-identity/sidetree/issues/794
+        // `processSidetreeTransactionsInBlock()` will store transactions to DB,
+        // but since we are processing from tail of the detached, an crash or an error thrown here will cause sync to resume from an incorrect block
         await this.processSidetreeTransactionsInBlock(block);
       }
     }
@@ -317,6 +331,10 @@ export default class BitcoinProcessor {
 
     let validBlockCount = 0; // Just for console print out purpose at the end.
     let validBlock = notYetValidatedBlocks.get(hashOfEarliestKnownValidBlock);
+
+    // Keep looking for the parent of the earliest known valid block from the detached chain
+    // until either we can't find a parent from the list of not-yet-validated blocks,
+    // or we have connected the detached chain to the main chain
     while (validBlock !== undefined && validBlock.height >= startingBlockHeight) {
       validatedBlocks.push(validBlock);
       // delete because it is now validated
@@ -387,7 +405,7 @@ export default class BitcoinProcessor {
       } catch (e) {
         const inputs = { blockHeight: block.height, blockHash: block.hash, transactionIndex: transactionIndex };
         Logger.info(
-          `An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: ${JSON.stringify(inputs)}\r\n` +
+          `An error happened when trying to add sidetree transaction to the store. Inputs: ${JSON.stringify(inputs)}\r\n` +
           `Full error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`
         );
 
@@ -719,6 +737,9 @@ export default class BitcoinProcessor {
     Logger.info(`Finished processing blocks ${startBlockHeight} to ${endBlockHeight}`);
   }
 
+  /**
+   * Gets the starting block (first block in chronological order) which we have not processed yet.
+   */
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
     // If last processed block is undefined, start processing from genesis block.
     if (this.lastProcessedBlock === undefined) {

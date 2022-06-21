@@ -1,4 +1,3 @@
-import nodeFetch from 'node-fetch';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import Ipfs from '../../lib/ipfs/Ipfs';
@@ -8,6 +7,7 @@ import ReadableStream from '../../lib/common/ReadableStream';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import SidetreeError from '../../lib/common/SidetreeError';
 import Timeout from '../../lib/ipfs/Util/Timeout';
+import nodeFetch from 'node-fetch';
 
 describe('Ipfs', async () => {
   const config = require('../json/config-test.json');
@@ -19,7 +19,7 @@ describe('Ipfs', async () => {
     try {
       const response = await nodeFetch(ipfsVersionUrl, { method: 'POST' });
 
-      if(response.status === 200) {
+      if (response.status === 200) {
         networkAvailable = true;
       }
     } catch {
