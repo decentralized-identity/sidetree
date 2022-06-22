@@ -11,6 +11,7 @@ import BitcoinWallet from './BitcoinWallet';
 import ErrorCode from './ErrorCode';
 import IBitcoinWallet from './interfaces/IBitcoinWallet';
 import { IBlockInfo } from './BitcoinProcessor';
+import LogColor from '../common/LogColor';
 import Logger from '../common/Logger';
 import ReadableStream from '../common/ReadableStream';
 import SidetreeError from '../common/SidetreeError';
@@ -69,7 +70,8 @@ export default class BitcoinClient {
    */
   public async initialize (): Promise<void> {
     // Periodically poll Bitcoin Core status until it is ready.
-    await this.waitUntilBitcoinCoreIsReady();
+      const bitcoinCoreStatusPollingWindowInSeconds = 60;
+      await this.waitUntilBitcoinCoreIsReady(bitcoinCoreStatusPollingWindowInSeconds);
 
     // Create and load wallet have to be called because as of bitcoin v0.21, a default wallet is no longer automatically created and loaded
     // https://github.com/bitcoin/bitcoin/pull/15454
@@ -91,8 +93,9 @@ export default class BitcoinClient {
 
   /**
    * Periodically polls Bitcoin Core status until it is ready.
+   * @param pollingWindowInSeconds Time to wait between each status check. Mainly used for speeding up unit tests.
    */
-  private async waitUntilBitcoinCoreIsReady (): Promise<void> {
+  private async waitUntilBitcoinCoreIsReady (pollingWindowInSeconds: number): Promise<void> {
     while (true) {
       try {
         Logger.info('Getting blockchain info...');
@@ -101,22 +104,23 @@ export default class BitcoinClient {
         };
 
         const isWalletRpc = false;
-        const response = await this.rpcCall(request, true, isWalletRpc);
-        const blockHeight = response?.result?.headers;
-        const syncedBlockHeight = response?.result?.blocks;
+        const allowTimeout = true;
+        const response = await this.rpcCall(request, allowTimeout, isWalletRpc);
+        const blockHeight = response.headers;
+        const syncedBlockHeight = response.blocks;
 
-        Logger.info(`Bitcoin Core sync progress: block height ${blockHeight}, synced: ${syncedBlockHeight}`);
+        Logger.info(LogColor.lightBlue(`Bitcoin sync progress: block height ${LogColor.green(blockHeight)}, sync-ed: ${LogColor.green(syncedBlockHeight)}`));
 
-        // Only return when sync-ed block height is the same as the block height (fully sync-ed).
         if (syncedBlockHeight === blockHeight) {
+          Logger.info(LogColor.lightBlue('Bitcoin Core fully synchronized'));
           return;
         }
-
-        Logger.info(`Bitcoin Core not not fully sync-ed, will wait for 1 minute before checking again...`);
-        await new Promise(resolve => setTimeout(resolve, 60000));
       } catch (error) {
-        Logger.info(`Bitcoin Core not ready or not available: ${error}.`);
+        Logger.info(LogColor.yellow(`Bitcoin Core not ready or not available: ${error}.`));
       }
+
+      Logger.info(`Recheck after ${pollingWindowInSeconds} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, pollingWindowInSeconds * 1000));
     }
   }
 
@@ -886,7 +890,7 @@ export default class BitcoinClient {
     request.id = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
 
     const requestString = JSON.stringify(request);
-    Logger.info(`Sending jRPC request: id: ${request.id}, method: ${request.method}, request: ${requestString}`);
+    Logger.info(`Sending RPC request: ${requestString}`);
 
     const requestOptions: RequestInit = {
       body: requestString,

@@ -190,11 +190,34 @@ describe('BitcoinClient', async () => {
 
   describe('waitUntilBitcoinCoreIsReady', () => {
     it('should keep checking status until Bitcoin Core is fully sync-ed', async () => {
+      const firstBitcoinCoreState = {
+        headers: 100,
+        blocks: 20 // simulates 20% synchronization
+      };
+      const secondBitcoinCoreState = {
+        headers: 100,
+        blocks: 100 // simulates 100% synchronization
+      };
+      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.returnValues(firstBitcoinCoreState, secondBitcoinCoreState);
 
+      const pollingWindowInSeconds = 0; // skip any waiting in unit tests
+      await bitcoinClient['waitUntilBitcoinCoreIsReady'](pollingWindowInSeconds);
+
+      expect(rpcSpy).toHaveBeenCalledTimes(2);
     });
 
     it('should keep checking status if error is encountered', async () => {
+      const firstBitcoinCoreState = undefined; // forcing an error to be thrown internally
+      const secondBitcoinCoreState = {
+        headers: 100,
+        blocks: 100 // simulates 100% synchronization
+      };
+      const rpcSpy = spyOn(bitcoinClient as any, 'rpcCall').and.returnValues(firstBitcoinCoreState, secondBitcoinCoreState);
 
+      const pollingWindowInSeconds = 0; // skip any waiting in unit tests
+      await bitcoinClient['waitUntilBitcoinCoreIsReady'](pollingWindowInSeconds);
+
+      expect(rpcSpy).toHaveBeenCalledTimes(2);
     });
   });
 
