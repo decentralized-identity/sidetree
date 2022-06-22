@@ -149,6 +149,7 @@ describe('BitcoinClient', async () => {
 
   describe('initialize', () => {
     it('should import key if the wallet does not exist', async () => {
+      const waitUntilBitcoinCoreIsReadySpy = spyOn(bitcoinClient as any, 'waitUntilBitcoinCoreIsReady').and.returnValue(Promise.resolve(true));
       const walletExistsSpy = spyOn(bitcoinClient as any, 'isAddressAddedToWallet').and.returnValue(Promise.resolve(false));
       const publicKeyHex = privateKeyFromBitcoinClient.toPublicKey().toBuffer().toString('hex');
 
@@ -163,6 +164,7 @@ describe('BitcoinClient', async () => {
       const loadWalletSpy = spyOn(bitcoinClient as any, 'loadWallet');
 
       await bitcoinClient.initialize();
+      expect(waitUntilBitcoinCoreIsReadySpy).toHaveBeenCalled();
       expect(walletExistsSpy).toHaveBeenCalled();
       expect(importSpy).toHaveBeenCalled();
       expect(createWalletSpy).toHaveBeenCalled();
@@ -170,6 +172,7 @@ describe('BitcoinClient', async () => {
     });
 
     it('should not import key if the wallet already exist', async () => {
+      const waitUntilBitcoinCoreIsReadySpy = spyOn(bitcoinClient as any, 'waitUntilBitcoinCoreIsReady').and.returnValue(Promise.resolve(true));
       const walletExistsSpy = spyOn(bitcoinClient as any, 'isAddressAddedToWallet').and.returnValue(Promise.resolve(true));
 
       const importSpy = spyOn(bitcoinClient as any, 'addWatchOnlyAddressToWallet');
@@ -177,10 +180,21 @@ describe('BitcoinClient', async () => {
       const loadWalletSpy = spyOn(bitcoinClient as any, 'loadWallet');
 
       await bitcoinClient.initialize();
+      expect(waitUntilBitcoinCoreIsReadySpy).toHaveBeenCalled();
       expect(walletExistsSpy).toHaveBeenCalled();
       expect(importSpy).not.toHaveBeenCalled();
       expect(createWalletSpy).toHaveBeenCalled();
       expect(loadWalletSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('waitUntilBitcoinCoreIsReady', () => {
+    it('should keep checking status until Bitcoin Core is fully sync-ed', async () => {
+
+    });
+
+    it('should keep checking status if error is encountered', async () => {
+
     });
   });
 

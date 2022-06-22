@@ -68,20 +68,55 @@ export default class BitcoinClient {
    * Initialize this bitcoin client.
    */
   public async initialize (): Promise<void> {
+    // Periodically poll Bitcoin Core status until it is ready.
+    await this.waitUntilBitcoinCoreIsReady();
+
     // Create and load wallet have to be called because as of bitcoin v0.21, a default wallet is no longer automatically created and loaded
     // https://github.com/bitcoin/bitcoin/pull/15454
+    // NOTE: We only use the Bitcoin Core wallet for read/monitoring purposes. `this.bitcoinWallet` is the abstraction for writes/spends.
     await this.createWallet();
     await this.loadWallet();
+
     const walletAddress = this.bitcoinWallet.getAddress();
 
-    Logger.info(`Checking if bitcoin contains a wallet for ${walletAddress}`);
     if (!await this.isAddressAddedToWallet(walletAddress.toString())) {
-      Logger.info(`Configuring bitcoin peer to watch address ${walletAddress}. This can take up to 10 minutes.`);
+      Logger.info(`Configuring Bitcoin Core to watch address ${walletAddress}. Requires parsing transactions starting from genesis, will take a while...`);
 
       const publicKeyAsHex = this.bitcoinWallet.getPublicKeyAsHex();
       await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
     } else {
-      Logger.info('Wallet found.');
+      Logger.info(`Bitcoin Core wallet is already watching address: ${walletAddress}`);
+    }
+  }
+
+  /**
+   * Periodically polls Bitcoin Core status until it is ready.
+   */
+  private async waitUntilBitcoinCoreIsReady (): Promise<void> {
+    while (true) {
+      try {
+        Logger.info('Getting blockchain info...');
+        const request = {
+          method: 'getblockchaininfo'
+        };
+
+        const isWalletRpc = false;
+        const response = await this.rpcCall(request, true, isWalletRpc);
+        const blockHeight = response?.result?.headers;
+        const syncedBlockHeight = response?.result?.blocks;
+
+        Logger.info(`Bitcoin Core sync progress: block height ${blockHeight}, synced: ${syncedBlockHeight}`);
+
+        // Only return when sync-ed block height is the same as the block height (fully sync-ed).
+        if (syncedBlockHeight === blockHeight) {
+          return;
+        }
+
+        Logger.info(`Bitcoin Core not not fully sync-ed, will wait for 1 minute before checking again...`);
+        await new Promise(resolve => setTimeout(resolve, 60000));
+      } catch (error) {
+        Logger.info(`Bitcoin Core not ready or not available: ${error}.`);
+      }
     }
   }
 
