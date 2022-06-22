@@ -70,25 +70,10 @@ export default class BitcoinClient {
    */
   public async initialize (): Promise<void> {
     // Periodically poll Bitcoin Core status until it is ready.
-      const bitcoinCoreStatusPollingWindowInSeconds = 60;
-      await this.waitUntilBitcoinCoreIsReady(bitcoinCoreStatusPollingWindowInSeconds);
+    const bitcoinCoreStatusPollingWindowInSeconds = 60;
+    await this.waitUntilBitcoinCoreIsReady(bitcoinCoreStatusPollingWindowInSeconds);
 
-    // Create and load wallet have to be called because as of bitcoin v0.21, a default wallet is no longer automatically created and loaded
-    // https://github.com/bitcoin/bitcoin/pull/15454
-    // NOTE: We only use the Bitcoin Core wallet for read/monitoring purposes. `this.bitcoinWallet` is the abstraction for writes/spends.
-    await this.createWallet();
-    await this.loadWallet();
-
-    const walletAddress = this.bitcoinWallet.getAddress();
-
-    if (!await this.isAddressAddedToWallet(walletAddress.toString())) {
-      Logger.info(`Configuring Bitcoin Core to watch address ${walletAddress}. Requires parsing transactions starting from genesis, will take a while...`);
-
-      const publicKeyAsHex = this.bitcoinWallet.getPublicKeyAsHex();
-      await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
-    } else {
-      Logger.info(`Bitcoin Core wallet is already watching address: ${walletAddress}`);
-    }
+    await this.initializeBitcoinCore();
   }
 
   /**
@@ -121,6 +106,29 @@ export default class BitcoinClient {
 
       Logger.info(`Recheck after ${pollingWindowInSeconds} seconds...`);
       await new Promise(resolve => setTimeout(resolve, pollingWindowInSeconds * 1000));
+    }
+  }
+
+  /**
+   * Initializes Bitcoin Core wallet required by the service.
+   * NOTE: We only use the Bitcoin Core wallet for read/monitoring purposes. `this.bitcoinWallet` is the abstraction for writes/spends.
+   * There is an opportunity here to disambiguate the two "wallets" by perhaps annotating the variables and interface with "WatchOnly/Spending".
+   */
+  private async initializeBitcoinCore (): Promise<void> {
+    // Create and load wallet have to be called because as of bitcoin v0.21, a default wallet is no longer automatically created and loaded
+    // https://github.com/bitcoin/bitcoin/pull/15454
+    await this.createWallet();
+    await this.loadWallet();
+
+    const walletAddress = this.bitcoinWallet.getAddress();
+
+    if (!await this.isAddressAddedToWallet(walletAddress.toString())) {
+      Logger.info(`Configuring Bitcoin Core to watch address ${walletAddress}. Requires parsing transactions starting from genesis, will take a while...`);
+
+      const publicKeyAsHex = this.bitcoinWallet.getPublicKeyAsHex();
+      await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
+    } else {
+      Logger.info(`Bitcoin Core wallet is already watching address: ${walletAddress}`);
     }
   }
 
