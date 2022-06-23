@@ -11,6 +11,7 @@ import BitcoinWallet from './BitcoinWallet';
 import ErrorCode from './ErrorCode';
 import IBitcoinWallet from './interfaces/IBitcoinWallet';
 import { IBlockInfo } from './BitcoinProcessor';
+import LogColor from '../common/LogColor';
 import Logger from '../common/Logger';
 import ReadableStream from '../common/ReadableStream';
 import SidetreeError from '../common/SidetreeError';
@@ -68,20 +69,66 @@ export default class BitcoinClient {
    * Initialize this bitcoin client.
    */
   public async initialize (): Promise<void> {
+    // Periodically poll Bitcoin Core status until it is ready.
+    const bitcoinCoreStatusPollingWindowInSeconds = 60;
+    await this.waitUntilBitcoinCoreIsReady(bitcoinCoreStatusPollingWindowInSeconds);
+
+    await this.initializeBitcoinCore();
+  }
+
+  /**
+   * Periodically polls Bitcoin Core status until it is ready.
+   * @param pollingWindowInSeconds Time to wait between each status check. Mainly used for speeding up unit tests.
+   */
+  private async waitUntilBitcoinCoreIsReady (pollingWindowInSeconds: number): Promise<void> {
+    while (true) {
+      try {
+        Logger.info('Getting blockchain info...');
+        const request = {
+          method: 'getblockchaininfo'
+        };
+
+        const isWalletRpc = false;
+        const allowTimeout = true;
+        const response = await this.rpcCall(request, allowTimeout, isWalletRpc);
+        const blockHeight = response.headers;
+        const syncedBlockHeight = response.blocks;
+
+        Logger.info(LogColor.lightBlue(`Bitcoin sync progress: block height ${LogColor.green(blockHeight)}, sync-ed: ${LogColor.green(syncedBlockHeight)}`));
+
+        if (blockHeight !== 0 && syncedBlockHeight === blockHeight) {
+          Logger.info(LogColor.lightBlue('Bitcoin Core fully synchronized'));
+          return;
+        }
+      } catch (error) {
+        Logger.info(LogColor.yellow(`Bitcoin Core not ready or not available: ${error}.`));
+      }
+
+      Logger.info(`Recheck after ${pollingWindowInSeconds} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, pollingWindowInSeconds * 1000));
+    }
+  }
+
+  /**
+   * Initializes Bitcoin Core wallet required by the service.
+   * NOTE: We only use the Bitcoin Core wallet for read/monitoring purposes. `this.bitcoinWallet` is the abstraction for writes/spends.
+   * There is an opportunity here to disambiguate the two "wallets" by perhaps annotating the variables and interface with "WatchOnly/Spending".
+   */
+  private async initializeBitcoinCore (): Promise<void> {
     // Create and load wallet have to be called because as of bitcoin v0.21, a default wallet is no longer automatically created and loaded
     // https://github.com/bitcoin/bitcoin/pull/15454
     await this.createWallet();
     await this.loadWallet();
+
     const walletAddress = this.bitcoinWallet.getAddress();
 
-    Logger.info(`Checking if bitcoin contains a wallet for ${walletAddress}`);
     if (!await this.isAddressAddedToWallet(walletAddress.toString())) {
-      Logger.info(`Configuring bitcoin peer to watch address ${walletAddress}. This can take up to 10 minutes.`);
+      Logger.info(`Configuring Bitcoin Core to watch address ${walletAddress}. Requires parsing transactions starting from genesis, will take a while...`);
 
       const publicKeyAsHex = this.bitcoinWallet.getPublicKeyAsHex();
       await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
     } else {
-      Logger.info('Wallet found.');
+      Logger.info(`Bitcoin Core wallet is already watching address: ${walletAddress}`);
     }
   }
 
@@ -841,17 +888,17 @@ export default class BitcoinClient {
 
   /**
    *
-   * @param request The request for the rpc call
+   * @param request The request for the RPC call
    * @param timeout Should timeout or not
-   * @param isWalletRpc Is wallet rpc or not. Should pass in true if the rpc call is called on specific wallet
+   * @param isWalletRpc Must set to `true` if the RPC is wallet-specific; `false` otherwise.
    */
   private async rpcCall (request: any, timeout: boolean, isWalletRpc: boolean): Promise<any> {
-    // append some standard jrpc parameters
+    // Append some standard RPC parameters.
     request.jsonrpc = '1.0';
     request.id = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
 
     const requestString = JSON.stringify(request);
-    Logger.info(`Sending jRPC request: id: ${request.id}, method: ${request.method}`);
+    Logger.info(`Sending RPC request: ${requestString}`);
 
     const requestOptions: RequestInit = {
       body: requestString,
