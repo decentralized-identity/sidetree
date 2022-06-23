@@ -96,7 +96,7 @@ export default class BitcoinClient {
 
         Logger.info(LogColor.lightBlue(`Bitcoin sync progress: block height ${LogColor.green(blockHeight)}, sync-ed: ${LogColor.green(syncedBlockHeight)}`));
 
-        if (syncedBlockHeight === blockHeight) {
+        if (blockHeight !== 0 && syncedBlockHeight === blockHeight) {
           Logger.info(LogColor.lightBlue('Bitcoin Core fully synchronized'));
           return;
         }
