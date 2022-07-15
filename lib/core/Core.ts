@@ -90,7 +90,7 @@ export default class Core {
     Logger.initialize(customLogger);
     EventEmitter.initialize(customEventEmitter);
 
-    // DB initialization.
+    // DB initializations.
     await this.initializeDataStores(this.config.observingIntervalInSeconds);
 
     await this.versionManager.initialize(
@@ -128,7 +128,7 @@ export default class Core {
    * @param retryWaitTimeOnFailureInSeconds Time to wait if initialization failed.
    */
   private async initializeDataStores (retryWaitTimeOnFailureInSeconds: number): Promise<void> {
-    // Keep retrying until success to handle the case when DB is not yet available upon initialization, e.g. docker-compose startup.
+    // Keep retrying until success to handle the case when DB is not yet available upon initialization, e.g. better docker-compose startup support.
     while (true) {
       try {
         await this.serviceStateStore.initialize();
