@@ -91,12 +91,7 @@ export default class Core {
     EventEmitter.initialize(customEventEmitter);
 
     // DB initializations.
-    await this.serviceStateStore.initialize();
-    await this.transactionStore.initialize();
-    await this.unresolvableTransactionStore.initialize();
-    await this.operationStore.initialize();
-    await this.confirmationStore.initialize();
-    await this.upgradeDatabaseIfNeeded();
+    await this.initializeDataStores(this.config.observingIntervalInSeconds);
 
     await this.versionManager.initialize(
       this.blockchain,
@@ -126,6 +121,30 @@ export default class Core {
     this.downloadManager.start();
 
     await this.monitor.initialize();
+  }
+
+  /**
+   * Attempts to initialize data stores until success.
+   * @param retryWaitTimeOnFailureInSeconds Time to wait if initialization failed.
+   */
+  private async initializeDataStores (retryWaitTimeOnFailureInSeconds: number): Promise<void> {
+    // Keep retrying until success to handle the case when DB is not yet available upon initialization, e.g. better docker-compose startup support.
+    while (true) {
+      try {
+        await this.serviceStateStore.initialize();
+        await this.transactionStore.initialize();
+        await this.unresolvableTransactionStore.initialize();
+        await this.operationStore.initialize();
+        await this.confirmationStore.initialize();
+        await this.upgradeDatabaseIfNeeded();
+        return;
+      } catch (error) {
+        Logger.info(LogColor.yellow(`Unable to initialize data stores: ${error}.`));
+      }
+
+      Logger.info(`Retry data store initialization after ${retryWaitTimeOnFailureInSeconds} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, retryWaitTimeOnFailureInSeconds * 1000));
+    }
   }
 
   /**

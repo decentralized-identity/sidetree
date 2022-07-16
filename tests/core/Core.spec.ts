@@ -131,6 +131,35 @@ describe('Core', async () => {
     });
   });
 
+  describe('initializeDataStores()', () => {
+    it('should keep retrying until data stores are initialized successfully', async () => {
+      const core = new Core(testConfig, testVersionConfig, mockCas);
+
+      // mock a method call within initializeDataStores() so that:
+      // 1st invocation: throws an error
+      // subsequent invocations: mocks a success
+      let callCount = 0;
+      const upgradeDatabaseIfNeededSpy = spyOn(core as any, 'upgradeDatabaseIfNeeded').and.callFake(() => {
+        callCount++;
+        if (callCount === 1) {
+          throw new Error('any error');
+        }
+      });
+
+      // mock rest of the data store initialization code to do nothing
+      spyOn(core['serviceStateStore'], 'initialize');
+      spyOn(core['transactionStore'], 'initialize');
+      spyOn(core['unresolvableTransactionStore'], 'initialize');
+      spyOn(core['operationStore'], 'initialize');
+      spyOn(core['confirmationStore'], 'initialize');
+
+      const retryWaitTimeOnFailureInSeconds = 0; // skip any waiting in unit tests
+      await core['initializeDataStores'](retryWaitTimeOnFailureInSeconds);
+
+      expect(upgradeDatabaseIfNeededSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('handleGetVersionRequest()', async () => {
     it('should call all the dependent services', async () => {
 

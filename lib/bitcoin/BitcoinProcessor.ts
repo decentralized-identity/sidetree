@@ -162,11 +162,12 @@ export default class BitcoinProcessor {
     Logger.initialize(customLogger);
     EventEmitter.initialize(customEventEmitter);
 
+    await this.bitcoinClient.initialize();
+
     await this.versionManager.initialize(versionModels, this.config, this.blockMetadataStore);
     await this.serviceStateStore.initialize();
     await this.blockMetadataStore.initialize();
     await this.transactionStore.initialize();
-    await this.bitcoinClient.initialize();
     await this.mongoDbLockTransactionStore.initialize();
 
     await this.upgradeDatabaseIfNeeded();
