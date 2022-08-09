@@ -249,3 +249,40 @@ Without careful validation, use of `ietf-json-patch` may result in unrecoverable
 ::: warning
 Use of `ietf-json-patch` may harm an implmentation's ability to perform validation on operations at ingestion time, which could impact performance negatively.
 :::
+
+#### `add-also-known-as`
+
+::: example
+```json
+{
+  "action": "add-also-known-as",
+  "uris": [
+    "did:example:1234"
+  ]
+}
+```
+:::
+
+The `add-also-known-as` _Patch Action_ describes the addition of [Also Known As](https://www.w3.org/TR/did-core/#also-known-as) to a DID's state. For any part of an `add-also-known-as` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct an `add-also-known-as` patch, compose an object as follows:
+
+1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `add-also-known-as`.
+2. The object ****MUST**** include a `uris` property, and its value ****MUST**** be an array. Each value of the array ***MUST*** be a URI. If the value is not of the correct type, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
+
+
+#### `remove-also-known-as`
+
+::: example
+```json
+{
+  "action": "remove-also-known-as",
+  "uris": [
+    "did:example:1234"
+  ]
+}
+```
+:::
+
+The `remove-also-known-as` _Patch Action_ describes the removal of [Also Known As](https://www.w3.org/TR/did-core/#also-known-as) from a DID's state. For any part of an `remove-also-known-as` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. To construct a `remove-also-known-as` _Patch Action_, compose an object as follows:
+
+1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `remove-also-known-as`.
+2. The object ****MUST**** include a `uris` property, and its value ****MUST**** be an array of URIs that correspond with `Also Known As` URIs presently associated with the DID that are to be removed.
