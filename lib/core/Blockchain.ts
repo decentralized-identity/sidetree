@@ -201,6 +201,9 @@ export default class Blockchain implements IBlockchain {
     if (response.status === HttpStatus.NOT_FOUND) {
       return undefined;
     }
+    if (response.status === HttpStatus.SERVICE_UNAVAILABLE) {
+      return undefined;
+    }
 
     if (response.status !== HttpStatus.OK) {
       throw new SidetreeError(CoreErrorCode.BlockchainGetLockResponseNotOk, `Response: ${responseBodyString}`);
@@ -212,6 +215,9 @@ export default class Blockchain implements IBlockchain {
   public async getWriterValueTimeLock (): Promise<ValueTimeLockModel | undefined> {
     const response = await this.fetch(this.writerLockUri);
     if (response.status === HttpStatus.NOT_FOUND) {
+      return undefined;
+    }
+    if (response.status === HttpStatus.SERVICE_UNAVAILABLE) {
       return undefined;
     }
 
