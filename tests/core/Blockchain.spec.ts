@@ -380,23 +380,6 @@ describe('Blockchain', async () => {
       done();
     });
 
-    it('should return undefined if service-unavailable is returned by the network call.', async (done) => {
-      const blockchainClient = new Blockchain('unused');
-
-      const mockFetchResponse = {
-        status: 503,
-        body: ''
-      };
-
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
-
-      const actual = await blockchainClient.getValueTimeLock('non-existent-identifier');
-
-      expect(actual).not.toBeDefined();
-      done();
-    });
-
     it('should return undefined if not-found is returned by the network call.', async (done) => {
       const blockchainClient = new Blockchain('unused');
 

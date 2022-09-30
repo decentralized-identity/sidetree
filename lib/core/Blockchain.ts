@@ -201,9 +201,6 @@ export default class Blockchain implements IBlockchain {
     if (response.status === HttpStatus.NOT_FOUND) {
       return undefined;
     }
-    if (response.status === HttpStatus.SERVICE_UNAVAILABLE) {
-      return undefined;
-    }
 
     if (response.status !== HttpStatus.OK) {
       throw new SidetreeError(CoreErrorCode.BlockchainGetLockResponseNotOk, `Response: ${responseBodyString}`);
