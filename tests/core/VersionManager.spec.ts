@@ -214,6 +214,9 @@ describe('VersionManager', async () => {
       const requestHandler = versionMgr.getRequestHandler(2000);
       await expectAsync(requestHandler.handleResolveRequest('')).toBeRejected();
 
+      const latestRequestHandler = versionMgr.getLatestVersionRequestHandler();
+      await expectAsync(latestRequestHandler.handleResolveRequest('')).toBeRejected();
+
       const txProcessor = versionMgr.getTransactionProcessor(10000);
       const txModel: TransactionModel = {
         anchorString: '',

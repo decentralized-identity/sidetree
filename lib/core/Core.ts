@@ -5,9 +5,11 @@ import BatchScheduler from './BatchScheduler';
 import Blockchain from './Blockchain';
 import BlockchainClock from './BlockchainClock';
 import Config from './models/Config';
+import Did from './versions/latest/Did';
 import DownloadManager from './DownloadManager';
 import ErrorCode from './ErrorCode';
 import EventEmitter from '../common/EventEmitter';
+import IRequestHandler from './interfaces/IRequestHandler';
 import LogColor from '../common/LogColor';
 import Logger from '../common/Logger';
 import MongoDbConfirmationStore from './MongoDbConfirmationStore';
@@ -159,13 +161,21 @@ export default class Core {
 
   /**
    * Handles resolve operation.
+   * Using resolver based on blockchain time for shortform
+   * Or the latest resolver for longform where blockchain time is irrelevant
    * @param didOrDidDocument Can either be:
    *   1. Fully qualified DID. e.g. 'did:sidetree:abc' or
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
   public async handleResolveRequest (didOrDidDocument: string): Promise<ResponseModel> {
-    const currentTime = this.blockchainClock.getTime()!;
-    const requestHandler = this.versionManager.getRequestHandler(currentTime);
+    var requestHandler: IRequestHandler;
+
+    if (Did.isShortFormDid(didOrDidDocument, this.config.didMethodName)) {
+      const currentTime = this.blockchainClock.getTime()!;
+      requestHandler = this.versionManager.getRequestHandler(currentTime);
+    } else {
+      requestHandler = this.versionManager.getLatestVersionRequestHandler();
+    }
     const response = requestHandler.handleResolveRequest(didOrDidDocument);
     return response;
   }

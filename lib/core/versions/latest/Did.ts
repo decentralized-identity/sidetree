@@ -37,19 +37,7 @@ export default class Did {
     const didPrefix = `did:${didMethodName}:`;
     // TODO https://github.com/decentralized-identity/sidetree/issues/470 add network prefix to the didPrefix string
 
-    if (!did.startsWith(didPrefix)) {
-      throw new SidetreeError(ErrorCode.DidIncorrectPrefix, `Expected DID prefix ${didPrefix} not given in DID.`);
-    }
-
-    const didWithoutPrefix = did.split(didPrefix)[1];
-
-    // split by : and if there is 1 element, then it's short form. Long form has 2 elements
-    const didSplitLength = didWithoutPrefix.split(':').length;
-    if (didSplitLength === 1) {
-      this.isShortForm = true;
-    } else {
-      this.isShortForm = false;
-    }
+    this.isShortForm = Did.isShortFormDid(did, didMethodName);
 
     if (this.isShortForm) {
       this.uniqueSuffix = did.substring(didPrefix.length);
@@ -66,6 +54,25 @@ export default class Did {
     }
 
     this.shortForm = didPrefix + this.uniqueSuffix;
+  }
+
+  /**
+   * Determins if input string is a short or long form did.
+   * @param did Short or long-form DID string.
+   * @param didMethodName The expected DID method given in the DID string. The method throws SidetreeError if mismatch.
+   */
+  public static isShortFormDid (did: string, didMethodName: string): boolean {
+    const didPrefix = `did:${didMethodName}:`;
+
+    if (!did.startsWith(`did:${didMethodName}:`)) {
+      throw new SidetreeError(ErrorCode.DidIncorrectPrefix, `Expected DID prefix ${didPrefix} not given in DID.`);
+    }
+
+    const didWithoutPrefix = did.split(didPrefix)[1];
+
+    // split by : and if there is 1 element, then it's short form. Long form has 2 elements
+    const didSplitLength = didWithoutPrefix.split(':').length;
+    return didSplitLength === 1;
   }
 
   /**

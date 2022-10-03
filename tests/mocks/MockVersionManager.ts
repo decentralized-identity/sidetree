@@ -21,6 +21,10 @@ export default class MockVersionManager implements IVersionManager {
     throw new Error('Not implemented. Use spyOn to override the functionality. Input: ' + blockchainTime);
   }
 
+  public getLatestVersionRequestHandler (): IRequestHandler {
+    throw new Error('Not implemented. Use spyOn to override the functionality.');
+  }
+
   public getTransactionProcessor (blockchainTime: number): ITransactionProcessor {
     throw new Error('Not implemented. Use spyOn to override the functionality. Input: ' + blockchainTime);
   }

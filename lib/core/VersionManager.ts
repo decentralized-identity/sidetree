@@ -127,6 +127,15 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
   }
 
   /**
+   * Gets the latest version of the `IRequestHandler` that is present in the request handlers.
+   */
+  public getLatestVersionRequestHandler (): IRequestHandler {
+    const version = this.versionsReverseSorted[0].version;
+    const requestHandler = this.requestHandlers.get(version)!;
+    return requestHandler;
+  }
+
+  /**
    * Gets the corresponding version of the `TransactionProcessor` based on the given blockchain time.
    */
   public getTransactionProcessor (blockchainTime: number): ITransactionProcessor {

@@ -201,6 +201,18 @@ describe('Core', async () => {
     });
   });
 
+  describe('handleResolveRequestLongFormDid', () => {
+    it('should call the needed functions and return a response', async () => {
+      const core = new Core(testConfig, testVersionConfig, mockCas);
+      const mockRequestHandler = jasmine.createSpyObj<IRequestHandler>('versionManagerSpy', ['handleResolveRequest']);
+      mockRequestHandler.handleResolveRequest.and.callFake(() => { return resolvedRequest; });
+      core['versionManager']['getLatestVersionRequestHandler'] = () => { return mockRequestHandler; };
+      const response = await core.handleResolveRequest('did:sidetree:abc:longform');
+      expect(mockRequestHandler.handleResolveRequest).toHaveBeenCalled();
+      expect(response).toEqual({ status: ResponseStatus.Succeeded, body: null });
+    });
+  });
+
   describe('handleOperationRequest', () => {
     it('should call the needed functions and return a response', async () => {
       const core = new Core(testConfig, testVersionConfig, mockCas);
