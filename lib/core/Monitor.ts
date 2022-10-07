@@ -1,6 +1,6 @@
 import BatchWriter from './versions/latest/BatchWriter';
-import Blockchain from './Blockchain';
 import Config from './models/Config';
+import IBlockchain from '../core/interfaces/IBlockchain';
 import MongoDbOperationQueue from './versions/latest/MongoDbOperationQueue';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import TransactionModel from '../common/models/TransactionModel';
@@ -12,12 +12,12 @@ import VersionManager from './VersionManager';
  */
 export default class Monitor {
 
-  private blockchain: Blockchain;
+  private blockchain: IBlockchain;
   private operationQueue: MongoDbOperationQueue;
   private transactionStore: MongoDbTransactionStore;
   private readonly versionManager: VersionManager;
 
-  public constructor (config: Config, versionManager: VersionManager, blockchain: Blockchain) {
+  public constructor (config: Config, versionManager: VersionManager, blockchain: IBlockchain) {
     this.operationQueue = new MongoDbOperationQueue(config.mongoDbConnectionString, config.databaseName);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
     this.blockchain = blockchain;

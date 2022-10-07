@@ -1,4 +1,5 @@
 import BlockchainTimeModel from '../models/BlockchainTimeModel';
+import ServiceVersionModel from '../../common/models/ServiceVersionModel';
 import TransactionModel from '../../common/models/TransactionModel';
 import ValueTimeLockModel from '../../common/models/ValueTimeLockModel';
 
@@ -34,6 +35,11 @@ export default interface IBlockchain {
    * @param transactions List of potentially valid transactions.
    */
   getFirstValidTransaction (transactions: TransactionModel[]): Promise<TransactionModel | undefined>;
+
+  /**
+   * Gets the version of the blockchain service.
+   */
+  getServiceVersion (): Promise<ServiceVersionModel>;
 
   /**
    * Returns the latest blockchain time
