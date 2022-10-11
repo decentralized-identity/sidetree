@@ -214,6 +214,10 @@ export default class Blockchain implements IBlockchain {
     if (response.status === HttpStatus.NOT_FOUND) {
       return undefined;
     }
+
+    // Treat a HTTP 503 from the blockchain service as a non-error and
+    // return `undefined` such that a minimum-size batch will be
+    // written instead of the batch write being skipped
     if (response.status === HttpStatus.SERVICE_UNAVAILABLE) {
       return undefined;
     }
