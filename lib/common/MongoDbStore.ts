@@ -63,7 +63,8 @@ export default class MongoDbStore {
       useNewUrlParser: true,
       logger: MongoDbStore.customLogger,
       monitorCommands: true,
-      loggerLevel: 'error'
+      loggerLevel: 'error',
+      useUnifiedTopology: true
     });
     MongoDbStore.enableCommandResultLogging(client);
     this.db = client.db(this.databaseName);
