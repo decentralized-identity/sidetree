@@ -1,5 +1,6 @@
 import BlockchainTimeModel from '../../lib/core/models/BlockchainTimeModel';
 import IBlockchain from '../../lib/core/interfaces/IBlockchain';
+import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 
@@ -49,6 +50,10 @@ export default class MockBlockchain implements IBlockchain {
 
   public async getFirstValidTransaction (_transactions: TransactionModel[]): Promise<TransactionModel | undefined> {
     return undefined;
+  }
+
+  public async getServiceVersion (): Promise<ServiceVersionModel> {
+    throw Error('getServiceVersion() not implemented.');
   }
 
   private latestTime?: BlockchainTimeModel = { time: 500000, hash: 'dummyHash' };

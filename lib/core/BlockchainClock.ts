@@ -1,6 +1,6 @@
-import Blockchain from './Blockchain';
 import EventCode from '../core/EventCode';
 import EventEmitter from '../common/EventEmitter';
+import IBlockchain from '../core/interfaces/IBlockchain';
 import IServiceStateStore from '../common/interfaces/IServiceStateStore';
 import Logger from '../common/Logger';
 import ServiceStateModel from './models/ServiceStateModel';
@@ -25,7 +25,7 @@ export default class BlockchainClock {
    * @param enableRealBlockchainTimePull If enabled, will pull real blockchain time from blockchain, else will only use time from db
    */
   public constructor (
-      private blockchain: Blockchain,
+      private blockchain: IBlockchain,
       private serviceStateStore: IServiceStateStore<ServiceStateModel>,
       private enableRealBlockchainTimePull: boolean
   ) { }
