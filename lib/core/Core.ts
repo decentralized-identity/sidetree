@@ -9,6 +9,7 @@ import Did from './versions/latest/Did';
 import DownloadManager from './DownloadManager';
 import ErrorCode from './ErrorCode';
 import EventEmitter from '../common/EventEmitter';
+import IBlockchain from './interfaces/IBlockchain';
 import IRequestHandler from './interfaces/IRequestHandler';
 import LogColor from '../common/LogColor';
 import Logger from '../common/Logger';
@@ -40,7 +41,6 @@ export default class Core {
   private unresolvableTransactionStore: MongoDbUnresolvableTransactionStore;
   private operationStore: MongoDbOperationStore;
   private versionManager: VersionManager;
-  private blockchain: Blockchain;
   private downloadManager: DownloadManager;
   private observer: Observer;
   private batchScheduler: BatchScheduler;
@@ -52,13 +52,17 @@ export default class Core {
   /**
    * Core constructor.
    */
-  public constructor (private config: Config, versionModels: VersionModel[], private cas: ISidetreeCas) {
+  public constructor (
+    private config: Config,
+    versionModels: VersionModel[],
+    private cas: ISidetreeCas,
+    private blockchain: IBlockchain = new Blockchain(config.blockchainServiceUri)
+  ) {
     // Component dependency construction & injection.
     this.versionManager = new VersionManager(config, versionModels); // `VersionManager` is first constructed component as multiple components depend on it.
     this.serviceInfo = new ServiceInfo('core');
     this.serviceStateStore = new MongoDbServiceStateStore(this.config.mongoDbConnectionString, this.config.databaseName);
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString, config.databaseName);
-    this.blockchain = new Blockchain(config.blockchainServiceUri);
     this.downloadManager = new DownloadManager(config.maxConcurrentDownloads, this.cas);
     this.resolver = new Resolver(this.versionManager, this.operationStore);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
