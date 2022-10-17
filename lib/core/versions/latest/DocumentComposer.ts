@@ -40,7 +40,7 @@ export default class DocumentComposer {
         const id = '#' + publicKey.id;
         const didDocumentPublicKey = {
           id: id,
-          controller: did.isShortForm ? did.shortForm : did.longForm,
+          controller: publicKey.controller || (did.isShortForm ? did.shortForm : did.longForm),
           type: publicKey.type,
           publicKeyJwk: publicKey.publicKeyJwk
         };
@@ -219,7 +219,7 @@ export default class DocumentComposer {
 
     const publicKeyIdSet: Set<string> = new Set();
     for (const publicKey of publicKeys) {
-      const allowedProperties = new Set(['id', 'type', 'purposes', 'publicKeyJwk']);
+      const allowedProperties = new Set(['id', 'type', 'purposes', 'publicKeyJwk', 'controller']);
       for (const property in publicKey) {
         if (!allowedProperties.has(property)) {
           throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUnknownProperty, `Unexpected property, ${property}, in publicKey.`);
