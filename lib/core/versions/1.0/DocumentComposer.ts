@@ -345,22 +345,26 @@ export default class DocumentComposer {
       }
 
       // `serviceEndpoint` validations.
-      const serviceEndpoint = service.serviceEndpoint;
-      if (typeof serviceEndpoint === 'string') {
-        const uri = URI.parse(service.serviceEndpoint);
-        if (uri.error !== undefined) {
-          throw new SidetreeError(
-            ErrorCode.DocumentComposerPatchServiceEndpointStringNotValidUri,
-            `Service endpoint string '${serviceEndpoint}' is not a valid URI.`
-          );
+      // transform URI strings and JSON objects into array so that we can run validations more easily
+      const serviceEndpointValueAsArray = Array.isArray(service.serviceEndpoint) ? service.serviceEndpoint : [service.serviceEndpoint];
+      for (const serviceEndpoint of serviceEndpointValueAsArray) {
+        // serviceEndpoint itself must be URI string or non-array object
+        if (typeof serviceEndpoint === 'string') {
+          const uri = URI.parse(serviceEndpoint);
+          if (uri.error !== undefined) {
+            throw new SidetreeError(
+              ErrorCode.DocumentComposerPatchServiceEndpointStringNotValidUri,
+              `Service endpoint string '${serviceEndpoint}' is not a valid URI.`
+            );
+          }
+        } else if (typeof serviceEndpoint === 'object') {
+          // Allow `object` type only if it is not an array.
+          if (Array.isArray(serviceEndpoint)) {
+            throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointCannotBeAnArray);
+          }
+        } else {
+          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointMustBeStringOrNonArrayObject);
         }
-      } else if (typeof serviceEndpoint === 'object') {
-        // Allow `object` type only if it is not an array.
-        if (Array.isArray(serviceEndpoint)) {
-          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointCannotBeAnArray);
-        }
-      } else {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointMustBeStringOrNonArrayObject);
       }
     }
   }

@@ -4,5 +4,5 @@
 export default interface ServiceModel {
   id: string;
   type: string;
-  serviceEndpoint: string | object;
+  serviceEndpoint: string | object | Array<string | object>;
 }
