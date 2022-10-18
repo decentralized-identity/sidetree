@@ -469,13 +469,27 @@ describe('DocumentComposer', async () => {
       DocumentComposer['validateAddServicesPatch'](patch);
     });
 
-    it('should throw error if `serviceEndpoint` is an array.', () => {
+    it('should allow an array as `serviceEndpoint`.', () => {
       const patch = {
         action: PatchAction.AddServices,
         services: [{
           id: 'someId',
           type: 'someType',
           serviceEndpoint: []
+        }]
+      };
+
+      // Expecting this call to succeed without errors.
+      DocumentComposer['validateAddServicesPatch'](patch);
+    });
+
+    it('should throw error if `serviceEndpoint` is an array that includes an array.', () => {
+      const patch = {
+        action: PatchAction.AddServices,
+        services: [{
+          id: 'someId',
+          type: 'someType',
+          serviceEndpoint: [[]] // array must contain URI strings or objects but not arrays
         }]
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointCannotBeAnArray);
@@ -495,6 +509,19 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
     });
 
+    it('should throw error if `serviceEndpoint` has an invalid type (inside an array).', () => {
+      const patch = {
+        action: PatchAction.AddServices,
+        services: [{
+          id: 'someId',
+          type: 'someType',
+          serviceEndpoint: [123] // Invalid serviceEndpoint type.
+        }]
+      };
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointMustBeStringOrNonArrayObject);
+      expect(() => { DocumentComposer['validateAddServicesPatch'](patch); }).toThrow(expectedError);
+    });
+
     it('Should throw if `serviceEndpoint` is not valid URI.', () => {
       const patch = {
         action: PatchAction.AddServices,
@@ -502,6 +529,22 @@ describe('DocumentComposer', async () => {
           id: 'someId',
           type: 'someType',
           serviceEndpoint: 'http://' // Invalid URI.
+        }]
+      };
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => DocumentComposer['validateAddServicesPatch'](patch),
+        ErrorCode.DocumentComposerPatchServiceEndpointStringNotValidUri
+      );
+    });
+
+    it('Should throw if `serviceEndpoint` is not valid URI (inside an array).', () => {
+      const patch = {
+        action: PatchAction.AddServices,
+        services: [{
+          id: 'someId',
+          type: 'someType',
+          serviceEndpoint: ['http://'] // Invalid URI.
         }]
       };
 
