@@ -19,6 +19,7 @@
     "node-fetch": "2.6.7",
     "priorityqueue": "1.0.0",
     "semver": "7.3.5",
+    "spec-up": "^0.10.6",
     "time-span": "3.1.0",
     "uri-js": "4.4.0",
     "yieldable-json": "1.1.0"
