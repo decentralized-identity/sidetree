@@ -82,7 +82,7 @@ The orchestration layer requires implementation of following interfaces per prot
 ### REST API HTTP Response status codes
 
 | HTTP status code | Description                              |
-| ---------------- | ---------------------------------------- |
+|------------------|------------------------------------------|
 | 200              | Everything went well.                    |
 | 400              | Bad client request.                      |
 | 401              | Unauthenticated or unauthorized request. |

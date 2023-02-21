@@ -1,8 +1,0 @@
-.dockerignore
-.nyc_output
-.vscode
-coverage
-docs
-nunitresults.xml
-tests
-Dockerfile
