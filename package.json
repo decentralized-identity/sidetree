@@ -19,6 +19,7 @@
     "node-fetch": "2.6.7",
     "priorityqueue": "1.0.0",
     "semver": "7.3.5",
+    "spec-up": "^0.10.6",
     "time-span": "3.1.0",
     "uri-js": "4.4.0",
     "yieldable-json": "1.1.0"
@@ -62,27 +63,9 @@
   },
   "scripts": {
     "commit": "git-cz",
-    "build": "tsc && copyfiles \"lib/**/*.json\" dist && copyfiles \"tests/**/*.js*\" dist && copyfiles \"package.json\" dist",
-    "test": "npm run build && nyc jasmine --config=./tests/jasmine.json && npm run badge:cc",
-    "test:only": "nyc jasmine --config=./tests/jasmine.json",
-    "test:generate-vectors": "node dist/tests/generators/TestVectorGenerator.js",
-    "util:generate-error-codes": "node dist/tests/generators/ErrorCodeGenerator.js",
-    "publish:unstable": "./scripts/publish-unstable.sh",
-    "publish:release": "./scripts/publish.sh",
-    "version:release": "npm version --message \"chore(ref-imp): official release\"",
-    "lint": "eslint --ext ts lib/ tests/",
-    "lint:fix": "eslint --ext ts lib/ tests/ --fix",
-    "badge:cc": "istanbul-badges-readme",
-    "badge:cc:ci": "npm run badge:cc -- --ci",
     "spec": "node -e \"require('spec-up')({ nowatch: true })\"",
     "spec:edit": "node -e \"require('spec-up')()\"",
     "version": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run lint",
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-    }
   },
   "config": {
     "commitizen": {
@@ -94,20 +77,6 @@
     "cache": false,
     "extension": [
       ".ts"
-    ],
-    "include": [
-      "dist/lib/**",
-      "lib/**"
-    ],
-    "exclude": [
-      "**/index.d.ts",
-      "**/index.ts",
-      "lib/bitcoin/versions/[0-9]**/**",
-      "lib/core/versions/[0-9]**/**",
-      "lib/core/versions/**/PatchActions.ts",
-      "lib/core/versions/**/VersionMetadata.ts",
-      "lib/**/**ErrorCode.ts",
-      "lib/**/**EventCode.ts"
     ],
     "reporter": [
       "text",
