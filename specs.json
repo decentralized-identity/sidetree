@@ -4,7 +4,7 @@
   "resource_path": "./www",
   "specs": [
     {
-      "title": "DIF Sidetree Protocol",
+      "title": "DIF Sidetree Protocol v1.0.1",
       "logo": "https://rawcdn.githack.com/decentralized-identity/decentralized-identity.github.io/a3ca39717e440302d1fd99a796e7f00e1c42eb2d/images/logo-flat.svg",
       "logo_link": "https://identity.foundation",
       "source": {
@@ -12,8 +12,8 @@
         "account": "decentralized-identity",
         "repo": "sidetree"
       },
-      "output_path": "./www/spec",
-      "spec_directory": "./docs/spec",
+      "output_path": "./www/spec/v1.0.1",
+      "spec_directory": "./docs/v1.0.1/spec",
       "markdown_paths": [
         "title.md",
         "abstract.md",
@@ -38,7 +38,57 @@
       ]
     },
     {
-      "title": "DIF Sidetree REST API",
+      "title": "DIF Sidetree REST API v1.0.1",
+      "logo": "https://rawcdn.githack.com/decentralized-identity/decentralized-identity.github.io/a3ca39717e440302d1fd99a796e7f00e1c42eb2d/images/logo-flat.svg",
+      "logo_link": "https://identity.foundation",
+      "source": {
+        "host": "github",
+        "account": "decentralized-identity",
+        "repo": "sidetree"
+      },
+      "output_path": "./www/api/v1.0.1",
+      "spec_directory": "./docs/v1.0.1/api",
+      "markdown_paths": [
+        "title.md",
+        "content.md"
+      ]
+    },
+    {
+      "title": "DIF Sidetree Protocol v1.1.0",
+      "logo": "https://rawcdn.githack.com/decentralized-identity/decentralized-identity.github.io/a3ca39717e440302d1fd99a796e7f00e1c42eb2d/images/logo-flat.svg",
+      "logo_link": "https://identity.foundation",
+      "source": {
+        "host": "github",
+        "account": "decentralized-identity",
+        "repo": "sidetree"
+      },
+      "output_path": "./www/spec",
+      "spec_directory": "./docs/v1.1.0/spec",
+      "markdown_paths": [
+        "title.md",
+        "abstract.md",
+        "intro.md",
+        "terminology.md",
+        "versioning.md",
+        "parameters.md",
+        "common-functions.md",
+        "topology.md",
+        "file-structures.md",
+        "did-uri.md",
+        "json-web-signatures.md",
+        "operations.md",
+        "patches.md",
+        "processing.md",
+        "pof.md",
+        "resolution.md",
+        "method-versioning.md",
+        "context.md",
+        "guidelines.md",
+        "appendix.md"
+      ]
+    },
+    {
+      "title": "DIF Sidetree REST API v1.1.0",
       "logo": "https://rawcdn.githack.com/decentralized-identity/decentralized-identity.github.io/a3ca39717e440302d1fd99a796e7f00e1c42eb2d/images/logo-flat.svg",
       "logo_link": "https://identity.foundation",
       "source": {
@@ -47,7 +97,7 @@
         "repo": "sidetree"
       },
       "output_path": "./www/api",
-      "spec_directory": "./docs/api",
+      "spec_directory": "./docs/v1.1.0/api",
       "markdown_paths": [
         "title.md",
         "content.md"
