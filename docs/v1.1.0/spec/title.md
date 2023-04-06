@@ -1,4 +1,4 @@
-Sidetree v1.0.1
+Sidetree v1.1.0
 ==================
 
 **Specification Status:** DIF Ratified Specification

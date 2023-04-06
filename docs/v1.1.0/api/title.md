@@ -1,5 +1,5 @@
-Sidetree REST API
-==================
+Sidetree REST API v1.1.0
+========================
 
 **Specification Status:** Editor's Draft
 
