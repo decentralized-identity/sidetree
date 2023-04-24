@@ -25,7 +25,7 @@
     "yieldable-json": "1.1.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^10.0.0",
+    "@commitlint/cli": "^17.6.1",
     "@ryansonshine/cz-conventional-changelog": "^3.3.4",
     "@types/async-retry": "1.4.0",
     "@types/bitcore-lib": "0.15.1",
