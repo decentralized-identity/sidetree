@@ -156,7 +156,7 @@ The `add-services` _Patch Action_ describes the addition of [Service Endpoints](
 ```
 :::
 
-The `remove-services` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. For any part of an `remove-services` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. In the case there exists no service entry for an `id` specified within a `remove-public-keys` _Patch Action_, the implementation ****SHALL**** perform no action and treat application of the delete operation as a success. To construct a `remove-services` _Patch Action_, compose an object as follows:
+The `remove-services` _Patch Action_ describes the removal of Service Endpoints associated with a given DID. For any part of an `remove-services` _Patch Action_ to be applied to the DID's state, all specified conditions ****MUST**** be met for all properties and values, else the patch ****MUST**** be discarded in its entirety. In the case there exists no service entry for an `id` specified within a `remove-services` _Patch Action_, the implementation ****SHALL**** perform no action and treat application of the delete operation as a success. To construct a `remove-services` _Patch Action_, compose an object as follows:
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `remove-services`.
 2. The object ****MUST**** include a `ids` property, and its value ****MUST**** be an array of Service Endpoint IDs that correspond with Service Endpoints presently associated with the DID that are to be removed.
