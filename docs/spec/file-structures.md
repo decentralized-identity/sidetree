@@ -110,7 +110,7 @@ The [Provisional Index File](#provisional-index-file) JSON document is composed 
 
 ### Core Proof File
 
-Core Proof Files are [compressed](#compression-algorithm) JSON Documents containing the cryptographic proofs (signatures, hashes, etc.) that form the signature-chained backbone for the state lineages of all DIDs in the system. The cryptographic proofs present in Core Proof Files also link a given operation to its verbose state data, which resides in an related [Chunk File](#chunk-files).
+Core Proof Files are [compressed](#compression-algorithm) JSON Documents containing the cryptographic proofs (signatures, hashes, etc.) that form the signature-chained backbone for the state lineages of all DIDs in the system. The cryptographic proofs present in Core Proof Files also link a given operation to its verbose state data, which resides in a related [Chunk File](#chunk-files).
 
 ::: example Core Proof File
 ```json
@@ -162,7 +162,7 @@ In this version of the protocol, [Core Proof Files](#core-proof-file) are constr
 
 ### Provisional Proof File
 
-Provisional Proof Files are [compressed](#compression-algorithm) JSON Documents containing the cryptographic proofs (signatures, hashes, etc.) for all the (eventually) prunable DID operations in the system. The cryptographic proofs present in Provisional Proof Files also link a given operation to its verbose state data, which resides in an related [Chunk File](#chunk-files).
+Provisional Proof Files are [compressed](#compression-algorithm) JSON Documents containing the cryptographic proofs (signatures, hashes, etc.) for all the (eventually) prunable DID operations in the system. The cryptographic proofs present in Provisional Proof Files also link a given operation to its verbose state data, which resides in a related [Chunk File](#chunk-files).
 
 ::: example Provisional Proof File
 ```json
