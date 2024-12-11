@@ -2,7 +2,7 @@
 
 ### Transaction Anchoring
 
-Once an Core Index File, Provisional Index File, and associated Chunk Files have been assembled for a given set of operations, a reference to the [Core Index File](#core-index-file) must be embedded within the target anchoring system to enter the set of operations into the Sidetree implementation's global state. The following process:
+Once a Core Index File, Provisional Index File, and associated Chunk Files have been assembled for a given set of operations, a reference to the [Core Index File](#core-index-file) must be embedded within the target anchoring system to enter the set of operations into the Sidetree implementation's global state. The following process:
 
 1. Generate a transaction for the underlying anchoring system
 2. Generate and include the following value, herein referred to as the [_Anchor String_](#anchor-string){id="anchor-string"}, within the transaction:
